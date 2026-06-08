@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SysOps Reference — IT Troubleshooting Database</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080b0f;
+  --bg2:#0d1117;
+  --bg3:#161b22;
+  --bg4:#1c2128;
+  --border:#21262d;
+  --border2:#30363d;
+  --green:#39d353;
+  --green-dim:#2ea043;
+  --green-glow:rgba(57,211,83,0.15);
+  --green-soft:rgba(57,211,83,0.07);
+  --cyan:#58a6ff;
+  --cyan-soft:rgba(88,166,255,0.1);
+  --amber:#e3b341;
+  --amber-soft:rgba(227,179,65,0.1);
+  --red:#f85149;
+  --red-soft:rgba(248,81,73,0.08);
+  --purple:#bc8cff;
+  --purple-soft:rgba(188,140,255,0.08);
+  --text:#e6edf3;
+  --text2:#8b949e;
+  --text3:#484f58;
+  --mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-direction:column}
+
+/* scanlines */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.015) 3px,rgba(0,0,0,0.015) 4px);pointer-events:none;z-index:9999}
+
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:48px;display:flex;align-items:center;gap:0;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;margin-right:32px}
+.logo-box{width:26px;height:26px;border:1.5px solid var(--green);border-radius:4px;display:grid;place-items:center;color:var(--green);font-size:12px;font-weight:700;box-shadow:0 0 10px var(--green-glow);flex-shrink:0}
+.logo-text{color:var(--green);font-weight:700;font-size:13px;letter-spacing:.06em;text-shadow:0 0 12px var(--green-glow)}
+.logo-ver{color:var(--text3);font-size:9px;margin-left:6px;letter-spacing:.1em}
+.nav-tabs{display:flex;height:48px;gap:0}
+.nav-tab{padding:0 18px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{color:var(--text2)}
+.nav-tab.active{color:var(--green);border-bottom-color:var(--green);text-shadow:0 0 8px var(--green-glow)}
+.nav-tab .ti-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.stat-pill{font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:3px 9px;border-radius:3px;letter-spacing:.06em}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MAIN LAYOUT */
+.app-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-section{padding:12px 0 4px}
+.sidebar-heading{padding:4px 16px 6px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3)}
+.sidebar-item{padding:7px 16px;font-size:11px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:9px;transition:all .12s;border-left:2px solid transparent;border-right:0;background:none;width:100%;text-align:left;font-family:var(--mono)}
+.sidebar-item:hover{color:var(--text);background:var(--green-soft)}
+.sidebar-item.active{color:var(--green);border-left-color:var(--green);background:var(--green-soft)}
+.sidebar-item .ct{margin-left:auto;font-size:9px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:2px}
+.sidebar-item.active .ct{color:var(--green);border-color:var(--green-dim)}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 14px}
+
+/* CONTENT AREA */
+.content-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* SEARCH ZONE */
+.search-zone{padding:16px 20px 0;background:var(--bg);flex-shrink:0}
+.search-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;transition:border-color .2s,box-shadow .2s}
+.search-row:focus-within{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.search-prompt{color:var(--green);font-size:13px;white-space:nowrap;text-shadow:0 0 8px var(--green-glow)}
+.search-input{background:none;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:13px;flex:1;min-width:0}
+.search-input::placeholder{color:var(--text3)}
+.search-hint{font-size:10px;color:var(--text3);white-space:nowrap}
+.ai-badge{font-size:9px;background:var(--purple-soft);border:1px solid rgba(188,140,255,.25);color:var(--purple);padding:2px 8px;border-radius:3px;letter-spacing:.06em;white-space:nowrap}
+
+/* FAQ STRIP */
+.faq-strip{padding:10px 20px 0;flex-shrink:0}
+.faq-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.faq-pills{display:flex;gap:6px;flex-wrap:wrap}
+.faq-pill{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:3px;cursor:pointer;transition:all .12s;white-space:nowrap}
+.faq-pill:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+
+/* FILTER BAR */
+.filter-bar{padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);flex-shrink:0}
+.filter-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3)}
+.filter-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:3px;cursor:pointer;letter-spacing:.06em;transition:all .12s}
+.filter-btn:hover{color:var(--text2);border-color:var(--border2)}
+.filter-btn.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.filter-sep{width:1px;height:16px;background:var(--border);margin:0 2px}
+.result-count{margin-left:auto;font-size:10px;color:var(--text3)}
+
+/* SCROLL CONTENT */
+.scroll-content{flex:1;overflow-y:auto;padding:16px 20px}
+.scroll-content::-webkit-scrollbar{width:6px}
+.scroll-content::-webkit-scrollbar-track{background:var(--bg2)}
+.scroll-content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* SECTION HEADER */
+.sec-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
+.sec-sub{font-size:10px;color:var(--text3)}
+.sec-spacer{margin-top:22px}
+
+/* COMMAND CARD */
+.cmd-card{background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.cmd-card:hover{border-color:var(--border2)}
+.cmd-card.open{border-color:var(--green-dim);box-shadow:0 0 0 1px var(--green-soft)}
+.cmd-head{padding:11px 14px;display:flex;align-items:center;gap:10px}
+.cmd-name{color:var(--green);font-weight:700;font-size:13px;text-shadow:0 0 6px var(--green-glow);min-width:140px}
+.cmd-desc-short{color:var(--text2);font-size:11px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd-badges{display:flex;gap:5px;flex-shrink:0}
+.badge{font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:.06em;font-weight:500;text-transform:uppercase;white-space:nowrap}
+.b-cat{background:var(--cyan-soft);border:1px solid rgba(88,166,255,.2);color:var(--cyan)}
+.b-net{background:rgba(57,211,83,.08);border:1px solid rgba(57,211,83,.2);color:var(--green)}
+.b-proc{background:var(--amber-soft);border:1px solid rgba(227,179,65,.2);color:var(--amber)}
+.b-file{background:var(--purple-soft);border:1px solid rgba(188,140,255,.2);color:var(--purple)}
+.b-sys{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.15);color:var(--red)}
+.b-d1{background:rgba(57,211,83,.08);border:1px solid rgba(57,211,83,.2);color:var(--green)}
+.b-d2{background:var(--amber-soft);border:1px solid rgba(227,179,65,.2);color:var(--amber)}
+.b-d3{background:var(--red-soft);border:1px solid rgba(248,81,73,.2);color:var(--red)}
+.b-sec{background:var(--red-soft);border:1px solid rgba(248,81,73,.25);color:var(--red)}
+
+/* EXPANDED BODY */
+.cmd-body{display:none;border-top:1px solid var(--border);background:var(--bg3)}
+.cmd-card.open .cmd-body{display:block}
+.body-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.body-col{padding:14px}
+.body-col+.body-col{border-left:1px solid var(--border)}
+.body-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px 12px;position:relative;margin-bottom:10px}
+.code-line{font-size:12px;line-height:1.8;color:var(--green)}
+.code-cmt{color:var(--text3);font-size:11px}
+.code-flag{color:var(--cyan)}
+.code-arg{color:var(--amber)}
+.copy-btn{position:absolute;top:7px;right:8px;background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:2px;cursor:pointer;transition:all .12s;letter-spacing:.06em}
+.copy-btn:hover{color:var(--green);border-color:var(--green)}
+.scenario-item{display:flex;gap:8px;padding:4px 0;font-size:11px;color:var(--text2);line-height:1.5}
+.scenario-bullet{color:var(--cyan);flex-shrink:0}
+.mistake-item{display:flex;gap:8px;padding:4px 0;font-size:11px;line-height:1.5}
+.mistake-x{color:var(--red);flex-shrink:0}
+.mistake-fix{color:var(--text2)}
+.mistake-fix span{color:var(--green)}
+.sec-note-box{background:var(--red-soft);border:1px solid rgba(248,81,73,.2);border-radius:4px;padding:10px 12px;margin-top:8px}
+.sec-note-lbl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--red);margin-bottom:5px}
+.sec-note-txt{font-size:11px;color:var(--text2);line-height:1.6}
+
+/* TROUBLESHOOT CARDS */
+.ts-card{background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.ts-card:hover{border-color:var(--border2)}
+.ts-card.open{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-soft)}
+.ts-head{display:flex;align-items:center;gap:10px}
+.ts-icon{font-size:16px;flex-shrink:0}
+.ts-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.ts-tag{font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:.06em;background:var(--amber-soft);border:1px solid rgba(227,179,65,.2);color:var(--amber);text-transform:uppercase}
+.ts-body{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.ts-card.open .ts-body{display:block}
+.ts-step{display:flex;gap:10px;padding:6px 0;font-size:12px;color:var(--text2);line-height:1.5;border-bottom:1px solid var(--border)}
+.ts-step:last-child{border-bottom:none}
+.ts-num{color:var(--amber);font-weight:700;min-width:20px;flex-shrink:0}
+.ts-cmd{display:inline-block;background:var(--bg);border:1px solid var(--border);color:var(--green);font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:3px;margin:2px 2px 2px 0}
+.ts-note{display:block;margin-top:3px;font-size:10px;color:var(--text3)}
+
+/* STATUS BAR */
+.statusbar{background:var(--bg2);border-top:1px solid var(--border);padding:5px 20px;display:flex;gap:16px;font-size:10px;color:var(--text3);flex-shrink:0}
+.sb-item{display:flex;align-items:center;gap:5px}
+.sb-val{color:var(--green-dim)}
+.sb-sep{color:var(--border2)}
+
+/* HIDE/SHOW */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-box">&gt;_</div>
+    <div>
+      <span class="logo-text">SYSOPS.REF</span>
+      <span class="logo-ver">v1.0</span>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('search',this)"><span class="ti-dot"></span>Ask / Search</button>
+    <button class="nav-tab" onclick="switchTab('linux',this)"><span class="ti-dot"></span>Linux</button>
+    <button class="nav-tab" onclick="switchTab('cmd',this)"><span class="ti-dot"></span>CMD</button>
+    <button class="nav-tab" onclick="switchTab('network',this)"><span class="ti-dot"></span>Network</button>
+    <button class="nav-tab" onclick="switchTab('troubleshoot',this)"><span class="ti-dot"></span>Troubleshoot</button>
+  </div>
+  <div class="topbar-right">
+    <span class="stat-pill" id="totalCount">loading...</span>
+    <span class="pulse"></span>
+    <span style="font-size:10px;color:var(--text3)">live</span>
+  </div>
+</div>
+
+<div class="app-body">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Quick scenarios</div>
+    <button class="sidebar-item active" onclick="filterScenario('all',this)">⬡ All entries <span class="ct" id="sc-all">—</span></button>
+    <button class="sidebar-item" onclick="filterScenario('network',this)">⬡ Network issues <span class="ct">6</span></button>
+    <button class="sidebar-item" onclick="filterScenario('disk',this)">⬡ Disk &amp; storage <span class="ct">5</span></button>
+    <button class="sidebar-item" onclick="filterScenario('process',this)">⬡ Process &amp; CPU <span class="ct">5</span></button>
+    <button class="sidebar-item" onclick="filterScenario('permission',this)">⬡ Permissions <span class="ct">4</span></button>
+    <button class="sidebar-item" onclick="filterScenario('user',this)">⬡ Users &amp; auth <span class="ct">4</span></button>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Filter by</div>
+    <button class="sidebar-item" onclick="filterDiff('beginner',this)">● Beginner</button>
+    <button class="sidebar-item" onclick="filterDiff('intermediate',this)">● Intermediate</button>
+    <button class="sidebar-item" onclick="filterDiff('advanced',this)">● Advanced</button>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section">
+    <div class="sidebar-heading">Special</div>
+    <button class="sidebar-item" onclick="filterSpecial('sec')">⚑ Has security note</button>
+    <button class="sidebar-item" onclick="filterSpecial('all')">↺ Clear filters</button>
+  </div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+  <!-- SEARCH TAB -->
+  <div id="tab-search" class="tab-panel active">
+    <div class="search-zone">
+      <div class="search-row">
+        <span class="search-prompt">root@sysops:~$</span>
+        <input class="search-input" id="mainSearch" type="text" placeholder="describe your problem or search any command..." oninput="globalSearch(this.value)" autofocus>
+        <span class="ai-badge">AI — coming soon</span>
+        <span class="search-hint" id="searchHint">all commands</span>
+      </div>
+    </div>
+    <div class="faq-strip">
+      <div class="faq-label">Common problems — click to search</div>
+      <div class="faq-pills">
+        <button class="faq-pill" onclick="setSearch('port already in use')">Port already in use</button>
+        <button class="faq-pill" onclick="setSearch('disk full')">Disk full</button>
+        <button class="faq-pill" onclick="setSearch('permission denied')">Permission denied</button>
+        <button class="faq-pill" onclick="setSearch('process not responding')">Process not responding</button>
+        <button class="faq-pill" onclick="setSearch('no route to host')">No route to host</button>
+        <button class="faq-pill" onclick="setSearch('ssh connection refused')">SSH refused</button>
+        <button class="faq-pill" onclick="setSearch('high cpu')">High CPU usage</button>
+        <button class="faq-pill" onclick="setSearch('network interface down')">Interface down</button>
+        <button class="faq-pill" onclick="setSearch('service failed to start')">Service won't start</button>
+        <button class="faq-pill" onclick="setSearch('log file')">Log analysis</button>
+        <button class="faq-pill" onclick="setSearch('firewall')">Firewall rules</button>
+        <button class="faq-pill" onclick="setSearch('user locked out')">User locked out</button>
+      </div>
+    </div>
+    <div class="filter-bar" style="border-top:1px solid var(--border);margin-top:10px">
+      <span class="filter-label">Platform:</span>
+      <button class="filter-btn active" onclick="setSearchPlatform('all',this)">All</button>
+      <button class="filter-btn" onclick="setSearchPlatform('linux',this)">Linux</button>
+      <button class="filter-btn" onclick="setSearchPlatform('cmd',this)">CMD</button>
+      <button class="filter-btn" onclick="setSearchPlatform('network',this)">Network</button>
+      <span class="result-count" id="searchResultCount"></span>
+    </div>
+    <div class="scroll-content" id="searchResults"></div>
+  </div>
+
+  <!-- LINUX TAB -->
+  <div id="tab-linux" class="tab-panel">
+    <div class="filter-bar">
+      <span class="filter-label">Category:</span>
+      <button class="filter-btn active" onclick="setFilter('linux','cat','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','network',this)">Network</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','process',this)">Processes</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','disk',this)">Disk</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','permission',this)">Permissions</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','system',this)">System</button>
+      <button class="filter-btn" onclick="setFilter('linux','cat','logs',this)">Logs</button>
+      <div class="filter-sep"></div>
+      <span class="filter-label">Level:</span>
+      <button class="filter-btn active" onclick="setFilter('linux','diff','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('linux','diff','beginner',this)">Beginner</button>
+      <button class="filter-btn" onclick="setFilter('linux','diff','intermediate',this)">Intermediate</button>
+      <button class="filter-btn" onclick="setFilter('linux','diff','advanced',this)">Advanced</button>
+      <span class="result-count" id="linux-count"></span>
+    </div>
+    <div class="scroll-content" id="linux-list"></div>
+  </div>
+
+  <!-- CMD TAB -->
+  <div id="tab-cmd" class="tab-panel">
+    <div class="filter-bar">
+      <span class="filter-label">Category:</span>
+      <button class="filter-btn active" onclick="setFilter('cmd','cat','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('cmd','cat','network',this)">Network</button>
+      <button class="filter-btn" onclick="setFilter('cmd','cat','process',this)">Processes</button>
+      <button class="filter-btn" onclick="setFilter('cmd','cat','disk',this)">Disk</button>
+      <button class="filter-btn" onclick="setFilter('cmd','cat','system',this)">System</button>
+      <button class="filter-btn" onclick="setFilter('cmd','cat','user',this)">Users</button>
+      <div class="filter-sep"></div>
+      <span class="filter-label">Level:</span>
+      <button class="filter-btn active" onclick="setFilter('cmd','diff','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('cmd','diff','beginner',this)">Beginner</button>
+      <button class="filter-btn" onclick="setFilter('cmd','diff','intermediate',this)">Intermediate</button>
+      <button class="filter-btn" onclick="setFilter('cmd','diff','advanced',this)">Advanced</button>
+      <span class="result-count" id="cmd-count"></span>
+    </div>
+    <div class="scroll-content" id="cmd-list"></div>
+  </div>
+
+  <!-- NETWORK TAB -->
+  <div id="tab-network" class="tab-panel">
+    <div class="filter-bar">
+      <span class="filter-label">Category:</span>
+      <button class="filter-btn active" onclick="setFilter('network','cat','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('network','cat','diagnostic',this)">Diagnostic</button>
+      <button class="filter-btn" onclick="setFilter('network','cat','ports',this)">Ports</button>
+      <button class="filter-btn" onclick="setFilter('network','cat','routing',this)">Routing</button>
+      <button class="filter-btn" onclick="setFilter('network','cat','dns',this)">DNS</button>
+      <button class="filter-btn" onclick="setFilter('network','cat','firewall',this)">Firewall</button>
+      <div class="filter-sep"></div>
+      <span class="filter-label">Level:</span>
+      <button class="filter-btn active" onclick="setFilter('network','diff','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('network','diff','beginner',this)">Beginner</button>
+      <button class="filter-btn" onclick="setFilter('network','diff','intermediate',this)">Intermediate</button>
+      <button class="filter-btn" onclick="setFilter('network','diff','advanced',this)">Advanced</button>
+      <span class="result-count" id="network-count"></span>
+    </div>
+    <div class="scroll-content" id="network-list"></div>
+  </div>
+
+  <!-- TROUBLESHOOT TAB -->
+  <div id="tab-troubleshoot" class="tab-panel">
+    <div class="filter-bar">
+      <span class="filter-label">Platform:</span>
+      <button class="filter-btn active" onclick="setFilter('ts','plat','all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('ts','plat','linux',this)">Linux</button>
+      <button class="filter-btn" onclick="setFilter('ts','plat','windows',this)">Windows</button>
+      <button class="filter-btn" onclick="setFilter('ts','plat','network',this)">Network</button>
+      <span class="result-count" id="ts-count"></span>
+    </div>
+    <div class="scroll-content" id="ts-list"></div>
+  </div>
+
+</div><!-- /content-area -->
+</div><!-- /app-body -->
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="sb-item">platform: <span class="sb-val" id="sb-platform">search</span></div>
+  <div class="sb-item">entries: <span class="sb-val" id="sb-entries">—</span></div>
+  <div class="sb-item">db: <span class="sb-val">sysops-ref v1.0</span></div>
+  <div class="sb-item" style="margin-left:auto">github: <span class="sb-val">avivnofar/sysops-ref</span></div>
+</div>
+
+<script>
+// ============================================================
+// DATABASE — loaded at runtime from data/*.json
+// ============================================================
+const DB = { linux: [], cmd: [], network: [], troubleshoot: [] };
+
+
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  linux: {cat:'all', diff:'all'},
+  cmd:   {cat:'all', diff:'all'},
+  network:{cat:'all', diff:'all'},
+  ts:    {plat:'all'},
+  searchPlatform: 'all',
+  currentTab: 'search'
+};
+
+// ============================================================
+// INIT
+// ============================================================
+async function init(){
+  try {
+    const [linux, cmd, network, troubleshoot] = await Promise.all([
+      fetch('data/linux.json').then(r => r.json()),
+      fetch('data/cmd.json').then(r => r.json()),
+      fetch('data/network.json').then(r => r.json()),
+      fetch('data/troubleshoot.json').then(r => r.json())
+    ]);
+    DB.linux = linux;
+    DB.cmd = cmd;
+    DB.network = network;
+    DB.troubleshoot = troubleshoot;
+  } catch(e) {
+    console.error('Failed to load data:', e);
+    document.getElementById('totalCount').textContent = 'error';
+    return;
+  }
+  const total = DB.linux.length + DB.cmd.length + DB.network.length + DB.troubleshoot.length;
+  document.getElementById('totalCount').textContent = total + ' entries';
+  document.getElementById('sc-all').textContent = total;
+  document.getElementById('sb-entries').textContent = total;
+  renderList('linux');
+  renderList('cmd');
+  renderList('network');
+  renderTS();
+  renderSearchResults('');
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+  state.currentTab = tab;
+  document.getElementById('sb-platform').textContent = tab;
+  updateCount(tab);
+  if(tab==='search') document.getElementById('mainSearch').focus();
+}
+
+// ============================================================
+// RENDER COMMAND LISTS
+// ============================================================
+function renderList(platform){
+  const list = document.getElementById(platform+'-list');
+  const s = state[platform];
+  const items = DB[platform].filter(c=>{
+    const catOk = s.cat==='all'||c.cat===s.cat;
+    const diffOk = s.diff==='all'||c.diff===s.diff;
+    return catOk&&diffOk;
+  });
+  document.getElementById(platform+'-count').textContent = items.length+' commands';
+
+  // group by category
+  const groups = {};
+  items.forEach(c=>{
+    if(!groups[c.cat]) groups[c.cat]=[];
+    groups[c.cat].push(c);
+  });
+
+  list.innerHTML = Object.entries(groups).map(([cat,cmds])=>`
+    <div class="sec-spacer"></div>
+    <div class="sec-header">
+      <span class="sec-title">${cat}</span>
+      <span class="sec-sub">— ${cmds.length} command${cmds.length!==1?'s':''}</span>
+    </div>
+    ${cmds.map(c=>renderCard(c)).join('')}
+  `).join('');
+  updateCount(platform);
+}
+
+function renderCard(c, highlight=''){
+  const diffClass = c.diff==='beginner'?'b-d1':c.diff==='intermediate'?'b-d2':'b-d3';
+  const catClass = c.cat==='network'?'b-net':c.cat==='process'?'b-proc':c.cat==='disk'||c.cat==='file'?'b-file':c.cat==='system'||c.cat==='logs'?'b-sys':c.cat==='permission'?'b-sys':c.cat==='user'?'b-proc':c.cat==='dns'?'b-net':c.cat==='ports'||c.cat==='routing'||c.cat==='diagnostic'||c.cat==='firewall'?'b-net':'b-cat';
+  let desc = c.desc;
+  if(highlight){
+    const re = new RegExp('('+highlight.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    desc = desc.replace(re,'<mark style="background:var(--amber-soft);color:var(--amber)">$1</mark>');
+  }
+  return `<div class="cmd-card" id="card-${c.id}" onclick="toggleCard('${c.id}')">
+    <div class="cmd-head">
+      <span class="cmd-name">${c.name}</span>
+      <span class="cmd-desc-short">${desc}</span>
+      <div class="cmd-badges">
+        <span class="badge ${catClass}">${c.cat}</span>
+        <span class="badge ${diffClass}">${c.diff}</span>
+        ${c.sec?'<span class="badge b-sec">⚑ sec</span>':''}
+      </div>
+    </div>
+    <div class="cmd-body">
+      <div class="body-grid">
+        <div class="body-col">
+          <div class="body-label">Usage examples</div>
+          ${c.usage.map(u=>`
+            <div class="code-block">
+              <button class="copy-btn" onclick="event.stopPropagation();copyText('${u.cmd.replace(/'/g,"\\'")}',this)">copy</button>
+              <div class="code-line">${fmtCmd(u.cmd)}</div>
+              ${u.cmt?`<div class="code-cmt"># ${u.cmt}</div>`:''}
+            </div>
+          `).join('')}
+          ${c.secnote?`<div class="sec-note-box"><div class="sec-note-lbl">⚑ Security note</div><div class="sec-note-txt">${c.secnote}</div></div>`:''}
+        </div>
+        <div class="body-col">
+          ${c.scenarios?`<div class="body-label">When to use this</div>
+          <div style="margin-bottom:12px">${c.scenarios.map(s=>`<div class="scenario-item"><span class="scenario-bullet">▸</span><span>${s}</span></div>`).join('')}</div>`:''}
+          ${c.mistakes?`<div class="body-label">Common mistakes</div>
+          ${c.mistakes.map(m=>`<div class="mistake-item"><span class="mistake-x">✕</span><span class="mistake-fix"><span style="color:var(--red)">${m.x}</span><br><span style="color:var(--text3)">→ </span>${m.fix}</span></div>`).join('')}`:''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function fmtCmd(cmd){
+  return cmd
+    .replace(/(-{1,2}[a-zA-Z\d_-]+)/g,'<span class="code-flag">$1</span>')
+    .replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d+)?)\b/g,'<span class="code-arg">$1</span>');
+}
+
+// ============================================================
+// RENDER TROUBLESHOOT
+// ============================================================
+function renderTS(){
+  const list = document.getElementById('ts-list');
+  const s = state.ts;
+  const items = DB.troubleshoot.filter(t=>s.plat==='all'||t.plat===s.plat);
+  document.getElementById('ts-count').textContent = items.length+' scenarios';
+  list.innerHTML = items.map(t=>`
+    <div class="ts-card" id="ts-${t.id}" onclick="toggleTS('${t.id}')">
+      <div class="ts-head">
+        <span class="ts-icon">${t.severity==='critical'?'🔴':t.severity==='high'?'🟠':'🟡'}</span>
+        <span class="ts-title">${t.title}</span>
+        <span class="ts-tag">${t.plat}</span>
+        <span class="ts-tag" style="background:var(--red-soft);border-color:rgba(248,81,73,.2);color:var(--red)">${t.severity}</span>
+      </div>
+      <div class="ts-body">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${t.desc}</div>
+        ${t.steps.map(s=>`
+          <div class="ts-step">
+            <span class="ts-num">${s.n}.</span>
+            <div>
+              <div style="margin-bottom:4px">${s.text}</div>
+              <code class="ts-cmd">${s.cmd}</code>
+              <span class="ts-note">${s.note}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// TOGGLE CARDS
+// ============================================================
+function toggleCard(id){
+  const el = document.getElementById('card-'+id);
+  const wasOpen = el.classList.contains('open');
+  document.querySelectorAll('.cmd-card.open').forEach(c=>c.classList.remove('open'));
+  if(!wasOpen) el.classList.add('open');
+}
+function toggleTS(id){
+  const el = document.getElementById('ts-'+id);
+  el.classList.toggle('open');
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+let searchPlatformState = 'all';
+function globalSearch(q){
+  const hint = document.getElementById('searchHint');
+  renderSearchResults(q);
+  hint.textContent = q ? 'searching...' : 'all commands';
+}
+function setSearch(q){
+  document.getElementById('mainSearch').value = q;
+  globalSearch(q);
+}
+function setSearchPlatform(plat, btn){
+  searchPlatformState = plat;
+  btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSearchResults(document.getElementById('mainSearch').value);
+}
+function renderSearchResults(q){
+  const container = document.getElementById('searchResults');
+  const platforms = searchPlatformState==='all'?['linux','cmd','network']:([searchPlatformState]);
+  let html='', count=0;
+  const ql = q.toLowerCase();
+
+  platforms.forEach(plat=>{
+    if(!DB[plat]) return;
+    const matches = DB[plat].filter(c=>{
+      if(!q) return true;
+      return c.name.toLowerCase().includes(ql)||
+             c.desc.toLowerCase().includes(ql)||
+             (c.tags&&c.tags.toLowerCase().includes(ql))||
+             (c.scenarios&&c.scenarios.some(s=>s.toLowerCase().includes(ql)))||
+             (c.mistakes&&c.mistakes.some(m=>m.x.toLowerCase().includes(ql)||m.fix.toLowerCase().includes(ql)));
+    });
+    if(matches.length){
+      html+=`<div class="sec-header" style="margin-top:16px"><span class="sec-title">${plat}</span><span class="sec-sub">— ${matches.length} match${matches.length!==1?'es':''}</span></div>`;
+      html+=matches.map(c=>renderCard(c,ql)).join('');
+      count+=matches.length;
+    }
+  });
+
+  // Also search troubleshoot
+  if(searchPlatformState==='all'&&q){
+    const tsMatches = DB.troubleshoot.filter(t=>
+      t.title.toLowerCase().includes(ql)||
+      t.desc.toLowerCase().includes(ql)||
+      t.steps.some(s=>s.text.toLowerCase().includes(ql)||s.cmd.toLowerCase().includes(ql))
+    );
+    if(tsMatches.length){
+      html+=`<div class="sec-header" style="margin-top:16px"><span class="sec-title">troubleshoot scenarios</span><span class="sec-sub">— ${tsMatches.length} match${tsMatches.length!==1?'es':''}</span></div>`;
+      html+=tsMatches.map(t=>`
+        <div class="ts-card" id="sr-ts-${t.id}" onclick="toggleTS('sr-ts-${t.id}')">
+          <div class="ts-head">
+            <span class="ts-icon">${t.severity==='critical'?'🔴':t.severity==='high'?'🟠':'🟡'}</span>
+            <span class="ts-title">${t.title}</span>
+            <span class="ts-tag">${t.plat}</span>
+          </div>
+          <div class="ts-body">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${t.desc}</div>
+            ${t.steps.map(s=>`<div class="ts-step"><span class="ts-num">${s.n}.</span><div><div style="margin-bottom:4px">${s.text}</div><code class="ts-cmd">${s.cmd}</code><span class="ts-note">${s.note}</span></div></div>`).join('')}
+          </div>
+        </div>
+      `).join('');
+      count+=tsMatches.length;
+    }
+  }
+
+  if(!html&&q) html='<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">No results for "'+q+'" — try a different keyword or check the FAQ pills above.</div>';
+  if(!q) html='<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">Type above to search, or click a common problem above ↑</div>';
+
+  container.innerHTML = html;
+  document.getElementById('searchResultCount').textContent = q?(count+' result'+(count!==1?'s':'')):'';
+  document.getElementById('searchHint').textContent = q?(count+' found'):'all commands';
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function setFilter(platform, type, val, btn){
+  state[platform][type]=val;
+  const bar = btn.closest('.filter-bar');
+  const sameGroup = [...bar.querySelectorAll('.filter-btn')].filter(b=>{
+    const opts = type==='cat'?['all','network','process','disk','permission','system','logs','user','dns','ports','routing','diagnostic','firewall']:['all','beginner','intermediate','advanced'];
+    return opts.some(o=>b.textContent.trim().toLowerCase()===o);
+  });
+  sameGroup.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(platform==='ts') renderTS(); else renderList(platform);
+}
+function filterScenario(tag, btn){
+  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // for demo, just switch to appropriate tab
+  if(tag!=='all'){
+    const tabMap={network:'linux',disk:'linux',process:'linux',permission:'linux',user:'linux'};
+    const tab = tabMap[tag]||'linux';
+    state[tab].cat = tag==='network'?'network':tag==='disk'?'disk':tag==='process'?'process':tag==='permission'?'permission':tag==='user'?'user':'all';
+    const tabBtn = [...document.querySelectorAll('.nav-tab')].find(b=>b.textContent.toLowerCase().includes(tab));
+    if(tabBtn) switchTab(tab, tabBtn);
+    const catBtn = document.querySelector(`#tab-${tab} .filter-btn`);
+    if(catBtn){
+      const target = [...document.querySelectorAll(`#tab-${tab} .filter-btn`)].find(b=>b.textContent.toLowerCase()===tag);
+      if(target) { state[tab].cat=tag; renderList(tab); }
+    }
+  }
+}
+function filterDiff(diff, btn){
+  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function filterSpecial(type){
+  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+  if(type==='all'){
+    ['linux','cmd','network'].forEach(p=>{state[p]={cat:'all',diff:'all'}; renderList(p);});
+    state.ts={plat:'all'}; renderTS();
+  }
+}
+function updateCount(tab){
+  const el = document.getElementById('sb-entries');
+  if(['linux','cmd','network'].includes(tab)){
+    const count = document.querySelectorAll(`#${tab}-list .cmd-card`).length;
+    el.textContent = count;
+  }
+}
+
+// ============================================================
+// COPY
+// ============================================================
+function copyText(text, btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='copied!';
+    btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='copy';btn.style.color='';},1500);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
