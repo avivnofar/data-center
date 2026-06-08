@@ -1,0 +1,90 @@
+[
+  {
+    "id": "ts-ssh",
+    "title": "SSH Connection Refused or Timeout",
+    "plat": "linux",
+    "severity": "high",
+    "desc": "Cannot connect via SSH — connection refused, timeout, or permission denied.",
+    "steps": [
+      {"n": 1, "text": "Check if SSH service is running on the target", "cmd": "systemctl status sshd", "note": "Should show active (running). If not: systemctl start sshd"},
+      {"n": 2, "text": "Confirm SSH is listening on the expected port", "cmd": "ss -tlnp | grep 22", "note": "No output means SSH isn't bound to that port — check /etc/ssh/sshd_config"},
+      {"n": 3, "text": "Check firewall isn't blocking SSH", "cmd": "ufw status verbose", "note": "Port 22 or custom SSH port must be ALLOW IN"},
+      {"n": 4, "text": "Test from the target server itself", "cmd": "ssh localhost", "note": "If this works but remote doesn't, problem is network/firewall between hosts"},
+      {"n": 5, "text": "Check /var/log/auth.log for rejection reason", "cmd": "grep \"sshd\" /var/log/auth.log | tail -20", "note": "Look for \"refused connect\", \"invalid user\", \"publickey\" failures"},
+      {"n": 6, "text": "Verify the SSH port in config", "cmd": "grep Port /etc/ssh/sshd_config", "note": "Default is 22 — if changed, clients must specify: ssh -p PORT user@host"}
+    ]
+  },
+  {
+    "id": "ts-diskfull",
+    "title": "Disk Full — System or Service Fails",
+    "plat": "linux",
+    "severity": "critical",
+    "desc": "Server stops writing logs, services crash, or \"no space left on device\" errors appear.",
+    "steps": [
+      {"n": 1, "text": "Confirm which partition is full", "cmd": "df -h", "note": "Look for 100% Use% — note which mount point"},
+      {"n": 2, "text": "Check inode exhaustion too (can cause same symptoms)", "cmd": "df -i", "note": "IUse% at 100% = inode exhaustion even with free disk space"},
+      {"n": 3, "text": "Find the largest directories", "cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "note": "Identifies top-level space consumers"},
+      {"n": 4, "text": "Drill down into the biggest offender", "cmd": "du --max-depth=1 -h /var | sort -rh", "note": "Repeat at each level until you find the culprit"},
+      {"n": 5, "text": "Check for large log files", "cmd": "find /var/log -type f -size +100M -ls", "note": "Log files over 100MB are common culprits"},
+      {"n": 6, "text": "Check for deleted files still held open by processes", "cmd": "lsof | grep deleted | awk '{print $7, $1}' | sort -rn | head", "note": "A process holding a deleted file keeps the space allocated — restart that process to free it"}
+    ]
+  },
+  {
+    "id": "ts-highcpu",
+    "title": "High CPU Usage — System Slow or Unresponsive",
+    "plat": "linux",
+    "severity": "high",
+    "desc": "Server load is high, applications are slow, CPU at near 100%.",
+    "steps": [
+      {"n": 1, "text": "Identify the top CPU consumers", "cmd": "ps aux --sort=-%cpu | head -15", "note": "Top of list is your culprit — note PID and process name"},
+      {"n": 2, "text": "Get live view with thread-level detail", "cmd": "htop", "note": "Press F6 to sort by CPU, H to show threads, t for tree view"},
+      {"n": 3, "text": "Check system load average vs CPU count", "cmd": "uptime", "note": "Load > number of CPUs = overloaded. 4 CPUs with load 8.0 = severely overloaded"},
+      {"n": 4, "text": "Check if it's I/O wait (not pure CPU)", "cmd": "iostat -x 2 5", "note": "High %iowait means disk is the bottleneck, not the CPU itself"},
+      {"n": 5, "text": "Check for zombie processes (can accumulate)", "cmd": "ps aux | grep Z", "note": "Zombies don't consume CPU but indicate a parent process not cleaning up children"},
+      {"n": 6, "text": "If a process is runaway, check what it's doing", "cmd": "strace -p PID -e trace=all 2>&1 | head -30", "note": "Shows system calls — helps diagnose infinite loops or stuck operations"}
+    ]
+  },
+  {
+    "id": "ts-winnetwork",
+    "title": "Windows — No Network Connectivity",
+    "plat": "windows",
+    "severity": "high",
+    "desc": "Windows machine cannot reach the network, internet, or specific hosts.",
+    "steps": [
+      {"n": 1, "text": "Check adapter status and IP address", "cmd": "ipconfig /all", "note": "Look for 169.254.x.x (APIPA) = DHCP failed. No IP = adapter problem."},
+      {"n": 2, "text": "Flush DNS cache and renew IP", "cmd": "ipconfig /flushdns && ipconfig /release && ipconfig /renew", "note": "Fixes stale DNS and DHCP issues. Run as admin."},
+      {"n": 3, "text": "Test loopback (local TCP stack)", "cmd": "ping 127.0.0.1", "note": "If this fails, TCP/IP stack is broken — netsh int ip reset"},
+      {"n": 4, "text": "Test gateway reachability", "cmd": "ping GATEWAY_IP", "note": "Get gateway from ipconfig. If unreachable: cable, switch, or adapter issue"},
+      {"n": 5, "text": "Test external DNS", "cmd": "ping 8.8.8.8", "note": "If this works but domain names don't: DNS issue, not routing"},
+      {"n": 6, "text": "Reset TCP/IP and Winsock if all else fails", "cmd": "netsh int ip reset && netsh winsock reset", "note": "Requires reboot. Resets entire network stack to defaults."}
+    ]
+  },
+  {
+    "id": "ts-portinuse",
+    "title": "Port Already in Use — Service Won't Start",
+    "plat": "linux",
+    "severity": "medium",
+    "desc": "A service fails to start because its port is already bound by another process.",
+    "steps": [
+      {"n": 1, "text": "Find which process is using the port (Linux)", "cmd": "ss -tulnp | grep :PORT", "note": "Replace PORT with the number. Shows PID and process name."},
+      {"n": 2, "text": "Find which process is using the port (Windows)", "cmd": "netstat -ano | findstr :PORT", "note": "Note the PID in the last column, then use tasklist to identify it"},
+      {"n": 3, "text": "Identify the process name from PID", "cmd": "ps -p PID -o comm=", "note": "Get a human-readable name from the PID shown in step 1"},
+      {"n": 4, "text": "Decide: kill or reconfigure", "cmd": "kill -15 PID", "note": "If the process shouldn't be there, kill it. If it's a duplicate of your service, stop it via systemctl first."},
+      {"n": 5, "text": "Prevent recurrence — check what starts that process", "cmd": "systemctl list-units --type=service | grep running", "note": "If the process is a service that shouldn't run, disable it: systemctl disable name"}
+    ]
+  },
+  {
+    "id": "ts-winfail",
+    "title": "Windows Service Fails to Start",
+    "plat": "windows",
+    "severity": "medium",
+    "desc": "A Windows service shows Stopped or fails immediately on start — Error 1053, 1067, etc.",
+    "steps": [
+      {"n": 1, "text": "Check service configuration and exe path", "cmd": "sc qc ServiceName", "note": "Verify the BINARY_PATH_NAME exists and is correct. Wrong path = immediate failure."},
+      {"n": 2, "text": "Try starting and get the exact error", "cmd": "sc start ServiceName", "note": "Note the error code: 1053 = didn't respond, 1067 = process terminated unexpectedly"},
+      {"n": 3, "text": "Check Application Event Log for details", "cmd": "wevtutil qe Application /q:\"*[System[Level=2]]\" /f:text /c:10 /rd:true", "note": "Error details are usually here with the exact exception or missing dependency"},
+      {"n": 4, "text": "Check if the service account has correct permissions", "cmd": "sc qc ServiceName", "note": "Check LOG_ON_AS — if it's a domain account, verify password hasn't changed"},
+      {"n": 5, "text": "Check for dependency services", "cmd": "sc enumdepend ServiceName", "note": "If a dependency service is stopped, this one will fail. Start dependencies first."}
+    ]
+  }
+]

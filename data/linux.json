@@ -1,0 +1,520 @@
+[
+  {
+    "id": "netstat",
+    "name": "netstat",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Display active network connections, listening ports and routing tables.",
+    "usage": [
+      {"cmd": "netstat -tulnp", "cmt": "TCP+UDP listening sockets with PID"},
+      {"cmd": "netstat -anp | grep :443", "cmt": "filter by specific port"},
+      {"cmd": "netstat -s", "cmt": "protocol statistics summary"},
+      {"cmd": "netstat -rn", "cmt": "show kernel routing table"}
+    ],
+    "scenarios": [
+      "Service not starting — check if the port is already bound",
+      "Find which process owns port 80 or 443",
+      "Audit all listening services before a security review"
+    ],
+    "mistakes": [
+      {"x": "Using netstat without -n causes slow DNS lookups", "fix": "Always use <span>-n</span> to skip reverse DNS"},
+      {"x": "Forgetting -p hides PID info", "fix": "Run as root or with <span>sudo</span> to see all PIDs"}
+    ],
+    "secnote": "Attackers run netstat to map open ports. As defender: unknown listeners on unusual ports are red flags. Modern replacement: <b>ss -tulnp</b> (faster, more detail).",
+    "tags": "port connection socket listening tcp udp pid network"
+  },
+  {
+    "id": "ss",
+    "name": "ss",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Modern replacement for netstat. Faster, richer socket statistics directly from kernel.",
+    "usage": [
+      {"cmd": "ss -tulnp", "cmt": "all listening TCP+UDP with PIDs"},
+      {"cmd": "ss -s", "cmt": "summary of socket counts"},
+      {"cmd": "ss -tnp state established", "cmt": "only established TCP connections"},
+      {"cmd": "ss -tnp dst 10.0.0.1", "cmt": "connections to a specific host"}
+    ],
+    "scenarios": [
+      "Preferred tool for live incident response — faster than netstat",
+      "Check if a service port is bound before starting a daemon",
+      "During IR: enumerate all outbound connections quickly"
+    ],
+    "mistakes": [
+      {"x": "Using netstat when ss is available", "fix": "<span>ss</span> reads kernel structs directly, netstat is deprecated on many distros"},
+      {"x": "Not filtering output on busy servers", "fix": "Pipe through <span>grep</span> or use destination filter flags"}
+    ],
+    "secnote": "During incident response, ss is the first tool to run. Pay attention to ESTABLISHED connections to unusual IPs and LISTEN on unexpected ports.",
+    "tags": "socket statistics network port tcp udp connection kernel"
+  },
+  {
+    "id": "ping",
+    "name": "ping",
+    "cat": "network",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Test reachability and measure round-trip latency via ICMP echo requests.",
+    "usage": [
+      {"cmd": "ping -c 4 8.8.8.8", "cmt": "send exactly 4 packets"},
+      {"cmd": "ping -i 0.2 -c 20 10.0.0.1", "cmt": "fast burst — check packet loss"},
+      {"cmd": "ping -s 1400 gateway.local", "cmt": "test with larger packet size (MTU check)"}
+    ],
+    "scenarios": [
+      "First step in any network debug flow",
+      "Checking if packet loss exists before blaming the application",
+      "Testing MTU issues causing fragmentation"
+    ],
+    "mistakes": [
+      {"x": "Concluding host is down because ping fails", "fix": "Many hosts block ICMP — use <span>traceroute</span> or <span>nmap</span> to confirm"},
+      {"x": "Not specifying -c — runs forever", "fix": "Always use <span>-c N</span> in scripts"}
+    ],
+    "tags": "connectivity reachability icmp latency packet loss network"
+  },
+  {
+    "id": "traceroute",
+    "name": "traceroute",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "Trace the route packets take to a destination, showing each hop and latency.",
+    "usage": [
+      {"cmd": "traceroute 8.8.8.8", "cmt": "standard trace"},
+      {"cmd": "traceroute -n 8.8.8.8", "cmt": "numeric IPs, faster (skip DNS)"},
+      {"cmd": "traceroute -T -p 443 example.com", "cmt": "TCP trace on port 443 (bypass ICMP blocks)"}
+    ],
+    "scenarios": [
+      "Pinpointing where in the network a connection fails",
+      "Identifying a slow hop causing latency spikes",
+      "Testing if a specific port is reachable through firewalls"
+    ],
+    "mistakes": [
+      {"x": "Giving up at * * * hops", "fix": "Some routers drop ICMP; try <span>-T</span> (TCP) or <span>mtr</span> for continuous trace"},
+      {"x": "Not using -n on slow networks", "fix": "DNS lookups on each hop cause major slowdown"}
+    ],
+    "tags": "routing hops latency path network trace hop"
+  },
+  {
+    "id": "curl",
+    "name": "curl",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Transfer data from URLs. Essential for testing HTTP endpoints, APIs, and connectivity.",
+    "usage": [
+      {"cmd": "curl -v https://example.com", "cmt": "verbose — shows full TLS handshake and headers"},
+      {"cmd": "curl -I https://example.com", "cmt": "HEAD request — headers only, no body"},
+      {"cmd": "curl -o /dev/null -w \"%{http_code} %{time_total}s\" https://api.local", "cmt": "check status code and response time"},
+      {"cmd": "curl -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"val\"}' https://api.local/endpoint", "cmt": "POST JSON"}
+    ],
+    "scenarios": [
+      "Testing if an API endpoint is reachable from a server",
+      "Checking TLS certificate validity and chain",
+      "Debugging slow response times on a web service"
+    ],
+    "mistakes": [
+      {"x": "Using curl without -L misses redirects", "fix": "Add <span>-L</span> to follow HTTP 301/302 redirects"},
+      {"x": "Ignoring TLS errors with -k in production", "fix": "<span>-k</span> is for debugging only — never skip cert validation in scripts"}
+    ],
+    "secnote": "curl can exfiltrate data or download malware. If you see unexpected curl processes, inspect the command line immediately with ps aux.",
+    "tags": "http https api endpoint url request response header status code"
+  },
+  {
+    "id": "ps",
+    "name": "ps",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Snapshot of currently running processes. Outputs to stdout — ideal for scripting and piping.",
+    "usage": [
+      {"cmd": "ps aux", "cmt": "all processes, BSD-style — shows USER PID %CPU %MEM"},
+      {"cmd": "ps aux | grep nginx", "cmt": "find specific process"},
+      {"cmd": "ps aux --sort=-%cpu | head -10", "cmt": "top 10 CPU consumers"},
+      {"cmd": "ps aux --sort=-%mem | head -10", "cmt": "top 10 memory consumers"},
+      {"cmd": "ps -ef | grep defunct", "cmt": "find zombie processes"}
+    ],
+    "scenarios": [
+      "Finding which process is consuming all CPU before killing it",
+      "Identifying zombie processes left by a crashed parent",
+      "Scripting process health checks"
+    ],
+    "mistakes": [
+      {"x": "Using ps alone without flags — shows only current user", "fix": "Use <span>ps aux</span> to see all processes from all users"},
+      {"x": "Grepping for process name catches the grep itself", "fix": "Use <span>grep [n]ginx</span> or <span>pgrep nginx</span> instead"}
+    ],
+    "tags": "process pid cpu memory running status list snapshot"
+  },
+  {
+    "id": "top",
+    "name": "top / htop",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Real-time interactive process monitor. htop is the color-coded, mouse-friendly version.",
+    "usage": [
+      {"cmd": "htop -u www-data", "cmt": "filter to one user's processes"},
+      {"cmd": "htop -p 1234,5678", "cmt": "monitor specific PIDs only"},
+      {"cmd": "top -b -n 1 | head -25", "cmt": "non-interactive snapshot — good for scripts/cron"}
+    ],
+    "scenarios": [
+      "Investigating a server slowdown in real time",
+      "Monitoring a specific service during load testing",
+      "Capturing a one-time snapshot for a report"
+    ],
+    "mistakes": [
+      {"x": "Killing processes from top/htop without checking dependencies", "fix": "Check <span>ps --ppid PID</span> first to see child processes"},
+      {"x": "Trusting a single CPU% reading — it fluctuates", "fix": "Watch for 10+ seconds before concluding high CPU"}
+    ],
+    "tags": "cpu memory load monitor processes real-time interactive"
+  },
+  {
+    "id": "kill",
+    "name": "kill / killall",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": true,
+    "desc": "Send signals to processes. kill uses PID, killall uses process name.",
+    "usage": [
+      {"cmd": "kill -15 PID", "cmt": "SIGTERM — graceful shutdown (preferred)"},
+      {"cmd": "kill -9 PID", "cmt": "SIGKILL — force kill, no cleanup"},
+      {"cmd": "killall -HUP nginx", "cmt": "reload nginx config without restart"},
+      {"cmd": "pkill -f \"python script.py\"", "cmt": "kill by full command string match"}
+    ],
+    "scenarios": [
+      "Gracefully restarting a hung service",
+      "Force-killing a process that ignores SIGTERM",
+      "Reloading a service config without full restart"
+    ],
+    "mistakes": [
+      {"x": "Jumping straight to -9 (SIGKILL)", "fix": "Always try <span>-15</span> (SIGTERM) first — gives process time to clean up and close files properly"},
+      {"x": "killall matching too broadly", "fix": "Test with <span>pgrep -l processname</span> first to preview which processes match"}
+    ],
+    "secnote": "Malware may respawn after kill if it has a watchdog process. Verify with ps after killing. If it respawns, find and kill the parent first.",
+    "tags": "kill signal process stop terminate restart sigterm sigkill"
+  },
+  {
+    "id": "df",
+    "name": "df",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Report disk space usage of filesystems. First stop for \"disk full\" investigation.",
+    "usage": [
+      {"cmd": "df -h", "cmt": "human-readable sizes (GB/MB)"},
+      {"cmd": "df -h /var/log", "cmt": "check specific path's partition"},
+      {"cmd": "df -i", "cmt": "check inode usage — can be full even if disk space available"},
+      {"cmd": "df -h --output=source,size,used,avail,pcent,target", "cmt": "custom column output"}
+    ],
+    "scenarios": [
+      "Server stopped writing logs — check if /var or /var/log partition is full",
+      "Database crashes — often caused by 100% disk on data partition",
+      "CI/CD pipeline failing — tmp or build partition exhausted"
+    ],
+    "mistakes": [
+      {"x": "Only checking disk % and missing full inodes", "fix": "Run <span>df -i</span> too — inode exhaustion causes \"no space\" even with free disk"},
+      {"x": "Checking the wrong partition", "fix": "Always check the specific path: <span>df -h /var/log</span>, not just <span>df -h</span>"}
+    ],
+    "tags": "disk space storage filesystem full partition usage inode"
+  },
+  {
+    "id": "du",
+    "name": "du",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Estimate file and directory space usage. Find what is consuming the disk.",
+    "usage": [
+      {"cmd": "du -sh /var/log/*", "cmt": "size of each item in /var/log"},
+      {"cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "cmt": "top 10 largest directories from root"},
+      {"cmd": "du -ah /home/user | sort -rh | head -20", "cmt": "largest files in a directory"},
+      {"cmd": "du --max-depth=1 -h /var", "cmt": "one level deep summary"}
+    ],
+    "scenarios": [
+      "Finding which directory consumed the suddenly full disk",
+      "Identifying log bloat or core dump accumulation",
+      "Pre-migration disk audit"
+    ],
+    "mistakes": [
+      {"x": "Running du / without 2>/dev/null — floods output with permission errors", "fix": "Always append <span>2>/dev/null</span> to suppress permission denied messages"},
+      {"x": "Forgetting sort -h for human sizes", "fix": "<span>sort -rh</span> correctly sorts 1G above 500M; plain <span>sort -r</span> does not"}
+    ],
+    "tags": "disk usage space files directory size find large storage"
+  },
+  {
+    "id": "chmod",
+    "name": "chmod",
+    "cat": "permission",
+    "diff": "beginner",
+    "sec": true,
+    "desc": "Change file and directory permissions. Controls read, write, execute access.",
+    "usage": [
+      {"cmd": "chmod 644 file.conf", "cmt": "rw-r--r-- : owner rw, group r, others r"},
+      {"cmd": "chmod 755 script.sh", "cmt": "rwxr-xr-x : owner rwx, others rx (standard for executables)"},
+      {"cmd": "chmod -R 750 /var/app", "cmt": "recursive: owner rwx, group rx, others none"},
+      {"cmd": "chmod u+x,g-w file", "cmt": "symbolic: add exec for user, remove write for group"}
+    ],
+    "scenarios": [
+      "Script won't execute — needs +x permission",
+      "Web server can't read config — wrong group permissions",
+      "Securing sensitive files to owner-only access"
+    ],
+    "mistakes": [
+      {"x": "Using chmod 777 as a quick fix", "fix": "777 gives everyone full access — use <span>755</span> for directories, <span>644</span> for files, diagnose the real issue"},
+      {"x": "Forgetting -R applies recursively including files", "fix": "Directories need execute to be entered; files generally should not have execute unless intentional"}
+    ],
+    "secnote": "chmod 777 is a critical security misconfiguration. If you see world-writable sensitive files, treat it as a finding. Check who modified it: stat file and check mtime.",
+    "tags": "permission file access read write execute mode octal"
+  },
+  {
+    "id": "chown",
+    "name": "chown",
+    "cat": "permission",
+    "diff": "beginner",
+    "sec": true,
+    "desc": "Change file ownership — user and group.",
+    "usage": [
+      {"cmd": "chown www-data:www-data /var/www/html", "cmt": "set owner and group"},
+      {"cmd": "chown -R deploy:deploy /opt/app", "cmt": "recursive ownership change"},
+      {"cmd": "chown root:root /etc/cron.d/job", "cmt": "cron files should be owned by root"}
+    ],
+    "scenarios": [
+      "Web server 403 errors because files are owned by wrong user",
+      "Deployment script creates files owned by root instead of service user",
+      "After restore from backup, ownership is wrong"
+    ],
+    "mistakes": [
+      {"x": "Chowning /etc or /usr recursively to fix one broken file", "fix": "Always be specific — <span>chown -R</span> on system directories is destructive"},
+      {"x": "Forgetting the group in chown user file", "fix": "Use <span>chown user:group</span> to explicitly set both"}
+    ],
+    "secnote": "SUID/SGID bits combined with wrong ownership can be privilege escalation vectors. Check with: find / -perm /4000 -user root",
+    "tags": "ownership user group file permission chown root"
+  },
+  {
+    "id": "journalctl",
+    "name": "journalctl",
+    "cat": "logs",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "Query and display the systemd journal. The primary log tool on modern Linux.",
+    "usage": [
+      {"cmd": "journalctl -u nginx --since today", "cmt": "logs for nginx since midnight"},
+      {"cmd": "journalctl -u nginx -f", "cmt": "follow mode — live tail"},
+      {"cmd": "journalctl -p err -n 50", "cmt": "last 50 error-level entries across all services"},
+      {"cmd": "journalctl --since \"2024-01-15 14:00:00\" --until \"2024-01-15 15:00:00\"", "cmt": "specific time window"},
+      {"cmd": "journalctl -k --since -1h", "cmt": "kernel messages from the past hour"}
+    ],
+    "scenarios": [
+      "Service crashed — check exact error before last exit",
+      "Investigating a specific time window after an incident",
+      "Monitoring a service in real time during testing"
+    ],
+    "mistakes": [
+      {"x": "journalctl -u service without --since dumps everything", "fix": "Always scope with <span>--since today</span> or <span>--since -1h</span> to keep output manageable"},
+      {"x": "Missing -f for live watching", "fix": "Use <span>journalctl -u service -f</span> to tail — much cleaner than watching the whole system log"}
+    ],
+    "tags": "log journal systemd service error debug monitoring tail"
+  },
+  {
+    "id": "grep",
+    "name": "grep",
+    "cat": "logs",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Search text using patterns. Fundamental for filtering logs and files.",
+    "usage": [
+      {"cmd": "grep -i \"error\" /var/log/syslog", "cmt": "-i = case insensitive"},
+      {"cmd": "grep -r \"failed password\" /var/log/", "cmt": "-r = recursive through directory"},
+      {"cmd": "grep -n \"segfault\" /var/log/kern.log", "cmt": "-n = show line numbers"},
+      {"cmd": "grep -v \"DEBUG\" app.log | grep \"ERROR\"", "cmt": "exclude DEBUG then find ERROR"},
+      {"cmd": "grep -A 3 -B 3 \"CRITICAL\" app.log", "cmt": "show 3 lines before and after each match"}
+    ],
+    "scenarios": [
+      "Finding failed SSH attempts in auth log",
+      "Searching application logs for a specific error across a date range",
+      "Identifying which config file contains a specific setting"
+    ],
+    "mistakes": [
+      {"x": "Not using -i for log searches", "fix": "Log levels are often mixed case — <span>-i</span> catches ERROR, Error, error"},
+      {"x": "Grepping huge logs without restricting time range first", "fix": "Pre-filter with <span>awk</span> or <span>sed</span> for the time window before grepping"}
+    ],
+    "tags": "search text pattern log file filter find string"
+  },
+  {
+    "id": "systemctl",
+    "name": "systemctl",
+    "cat": "system",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Control the systemd system and service manager. Start, stop, enable, inspect services.",
+    "usage": [
+      {"cmd": "systemctl status nginx", "cmt": "detailed status + last log lines"},
+      {"cmd": "systemctl restart nginx", "cmt": "restart a service"},
+      {"cmd": "systemctl enable --now nginx", "cmt": "enable at boot AND start immediately"},
+      {"cmd": "systemctl list-units --failed", "cmt": "show all failed units"},
+      {"cmd": "systemctl daemon-reload", "cmt": "required after editing service unit files"}
+    ],
+    "scenarios": [
+      "Service not running after reboot — check if it's enabled",
+      "Service started but immediately crashes — check status for exit code",
+      "After editing /etc/systemd/system/*.service — reload before restart"
+    ],
+    "mistakes": [
+      {"x": "Restarting without daemon-reload after editing unit files", "fix": "Always run <span>systemctl daemon-reload</span> after modifying .service files"},
+      {"x": "Confusing start (now) with enable (at boot)", "fix": "Use <span>enable --now</span> to do both at once — common to miss one or the other"}
+    ],
+    "tags": "service start stop restart enable disable systemd unit boot"
+  },
+  {
+    "id": "cron",
+    "name": "crontab",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Schedule recurring tasks. crontab -e edits user crons, /etc/cron.d/ for system-wide.",
+    "usage": [
+      {"cmd": "crontab -l", "cmt": "list current user's cron jobs"},
+      {"cmd": "crontab -e", "cmt": "edit current user's crontab"},
+      {"cmd": "crontab -u www-data -l", "cmt": "view another user's crontab (root only)"},
+      {"cmd": "ls -la /etc/cron.d/ /etc/cron.daily/ /etc/crontab", "cmt": "check all system cron locations"}
+    ],
+    "scenarios": [
+      "Scheduled backup never ran — check cron syntax and log",
+      "Investigating scheduled tasks after suspicious activity",
+      "Setting up automated log rotation or cleanup"
+    ],
+    "mistakes": [
+      {"x": "Forgetting % in cron date strings must be escaped as \\%", "fix": "In crontab, literal <span>%</span> is a newline — always escape: <span>\\%</span>"},
+      {"x": "New cron job not running — missing newline at end of file", "fix": "crontab files must end with a newline; some editors don't add one automatically"}
+    ],
+    "secnote": "Cron is a common persistence mechanism for malware. During IR, check ALL cron locations: /var/spool/cron/, /etc/cron.d/, /etc/crontab, /etc/cron.hourly daily weekly monthly.",
+    "tags": "schedule task cron job timer recurring automation"
+  },
+  {
+    "id": "useradd",
+    "name": "useradd / usermod",
+    "cat": "user",
+    "diff": "beginner",
+    "sec": true,
+    "desc": "Create and modify user accounts on the system.",
+    "usage": [
+      {"cmd": "useradd -m -s /bin/bash -G sudo username", "cmt": "-m creates home, -G adds to sudo group"},
+      {"cmd": "usermod -aG docker username", "cmt": "add existing user to group without removing others"},
+      {"cmd": "usermod -L username", "cmt": "lock account (disable login)"},
+      {"cmd": "passwd -e username", "cmt": "expire password — force change at next login"},
+      {"cmd": "userdel -r username", "cmt": "delete user AND home directory"}
+    ],
+    "scenarios": [
+      "Onboarding a new sysadmin — create account with correct groups",
+      "User locked out — check if account is locked with passwd -S",
+      "Post-incident — immediately lock a compromised account"
+    ],
+    "mistakes": [
+      {"x": "usermod -G group removes all OTHER groups", "fix": "Always use <span>-aG</span> (append) not <span>-G</span> alone when adding to a group"},
+      {"x": "Deleting users without -r leaves orphaned home directories", "fix": "Use <span>userdel -r</span> or manually clean /home/username after"}
+    ],
+    "secnote": "After any suspected compromise, immediately: usermod -L username. Then audit what they accessed with: last username and ausearch -ua UID.",
+    "tags": "user account create modify group sudo password lock delete"
+  },
+  {
+    "id": "last",
+    "name": "last / lastb",
+    "cat": "user",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Show last logged-in users. lastb shows failed login attempts.",
+    "usage": [
+      {"cmd": "last -n 20", "cmt": "last 20 successful logins"},
+      {"cmd": "lastb -n 20", "cmt": "last 20 FAILED login attempts (requires root)"},
+      {"cmd": "last -F username", "cmt": "full timestamps for a specific user"},
+      {"cmd": "who", "cmt": "who is currently logged in right now"}
+    ],
+    "scenarios": [
+      "Investigating unauthorized access — check login history",
+      "Checking if a user was logged in during an incident window",
+      "Auditing root login activity"
+    ],
+    "mistakes": [
+      {"x": "Trusting last alone — logs can be tampered with", "fix": "Cross-reference with <span>journalctl</span> auth logs and <span>/var/log/secure</span> or <span>/var/log/auth.log</span>"},
+      {"x": "Not checking lastb for brute force", "fix": "Run <span>lastb | head -30</span> regularly — high failure counts indicate active brute force"}
+    ],
+    "secnote": "lastb is critical for detecting brute force. Hundreds of failures from one IP = active attack. Block with: ufw deny from IP or add to /etc/hosts.deny.",
+    "tags": "login user history authentication last failed brute force"
+  },
+  {
+    "id": "find",
+    "name": "find",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Search for files by name, type, date, permissions, ownership, and size.",
+    "usage": [
+      {"cmd": "find /var/log -name \"*.log\" -mtime +30 -delete", "cmt": "delete logs older than 30 days"},
+      {"cmd": "find / -perm /4000 -user root 2>/dev/null", "cmt": "find SUID root files — privilege escalation audit"},
+      {"cmd": "find /home -type f -name \"*.sh\" -newer /etc/passwd", "cmt": "scripts modified after passwd — suspicious"},
+      {"cmd": "find /tmp /var/tmp -type f -newer /proc/1 2>/dev/null", "cmt": "files created since boot in temp dirs"}
+    ],
+    "scenarios": [
+      "Disk filling up from old log files — find and purge safely",
+      "Security audit — find unexpected SUID binaries",
+      "IR — find files created or modified in a suspect time window"
+    ],
+    "mistakes": [
+      {"x": "find / without 2>/dev/null floods with permission errors", "fix": "Always add <span>2>/dev/null</span> to suppress permission denied noise"},
+      {"x": "Using -delete on find results without testing first", "fix": "Run without <span>-delete</span> first to preview; add <span>-delete</span> only when result looks correct"}
+    ],
+    "secnote": "SUID files are prime privilege escalation vectors. Any unexpected SUID binary (not in standard distro package) is a critical finding. Baseline with: dpkg -S /path/to/binary.",
+    "tags": "find search file directory permission suid mtime size type locate"
+  },
+  {
+    "id": "iptables",
+    "name": "iptables / ufw",
+    "cat": "network",
+    "diff": "advanced",
+    "sec": true,
+    "desc": "Manage kernel netfilter firewall rules. ufw is the simplified frontend.",
+    "usage": [
+      {"cmd": "ufw status verbose", "cmt": "current ufw rules and status"},
+      {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH"},
+      {"cmd": "ufw deny from 192.168.1.100", "cmt": "block specific IP"},
+      {"cmd": "iptables -L -n -v", "cmt": "list all iptables rules with packet counts"},
+      {"cmd": "iptables -I INPUT 1 -s 10.10.10.10 -j DROP", "cmt": "immediately block an IP (insert at top)"}
+    ],
+    "scenarios": [
+      "Blocking an IP conducting a brute force attack",
+      "Opening a port for a new service without disabling the firewall",
+      "Auditing current firewall rules after an incident"
+    ],
+    "mistakes": [
+      {"x": "iptables -F flushes ALL rules — can lock you out of SSH", "fix": "Before flushing, add an ACCEPT rule for your IP or port 22, or use <span>ufw</span> which is safer"},
+      {"x": "ufw changes not persistent if ufw is disabled", "fix": "Always check <span>ufw status</span> is active; run <span>ufw enable</span> to persist rules"}
+    ],
+    "secnote": "In an active incident, the fastest block is: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. This takes effect immediately without restarting anything.",
+    "tags": "firewall rule block allow port ip iptables ufw network security"
+  },
+  {
+    "id": "tcpdump",
+    "name": "tcpdump",
+    "cat": "network",
+    "diff": "advanced",
+    "sec": true,
+    "desc": "Capture and analyze network packets at the interface level.",
+    "usage": [
+      {"cmd": "tcpdump -i eth0 -n port 80", "cmt": "capture HTTP on eth0, no DNS resolution"},
+      {"cmd": "tcpdump -i any -n \"host 10.0.0.50\"", "cmt": "all interfaces, traffic to/from specific host"},
+      {"cmd": "tcpdump -i eth0 -w capture.pcap", "cmt": "write to file for Wireshark analysis"},
+      {"cmd": "tcpdump -i eth0 -n \"tcp[tcpflags] & tcp-syn != 0\"", "cmt": "capture SYN packets only — detect scan"}
+    ],
+    "scenarios": [
+      "Debugging an application that claims it's sending packets but server isn't receiving",
+      "Capturing traffic for Wireshark analysis during a network issue",
+      "Detecting a port scan or suspicious connection attempts in real time"
+    ],
+    "mistakes": [
+      {"x": "Running tcpdump without -n causes DNS lookups per packet — very slow", "fix": "Always use <span>-n</span> to disable reverse DNS resolution"},
+      {"x": "Capturing on the wrong interface", "fix": "Use <span>tcpdump -D</span> to list all interfaces; use <span>-i any</span> to capture all"}
+    ],
+    "secnote": "tcpdump can capture credentials in plaintext on unencrypted protocols (FTP, Telnet, HTTP). This is exactly what attackers on your network do. Use it defensively — and ensure your network uses TLS.",
+    "tags": "packet capture network traffic analysis pcap wireshark tcp udp interface"
+  }
+]

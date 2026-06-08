@@ -1,0 +1,203 @@
+[
+  {
+    "id": "nmap",
+    "name": "nmap",
+    "cat": "ports",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Network scanner — discover hosts, open ports, services, and OS versions. The Swiss Army knife of network recon.",
+    "usage": [
+      {"cmd": "nmap -sn 192.168.1.0/24", "cmt": "ping sweep — discover live hosts, no port scan"},
+      {"cmd": "nmap -sV -p 22,80,443 10.0.0.10", "cmt": "version detection on specific ports"},
+      {"cmd": "nmap -A -T4 10.0.0.10", "cmt": "aggressive scan: OS, version, scripts, traceroute"},
+      {"cmd": "nmap -p- --open 10.0.0.10", "cmt": "all 65535 ports, show only open ones"},
+      {"cmd": "nmap -sU -p 53,161 10.0.0.10", "cmt": "UDP scan for DNS and SNMP"}
+    ],
+    "scenarios": [
+      "Auditing which ports are exposed on a server before going to production",
+      "Discovering all devices on a network segment",
+      "Verifying a firewall rule change actually blocked the intended port"
+    ],
+    "mistakes": [
+      {"x": "Running nmap -A on production without permission — intrusive", "fix": "Use <span>-sn</span> (ping sweep) or <span>-sV</span> (version) for less intrusive scans; full -A generates significant traffic and logs"},
+      {"x": "Not saving output", "fix": "Use <span>-oA filename</span> to save in all formats (normal, XML, grepable) simultaneously"}
+    ],
+    "secnote": "nmap is dual-use. Defenders use it for asset inventory and vulnerability assessment. Attackers use it for recon. Unauthorized nmap scanning is illegal in many jurisdictions. Always have written permission.",
+    "tags": "nmap scan port host network discover recon audit security"
+  },
+  {
+    "id": "dig",
+    "name": "dig",
+    "cat": "dns",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "DNS lookup and diagnostics. More powerful than nslookup with cleaner output.",
+    "usage": [
+      {"cmd": "dig example.com", "cmt": "standard A record lookup"},
+      {"cmd": "dig example.com MX", "cmt": "mail server records"},
+      {"cmd": "dig example.com ANY", "cmt": "all record types"},
+      {"cmd": "dig @8.8.8.8 example.com", "cmt": "query a specific DNS server"},
+      {"cmd": "dig +trace example.com", "cmt": "trace full delegation path from root servers"},
+      {"cmd": "dig -x 8.8.8.8", "cmt": "reverse DNS lookup (PTR record)"}
+    ],
+    "scenarios": [
+      "DNS change not propagating — query multiple resolvers to check",
+      "Email delivery issues — check MX records and SPF/DKIM",
+      "Investigating DNS hijacking — compare results from different resolvers"
+    ],
+    "mistakes": [
+      {"x": "Using nslookup instead of dig", "fix": "<span>dig</span> gives TTL, authoritative flags, full section breakdown. nslookup is legacy and inconsistent"},
+      {"x": "Not using +trace to diagnose delegation issues", "fix": "<span>dig +trace</span> walks the full delegation chain and shows exactly where the problem is in DNS hierarchy"}
+    ],
+    "tags": "dns lookup record query mx a ptr cname ttl nameserver"
+  },
+  {
+    "id": "nslookup",
+    "name": "nslookup",
+    "cat": "dns",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Query DNS servers interactively or non-interactively. Available on both Linux and Windows.",
+    "usage": [
+      {"cmd": "nslookup example.com", "cmt": "default lookup"},
+      {"cmd": "nslookup example.com 8.8.8.8", "cmt": "query specific DNS server"},
+      {"cmd": "nslookup -type=MX example.com", "cmt": "MX records on Windows"},
+      {"cmd": "nslookup -type=TXT example.com 8.8.8.8", "cmt": "TXT records — SPF, DKIM, verification"}
+    ],
+    "scenarios": [
+      "Quick DNS check on Windows where dig is not installed",
+      "Checking if SPF records are published correctly for email",
+      "Verifying a newly deployed domain is resolving"
+    ],
+    "mistakes": [
+      {"x": "nslookup uses system resolver by default — may return cached results", "fix": "Always specify a server: <span>nslookup example.com 8.8.8.8</span> to bypass local cache"},
+      {"x": "Not specifying record type gets only A record", "fix": "Use <span>-type=MX</span>, <span>-type=TXT</span> etc. for other record types"}
+    ],
+    "tags": "nslookup dns windows linux lookup query name resolution"
+  },
+  {
+    "id": "wireshark-cli",
+    "name": "tshark (Wireshark CLI)",
+    "cat": "diagnostic",
+    "diff": "advanced",
+    "sec": true,
+    "desc": "Command-line version of Wireshark. Capture and analyze packets without a GUI.",
+    "usage": [
+      {"cmd": "tshark -i eth0 -c 100", "cmt": "capture 100 packets on eth0"},
+      {"cmd": "tshark -i eth0 -Y \"http.request\" -T fields -e http.host -e http.request.uri", "cmt": "extract HTTP request URLs live"},
+      {"cmd": "tshark -r capture.pcap -Y \"tcp.port == 443\" -w filtered.pcap", "cmt": "filter an existing pcap file"},
+      {"cmd": "tshark -i eth0 -Y \"dns\" -T fields -e dns.qry.name", "cmt": "live DNS query monitoring"}
+    ],
+    "scenarios": [
+      "Headless server — capture packets without GUI",
+      "Automated packet capture in scripts",
+      "Filtering a large pcap for specific protocol or IP before opening in Wireshark"
+    ],
+    "mistakes": [
+      {"x": "Not specifying -c or a time limit — runs until disk is full", "fix": "Always use <span>-c COUNT</span> or <span>-a duration:SECONDS</span> to limit capture size"},
+      {"x": "Capturing without saving — lose the data", "fix": "Add <span>-w output.pcap</span> for any serious capture that will need later analysis"}
+    ],
+    "secnote": "tshark can extract plaintext credentials from unencrypted protocols. This is a critical tool for both network forensics and for understanding why your protocols MUST use TLS.",
+    "tags": "tshark wireshark packet capture network analysis pcap protocol"
+  },
+  {
+    "id": "arp",
+    "name": "arp",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "View and manipulate the ARP cache — maps IP addresses to MAC addresses.",
+    "usage": [
+      {"cmd": "arp -a", "cmt": "display full ARP table (works on Linux and Windows)"},
+      {"cmd": "arp -d 192.168.1.1", "cmt": "delete a specific ARP entry (force refresh)"},
+      {"cmd": "arp -s 192.168.1.1 aa:bb:cc:dd:ee:ff", "cmt": "add static ARP entry (Linux)"},
+      {"cmd": "ip neigh show", "cmt": "modern Linux equivalent with more detail"}
+    ],
+    "scenarios": [
+      "Two devices claiming same IP — check ARP table for duplicate MACs",
+      "After router replacement — ARP cache pointing to old MAC",
+      "Investigating ARP spoofing/poisoning attack"
+    ],
+    "mistakes": [
+      {"x": "ARP cache entries expire — a clean table may just mean no recent traffic", "fix": "Ping the target first to populate the cache, then run <span>arp -a</span>"},
+      {"x": "arp -d doesn't prevent re-poisoning", "fix": "For ARP spoofing defense, use static entries <span>arp -s</span> for critical hosts (gateway, DNS)"}
+    ],
+    "secnote": "ARP spoofing (poisoning) is a classic MitM attack. If two different MACs claim the same IP in your ARP table — especially the gateway IP — you may have an active ARP attack. Check with: arp -a | grep GATEWAY_IP.",
+    "tags": "arp mac address ip table cache spoofing mitm network layer2"
+  },
+  {
+    "id": "route",
+    "name": "route / ip route",
+    "cat": "routing",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "View and manage the IP routing table. Determine where packets will be sent.",
+    "usage": [
+      {"cmd": "ip route show", "cmt": "modern Linux routing table"},
+      {"cmd": "ip route add 10.20.0.0/16 via 192.168.1.254", "cmt": "add a static route"},
+      {"cmd": "ip route del 10.20.0.0/16", "cmt": "remove a route"},
+      {"cmd": "route print", "cmt": "Windows routing table"},
+      {"cmd": "ip route get 8.8.8.8", "cmt": "show which interface and gateway would be used for a specific destination"}
+    ],
+    "scenarios": [
+      "After VPN connects but traffic still goes direct — routing table wrong",
+      "Server can reach local network but not internet — missing default route",
+      "Split-tunnel VPN not routing corporate subnets correctly"
+    ],
+    "mistakes": [
+      {"x": "route add on Linux (old command) changes not persistent across reboots", "fix": "For persistent routes, add to <span>/etc/network/interfaces</span> or use <span>nmcli</span>"},
+      {"x": "Conflicting routes — wrong gateway used", "fix": "Use <span>ip route get DESTINATION</span> to verify which route is actually selected"}
+    ],
+    "tags": "routing table route ip gateway default network path forwarding"
+  },
+  {
+    "id": "iperf",
+    "name": "iperf3",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "Measure network bandwidth between two hosts. Requires iperf3 on both ends.",
+    "usage": [
+      {"cmd": "iperf3 -s", "cmt": "start iperf3 in server mode (on the target machine)"},
+      {"cmd": "iperf3 -c 10.0.0.5", "cmt": "run bandwidth test to server (client side)"},
+      {"cmd": "iperf3 -c 10.0.0.5 -u -b 100M", "cmt": "UDP test at 100 Mbps"},
+      {"cmd": "iperf3 -c 10.0.0.5 -t 30 -P 4", "cmt": "30s test with 4 parallel streams"}
+    ],
+    "scenarios": [
+      "Network feels slow — measure actual throughput vs expected bandwidth",
+      "After cabling or switch change — verify full speed is achievable",
+      "Testing Wi-Fi vs wired performance difference"
+    ],
+    "mistakes": [
+      {"x": "Running iperf3 test over production traffic path during business hours", "fix": "Schedule bandwidth tests during maintenance windows — a 30s iperf3 test saturates the link"},
+      {"x": "Single-stream test not representative of real-world throughput", "fix": "Use <span>-P 4</span> for parallel streams to better simulate actual multi-connection workloads"}
+    ],
+    "tags": "bandwidth speed throughput network test iperf performance measurement"
+  },
+  {
+    "id": "ufw-cmd",
+    "name": "ufw (firewall)",
+    "cat": "firewall",
+    "diff": "beginner",
+    "sec": true,
+    "desc": "Uncomplicated Firewall — simplified iptables management for Ubuntu/Debian systems.",
+    "usage": [
+      {"cmd": "ufw status verbose", "cmt": "show current rules and policy"},
+      {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH before enabling (critical order)"},
+      {"cmd": "ufw deny from 203.0.113.5", "cmt": "block specific IP all ports"},
+      {"cmd": "ufw allow from 10.0.0.0/8 to any port 3306", "cmt": "allow MySQL from internal network only"},
+      {"cmd": "ufw enable", "cmt": "activate firewall (ensure SSH is allowed first!)"}
+    ],
+    "scenarios": [
+      "New server setup — enable firewall with minimum exposure",
+      "Block an IP after detecting brute force",
+      "Open a port for a new application only from specific network"
+    ],
+    "mistakes": [
+      {"x": "ufw enable before allowing SSH — locks you out", "fix": "ALWAYS run <span>ufw allow 22/tcp</span> BEFORE <span>ufw enable</span>"},
+      {"x": "ufw deny blocks new connections but doesn't kill existing ones", "fix": "To immediately drop active connections from a host, use <span>iptables -I INPUT 1 -s IP -j DROP</span>"}
+    ],
+    "secnote": "Proper rule order matters: ufw processes rules top-to-bottom, first match wins. Use ufw insert NUMBER for priority. A deny-all default with explicit allows is better than allow-all with explicit denies.",
+    "tags": "ufw firewall rules allow deny block port ip ubuntu linux"
+  }
+]

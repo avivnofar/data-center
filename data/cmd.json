@@ -1,0 +1,275 @@
+[
+  {
+    "id": "ipconfig",
+    "name": "ipconfig",
+    "cat": "network",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Display and manage Windows IP configuration for all network adapters.",
+    "usage": [
+      {"cmd": "ipconfig /all", "cmt": "full details: MAC, DHCP server, lease times, DNS"},
+      {"cmd": "ipconfig /release && ipconfig /renew", "cmt": "release then renew DHCP lease"},
+      {"cmd": "ipconfig /flushdns", "cmt": "flush DNS resolver cache — fix stale DNS"},
+      {"cmd": "ipconfig /displaydns", "cmt": "show current DNS cache entries"}
+    ],
+    "scenarios": [
+      "Machine can't reach the internet — check if IP is APIPA (169.254.x.x) which means DHCP failed",
+      "DNS caching old IP after a server migration",
+      "Gathering network info for a support ticket"
+    ],
+    "mistakes": [
+      {"x": "Running ipconfig without /all misses critical details", "fix": "Always use <span>/all</span> — shows MAC, DHCP status, DNS servers, and lease info"},
+      {"x": "Forgetting to flush DNS after changing hosts file", "fix": "<span>ipconfig /flushdns</span> must be run after editing hosts or after DNS changes"}
+    ],
+    "tags": "ip address network adapter dns dhcp lease windows configuration"
+  },
+  {
+    "id": "netstat-w",
+    "name": "netstat (Windows)",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Display active TCP connections, listening ports, and Ethernet statistics on Windows.",
+    "usage": [
+      {"cmd": "netstat -ano", "cmt": "all connections with PID, no DNS resolution"},
+      {"cmd": "netstat -ano | findstr :443", "cmt": "filter by port 443"},
+      {"cmd": "netstat -ano | findstr LISTENING", "cmt": "only listening ports"},
+      {"cmd": "tasklist | findstr PID", "cmt": "correlate PID from netstat to process name"}
+    ],
+    "scenarios": [
+      "Application won't start — port already in use",
+      "Find which process is using a specific port",
+      "Detecting unexpected outbound connections during IR"
+    ],
+    "mistakes": [
+      {"x": "netstat without -o hides PIDs", "fix": "Use <span>-ano</span> always — PID column is essential for identifying the owning process"},
+      {"x": "Not correlating PID to process name", "fix": "Follow up with <span>tasklist /fi \"pid eq PID\"</span> to get the actual executable name"}
+    ],
+    "secnote": "During Windows IR: netstat -ano combined with tasklist shows what is communicating. Flag any process making outbound connections that shouldn't be (svchost to external IPs, etc.).",
+    "tags": "netstat windows port connection pid listening tcp udp network"
+  },
+  {
+    "id": "tasklist",
+    "name": "tasklist / taskkill",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "List running processes (tasklist) and terminate them (taskkill). Windows equivalent of ps/kill.",
+    "usage": [
+      {"cmd": "tasklist", "cmt": "list all running processes with PID and memory"},
+      {"cmd": "tasklist /fi \"imagename eq chrome.exe\"", "cmt": "filter by process name"},
+      {"cmd": "tasklist /svc", "cmt": "show which services are running inside each process"},
+      {"cmd": "taskkill /pid 1234 /f", "cmt": "/f = force kill"},
+      {"cmd": "taskkill /im notepad.exe /f", "cmt": "kill by image name"}
+    ],
+    "scenarios": [
+      "Application frozen — identify PID and force kill it",
+      "Finding resource-hungry processes before a maintenance window",
+      "Identifying which svchost instance is hosting a misbehaving service"
+    ],
+    "mistakes": [
+      {"x": "taskkill without /f may fail on unresponsive processes", "fix": "Add <span>/f</span> to force terminate; some processes require it"},
+      {"x": "Killing svchost.exe without checking /svc first", "fix": "svchost hosts multiple services — run <span>tasklist /svc</span> to find the right one"}
+    ],
+    "tags": "process list kill terminate pid windows tasklist taskkill"
+  },
+  {
+    "id": "sfc",
+    "name": "sfc / DISM",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "System File Checker (sfc) and DISM repair Windows system file corruption.",
+    "usage": [
+      {"cmd": "sfc /scannow", "cmt": "scan and repair corrupted system files (run as admin)"},
+      {"cmd": "DISM /Online /Cleanup-Image /ScanHealth", "cmt": "check Windows image for corruption"},
+      {"cmd": "DISM /Online /Cleanup-Image /RestoreHealth", "cmt": "repair image using Windows Update"},
+      {"cmd": "DISM /Online /Cleanup-Image /CheckHealth", "cmt": "quick check, no repair"}
+    ],
+    "scenarios": [
+      "After malware removal — system behaving strangely",
+      "Blue screen or random crashes after an update",
+      "Applications failing with missing DLL errors"
+    ],
+    "mistakes": [
+      {"x": "Running sfc without admin rights — silently fails", "fix": "Always right-click → Run as Administrator, or use an elevated command prompt"},
+      {"x": "Not running DISM before sfc on heavily corrupted systems", "fix": "If sfc finds errors it cannot fix, run <span>DISM /RestoreHealth</span> first, then rerun sfc"}
+    ],
+    "tags": "system file checker repair corrupt windows sfc dism image"
+  },
+  {
+    "id": "wmic",
+    "name": "wmic",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Windows Management Instrumentation command line. Query hardware and system info.",
+    "usage": [
+      {"cmd": "wmic cpu get caption,numberofcores,maxclockspeed", "cmt": "CPU details"},
+      {"cmd": "wmic memorychip get capacity", "cmt": "RAM modules and sizes"},
+      {"cmd": "wmic diskdrive get caption,size,status", "cmt": "disk info and health status"},
+      {"cmd": "wmic process get name,processid,commandline", "cmt": "all processes with full command line"},
+      {"cmd": "wmic startup get caption,command,location", "cmt": "startup programs — malware hunting"}
+    ],
+    "scenarios": [
+      "Inventorying hardware before a software deployment",
+      "Checking disk health status before a migration",
+      "During IR: enumerate startup entries and process command lines"
+    ],
+    "mistakes": [
+      {"x": "wmic output is hard to read — pipe to findstr", "fix": "Use <span>| findstr /i \"keyword\"</span> to filter relevant rows"},
+      {"x": "wmic is deprecated in Windows 11", "fix": "Use <span>Get-WmiObject</span> in PowerShell for forward compatibility"}
+    ],
+    "secnote": "Attackers use wmic for lateral movement and persistence: wmic /node:TARGET process call create \"cmd.exe\". Any unexpected wmic invocations in logs are highly suspicious.",
+    "tags": "wmic windows management hardware system info process startup inventory"
+  },
+  {
+    "id": "ping-w",
+    "name": "ping (Windows)",
+    "cat": "network",
+    "diff": "beginner",
+    "sec": false,
+    "desc": "Test connectivity and latency to a host. Windows ping sends 4 packets by default.",
+    "usage": [
+      {"cmd": "ping 8.8.8.8", "cmt": "4 packets, shows RTT and TTL"},
+      {"cmd": "ping -t 10.0.0.1", "cmt": "continuous ping until Ctrl+C — good for monitoring"},
+      {"cmd": "ping -n 20 -l 1400 gateway", "cmt": "20 packets, 1400 byte payload — MTU test"},
+      {"cmd": "ping -a 192.168.1.1", "cmt": "resolve hostname from IP (-a flag)"}
+    ],
+    "scenarios": [
+      "Checking if a server is reachable after a change",
+      "Continuous monitoring during a maintenance window",
+      "Testing MTU size for VPN or WAN troubleshooting"
+    ],
+    "mistakes": [
+      {"x": "Concluding firewall blocks ALL traffic just because ping fails", "fix": "Many firewalls block ICMP specifically — test with <span>telnet host port</span> or <span>tracert</span>"},
+      {"x": "Windows ping -t running in the background consuming resources", "fix": "Always Ctrl+C or close the window — <span>ping -t</span> runs indefinitely"}
+    ],
+    "tags": "ping windows connectivity latency icmp test reachability"
+  },
+  {
+    "id": "tracert",
+    "name": "tracert",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "Windows trace route — shows each network hop to a destination.",
+    "usage": [
+      {"cmd": "tracert 8.8.8.8", "cmt": "trace to Google DNS"},
+      {"cmd": "tracert -d 8.8.8.8", "cmt": "-d = no DNS lookups, faster"},
+      {"cmd": "tracert -h 30 destination", "cmt": "max 30 hops (default 30)"},
+      {"cmd": "pathping 8.8.8.8", "cmt": "combines ping+tracert — shows packet loss per hop"}
+    ],
+    "scenarios": [
+      "Identifying which hop in the path is dropping packets",
+      "Confirming traffic is going through expected routes after a network change",
+      "Diagnosing VPN routing issues"
+    ],
+    "mistakes": [
+      {"x": "Not using -d on slow networks — DNS per hop causes timeout confusion", "fix": "Always add <span>-d</span>; asterisks may be due to DNS timeout not packet loss"},
+      {"x": "Giving up on * * * hops — some routers don't respond to TTL expiry", "fix": "If final destination responds, intermediate * hops are normal firewall behavior"}
+    ],
+    "tags": "tracert traceroute hops routing path network windows"
+  },
+  {
+    "id": "sc",
+    "name": "sc (Service Control)",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Query, start, stop, and configure Windows services from the command line.",
+    "usage": [
+      {"cmd": "sc query", "cmt": "list all services and their state"},
+      {"cmd": "sc query type= all state= all", "cmt": "include stopped services"},
+      {"cmd": "sc start servicename", "cmt": "start a service"},
+      {"cmd": "sc stop servicename", "cmt": "stop a service"},
+      {"cmd": "sc qc servicename", "cmt": "query service configuration (exe path, start type)"},
+      {"cmd": "sc failure servicename actions= restart/5000/restart/10000// reset= 3600", "cmt": "configure auto-restart on failure"}
+    ],
+    "scenarios": [
+      "Service failing — check configuration and executable path before editing in GUI",
+      "Configuring automatic restart on failure for a critical service",
+      "During IR — disable a compromised service without deleting it"
+    ],
+    "mistakes": [
+      {"x": "sc query service with spaces in name fails", "fix": "Wrap names with spaces in quotes: <span>sc query \"Print Spooler\"</span>"},
+      {"x": "sc stop doesn't kill child processes", "fix": "Use <span>taskkill /im service.exe /f</span> if sc stop hangs"}
+    ],
+    "secnote": "Attackers use sc to install malicious services: sc create Malware binPath= \"C:\\Windows\\Temp\\evil.exe\". Audit sc query output and cross-check paths against known good binaries.",
+    "tags": "service windows sc start stop configure query control"
+  },
+  {
+    "id": "eventvwr",
+    "name": "Event Log (wevtutil)",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": true,
+    "desc": "Query Windows Event Logs from the command line without opening Event Viewer GUI.",
+    "usage": [
+      {"cmd": "wevtutil qe System /c:20 /f:text /rd:true", "cmt": "last 20 System events, newest first"},
+      {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4625]]\" /f:text /c:50", "cmt": "last 50 failed logons (Event 4625)"},
+      {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4624]]\" /f:text /c:20", "cmt": "last 20 successful logons"},
+      {"cmd": "wevtutil qe Application /q:\"*[System[Level=2]]\" /f:text /c:30", "cmt": "Application errors only"}
+    ],
+    "scenarios": [
+      "Remote server without RDP — pull logs via command line",
+      "Automated log collection in a script",
+      "Investigating failed logins on a server during IR"
+    ],
+    "mistakes": [
+      {"x": "Opening Event Viewer GUI on a remote server — slow and clunky", "fix": "Use <span>wevtutil qe</span> remotely: add <span>/r:HOSTNAME /u:USER /p:PASS</span>"},
+      {"x": "Not knowing the key Security Event IDs", "fix": "4624=logon 4625=failed logon 4720=account created 4732=added to group 4688=process created"}
+    ],
+    "secnote": "Key Security Event IDs to monitor: 4625 (failed logon), 4720 (new account), 4732 (added to admin group), 4698 (scheduled task created), 7045 (new service installed). These are the top attacker footprints.",
+    "tags": "event log windows security audit logon wevtutil eventid"
+  },
+  {
+    "id": "robocopy",
+    "name": "robocopy",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": false,
+    "desc": "Robust file copy. Far more reliable than xcopy for large transfers, with resume capability.",
+    "usage": [
+      {"cmd": "robocopy C:\\Source D:\\Dest /E /Z /LOG:copy.log", "cmt": "/E = all subdirs, /Z = restartable, /LOG = log to file"},
+      {"cmd": "robocopy C:\\Source \\\\server\\share /E /COPYALL /R:3 /W:5", "cmt": "/COPYALL preserves permissions, retry 3 times, wait 5s"},
+      {"cmd": "robocopy C:\\Source D:\\Dest /E /MIR", "cmt": "/MIR = mirror — deletes files in dest not in source, use with care"},
+      {"cmd": "robocopy C:\\Data \\\\backup\\Data /E /Z /XA:SH", "cmt": "exclude system and hidden files"}
+    ],
+    "scenarios": [
+      "Migrating a file server — robust transfer with full resume on network drop",
+      "Backing up user profiles with ACL preservation",
+      "Synchronizing directories — scheduled task with /MIR"
+    ],
+    "mistakes": [
+      {"x": "/MIR deletes files in the destination not in source", "fix": "Test with <span>/L</span> (list only, no copy) first — /MIR is destructive if source path is wrong"},
+      {"x": "Not using /Z on large transfers over unreliable networks", "fix": "<span>/Z</span> enables restartable mode — file can resume from where it stopped after a connection drop"}
+    ],
+    "tags": "copy file transfer robocopy backup mirror windows sync large"
+  },
+  {
+    "id": "reg",
+    "name": "reg (Registry)",
+    "cat": "system",
+    "diff": "advanced",
+    "sec": true,
+    "desc": "Query, add, delete, and export Windows Registry keys from the command line.",
+    "usage": [
+      {"cmd": "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "cmt": "query startup registry run key"},
+      {"cmd": "reg add HKCU\\Software\\App /v Setting /t REG_SZ /d \"value\"", "cmt": "add a string value"},
+      {"cmd": "reg export HKLM\\System\\CurrentControlSet\\Services backup.reg", "cmt": "export a key to file"},
+      {"cmd": "reg delete HKCU\\Software\\BadApp /f", "cmt": "delete key without confirmation"}
+    ],
+    "scenarios": [
+      "During IR — check classic persistence locations in the registry",
+      "Scripting a registry change across multiple machines",
+      "Backing up a registry key before making a change"
+    ],
+    "mistakes": [
+      {"x": "Editing registry without export backup first", "fix": "Always <span>reg export KEY backup.reg</span> before any edit — one command to restore if it breaks"},
+      {"x": "reg delete without /f prompts interactively — breaks scripts", "fix": "Add <span>/f</span> for force in scripts to avoid hanging on confirmation"}
+    ],
+    "secnote": "Top persistence registry locations to check during IR: HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run, HKCU\\...\\Run, HKLM\\SYSTEM\\CurrentControlSet\\Services. Unknown entries = red flag.",
+    "tags": "registry windows reg run key startup persistence hkey"
+  }
+]
