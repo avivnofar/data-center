@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-09 — 4f38dc5] (master)
+
+- feat: complete data-center foundation with extensible architecture ([4f38dc5](https://github.com/avivnofar/data-center/commit/4f38dc5ba04e9ffc9e9808419ad4bcca0551bc15))
+
+
 ## [2026-06-08 — 62dc3d2] (master)
 
 - docs: add ROADMAP.md with Phase 2-4 milestones ([62dc3d2](https://github.com/avivnofar/data-center/commit/62dc3d236ea3efddb4748266c029e29653975c9b))
