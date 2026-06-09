@@ -415,7 +415,7 @@
     ],
     "quick_flags": [
       {"flag": "s_client -connect HOST:PORT", "desc_he": "בדוק TLS על host:port", "desc_en": "Test TLS on host:port"},
-      {"flag": "x509 -in FILE -text", "cmt_he": "הצג פרטי certificate", "cmt_en": "Display certificate details"},
+      {"flag": "x509 -in FILE -text", "desc_he": "הצג פרטי certificate מקובץ", "desc_en": "Display certificate details from file"},
       {"flag": "-noout", "desc_he": "הסתר את ה-certificate עצמו בפלט", "desc_en": "Suppress the certificate itself in output"},
       {"flag": "-dates", "desc_he": "הצג רק תאריכי תוקף", "desc_en": "Show only validity dates"}
     ],

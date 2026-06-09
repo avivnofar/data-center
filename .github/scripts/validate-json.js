@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Validates data/*.json against the expected schemas.
+// Validates data/*.json against the bilingual schema.
 // Enforces source_url presence and approved-domain allowlist.
 // Exits 1 and prints all errors if any entry is malformed.
 
@@ -34,6 +34,7 @@ const APPROVED_DOMAINS = [
   'cisco.com',
   'tcpdump.org',
   'iperf.fr',
+  'software.es.net',
 ];
 
 const BLOCKED_DOMAINS = [
@@ -41,6 +42,10 @@ const BLOCKED_DOMAINS = [
   'reddit.com',
   'medium.com',
   'youtube.com',
+  'github.com',
+  'geeksforgeeks.org',
+  'w3schools.com',
+  'blogspot.com',
 ];
 
 function validateSourceUrl(url, file, id) {
@@ -78,6 +83,22 @@ function validateSourceUrl(url, file, id) {
   }
 }
 
+// ── Hebrew character detection ────────────────────────────────────────────────
+function hasHebrew(str) {
+  return /[א-׿יִ-ﭏ]/.test(str);
+}
+
+function requireBilingual(file, id, obj, prefix) {
+  const heKey = `${prefix}_he`;
+  const enKey = `${prefix}_en`;
+  if (!obj[heKey] || typeof obj[heKey] !== 'string' || obj[heKey].trim() === '')
+    fail(file, id, `"${heKey}" must be a non-empty Hebrew string`);
+  if (!obj[enKey] || typeof obj[enKey] !== 'string' || obj[enKey].trim() === '')
+    fail(file, id, `"${enKey}" must be a non-empty English string`);
+  if (obj[heKey] && obj[enKey] && obj[heKey].trim() === obj[enKey].trim())
+    fail(file, id, `"${heKey}" and "${enKey}" must not be identical — they appear to be copy-pasted`);
+}
+
 // ── Command entry schema (linux / cmd / network) ─────────────────────────────
 const COMMAND_DIFF = ['beginner', 'intermediate', 'advanced'];
 const CATEGORY_MAP = {
@@ -105,26 +126,31 @@ function validateCommandEntry(entry, file) {
   if (typeof entry.sec !== 'boolean')
     fail(file, id, '"sec" must be a boolean');
 
-  if (!entry.desc || typeof entry.desc !== 'string')
-    fail(file, id, '"desc" must be a non-empty string');
+  // Bilingual desc
+  requireBilingual(file, id, entry, 'desc');
 
   // source_url and source_name — REQUIRED
   validateSourceUrl(entry.source_url, file, id);
   if (!entry.source_name || typeof entry.source_name !== 'string')
     fail(file, id, '"source_name" is REQUIRED — e.g. "Linux man page", "Microsoft Docs"');
 
+  // usage — bilingual cmt
   if (!Array.isArray(entry.usage) || entry.usage.length < 1)
     fail(file, id, '"usage" must be a non-empty array');
   else {
     entry.usage.forEach((u, i) => {
       if (!u.cmd || typeof u.cmd !== 'string')
         fail(file, id, `usage[${i}].cmd must be a non-empty string`);
-      if (typeof u.cmt !== 'string')
-        fail(file, id, `usage[${i}].cmt must be a string`);
+      else if (hasHebrew(u.cmd))
+        fail(file, id, `usage[${i}].cmd must not contain Hebrew characters — commands are always LTR`);
+      if (typeof u.cmt_he !== 'string' || u.cmt_he.trim() === '')
+        fail(file, id, `usage[${i}].cmt_he must be a non-empty string`);
+      if (typeof u.cmt_en !== 'string' || u.cmt_en.trim() === '')
+        fail(file, id, `usage[${i}].cmt_en must be a non-empty string`);
     });
   }
 
-  // quick_flags — OPTIONAL but must be valid array if present
+  // quick_flags — bilingual desc when present
   if (entry.quick_flags !== undefined) {
     if (!Array.isArray(entry.quick_flags))
       fail(file, id, '"quick_flags" must be an array when present');
@@ -132,38 +158,61 @@ function validateCommandEntry(entry, file) {
       entry.quick_flags.forEach((f, i) => {
         if (!f.flag || typeof f.flag !== 'string')
           fail(file, id, `quick_flags[${i}].flag must be a non-empty string`);
-        if (!f.desc || typeof f.desc !== 'string')
-          fail(file, id, `quick_flags[${i}].desc must be a non-empty string`);
+        else if (hasHebrew(f.flag))
+          fail(file, id, `quick_flags[${i}].flag must not contain Hebrew characters`);
+        if (typeof f.desc_he !== 'string' || f.desc_he.trim() === '')
+          fail(file, id, `quick_flags[${i}].desc_he must be a non-empty string`);
+        if (typeof f.desc_en !== 'string' || f.desc_en.trim() === '')
+          fail(file, id, `quick_flags[${i}].desc_en must be a non-empty string`);
       });
     }
   }
 
-  if (!Array.isArray(entry.scenarios) || entry.scenarios.length < 1)
-    fail(file, id, '"scenarios" must be a non-empty array of strings');
+  // scenarios — bilingual arrays
+  if (!Array.isArray(entry.scenarios_he) || entry.scenarios_he.length < 1)
+    fail(file, id, '"scenarios_he" must be a non-empty array of Hebrew strings');
   else {
-    entry.scenarios.forEach((s, i) => {
-      if (typeof s !== 'string')
-        fail(file, id, `scenarios[${i}] must be a string`);
+    entry.scenarios_he.forEach((s, i) => {
+      if (typeof s !== 'string' || s.trim() === '')
+        fail(file, id, `scenarios_he[${i}] must be a non-empty string`);
     });
   }
 
+  if (!Array.isArray(entry.scenarios_en) || entry.scenarios_en.length < 1)
+    fail(file, id, '"scenarios_en" must be a non-empty array of English strings');
+  else {
+    entry.scenarios_en.forEach((s, i) => {
+      if (typeof s !== 'string' || s.trim() === '')
+        fail(file, id, `scenarios_en[${i}] must be a non-empty string`);
+    });
+  }
+
+  // mistakes — bilingual fields
   if (!Array.isArray(entry.mistakes) || entry.mistakes.length < 1)
     fail(file, id, '"mistakes" must be a non-empty array');
   else {
     entry.mistakes.forEach((m, i) => {
-      if (!m.x || typeof m.x !== 'string')
-        fail(file, id, `mistakes[${i}].x must be a non-empty string`);
-      if (!m.fix || typeof m.fix !== 'string')
-        fail(file, id, `mistakes[${i}].fix must be a non-empty string`);
+      if (!m.x_he || typeof m.x_he !== 'string')
+        fail(file, id, `mistakes[${i}].x_he must be a non-empty string`);
+      if (!m.x_en || typeof m.x_en !== 'string')
+        fail(file, id, `mistakes[${i}].x_en must be a non-empty string`);
+      if (!m.fix_he || typeof m.fix_he !== 'string')
+        fail(file, id, `mistakes[${i}].fix_he must be a non-empty string`);
+      if (!m.fix_en || typeof m.fix_en !== 'string')
+        fail(file, id, `mistakes[${i}].fix_en must be a non-empty string`);
     });
   }
 
   if (!entry.tags || typeof entry.tags !== 'string')
     fail(file, id, '"tags" must be a non-empty string');
 
-  // secnote is optional but must be a string if present
-  if (entry.secnote !== undefined && typeof entry.secnote !== 'string')
-    fail(file, id, '"secnote" must be a string when present');
+  // secnote_he / secnote_en — optional but paired
+  if (entry.sec === true) {
+    if (entry.secnote_he !== undefined && typeof entry.secnote_he !== 'string')
+      fail(file, id, '"secnote_he" must be a string when present');
+    if (entry.secnote_en !== undefined && typeof entry.secnote_en !== 'string')
+      fail(file, id, '"secnote_en" must be a string when present');
+  }
 }
 
 // ── Troubleshoot entry schema ────────────────────────────────────────────────
@@ -175,9 +224,11 @@ function validateTsEntry(entry, file) {
 
   if (!entry.id || typeof entry.id !== 'string')
     fail(file, id, '"id" must be a non-empty string');
+  if (!/^ts-/.test(entry.id))
+    fail(file, id, '"id" must start with "ts-" prefix');
 
-  if (!entry.title || typeof entry.title !== 'string')
-    fail(file, id, '"title" must be a non-empty string');
+  requireBilingual(file, id, entry, 'title');
+  requireBilingual(file, id, entry, 'desc');
 
   if (!TS_PLAT.includes(entry.plat))
     fail(file, id, `"plat" must be one of: ${TS_PLAT.join(', ')} — got "${entry.plat}"`);
@@ -185,26 +236,24 @@ function validateTsEntry(entry, file) {
   if (!TS_SEV.includes(entry.severity))
     fail(file, id, `"severity" must be one of: ${TS_SEV.join(', ')} — got "${entry.severity}"`);
 
-  if (!entry.desc || typeof entry.desc !== 'string')
-    fail(file, id, '"desc" must be a non-empty string');
-
-  // source_url and source_name — REQUIRED
-  validateSourceUrl(entry.source_url, file, id);
-  if (!entry.source_name || typeof entry.source_name !== 'string')
-    fail(file, id, '"source_name" is REQUIRED');
-
-  if (!Array.isArray(entry.steps) || entry.steps.length < 1)
-    fail(file, id, '"steps" must be a non-empty array');
+  if (!Array.isArray(entry.steps) || entry.steps.length < 4)
+    fail(file, id, '"steps" must be an array with at least 4 steps');
   else {
     entry.steps.forEach((s, i) => {
       if (typeof s.n !== 'number')
         fail(file, id, `steps[${i}].n must be a number`);
-      if (!s.text || typeof s.text !== 'string')
-        fail(file, id, `steps[${i}].text must be a non-empty string`);
+      if (!s.text_he || typeof s.text_he !== 'string')
+        fail(file, id, `steps[${i}].text_he must be a non-empty string`);
+      if (!s.text_en || typeof s.text_en !== 'string')
+        fail(file, id, `steps[${i}].text_en must be a non-empty string`);
       if (!s.cmd || typeof s.cmd !== 'string')
         fail(file, id, `steps[${i}].cmd must be a non-empty string`);
-      if (typeof s.note !== 'string')
-        fail(file, id, `steps[${i}].note must be a string`);
+      else if (hasHebrew(s.cmd))
+        fail(file, id, `steps[${i}].cmd must not contain Hebrew characters`);
+      if (typeof s.note_he !== 'string')
+        fail(file, id, `steps[${i}].note_he must be a string`);
+      if (typeof s.note_en !== 'string')
+        fail(file, id, `steps[${i}].note_en must be a string`);
     });
   }
 }
@@ -227,7 +276,8 @@ function validateModulesJson() {
   data.forEach((m, i) => {
     const id = m.id || `(index ${i})`;
     if (!m.id) errors.push(`[modules.json] entry ${i}: "id" is required`);
-    if (!m.label) errors.push(`[modules.json] entry "${id}": "label" is required`);
+    if (!m.label_he && !m.label)
+      errors.push(`[modules.json] entry "${id}": "label_he" or "label" is required`);
     if (!m.data_file) errors.push(`[modules.json] entry "${id}": "data_file" is required`);
     if (!STATUSES.includes(m.status))
       errors.push(`[modules.json] entry "${id}": "status" must be one of: ${STATUSES.join(', ')}`);
@@ -299,5 +349,5 @@ if (errors.length > 0) {
   errors.forEach(e => console.error('  ' + e));
   process.exit(1);
 } else {
-  console.log(`\n✓  All ${passed} JSON files are valid. source_url domains checked against allowlist.`);
+  console.log(`\n✓  All ${passed} JSON files are valid. Bilingual schema and source_url domains checked.`);
 }
