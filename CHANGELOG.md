@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-06-09 — 7c4b2f6] (master)
+
+- docs: bilingual README, CLAUDE.md project bible, and updated ROADMAP ([7c4b2f6](https://github.com/avivnofar/data-center/commit/7c4b2f62c9f8e20941386a3d38be0f919273cf1b))
+- feat: complete bilingual app with RTL support and hover tooltips ([27b8dc5](https://github.com/avivnofar/data-center/commit/27b8dc5a9dd8054bebe2bae8fc95274122b24ca6))
+- ci: update validate, health scripts and health workflow for bilingual schema ([6f82740](https://github.com/avivnofar/data-center/commit/6f827404a65c18d299c44cfaddfd41de2c6c2b62))
+- feat: initial bilingual database — Linux, CMD, Network, Troubleshoot ([ea1e811](https://github.com/avivnofar/data-center/commit/ea1e811f493d1ab94dab4b91d461ccac874b486b))
+- feat: add extensible module registry with Hebrew labels ([96e6a6a](https://github.com/avivnofar/data-center/commit/96e6a6ac4a0eb9034500958d3d23f907414475d4))
+- chore: add .nojekyll for GitHub Pages compatibility ([cd51e35](https://github.com/avivnofar/data-center/commit/cd51e3544d4f00b99dfc6e6d06da1bd24208c69f))
+
+
 ## [2026-06-09 — 4f38dc5] (master)
 
 - feat: complete data-center foundation with extensible architecture ([4f38dc5](https://github.com/avivnofar/data-center/commit/4f38dc5ba04e9ffc9e9808419ad4bcca0551bc15))
