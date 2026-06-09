@@ -5,201 +5,147 @@
     "cat": "network",
     "diff": "beginner",
     "sec": false,
-    "desc": "Display and manage Windows IP configuration for all network adapters.",
+    "desc_he": "מציג את תצורת ה-IP של כל network adapters. הצעד הראשון בכל debug של רשת ב-Windows.",
+    "desc_en": "Display IP configuration for all network adapters. First step in any Windows network debug.",
     "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ipconfig",
-    "source_name": "Microsoft Docs",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "ipconfig /all", "cmt": "full details: MAC, DHCP server, lease times, DNS"},
-      {"cmd": "ipconfig /release && ipconfig /renew", "cmt": "release then renew DHCP lease"},
-      {"cmd": "ipconfig /flushdns", "cmt": "flush DNS resolver cache — fix stale DNS"},
-      {"cmd": "ipconfig /displaydns", "cmt": "show current DNS cache entries"}
+      {"cmd": "ipconfig /all", "cmt_he": "הצג פרטים מלאים כולל MAC address ו-DHCP server", "cmt_en": "Full details including MAC address and DHCP server"},
+      {"cmd": "ipconfig /release", "cmt_he": "שחרר כתובת DHCP הנוכחית", "cmt_en": "Release current DHCP lease"},
+      {"cmd": "ipconfig /renew", "cmt_he": "קבל כתובת IP חדשה מ-DHCP", "cmt_en": "Obtain new IP address from DHCP"},
+      {"cmd": "ipconfig /flushdns", "cmt_he": "נקה DNS resolver cache — פותר בעיות DNS לא עדכני", "cmt_en": "Clear DNS resolver cache — fixes stale DNS issues"},
+      {"cmd": "ipconfig /displaydns", "cmt_he": "הצג את ה-DNS cache הנוכחי", "cmt_en": "Display current DNS cache contents"}
     ],
     "quick_flags": [
-      {"flag": "/all", "desc": "show full details including MAC and DHCP info"},
-      {"flag": "/release", "desc": "release current DHCP lease"},
-      {"flag": "/renew", "desc": "request new DHCP lease"},
-      {"flag": "/flushdns", "desc": "clear DNS resolver cache"},
-      {"flag": "/displaydns", "desc": "display contents of DNS cache"}
+      {"flag": "/all", "desc_he": "פרטים מלאים: MAC, DHCP, DNS, lease times", "desc_en": "Full details: MAC, DHCP, DNS, lease times"},
+      {"flag": "/release", "desc_he": "שחרר lease של DHCP", "desc_en": "Release DHCP lease"},
+      {"flag": "/renew", "desc_he": "חדש lease של DHCP", "desc_en": "Renew DHCP lease"},
+      {"flag": "/flushdns", "desc_he": "נקה DNS cache", "desc_en": "Clear DNS cache"},
+      {"flag": "/displaydns", "desc_he": "הצג DNS cache", "desc_en": "Display DNS cache"}
     ],
-    "scenarios": [
-      "Machine can't reach the internet — check if IP is APIPA (169.254.x.x) which means DHCP failed",
-      "DNS caching old IP after a server migration",
-      "Gathering network info for a support ticket"
+    "scenarios_he": [
+      "לא מצליח לגלוש לאינטרנט — בדוק שיש IP תקין ו-default gateway",
+      "אתר נטען מ-cache ישן — flushdns וטען מחדש",
+      "בדיקת DHCP lease expiry לפני update של DHCP server"
+    ],
+    "scenarios_en": [
+      "Can't browse the internet — verify you have a valid IP and default gateway",
+      "Website loading stale content — flushdns and refresh",
+      "Checking DHCP lease expiry before updating DHCP server"
     ],
     "mistakes": [
-      {"x": "Running ipconfig without /all misses critical details", "fix": "Always use <span>/all</span> — shows MAC, DHCP status, DNS servers, and lease info"},
-      {"x": "Forgetting to flush DNS after changing hosts file", "fix": "<span>ipconfig /flushdns</span> must be run after editing hosts or after DNS changes"}
+      {
+        "x_he": "ipconfig ללא /all מחמיץ MAC address ופרטי DHCP",
+        "x_en": "ipconfig without /all misses MAC address and DHCP details",
+        "fix_he": "הרץ תמיד <span class=\"ltr-term\">ipconfig /all</span> לאבחון מלא",
+        "fix_en": "Always run <span class=\"ltr-term\">ipconfig /all</span> for complete diagnostics"
+      },
+      {
+        "x_he": "ניסיון /renew ללא /release קודם כשכתובת כבר תקינה",
+        "x_en": "Trying /renew without /release first when IP is already valid",
+        "fix_he": "בדוק את ה-IP קודם; /release ו-/renew רק כשה-DHCP lease צריך reset",
+        "fix_en": "Check IP first; use /release and /renew only when DHCP lease needs reset"
+      }
     ],
-    "tags": "ip address network adapter dns dhcp lease windows configuration"
+    "tags": "ip address network adapter dhcp dns mac flush renew windows רשת כתובת"
   },
   {
-    "id": "netstat-w",
+    "id": "netstat-win",
     "name": "netstat (Windows)",
     "cat": "network",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Display active TCP connections, listening ports, and Ethernet statistics on Windows.",
+    "desc_he": "מציג חיבורי רשת פעילים ו-ports מאזינים ב-Windows.",
+    "desc_en": "Display active network connections and listening ports on Windows.",
     "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netstat",
-    "source_name": "Microsoft Docs",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "netstat -ano", "cmt": "all connections with PID, no DNS resolution"},
-      {"cmd": "netstat -ano | findstr :443", "cmt": "filter by port 443"},
-      {"cmd": "netstat -ano | findstr LISTENING", "cmt": "only listening ports"},
-      {"cmd": "tasklist | findstr PID", "cmt": "correlate PID from netstat to process name"}
+      {"cmd": "netstat -ano", "cmt_he": "כל חיבורים פעילים עם PID — ללא DNS lookup", "cmt_en": "All active connections with PID — no DNS lookup"},
+      {"cmd": "netstat -ano | findstr :443", "cmt_he": "סנן ל-port ספציפי", "cmt_en": "Filter to specific port"},
+      {"cmd": "netstat -b", "cmt_he": "הצג שם קובץ ה-executable (דורש הרשאות admin)", "cmt_en": "Show executable name (requires admin)"},
+      {"cmd": "netstat -r", "cmt_he": "הצג טבלת ניתוב", "cmt_en": "Display routing table"}
     ],
     "quick_flags": [
-      {"flag": "-a", "desc": "show all connections and listening ports"},
-      {"flag": "-n", "desc": "numeric addresses — skip DNS resolution"},
-      {"flag": "-o", "desc": "show owning process ID (PID)"},
-      {"flag": "-e", "desc": "show Ethernet statistics"},
-      {"flag": "-s", "desc": "show per-protocol statistics"}
+      {"flag": "-a", "desc_he": "כל החיבורים כולל listening", "desc_en": "All connections including listening"},
+      {"flag": "-n", "desc_he": "פלט מספרי — ללא DNS resolution", "desc_en": "Numeric output — no DNS resolution"},
+      {"flag": "-o", "desc_he": "הצג PID של התהליך הבעלים", "desc_en": "Show owning process PID"},
+      {"flag": "-b", "desc_he": "הצג שם ה-executable (דורש admin)", "desc_en": "Show executable name (needs admin)"}
     ],
-    "scenarios": [
-      "Application won't start — port already in use",
-      "Find which process is using a specific port",
-      "Detecting unexpected outbound connections during IR"
+    "scenarios_he": [
+      "port תפוס — מצא איזה תהליך מאזין",
+      "IR: סקור את כל חיבורי outbound פעילים",
+      "בדיקה אם application מתחבר ל-endpoint נכון"
     ],
-    "mistakes": [
-      {"x": "netstat without -o hides PIDs", "fix": "Use <span>-ano</span> always — PID column is essential for identifying the owning process"},
-      {"x": "Not correlating PID to process name", "fix": "Follow up with <span>tasklist /fi \"pid eq PID\"</span> to get the actual executable name"}
-    ],
-    "secnote": "During Windows IR: netstat -ano combined with tasklist shows what is communicating. Flag any process making outbound connections that shouldn't be (svchost to external IPs, etc.).",
-    "tags": "netstat windows port connection pid listening tcp udp network"
-  },
-  {
-    "id": "tasklist",
-    "name": "tasklist / taskkill",
-    "cat": "process",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "List running processes (tasklist) and terminate them (taskkill). Windows equivalent of ps/kill.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tasklist",
-    "source_name": "Microsoft Docs",
-    "usage": [
-      {"cmd": "tasklist", "cmt": "list all running processes with PID and memory"},
-      {"cmd": "tasklist /fi \"imagename eq chrome.exe\"", "cmt": "filter by process name"},
-      {"cmd": "tasklist /svc", "cmt": "show which services are running inside each process"},
-      {"cmd": "taskkill /pid 1234 /f", "cmt": "/f = force kill"},
-      {"cmd": "taskkill /im notepad.exe /f", "cmt": "kill by image name"}
-    ],
-    "quick_flags": [
-      {"flag": "/fi FILTER", "desc": "filter output (e.g. imagename eq process.exe)"},
-      {"flag": "/svc", "desc": "show hosted services for each process"},
-      {"flag": "/v", "desc": "verbose — show full path and window title"},
-      {"flag": "/f", "desc": "force termination (taskkill)"},
-      {"flag": "/im NAME", "desc": "kill by image (exe) name (taskkill)"}
-    ],
-    "scenarios": [
-      "Application frozen — identify PID and force kill it",
-      "Finding resource-hungry processes before a maintenance window",
-      "Identifying which svchost instance is hosting a misbehaving service"
+    "scenarios_en": [
+      "Port in use — find which process is listening",
+      "IR: audit all active outbound connections",
+      "Check if an application is connecting to the correct endpoint"
     ],
     "mistakes": [
-      {"x": "taskkill without /f may fail on unresponsive processes", "fix": "Add <span>/f</span> to force terminate; some processes require it"},
-      {"x": "Killing svchost.exe without checking /svc first", "fix": "svchost hosts multiple services — run <span>tasklist /svc</span> to find the right one"}
+      {
+        "x_he": "netstat ללא -o — אין PID ואי אפשר לזהות תהליך",
+        "x_en": "netstat without -o — no PID, can't identify process",
+        "fix_he": "הרץ תמיד <span class=\"ltr-term\">netstat -ano</span> ב-Windows לקבל את ה-PID",
+        "fix_en": "Always run <span class=\"ltr-term\">netstat -ano</span> on Windows to get the PID"
+      },
+      {
+        "x_he": "חיפוש PID ב-Task Manager לאחר netstat לוקח זמן",
+        "x_en": "Looking up PID in Task Manager after netstat is slow",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">tasklist /FI \"PID eq 1234\"</span> ישירות ב-CMD",
+        "fix_en": "Use <span class=\"ltr-term\">tasklist /FI \"PID eq 1234\"</span> directly in CMD"
+      }
     ],
-    "tags": "process list kill terminate pid windows tasklist taskkill"
+    "secnote_he": "בזמן IR, netstat -ano על Windows יכול לחשוף C2 connections. חפש חיבורי ESTABLISHED ל-ports לא צפויים (שאינם 80/443/22).",
+    "secnote_en": "During IR, netstat -ano on Windows can reveal C2 connections. Look for ESTABLISHED connections to unexpected ports (not 80/443/22).",
+    "tags": "port connection socket tcp udp pid network windows רשת חיבור"
   },
   {
-    "id": "sfc",
-    "name": "sfc / DISM",
-    "cat": "system",
-    "diff": "intermediate",
-    "sec": false,
-    "desc": "System File Checker (sfc) and DISM repair Windows system file corruption.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sfc",
-    "source_name": "Microsoft Docs",
-    "usage": [
-      {"cmd": "sfc /scannow", "cmt": "scan and repair corrupted system files (run as admin)"},
-      {"cmd": "DISM /Online /Cleanup-Image /ScanHealth", "cmt": "check Windows image for corruption"},
-      {"cmd": "DISM /Online /Cleanup-Image /RestoreHealth", "cmt": "repair image using Windows Update"},
-      {"cmd": "DISM /Online /Cleanup-Image /CheckHealth", "cmt": "quick check, no repair"}
-    ],
-    "quick_flags": [
-      {"flag": "/scannow", "desc": "scan and automatically repair protected system files"},
-      {"flag": "/verifyonly", "desc": "scan but do not repair"},
-      {"flag": "/ScanHealth", "desc": "DISM: check image for corruption"},
-      {"flag": "/RestoreHealth", "desc": "DISM: repair image from Windows Update"},
-      {"flag": "/CheckHealth", "desc": "DISM: quick check, no repair"}
-    ],
-    "scenarios": [
-      "After malware removal — system behaving strangely",
-      "Blue screen or random crashes after an update",
-      "Applications failing with missing DLL errors"
-    ],
-    "mistakes": [
-      {"x": "Running sfc without admin rights — silently fails", "fix": "Always right-click → Run as Administrator, or use an elevated command prompt"},
-      {"x": "Not running DISM before sfc on heavily corrupted systems", "fix": "If sfc finds errors it cannot fix, run <span>DISM /RestoreHealth</span> first, then rerun sfc"}
-    ],
-    "tags": "system file checker repair corrupt windows sfc dism image"
-  },
-  {
-    "id": "wmic",
-    "name": "wmic",
-    "cat": "system",
-    "diff": "intermediate",
-    "sec": true,
-    "desc": "Windows Management Instrumentation command line. Query hardware and system info.",
-    "source_url": "https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmic",
-    "source_name": "Microsoft Docs",
-    "usage": [
-      {"cmd": "wmic cpu get caption,numberofcores,maxclockspeed", "cmt": "CPU details"},
-      {"cmd": "wmic memorychip get capacity", "cmt": "RAM modules and sizes"},
-      {"cmd": "wmic diskdrive get caption,size,status", "cmt": "disk info and health status"},
-      {"cmd": "wmic process get name,processid,commandline", "cmt": "all processes with full command line"},
-      {"cmd": "wmic startup get caption,command,location", "cmt": "startup programs — malware hunting"}
-    ],
-    "quick_flags": [
-      {"flag": "cpu", "desc": "target CPU class"},
-      {"flag": "process", "desc": "target running processes"},
-      {"flag": "startup", "desc": "target startup entries"},
-      {"flag": "diskdrive", "desc": "target disk drives"},
-      {"flag": "get FIELD", "desc": "specify which properties to display"}
-    ],
-    "scenarios": [
-      "Inventorying hardware before a software deployment",
-      "Checking disk health status before a migration",
-      "During IR: enumerate startup entries and process command lines"
-    ],
-    "mistakes": [
-      {"x": "wmic output is hard to read — pipe to findstr", "fix": "Use <span>| findstr /i \"keyword\"</span> to filter relevant rows"},
-      {"x": "wmic is deprecated in Windows 11", "fix": "Use <span>Get-WmiObject</span> in PowerShell for forward compatibility"}
-    ],
-    "secnote": "Attackers use wmic for lateral movement and persistence: wmic /node:TARGET process call create \"cmd.exe\". Any unexpected wmic invocations in logs are highly suspicious.",
-    "tags": "wmic windows management hardware system info process startup inventory"
-  },
-  {
-    "id": "ping-w",
+    "id": "ping-win",
     "name": "ping (Windows)",
     "cat": "network",
     "diff": "beginner",
     "sec": false,
-    "desc": "Test connectivity and latency to a host. Windows ping sends 4 packets by default.",
+    "desc_he": "בודק קישוריות ל-host ומודד זמן תגובה ב-Windows.",
+    "desc_en": "Test connectivity to a host and measure round-trip time on Windows.",
     "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ping",
-    "source_name": "Microsoft Docs",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "ping 8.8.8.8", "cmt": "4 packets, shows RTT and TTL"},
-      {"cmd": "ping -t 10.0.0.1", "cmt": "continuous ping until Ctrl+C — good for monitoring"},
-      {"cmd": "ping -n 20 -l 1400 gateway", "cmt": "20 packets, 1400 byte payload — MTU test"},
-      {"cmd": "ping -a 192.168.1.1", "cmt": "resolve hostname from IP (-a flag)"}
+      {"cmd": "ping 8.8.8.8", "cmt_he": "ping סטנדרטי — 4 packets כברירת מחדל", "cmt_en": "Standard ping — 4 packets by default"},
+      {"cmd": "ping -n 10 hostname", "cmt_he": "שלח בדיוק 10 packets", "cmt_en": "Send exactly 10 packets"},
+      {"cmd": "ping -t 10.0.0.1", "cmt_he": "ping רציף עד Ctrl+C — טוב למעקב אחרי fix", "cmt_en": "Continuous ping until Ctrl+C — useful to monitor after a fix"},
+      {"cmd": "ping -l 1400 10.0.0.1", "cmt_he": "בדיקת MTU עם packet גדול יותר", "cmt_en": "MTU test with larger packet"}
     ],
     "quick_flags": [
-      {"flag": "-t", "desc": "continuous ping until Ctrl+C"},
-      {"flag": "-n N", "desc": "send N echo requests (default 4)"},
-      {"flag": "-l SIZE", "desc": "send buffer of SIZE bytes"},
-      {"flag": "-a", "desc": "resolve IP addresses to hostnames"},
-      {"flag": "-w MS", "desc": "timeout in milliseconds per reply"}
+      {"flag": "-n N", "desc_he": "שלח N packets", "desc_en": "Send N packets"},
+      {"flag": "-t", "desc_he": "ping רציף (Ctrl+C לעצירה)", "desc_en": "Continuous ping (Ctrl+C to stop)"},
+      {"flag": "-l N", "desc_he": "גודל packet ב-bytes", "desc_en": "Packet size in bytes"},
+      {"flag": "-w N", "desc_he": "timeout ל-reply ב-milliseconds", "desc_en": "Timeout for reply in milliseconds"}
     ],
-    "scenarios": [
-      "Checking if a server is reachable after a change",
-      "Continuous monitoring during a maintenance window",
-      "Testing MTU size for VPN or WAN troubleshooting"
+    "scenarios_he": [
+      "בדיקת קישוריות ב-troubleshooting ראשוני",
+      "ניטור התאוששות שרת לאחר reboot עם -t",
+      "זיהוי בעיית packet loss בין workstation ל-gateway"
+    ],
+    "scenarios_en": [
+      "Basic connectivity check in initial troubleshooting",
+      "Monitoring server recovery after reboot with -t",
+      "Diagnosing packet loss between workstation and gateway"
     ],
     "mistakes": [
-      {"x": "Concluding firewall blocks ALL traffic just because ping fails", "fix": "Many firewalls block ICMP specifically — test with <span>telnet host port</span> or <span>tracert</span>"},
-      {"x": "Windows ping -t running in the background consuming resources", "fix": "Always Ctrl+C or close the window — <span>ping -t</span> runs indefinitely"}
+      {
+        "x_he": "מסקנה שה-host כבוי כי ping נכשל",
+        "x_en": "Concluding a host is down because ping fails",
+        "fix_he": "Windows Firewall חוסם ICMP כברירת מחדל — ping יכשל גם כשה-host פעיל",
+        "fix_en": "Windows Firewall blocks ICMP by default — ping may fail even when host is up"
+      },
+      {
+        "x_he": "ping -t ב-scripts — רץ לנצח",
+        "x_en": "ping -t in scripts — runs forever",
+        "fix_he": "ב-scripts השתמש ב-<span class=\"ltr-term\">-n N</span> עם מספר ספציפי",
+        "fix_en": "In scripts use <span class=\"ltr-term\">-n N</span> with a specific count"
+      }
     ],
-    "tags": "ping windows connectivity latency icmp test reachability"
+    "tags": "connectivity ping icmp network latency packet loss windows רשת"
   },
   {
     "id": "tracert",
@@ -207,168 +153,490 @@
     "cat": "network",
     "diff": "intermediate",
     "sec": false,
-    "desc": "Windows trace route — shows each network hop to a destination.",
+    "desc_he": "מעקב אחרי נתיב packets ליעד — Windows equivalent ל-traceroute.",
+    "desc_en": "Trace route of packets to destination — Windows equivalent of traceroute.",
     "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tracert",
-    "source_name": "Microsoft Docs",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "tracert 8.8.8.8", "cmt": "trace to Google DNS"},
-      {"cmd": "tracert -d 8.8.8.8", "cmt": "-d = no DNS lookups, faster"},
-      {"cmd": "tracert -h 30 destination", "cmt": "max 30 hops (default 30)"},
-      {"cmd": "pathping 8.8.8.8", "cmt": "combines ping+tracert — shows packet loss per hop"}
+      {"cmd": "tracert 8.8.8.8", "cmt_he": "trace סטנדרטי עם DNS resolution", "cmt_en": "Standard trace with DNS resolution"},
+      {"cmd": "tracert -d 8.8.8.8", "cmt_he": "-d = ללא DNS lookup — מהיר בהרבה", "cmt_en": "-d = skip DNS lookup — much faster"},
+      {"cmd": "tracert -h 20 hostname", "cmt_he": "הגדל מספר hops מקסימלי ל-20", "cmt_en": "Increase max hops to 20"}
     ],
     "quick_flags": [
-      {"flag": "-d", "desc": "do not resolve IP addresses to hostnames"},
-      {"flag": "-h MAX_HOPS", "desc": "max number of hops to search (default 30)"},
-      {"flag": "-w TIMEOUT", "desc": "wait TIMEOUT milliseconds per reply"},
-      {"flag": "-4", "desc": "force IPv4"},
-      {"flag": "-6", "desc": "force IPv6"}
+      {"flag": "-d", "desc_he": "ללא DNS reverse lookups (מהיר יותר)", "desc_en": "No DNS reverse lookups (faster)"},
+      {"flag": "-h N", "desc_he": "מספר hops מקסימלי (ברירת מחדל: 30)", "desc_en": "Maximum hop count (default 30)"},
+      {"flag": "-w N", "desc_he": "timeout לכל hop ב-milliseconds", "desc_en": "Timeout per hop in milliseconds"}
     ],
-    "scenarios": [
-      "Identifying which hop in the path is dropping packets",
-      "Confirming traffic is going through expected routes after a network change",
-      "Diagnosing VPN routing issues"
+    "scenarios_he": [
+      "מציאת הנקודה שבה חיבור לאינטרנט נכשל",
+      "בדיקת נתיב VPN — האם עובר דרך ה-tunnel",
+      "זיהוי hop עם latency גבוה"
+    ],
+    "scenarios_en": [
+      "Finding where an internet connection breaks",
+      "Checking VPN routing — is traffic going through the tunnel",
+      "Identifying a high-latency hop"
     ],
     "mistakes": [
-      {"x": "Not using -d on slow networks — DNS per hop causes timeout confusion", "fix": "Always add <span>-d</span>; asterisks may be due to DNS timeout not packet loss"},
-      {"x": "Giving up on * * * hops — some routers don't respond to TTL expiry", "fix": "If final destination responds, intermediate * hops are normal firewall behavior"}
+      {
+        "x_he": "tracert ללא -d על רשתות גדולות — DNS lookup על כל hop",
+        "x_en": "tracert without -d on large networks — DNS lookups on every hop",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-d</span> לתוצאות מהירות יותר",
+        "fix_en": "Always use <span class=\"ltr-term\">-d</span> for faster results"
+      },
+      {
+        "x_he": "ויתור על * * * hops",
+        "x_en": "Giving up at * * * hops",
+        "fix_he": "הרבה routers חוסמים TTL exceeded — המשך לראות אם ה-hops הבאים מגיבים",
+        "fix_en": "Many routers block TTL exceeded — continue to see if subsequent hops respond"
+      }
     ],
-    "tags": "tracert traceroute hops routing path network windows"
+    "tags": "tracert trace route network path hops latency windows ניתוב"
   },
   {
-    "id": "sc",
+    "id": "nslookup-win",
+    "name": "nslookup (Windows)",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "שאילתות DNS — בודק records, פותר hostnames, בודק DNS servers ב-Windows.",
+    "desc_en": "DNS queries — check records, resolve hostnames, test DNS servers on Windows.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/nslookup",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "nslookup example.com", "cmt_he": "פתור hostname ל-IP", "cmt_en": "Resolve hostname to IP"},
+      {"cmd": "nslookup example.com 8.8.8.8", "cmt_he": "שאל DNS server ספציפי", "cmt_en": "Query a specific DNS server"},
+      {"cmd": "nslookup -type=mx example.com", "cmt_he": "בדוק MX records (mail routing)", "cmt_en": "Check MX records (mail routing)"},
+      {"cmd": "nslookup -type=txt example.com", "cmt_he": "בדוק TXT records (SPF, DKIM, DMARC)", "cmt_en": "Check TXT records (SPF, DKIM, DMARC)"}
+    ],
+    "quick_flags": [
+      {"flag": "-type=TYPE", "desc_he": "סוג record: A, MX, TXT, CNAME, NS", "desc_en": "Record type: A, MX, TXT, CNAME, NS"},
+      {"flag": "SERVER", "desc_he": "ציין DNS server לשאול (כ-argument שני)", "desc_en": "Specify DNS server to query (second argument)"}
+    ],
+    "scenarios_he": [
+      "email לא עובר — בדוק MX records ו-SPF",
+      "חיבור DNS נכשל — בדוק האם DNS server מגיב",
+      "בדיקה שינוי DNS propagation הגיע"
+    ],
+    "scenarios_en": [
+      "Email not working — check MX records and SPF",
+      "DNS connection failing — verify DNS server responds",
+      "Checking DNS change propagation has arrived"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שכחת שnslookup מציג cached תוצאות מה-DNS server",
+        "x_en": "Forgetting nslookup shows cached results from the DNS server",
+        "fix_he": "שאל DNS server סמכותי ישירות או השתמש ב-<span class=\"ltr-term\">8.8.8.8</span> לבדיקת propagation",
+        "fix_en": "Query the authoritative DNS server directly or use <span class=\"ltr-term\">8.8.8.8</span> to test propagation"
+      },
+      {
+        "x_he": "שימוש ב-nslookup לבדיקת TXT records ללא -type=txt",
+        "x_en": "Using nslookup to check TXT records without -type=txt",
+        "fix_he": "ברירת מחדל היא A record — תמיד ציין <span class=\"ltr-term\">-type=TYPE</span> במפורש",
+        "fix_en": "Default is A record — always specify <span class=\"ltr-term\">-type=TYPE</span> explicitly"
+      }
+    ],
+    "tags": "dns nslookup resolve hostname mx txt cname record server windows"
+  },
+  {
+    "id": "tasklist",
+    "name": "tasklist",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציג את כל התהליכים הרצים. Windows equivalent ל-ps aux.",
+    "desc_en": "List all running processes. Windows equivalent of ps aux.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tasklist",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "tasklist", "cmt_he": "רשימת כל התהליכים הרצים", "cmt_en": "List all running processes"},
+      {"cmd": "tasklist /FI \"IMAGENAME eq notepad.exe\"", "cmt_he": "סנן לפי שם תהליך", "cmt_en": "Filter by process name"},
+      {"cmd": "tasklist /FI \"PID eq 1234\"", "cmt_he": "חפש לפי PID", "cmt_en": "Find by PID"},
+      {"cmd": "tasklist /SVC", "cmt_he": "הצג services הרצים בתוך כל process", "cmt_en": "Show services running inside each process"},
+      {"cmd": "tasklist /M kernel32.dll", "cmt_he": "מצא תהליכים המשתמשים ב-DLL ספציפי", "cmt_en": "Find processes using a specific DLL"}
+    ],
+    "quick_flags": [
+      {"flag": "/FI \"FILTER\"", "desc_he": "סנן לפי IMAGENAME, PID, STATUS ועוד", "desc_en": "Filter by IMAGENAME, PID, STATUS and more"},
+      {"flag": "/SVC", "desc_he": "הצג services בכל process", "desc_en": "Show services in each process"},
+      {"flag": "/M DLL", "desc_he": "הצג processes שטוענים DLL ספציפי", "desc_en": "Show processes loading specific DLL"},
+      {"flag": "/FO CSV", "desc_he": "פלט CSV — טוב לscripting", "desc_en": "CSV output — good for scripting"}
+    ],
+    "scenarios_he": [
+      "מציאת PID של process לפני taskkill",
+      "בדיקה האם service רץ על שרת",
+      "זיהוי processes הטוענים DLL חשוד"
+    ],
+    "scenarios_en": [
+      "Finding a process PID before taskkill",
+      "Checking if a service is running on a server",
+      "Identifying processes loading a suspicious DLL"
+    ],
+    "mistakes": [
+      {
+        "x_he": "חיפוש שם תהליך ב-Task Manager במקום scripting עם tasklist",
+        "x_en": "Looking up process in Task Manager instead of scripting with tasklist",
+        "fix_he": "<span class=\"ltr-term\">tasklist /FI</span> עם filter נותן אוטומציה — טוב לscripts ו-monitoring",
+        "fix_en": "<span class=\"ltr-term\">tasklist /FI</span> with filters enables automation — great for scripts and monitoring"
+      },
+      {
+        "x_he": "טעות ב-syntax של /FI — נדרשות מרכאות כפולות",
+        "x_en": "Wrong /FI syntax — double quotes required",
+        "fix_he": "הפורמט הנכון: <span class=\"ltr-term\">/FI \"IMAGENAME eq process.exe\"</span> — המרכאות חובה",
+        "fix_en": "Correct format: <span class=\"ltr-term\">/FI \"IMAGENAME eq process.exe\"</span> — quotes are required"
+      }
+    ],
+    "tags": "process pid list running task tasklist windows תהליך"
+  },
+  {
+    "id": "taskkill",
+    "name": "taskkill",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מסיים תהליכים ב-Windows לפי PID או שם. Windows equivalent ל-kill.",
+    "desc_en": "Terminate processes on Windows by PID or name. Windows equivalent of kill.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "taskkill /PID 1234 /F", "cmt_he": "/F = force kill, לא ניתן להתעלם ממנו", "cmt_en": "/F = force kill, cannot be ignored"},
+      {"cmd": "taskkill /IM notepad.exe /F", "cmt_he": "סיים לפי שם image", "cmt_en": "Terminate by image name"},
+      {"cmd": "taskkill /IM notepad.exe /T /F", "cmt_he": "/T = סיים גם את כל ה-child processes", "cmt_en": "/T = also terminate all child processes"},
+      {"cmd": "taskkill /FI \"MEMUSAGE gt 500000\" /F", "cmt_he": "הרוג processes שצורכים יותר מ-500MB RAM", "cmt_en": "Kill processes consuming over 500MB RAM"}
+    ],
+    "quick_flags": [
+      {"flag": "/PID N", "desc_he": "זהה לפי process ID", "desc_en": "Target by process ID"},
+      {"flag": "/IM NAME", "desc_he": "זהה לפי image/executable name", "desc_en": "Target by image/executable name"},
+      {"flag": "/F", "desc_he": "כפה סיום — לא ניתן להתעלם", "desc_en": "Force termination — cannot be ignored"},
+      {"flag": "/T", "desc_he": "סיים גם child processes", "desc_en": "Also terminate child processes"}
+    ],
+    "scenarios_he": [
+      "process תקוע שלא מגיב — סיים בכוח",
+      "מציאת וסיום process שבלע port",
+      "ניקוי processes תלויים בזמן deployment"
+    ],
+    "scenarios_en": [
+      "Hung process that isn't responding — force terminate",
+      "Finding and killing a process holding a port",
+      "Clearing hung processes during deployment"
+    ],
+    "mistakes": [
+      {
+        "x_he": "taskkill /IM עם שם חלקי מסיים processes שגויים",
+        "x_en": "taskkill /IM with partial name terminates wrong processes",
+        "fix_he": "תמיד ציין שם process מלא כולל .exe; בדוק קודם עם <span class=\"ltr-term\">tasklist /FI</span>",
+        "fix_en": "Always specify the full process name including .exe; verify first with <span class=\"ltr-term\">tasklist /FI</span>"
+      },
+      {
+        "x_he": "שכחת /F — process מתעלם מהבקשה",
+        "x_en": "Forgetting /F — process ignores the request",
+        "fix_he": "הוסף <span class=\"ltr-term\">/F</span> לסיום כפוי כשprocess לא מגיב",
+        "fix_en": "Add <span class=\"ltr-term\">/F</span> for forced termination when process doesn't respond"
+      }
+    ],
+    "secnote_he": "taskkill /F על processes מערכת קריטיים יכול לגרום ל-BSOD. בדוק תמיד את שם ה-process ב-tasklist קודם.",
+    "secnote_en": "taskkill /F on critical system processes can cause BSOD. Always verify the process name with tasklist first.",
+    "tags": "kill process terminate taskkill pid windows תהליך סיום"
+  },
+  {
+    "id": "diskpart",
+    "name": "diskpart",
+    "cat": "disk",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "כלי ניהול disk ו-partition של Windows. חזק ומסוכן — פועל ישירות על הדיסק.",
+    "desc_en": "Windows disk and partition management tool. Powerful and dangerous — operates directly on disk.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/diskpart",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "diskpart", "cmt_he": "פתח diskpart shell", "cmt_en": "Open diskpart shell"},
+      {"cmd": "list disk", "cmt_he": "הצג כל הדיסקים", "cmt_en": "List all disks"},
+      {"cmd": "select disk 1", "cmt_he": "בחר דיסק לפי מספר", "cmt_en": "Select disk by number"},
+      {"cmd": "list partition", "cmt_he": "הצג partitions בדיסק שנבחר", "cmt_en": "List partitions on selected disk"},
+      {"cmd": "assign letter=E", "cmt_he": "הקצה drive letter ל-partition שנבחר", "cmt_en": "Assign drive letter to selected partition"}
+    ],
+    "quick_flags": [
+      {"flag": "list disk", "desc_he": "הצג כל הדיסקים", "desc_en": "List all disks"},
+      {"flag": "select disk N", "desc_he": "בחר דיסק לפי מספר", "desc_en": "Select disk by number"},
+      {"flag": "list partition", "desc_he": "הצג partitions בדיסק שנבחר", "desc_en": "List partitions on selected disk"},
+      {"flag": "assign letter=X", "desc_he": "הקצה drive letter ל-partition שנבחר", "desc_en": "Assign drive letter to selected partition"}
+    ],
+    "scenarios_he": [
+      "disk חדש לא מופיע ב-Explorer — הוסף drive letter",
+      "partition לא נגיש לאחר move של hardware",
+      "שחזור volume שנעשה offline"
+    ],
+    "scenarios_en": [
+      "New disk not showing in Explorer — add drive letter",
+      "Partition inaccessible after hardware move",
+      "Recovering a volume that went offline"
+    ],
+    "mistakes": [
+      {
+        "x_he": "clean ב-diskpart מוחק הכל מהדיסק שנבחר — irreversible",
+        "x_en": "clean in diskpart wipes everything on selected disk — irreversible",
+        "fix_he": "אמת תמיד שנבחר הדיסק הנכון עם <span class=\"ltr-term\">list disk</span> לפני כל פעולה הרסנית",
+        "fix_en": "Always verify the correct disk is selected with <span class=\"ltr-term\">list disk</span> before any destructive operation"
+      },
+      {
+        "x_he": "מספרי disk משתנים לאחר reboot",
+        "x_en": "Disk numbers change after reboot",
+        "fix_he": "בדוק תמיד מספרי disk מחדש עם <span class=\"ltr-term\">list disk</span> בתחילת כל session",
+        "fix_en": "Always re-check disk numbers with <span class=\"ltr-term\">list disk</span> at the start of each session"
+      }
+    ],
+    "tags": "disk partition volume format assign drive letter windows דיסק"
+  },
+  {
+    "id": "wmic",
+    "name": "wmic",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "ממשק WMI לשאילתות מידע מערכת: hardware, software, processes, services.",
+    "desc_en": "WMI interface for querying system info: hardware, software, processes, and services.",
+    "source_url": "https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmic",
+    "source_name": "Microsoft Docs — WMIC",
+    "usage": [
+      {"cmd": "wmic os get Caption,Version,BuildNumber", "cmt_he": "גרסת OS ו-build number", "cmt_en": "OS version and build number"},
+      {"cmd": "wmic cpu get Name,NumberOfCores,MaxClockSpeed", "cmt_he": "מידע CPU", "cmt_en": "CPU information"},
+      {"cmd": "wmic memorychip get BankLabel,Capacity,Speed", "cmt_he": "פרטי RAM — כמות וגודל modules", "cmt_en": "RAM details — total and module sizes"},
+      {"cmd": "wmic product get Name,Version /FORMAT:CSV", "cmt_he": "רשימת software מותקן בפורמט CSV", "cmt_en": "List installed software in CSV format"},
+      {"cmd": "wmic process get Name,ProcessId,CommandLine /FORMAT:CSV", "cmt_he": "כל processes עם command line מלא", "cmt_en": "All processes with full command line"}
+    ],
+    "quick_flags": [
+      {"flag": "os", "desc_he": "מידע operating system", "desc_en": "Operating system information"},
+      {"flag": "cpu", "desc_he": "מידע processor", "desc_en": "Processor information"},
+      {"flag": "memorychip", "desc_he": "מידע RAM", "desc_en": "RAM information"},
+      {"flag": "product", "desc_he": "software מותקן", "desc_en": "Installed software"},
+      {"flag": "/FORMAT:CSV", "desc_he": "פלט CSV — לimport ל-Excel או scripting", "desc_en": "CSV output — for Excel import or scripting"}
+    ],
+    "scenarios_he": [
+      "inventory של hardware לפני upgrade",
+      "מציאת version מדויק של OS ל-patch management",
+      "audit של software מותקן על כל endpoints"
+    ],
+    "scenarios_en": [
+      "Hardware inventory before an upgrade",
+      "Finding exact OS version for patch management",
+      "Software audit across all endpoints"
+    ],
+    "mistakes": [
+      {
+        "x_he": "wmic product get name לוקח הרבה זמן — database גדול",
+        "x_en": "wmic product get name takes a long time — large database",
+        "fix_he": "הוסף <span class=\"ltr-term\">/FORMAT:CSV</span> ו-redirect לקובץ: <span class=\"ltr-term\">>out.csv</span>",
+        "fix_en": "Add <span class=\"ltr-term\">/FORMAT:CSV</span> and redirect to file: <span class=\"ltr-term\">>out.csv</span>"
+      },
+      {
+        "x_he": "wmic deprecated ב-Windows 11",
+        "x_en": "wmic is deprecated in Windows 11",
+        "fix_he": "עבור ל-<span class=\"ltr-term\">Get-WmiObject</span> ב-PowerShell לשימוש ב-production systems חדשים",
+        "fix_en": "Switch to <span class=\"ltr-term\">Get-WmiObject</span> in PowerShell for newer production systems"
+      }
+    ],
+    "tags": "wmi system info hardware cpu ram os version software inventory windows"
+  },
+  {
+    "id": "sc-win",
     "name": "sc (Service Control)",
     "cat": "system",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Query, start, stop, and configure Windows services from the command line.",
+    "desc_he": "ניהול Windows services — הפעלה, כיבוי, שאילתה, תצורה.",
+    "desc_en": "Manage Windows services — start, stop, query, configure.",
     "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-query",
-    "source_name": "Microsoft Docs",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "sc query", "cmt": "list all services and their state"},
-      {"cmd": "sc query type= all state= all", "cmt": "include stopped services"},
-      {"cmd": "sc start servicename", "cmt": "start a service"},
-      {"cmd": "sc stop servicename", "cmt": "stop a service"},
-      {"cmd": "sc qc servicename", "cmt": "query service configuration (exe path, start type)"},
-      {"cmd": "sc failure servicename actions= restart/5000/restart/10000// reset= 3600", "cmt": "configure auto-restart on failure"}
+      {"cmd": "sc query", "cmt_he": "הצג את כל ה-services הרצים", "cmt_en": "Display all running services"},
+      {"cmd": "sc query servicename", "cmt_he": "סטטוס service ספציפי", "cmt_en": "Specific service status"},
+      {"cmd": "sc start servicename", "cmt_he": "הפעל service", "cmt_en": "Start a service"},
+      {"cmd": "sc stop servicename", "cmt_he": "עצור service", "cmt_en": "Stop a service"},
+      {"cmd": "sc config servicename start= auto", "cmt_he": "קבע auto-start ב-boot (שים לב: רווח אחרי =)", "cmt_en": "Set auto-start at boot (note: space after =)"}
     ],
     "quick_flags": [
-      {"flag": "query", "desc": "display status of service(s)"},
-      {"flag": "start NAME", "desc": "start a service"},
-      {"flag": "stop NAME", "desc": "stop a service"},
-      {"flag": "qc NAME", "desc": "query service configuration"},
-      {"flag": "failure NAME", "desc": "configure failure recovery actions"}
+      {"flag": "query", "desc_he": "שאל סטטוס service", "desc_en": "Query service status"},
+      {"flag": "start", "desc_he": "הפעל service", "desc_en": "Start service"},
+      {"flag": "stop", "desc_he": "עצור service", "desc_en": "Stop service"},
+      {"flag": "config start= auto", "desc_he": "הגדר auto-start (auto/demand/disabled)", "desc_en": "Configure startup type (auto/demand/disabled)"}
     ],
-    "scenarios": [
-      "Service failing — check configuration and executable path before editing in GUI",
-      "Configuring automatic restart on failure for a critical service",
-      "During IR — disable a compromised service without deleting it"
+    "scenarios_he": [
+      "service לא עלה לאחר reboot — בדוק startup type ו-status",
+      "עצירת service לפני maintenance ב-production",
+      "שינוי startup type ל-disabled לservice לא נחוץ"
     ],
-    "mistakes": [
-      {"x": "sc query service with spaces in name fails", "fix": "Wrap names with spaces in quotes: <span>sc query \"Print Spooler\"</span>"},
-      {"x": "sc stop doesn't kill child processes", "fix": "Use <span>taskkill /im service.exe /f</span> if sc stop hangs"}
-    ],
-    "secnote": "Attackers use sc to install malicious services: sc create Malware binPath= \"C:\\Windows\\Temp\\evil.exe\". Audit sc query output and cross-check paths against known good binaries.",
-    "tags": "service windows sc start stop configure query control"
-  },
-  {
-    "id": "eventvwr",
-    "name": "Event Log (wevtutil)",
-    "cat": "system",
-    "diff": "intermediate",
-    "sec": true,
-    "desc": "Query Windows Event Logs from the command line without opening Event Viewer GUI.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil",
-    "source_name": "Microsoft Docs",
-    "usage": [
-      {"cmd": "wevtutil qe System /c:20 /f:text /rd:true", "cmt": "last 20 System events, newest first"},
-      {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4625]]\" /f:text /c:50", "cmt": "last 50 failed logons (Event 4625)"},
-      {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4624]]\" /f:text /c:20", "cmt": "last 20 successful logons"},
-      {"cmd": "wevtutil qe Application /q:\"*[System[Level=2]]\" /f:text /c:30", "cmt": "Application errors only"}
-    ],
-    "quick_flags": [
-      {"flag": "qe LOG", "desc": "query events from a log (System, Security, Application)"},
-      {"flag": "/c:N", "desc": "return at most N events"},
-      {"flag": "/f:text", "desc": "format as readable text (not XML)"},
-      {"flag": "/rd:true", "desc": "read events newest-first"},
-      {"flag": "/q:XPATH", "desc": "XPath filter expression for event fields"}
-    ],
-    "scenarios": [
-      "Remote server without RDP — pull logs via command line",
-      "Automated log collection in a script",
-      "Investigating failed logins on a server during IR"
+    "scenarios_en": [
+      "Service didn't start after reboot — check startup type and status",
+      "Stopping a service before production maintenance",
+      "Disabling startup for an unneeded service"
     ],
     "mistakes": [
-      {"x": "Opening Event Viewer GUI on a remote server — slow and clunky", "fix": "Use <span>wevtutil qe</span> remotely: add <span>/r:HOSTNAME /u:USER /p:PASS</span>"},
-      {"x": "Not knowing the key Security Event IDs", "fix": "4624=logon 4625=failed logon 4720=account created 4732=added to group 4688=process created"}
+      {
+        "x_he": "sc config servicename start=auto ללא רווח — syntax error",
+        "x_en": "sc config servicename start=auto without space — syntax error",
+        "fix_he": "חייב להיות רווח: <span class=\"ltr-term\">start= auto</span> (לא start=auto)",
+        "fix_en": "Must have a space: <span class=\"ltr-term\">start= auto</span> (not start=auto)"
+      },
+      {
+        "x_he": "sc stop service מבלי לבדוק dependencies",
+        "x_en": "sc stop service without checking dependencies",
+        "fix_he": "בדוק dependencies עם <span class=\"ltr-term\">sc qc servicename</span> לפני עצירה",
+        "fix_en": "Check dependencies with <span class=\"ltr-term\">sc qc servicename</span> before stopping"
+      }
     ],
-    "secnote": "Key Security Event IDs to monitor: 4625 (failed logon), 4720 (new account), 4732 (added to admin group), 4698 (scheduled task created), 7045 (new service installed). These are the top attacker footprints.",
-    "tags": "event log windows security audit logon wevtutil eventid"
-  },
-  {
-    "id": "robocopy",
-    "name": "robocopy",
-    "cat": "disk",
-    "diff": "intermediate",
-    "sec": false,
-    "desc": "Robust file copy. Far more reliable than xcopy for large transfers, with resume capability.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy",
-    "source_name": "Microsoft Docs",
-    "usage": [
-      {"cmd": "robocopy C:\\Source D:\\Dest /E /Z /LOG:copy.log", "cmt": "/E = all subdirs, /Z = restartable, /LOG = log to file"},
-      {"cmd": "robocopy C:\\Source \\\\server\\share /E /COPYALL /R:3 /W:5", "cmt": "/COPYALL preserves permissions, retry 3 times, wait 5s"},
-      {"cmd": "robocopy C:\\Source D:\\Dest /E /MIR", "cmt": "/MIR = mirror — deletes files in dest not in source, use with care"},
-      {"cmd": "robocopy C:\\Data \\\\backup\\Data /E /Z /XA:SH", "cmt": "exclude system and hidden files"}
-    ],
-    "quick_flags": [
-      {"flag": "/E", "desc": "copy all subdirectories including empty ones"},
-      {"flag": "/Z", "desc": "restartable mode — resumes after network drop"},
-      {"flag": "/MIR", "desc": "mirror — deletes extra files at destination"},
-      {"flag": "/COPYALL", "desc": "copy all file info including permissions"},
-      {"flag": "/L", "desc": "list only — no actual copy (dry run)"}
-    ],
-    "scenarios": [
-      "Migrating a file server — robust transfer with full resume on network drop",
-      "Backing up user profiles with ACL preservation",
-      "Synchronizing directories — scheduled task with /MIR"
-    ],
-    "mistakes": [
-      {"x": "/MIR deletes files in the destination not in source", "fix": "Test with <span>/L</span> (list only, no copy) first — /MIR is destructive if source path is wrong"},
-      {"x": "Not using /Z on large transfers over unreliable networks", "fix": "<span>/Z</span> enables restartable mode — file can resume from where it stopped after a connection drop"}
-    ],
-    "tags": "copy file transfer robocopy backup mirror windows sync large"
+    "secnote_he": "עצירת services ביטחוניים (Windows Defender, Firewall) היא טכניקת malware נפוצה. כל עצירת service יש לבדוק ב-Event Log.",
+    "secnote_en": "Stopping security services (Windows Defender, Firewall) is a common malware technique. All service stops should be reviewed in Event Log.",
+    "tags": "service start stop query config windows sc שירות"
   },
   {
     "id": "reg",
     "name": "reg (Registry)",
     "cat": "system",
-    "diff": "advanced",
+    "diff": "intermediate",
     "sec": true,
-    "desc": "Query, add, delete, and export Windows Registry keys from the command line.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/reg-query",
-    "source_name": "Microsoft Docs",
+    "desc_he": "מנהל את ה-Windows Registry מ-command line — קריאה, כתיבה, ייצוא, ייבוא.",
+    "desc_en": "Manage the Windows Registry from the command line — read, write, export, import.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/reg",
+    "source_name": "Microsoft Docs — Windows Commands",
     "usage": [
-      {"cmd": "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "cmt": "query startup registry run key"},
-      {"cmd": "reg add HKCU\\Software\\App /v Setting /t REG_SZ /d \"value\"", "cmt": "add a string value"},
-      {"cmd": "reg export HKLM\\System\\CurrentControlSet\\Services backup.reg", "cmt": "export a key to file"},
-      {"cmd": "reg delete HKCU\\Software\\BadApp /f", "cmt": "delete key without confirmation"}
+      {"cmd": "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion /v ProductName", "cmt_he": "קרא ערך ספציפי", "cmt_en": "Read a specific value"},
+      {"cmd": "reg export HKLM\\SOFTWARE\\MyApp backup.reg", "cmt_he": "גבה key לפני שינוי", "cmt_en": "Backup a key before making changes"},
+      {"cmd": "reg add HKCU\\Software\\MyApp /v Setting /t REG_SZ /d \"value\"", "cmt_he": "הוסף ערך חדש", "cmt_en": "Add a new value"},
+      {"cmd": "reg delete HKCU\\Software\\OldApp /f", "cmt_he": "מחק key (/f = ללא אישור)", "cmt_en": "Delete a key (/f = no confirmation)"}
     ],
     "quick_flags": [
-      {"flag": "query KEY", "desc": "read values from a registry key"},
-      {"flag": "add KEY /v NAME /t TYPE /d DATA", "desc": "create or set a registry value"},
-      {"flag": "delete KEY /f", "desc": "delete a key or value (force, no prompt)"},
-      {"flag": "export KEY FILE", "desc": "save a key and subkeys to a .reg file"},
-      {"flag": "import FILE", "desc": "restore a .reg file into the registry"}
+      {"flag": "query", "desc_he": "קרא ערכי registry", "desc_en": "Read registry values"},
+      {"flag": "add", "desc_he": "הוסף ערך או key", "desc_en": "Add a value or key"},
+      {"flag": "delete", "desc_he": "מחק key (הוסף /f לדילוג על אישור)", "desc_en": "Delete a key (add /f to skip confirmation)"},
+      {"flag": "export", "desc_he": "ייצא key לקובץ .reg לגיבוי", "desc_en": "Export key to .reg file for backup"},
+      {"flag": "import", "desc_he": "ייבא קובץ .reg לשחזור", "desc_en": "Import a .reg file to restore"}
     ],
-    "scenarios": [
-      "During IR — check classic persistence locations in the registry",
-      "Scripting a registry change across multiple machines",
-      "Backing up a registry key before making a change"
+    "scenarios_he": [
+      "ניקוי startup entries של אפליקציה שהוסרה",
+      "גיבוי הגדרות registry לפני deployment",
+      "חקירת persistence mechanisms של malware ב-IR"
+    ],
+    "scenarios_en": [
+      "Removing startup entries of an uninstalled app",
+      "Backing up registry settings before deployment",
+      "Investigating malware persistence mechanisms during IR"
     ],
     "mistakes": [
-      {"x": "Editing registry without export backup first", "fix": "Always <span>reg export KEY backup.reg</span> before any edit — one command to restore if it breaks"},
-      {"x": "reg delete without /f prompts interactively — breaks scripts", "fix": "Add <span>/f</span> for force in scripts to avoid hanging on confirmation"}
+      {
+        "x_he": "מחיקת registry keys מבלי לייצא גיבוי קודם",
+        "x_en": "Deleting registry keys without exporting backup first",
+        "fix_he": "הרץ תמיד <span class=\"ltr-term\">reg export KEY backup.reg</span> לפני כל שינוי",
+        "fix_en": "Always run <span class=\"ltr-term\">reg export KEY backup.reg</span> before any modification"
+      },
+      {
+        "x_he": "בלבול בין HKLM (כל משתמשים) ל-HKCU (משתמש נוכחי)",
+        "x_en": "Confusing HKLM (all users) with HKCU (current user)",
+        "fix_he": "HKLM דורש admin; HKCU שייך לפרופיל המשתמש הנוכחי בלבד",
+        "fix_en": "HKLM requires admin; HKCU belongs to current user profile only"
+      }
     ],
-    "secnote": "Top persistence registry locations to check during IR: HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run, HKCU\\...\\Run, HKLM\\SYSTEM\\CurrentControlSet\\Services. Unknown entries = red flag.",
-    "tags": "registry windows reg run key startup persistence hkey"
+    "secnote_he": "malware נפוץ כותב persistence ל-HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run. בדיקת registry key זה היא צעד ראשון ב-IR.",
+    "secnote_en": "Common malware writes persistence to HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run. Checking this key is a first step in IR.",
+    "tags": "registry reg windows hklm hkcu key value persistence startup"
+  },
+  {
+    "id": "net-user",
+    "name": "net user / net localgroup",
+    "cat": "user",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "ניהול חשבונות משתמש ב-Windows — יצירה, שינוי, רשימת קבוצות.",
+    "desc_en": "Manage Windows user accounts — create, modify, list groups.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/net-user",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "net user", "cmt_he": "הצג כל חשבונות משתמש", "cmt_en": "List all user accounts"},
+      {"cmd": "net user username /active:yes", "cmt_he": "הפעל חשבון נעול", "cmt_en": "Activate a locked account"},
+      {"cmd": "net user username * /domain", "cmt_he": "אפס סיסמה אינטראקטיבית ב-domain", "cmt_en": "Reset password interactively on domain"},
+      {"cmd": "net localgroup administrators", "cmt_he": "הצג חברי קבוצת administrators", "cmt_en": "List members of Administrators group"},
+      {"cmd": "net localgroup administrators username /add", "cmt_he": "הוסף משתמש לקבוצת administrators", "cmt_en": "Add user to Administrators group"}
+    ],
+    "quick_flags": [
+      {"flag": "net user", "desc_he": "הצג/נהל חשבונות משתמש", "desc_en": "Display/manage user accounts"},
+      {"flag": "/active:yes/no", "desc_he": "הפעל/בטל חשבון", "desc_en": "Enable/disable account"},
+      {"flag": "/domain", "desc_he": "פעל על domain account", "desc_en": "Operate on domain account"},
+      {"flag": "net localgroup", "desc_he": "הצג/נהל קבוצות", "desc_en": "Display/manage groups"}
+    ],
+    "scenarios_he": [
+      "משתמש ננעל מ-Windows account לאחר טעויות סיסמה",
+      "בדיקת חברות בקבוצת Administrators לאחר אירוע אבטחה",
+      "יצירת חשבון service מקומי לאפליקציה"
+    ],
+    "scenarios_en": [
+      "User locked out of Windows account after password failures",
+      "Checking Administrators group membership after a security event",
+      "Creating a local service account for an application"
+    ],
+    "mistakes": [
+      {
+        "x_he": "net user username password בשורת הפקודה — הסיסמה נרשמת ב-history",
+        "x_en": "net user username password on command line — password logs in history",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">net user username *</span> לפרמפט סיסמה אינטראקטיבי",
+        "fix_en": "Use <span class=\"ltr-term\">net user username *</span> for interactive password prompt"
+      },
+      {
+        "x_he": "הוספת משתמש ל-Administrators ללא בדיקה עם net localgroup קודם",
+        "x_en": "Adding user to Administrators without first checking with net localgroup",
+        "fix_he": "בדוק תחילה: <span class=\"ltr-term\">net localgroup administrators</span>; הוסף רק כשנדרש",
+        "fix_en": "Check first: <span class=\"ltr-term\">net localgroup administrators</span>; add only when needed"
+      }
+    ],
+    "secnote_he": "בזמן IR, בדוק קבוצת Administrators מיד: net localgroup administrators. משתמש לא צפוי בקבוצה = פריצה.",
+    "secnote_en": "During IR, check Administrators group immediately: net localgroup administrators. An unexpected member = compromise.",
+    "tags": "user account group administrator windows password net משתמש חשבון"
+  },
+  {
+    "id": "wevtutil",
+    "name": "wevtutil (Event Log)",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "ניהול וחיפוש ב-Windows Event Logs מ-command line.",
+    "desc_en": "Manage and query Windows Event Logs from the command line.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "wevtutil qe System /c:20 /rd:true /f:text", "cmt_he": "20 אירועים אחרונים מ-System log, בטקסט", "cmt_en": "Last 20 events from System log in text format"},
+      {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4625]]\" /c:10 /f:text", "cmt_he": "10 ניסיונות Login כושלים אחרונים (Event 4625)", "cmt_en": "Last 10 failed login attempts (Event 4625)"},
+      {"cmd": "wevtutil qe System /q:\"*[System[Level=2]]\" /c:20 /f:text", "cmt_he": "20 שגיאות אחרונות (Level 2) ב-System log", "cmt_en": "Last 20 errors (Level 2) in System log"},
+      {"cmd": "wevtutil cl System", "cmt_he": "נקה System event log", "cmt_en": "Clear System event log"}
+    ],
+    "quick_flags": [
+      {"flag": "qe LOG", "desc_he": "שאל events ב-log (System/Security/Application)", "desc_en": "Query events in log (System/Security/Application)"},
+      {"flag": "/c:N", "desc_he": "הגבל ל-N אירועים", "desc_en": "Limit to N events"},
+      {"flag": "/rd:true", "desc_he": "קרא לאחור — האחרונים ראשונה", "desc_en": "Read in reverse — most recent first"},
+      {"flag": "/f:text", "desc_he": "פורמט טקסט — קריא יותר מ-XML", "desc_en": "Text format — more readable than XML"},
+      {"flag": "/q:\"XPATH\"", "desc_he": "סנן לפי XPath query", "desc_en": "Filter with XPath query"}
+    ],
+    "scenarios_he": [
+      "חקירת ניסיונות login כושלים — חפש Event 4625",
+      "שגיאות service ב-System log — Level 2 (Error)",
+      "IR: ייצוא event logs לניתוח offline"
+    ],
+    "scenarios_en": [
+      "Investigating failed login attempts — search Event 4625",
+      "Service errors in System log — Level 2 (Error)",
+      "IR: export event logs for offline analysis"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שכחת /rd:true — מציג events ישנים קודם",
+        "x_en": "Forgetting /rd:true — shows old events first",
+        "fix_he": "הוסף תמיד <span class=\"ltr-term\">/rd:true</span> לקבלת events האחרונים ראשונה",
+        "fix_en": "Always add <span class=\"ltr-term\">/rd:true</span> to get the most recent events first"
+      },
+      {
+        "x_he": "ניסיון לקרוא Security log ללא הרשאות admin",
+        "x_en": "Trying to read Security log without admin privileges",
+        "fix_he": "Security Event Log דורש הרשאות admin — הרץ CMD כ-Administrator",
+        "fix_en": "Security Event Log requires admin privileges — run CMD as Administrator"
+      }
+    ],
+    "tags": "event log windows security system application eventlog wevtutil לוג אירועים"
   }
 ]

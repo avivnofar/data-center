@@ -5,33 +5,50 @@
     "cat": "network",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Display active network connections, listening ports and routing tables.",
+    "desc_he": "מציגה חיבורי רשת פעילים, ports מאזינים וטבלאות ניתוב של ה-kernel.",
+    "desc_en": "Display active network connections, listening ports and kernel routing tables.",
     "source_url": "https://man7.org/linux/man-pages/man8/netstat.8.html",
     "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "netstat -tulnp", "cmt": "TCP+UDP listening sockets with PID"},
-      {"cmd": "netstat -anp | grep :443", "cmt": "filter by specific port"},
-      {"cmd": "netstat -s", "cmt": "protocol statistics summary"},
-      {"cmd": "netstat -rn", "cmt": "show kernel routing table"}
+      {"cmd": "netstat -tulnp", "cmt_he": "כל ה-sockets המאזינים של TCP ו-UDP עם PID", "cmt_en": "All listening TCP+UDP sockets with PID"},
+      {"cmd": "netstat -anp | grep :443", "cmt_he": "סינון לפי port ספציפי", "cmt_en": "Filter by specific port"},
+      {"cmd": "netstat -s", "cmt_he": "סיכום סטטיסטיקות לפי protocol", "cmt_en": "Protocol statistics summary"},
+      {"cmd": "netstat -rn", "cmt_he": "טבלת ניתוב של ה-kernel", "cmt_en": "Kernel routing table"}
     ],
     "quick_flags": [
-      {"flag": "-t", "desc": "TCP sockets only"},
-      {"flag": "-u", "desc": "UDP sockets only"},
-      {"flag": "-l", "desc": "listening sockets only"},
-      {"flag": "-n", "desc": "skip reverse DNS (faster)"},
-      {"flag": "-p", "desc": "show PID/program name (needs root)"}
+      {"flag": "-t", "desc_he": "רק TCP sockets", "desc_en": "TCP sockets only"},
+      {"flag": "-u", "desc_he": "רק UDP sockets", "desc_en": "UDP sockets only"},
+      {"flag": "-l", "desc_he": "רק sockets מאזינים", "desc_en": "Listening sockets only"},
+      {"flag": "-n", "desc_he": "ללא DNS lookup — מהיר יותר", "desc_en": "Skip reverse DNS (faster)"},
+      {"flag": "-p", "desc_he": "הצג PID ושם התהליך (דורש root)", "desc_en": "Show PID/program name (needs root)"}
     ],
-    "scenarios": [
-      "Service not starting — check if the port is already bound",
+    "scenarios_he": [
+      "שירות לא עולה — בדוק אם ה-port כבר תפוס על ידי תהליך אחר",
+      "מצא איזה תהליך מחזיק את port 80 או 443",
+      "סקור את כל ה-services המאזינים לפני בדיקת אבטחה"
+    ],
+    "scenarios_en": [
+      "Service won't start — check if the port is already bound by another process",
       "Find which process owns port 80 or 443",
       "Audit all listening services before a security review"
     ],
     "mistakes": [
-      {"x": "Using netstat without -n causes slow DNS lookups", "fix": "Always use <span>-n</span> to skip reverse DNS"},
-      {"x": "Forgetting -p hides PID info", "fix": "Run as root or with <span>sudo</span> to see all PIDs"}
+      {
+        "x_he": "הרצת netstat ללא -n גורמת ל-DNS lookups איטיים",
+        "x_en": "Running netstat without -n causes slow DNS lookups",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-n</span> כדי לדלג על reverse DNS",
+        "fix_en": "Always use <span class=\"ltr-term\">-n</span> to skip reverse DNS"
+      },
+      {
+        "x_he": "שכחת -p מסתיר מידע על ה-PID",
+        "x_en": "Forgetting -p hides PID info",
+        "fix_he": "הרץ כ-root או עם <span class=\"ltr-term\">sudo</span> כדי לראות את כל ה-PIDs",
+        "fix_en": "Run as root or with <span class=\"ltr-term\">sudo</span> to see all PIDs"
+      }
     ],
-    "secnote": "Attackers run netstat to map open ports. As defender: unknown listeners on unusual ports are red flags. Modern replacement: <b>ss -tulnp</b> (faster, more detail).",
-    "tags": "port connection socket listening tcp udp pid network"
+    "secnote_he": "תוקפים מריצים netstat כדי למפות ports פתוחים. כמגן: listeners לא מוכרים על ports חריגים הם סימן אזהרה. תחליף מודרני: <b>ss -tulnp</b> (מהיר יותר, פרטים עשירים יותר).",
+    "secnote_en": "Attackers run netstat to map open ports. As defender: unknown listeners on unusual ports are red flags. Modern replacement: <b>ss -tulnp</b>.",
+    "tags": "port connection socket listening tcp udp pid network רשת חיבור"
   },
   {
     "id": "ss",
@@ -39,33 +56,50 @@
     "cat": "network",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Modern replacement for netstat. Faster, richer socket statistics directly from kernel.",
+    "desc_he": "תחליף מודרני ל-netstat. קורא ישירות מה-kernel — מהיר יותר ועם נתונים עשירים יותר.",
+    "desc_en": "Modern replacement for netstat. Reads directly from the kernel — faster with richer socket data.",
     "source_url": "https://man7.org/linux/man-pages/man8/ss.8.html",
     "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "ss -tulnp", "cmt": "all listening TCP+UDP with PIDs"},
-      {"cmd": "ss -s", "cmt": "summary of socket counts"},
-      {"cmd": "ss -tnp state established", "cmt": "only established TCP connections"},
-      {"cmd": "ss -tnp dst 10.0.0.1", "cmt": "connections to a specific host"}
+      {"cmd": "ss -tulnp", "cmt_he": "כל ה-sockets המאזינים של TCP ו-UDP עם PID", "cmt_en": "All listening TCP+UDP sockets with PIDs"},
+      {"cmd": "ss -s", "cmt_he": "סיכום מספר ה-sockets", "cmt_en": "Summary of socket counts"},
+      {"cmd": "ss -tnp state established", "cmt_he": "רק חיבורי TCP פעילים", "cmt_en": "Only established TCP connections"},
+      {"cmd": "ss -tnp dst 10.0.0.1", "cmt_he": "חיבורים ל-host ספציפי", "cmt_en": "Connections to a specific host"}
     ],
     "quick_flags": [
-      {"flag": "-t", "desc": "TCP sockets"},
-      {"flag": "-u", "desc": "UDP sockets"},
-      {"flag": "-l", "desc": "listening sockets only"},
-      {"flag": "-n", "desc": "numeric output, no DNS"},
-      {"flag": "-p", "desc": "show process using socket"}
+      {"flag": "-t", "desc_he": "TCP sockets", "desc_en": "TCP sockets"},
+      {"flag": "-u", "desc_he": "UDP sockets", "desc_en": "UDP sockets"},
+      {"flag": "-l", "desc_he": "רק sockets מאזינים", "desc_en": "Listening sockets only"},
+      {"flag": "-n", "desc_he": "פלט מספרי — ללא DNS", "desc_en": "Numeric output — no DNS"},
+      {"flag": "-p", "desc_he": "הצג תהליך שמשתמש ב-socket", "desc_en": "Show process using socket"}
     ],
-    "scenarios": [
+    "scenarios_he": [
+      "הכלי המועדף ב-incident response — מהיר מ-netstat",
+      "בדוק אם port של service כבר bound לפני הפעלת daemon",
+      "בזמן IR: מפה את כל חיבורי outbound במהירות"
+    ],
+    "scenarios_en": [
       "Preferred tool for live incident response — faster than netstat",
       "Check if a service port is bound before starting a daemon",
       "During IR: enumerate all outbound connections quickly"
     ],
     "mistakes": [
-      {"x": "Using netstat when ss is available", "fix": "<span>ss</span> reads kernel structs directly, netstat is deprecated on many distros"},
-      {"x": "Not filtering output on busy servers", "fix": "Pipe through <span>grep</span> or use destination filter flags"}
+      {
+        "x_he": "שימוש ב-netstat כשיש ss זמין",
+        "x_en": "Using netstat when ss is available",
+        "fix_he": "<span class=\"ltr-term\">ss</span> קורא struct של kernel ישירות; netstat deprecated ברוב ה-distros",
+        "fix_en": "<span class=\"ltr-term\">ss</span> reads kernel structs directly; netstat is deprecated on most distros"
+      },
+      {
+        "x_he": "לא מסנן פלט בשרתים עמוסים",
+        "x_en": "Not filtering output on busy servers",
+        "fix_he": "העבר דרך <span class=\"ltr-term\">grep</span> או השתמש ב-destination filter flags",
+        "fix_en": "Pipe through <span class=\"ltr-term\">grep</span> or use destination filter flags"
+      }
     ],
-    "secnote": "During incident response, ss is the first tool to run. Pay attention to ESTABLISHED connections to unusual IPs and LISTEN on unexpected ports.",
-    "tags": "socket statistics network port tcp udp connection kernel"
+    "secnote_he": "בזמן incident response, ss הוא הכלי הראשון להריץ. שים לב לחיבורי ESTABLISHED ל-IPs לא מוכרים ו-LISTEN על ports לא צפויים.",
+    "secnote_en": "During incident response, ss is the first tool to run. Pay attention to ESTABLISHED connections to unusual IPs and LISTEN on unexpected ports.",
+    "tags": "socket statistics network port tcp udp connection kernel רשת חיבור"
   },
   {
     "id": "ping",
@@ -73,30 +107,46 @@
     "cat": "network",
     "diff": "beginner",
     "sec": false,
-    "desc": "Test reachability and measure round-trip latency via ICMP echo requests.",
+    "desc_he": "בודק זמינות host ומודד זמן תגובה (latency) באמצעות בקשות ICMP echo.",
+    "desc_en": "Test host reachability and measure round-trip latency via ICMP echo requests.",
     "source_url": "https://man7.org/linux/man-pages/man8/ping.8.html",
     "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "ping -c 4 8.8.8.8", "cmt": "send exactly 4 packets"},
-      {"cmd": "ping -i 0.2 -c 20 10.0.0.1", "cmt": "fast burst — check packet loss"},
-      {"cmd": "ping -s 1400 gateway.local", "cmt": "test with larger packet size (MTU check)"}
+      {"cmd": "ping -c 4 8.8.8.8", "cmt_he": "שלח בדיוק 4 packets", "cmt_en": "Send exactly 4 packets"},
+      {"cmd": "ping -i 0.2 -c 20 10.0.0.1", "cmt_he": "burst מהיר — בדוק packet loss", "cmt_en": "Fast burst — check packet loss"},
+      {"cmd": "ping -s 1400 gateway.local", "cmt_he": "בדיקת MTU עם packet גדול יותר", "cmt_en": "MTU check with larger packet size"}
     ],
     "quick_flags": [
-      {"flag": "-c N", "desc": "send N packets then stop"},
-      {"flag": "-i S", "desc": "interval between packets (seconds)"},
-      {"flag": "-s N", "desc": "packet size in bytes"},
-      {"flag": "-W N", "desc": "timeout per packet (seconds)"}
+      {"flag": "-c N", "desc_he": "שלח N packets ועצור", "desc_en": "Send N packets then stop"},
+      {"flag": "-i S", "desc_he": "מרווח בין packets (שניות)", "desc_en": "Interval between packets (seconds)"},
+      {"flag": "-s N", "desc_he": "גודל ה-packet ב-bytes", "desc_en": "Packet size in bytes"},
+      {"flag": "-W N", "desc_he": "timeout לכל packet (שניות)", "desc_en": "Timeout per packet (seconds)"}
     ],
-    "scenarios": [
+    "scenarios_he": [
+      "הצעד הראשון בכל debug של רשת",
+      "בדיקת packet loss לפני האשמת האפליקציה",
+      "זיהוי בעיות MTU הגורמות ל-fragmentation"
+    ],
+    "scenarios_en": [
       "First step in any network debug flow",
-      "Checking if packet loss exists before blaming the application",
+      "Checking for packet loss before blaming the application",
       "Testing MTU issues causing fragmentation"
     ],
     "mistakes": [
-      {"x": "Concluding host is down because ping fails", "fix": "Many hosts block ICMP — use <span>traceroute</span> or <span>nmap</span> to confirm"},
-      {"x": "Not specifying -c — runs forever", "fix": "Always use <span>-c N</span> in scripts"}
+      {
+        "x_he": "מסקנה שה-host כבוי כי ping נכשל",
+        "x_en": "Concluding the host is down because ping fails",
+        "fix_he": "מארחים רבים חוסמים ICMP — השתמש ב-<span class=\"ltr-term\">traceroute</span> או <span class=\"ltr-term\">nmap</span> לאישור",
+        "fix_en": "Many hosts block ICMP — use <span class=\"ltr-term\">traceroute</span> or <span class=\"ltr-term\">nmap</span> to confirm"
+      },
+      {
+        "x_he": "אי-ציון -c — הפקודה רצה לנצח",
+        "x_en": "Not specifying -c — runs forever",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-c N</span> ב-scripts",
+        "fix_en": "Always use <span class=\"ltr-term\">-c N</span> in scripts"
+      }
     ],
-    "tags": "connectivity reachability icmp latency packet loss network"
+    "tags": "connectivity reachability icmp latency packet loss network רשת זמינות"
   },
   {
     "id": "traceroute",
@@ -104,30 +154,46 @@
     "cat": "network",
     "diff": "intermediate",
     "sec": false,
-    "desc": "Trace the route packets take to a destination, showing each hop and latency.",
+    "desc_he": "עוקב אחרי הנתיב שה-packets עושים ליעד, מציג כל hop עם ה-latency שלו.",
+    "desc_en": "Trace the route packets take to a destination, showing each hop and its latency.",
     "source_url": "https://linux.die.net/man/8/traceroute",
     "source_name": "Linux man page (linux.die.net)",
     "usage": [
-      {"cmd": "traceroute 8.8.8.8", "cmt": "standard trace"},
-      {"cmd": "traceroute -n 8.8.8.8", "cmt": "numeric IPs, faster (skip DNS)"},
-      {"cmd": "traceroute -T -p 443 example.com", "cmt": "TCP trace on port 443 (bypass ICMP blocks)"}
+      {"cmd": "traceroute 8.8.8.8", "cmt_he": "trace סטנדרטי", "cmt_en": "Standard trace"},
+      {"cmd": "traceroute -n 8.8.8.8", "cmt_he": "IPs מספריים בלבד, מהיר יותר (דולג על DNS)", "cmt_en": "Numeric IPs only, faster (skip DNS)"},
+      {"cmd": "traceroute -T -p 443 example.com", "cmt_he": "TCP trace על port 443 (עוקף חסימות ICMP)", "cmt_en": "TCP trace on port 443 (bypasses ICMP blocks)"}
     ],
     "quick_flags": [
-      {"flag": "-n", "desc": "numeric output, skip DNS lookups"},
-      {"flag": "-T", "desc": "use TCP SYN probes instead of UDP"},
-      {"flag": "-p PORT", "desc": "destination port for probes"},
-      {"flag": "-m N", "desc": "maximum hop count (default 30)"}
+      {"flag": "-n", "desc_he": "פלט מספרי — דלג על DNS lookups", "desc_en": "Numeric output — skip DNS lookups"},
+      {"flag": "-T", "desc_he": "השתמש ב-TCP SYN probes במקום UDP", "desc_en": "Use TCP SYN probes instead of UDP"},
+      {"flag": "-p PORT", "desc_he": "destination port לבדיקות", "desc_en": "Destination port for probes"},
+      {"flag": "-m N", "desc_he": "מספר hops מקסימלי (ברירת מחדל: 30)", "desc_en": "Maximum hop count (default 30)"}
     ],
-    "scenarios": [
+    "scenarios_he": [
+      "איתור הנקודה ברשת שבה חיבור נכשל",
+      "זיהוי hop איטי הגורם לעלייה ב-latency",
+      "בדיקה האם port ספציפי נגיש דרך firewalls"
+    ],
+    "scenarios_en": [
       "Pinpointing where in the network a connection fails",
       "Identifying a slow hop causing latency spikes",
       "Testing if a specific port is reachable through firewalls"
     ],
     "mistakes": [
-      {"x": "Giving up at * * * hops", "fix": "Some routers drop ICMP; try <span>-T</span> (TCP) or <span>mtr</span> for continuous trace"},
-      {"x": "Not using -n on slow networks", "fix": "DNS lookups on each hop cause major slowdown"}
+      {
+        "x_he": "ויתור על * * * hops",
+        "x_en": "Giving up at * * * hops",
+        "fix_he": "חלק מה-routers חוסמים ICMP; נסה <span class=\"ltr-term\">-T</span> (TCP) או <span class=\"ltr-term\">mtr</span> ל-trace רציף",
+        "fix_en": "Some routers drop ICMP; try <span class=\"ltr-term\">-T</span> (TCP) or <span class=\"ltr-term\">mtr</span> for continuous trace"
+      },
+      {
+        "x_he": "אי-שימוש ב--n ברשתות איטיות",
+        "x_en": "Not using -n on slow networks",
+        "fix_he": "DNS lookup על כל hop גורם לעיכוב משמעותי",
+        "fix_en": "DNS lookups on each hop cause major slowdown"
+      }
     ],
-    "tags": "routing hops latency path network trace hop"
+    "tags": "routing hops latency path network trace נתיב ניתוב"
   },
   {
     "id": "curl",
@@ -135,531 +201,50 @@
     "cat": "network",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Transfer data from URLs. Essential for testing HTTP endpoints, APIs, and connectivity.",
+    "desc_he": "מעביר נתונים מ-URLs. חיוני לבדיקת HTTP endpoints, APIs וקישוריות.",
+    "desc_en": "Transfer data from URLs. Essential for testing HTTP endpoints, APIs, and connectivity.",
     "source_url": "https://man7.org/linux/man-pages/man1/curl.1.html",
     "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "curl -v https://example.com", "cmt": "verbose — shows full TLS handshake and headers"},
-      {"cmd": "curl -I https://example.com", "cmt": "HEAD request — headers only, no body"},
-      {"cmd": "curl -o /dev/null -w \"%{http_code} %{time_total}s\" https://api.local", "cmt": "check status code and response time"},
-      {"cmd": "curl -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"val\"}' https://api.local/endpoint", "cmt": "POST JSON"}
+      {"cmd": "curl -v https://example.com", "cmt_he": "verbose — מציג TLS handshake מלא ו-headers", "cmt_en": "Verbose — shows full TLS handshake and headers"},
+      {"cmd": "curl -I https://example.com", "cmt_he": "בקשת HEAD בלבד — headers ללא body", "cmt_en": "HEAD request — headers only, no body"},
+      {"cmd": "curl -o /dev/null -w \"%{http_code} %{time_total}s\" https://api.local", "cmt_he": "בדוק status code וזמן תגובה", "cmt_en": "Check status code and response time"},
+      {"cmd": "curl -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"val\"}' https://api.local/endpoint", "cmt_he": "שליחת POST עם JSON body", "cmt_en": "POST with JSON body"}
     ],
     "quick_flags": [
-      {"flag": "-v", "desc": "verbose: show headers and TLS handshake"},
-      {"flag": "-I", "desc": "HEAD request only (no body)"},
-      {"flag": "-L", "desc": "follow redirects (301/302)"},
-      {"flag": "-o FILE", "desc": "write output to file"},
-      {"flag": "-k", "desc": "skip TLS cert verification (debug only)"}
+      {"flag": "-v", "desc_he": "verbose: הצג headers ו-TLS handshake", "desc_en": "Verbose: show headers and TLS handshake"},
+      {"flag": "-I", "desc_he": "בקשת HEAD בלבד (ללא body)", "desc_en": "HEAD request only (no body)"},
+      {"flag": "-L", "desc_he": "עקוב אחרי redirects (301/302)", "desc_en": "Follow redirects (301/302)"},
+      {"flag": "-o FILE", "desc_he": "כתוב פלט לקובץ", "desc_en": "Write output to file"},
+      {"flag": "-k", "desc_he": "דלג על אימות TLS (לdebugging בלבד)", "desc_en": "Skip TLS cert verification (debug only)"}
     ],
-    "scenarios": [
+    "scenarios_he": [
+      "בדיקה אם API endpoint נגיש משרת",
+      "בדיקת תקינות TLS certificate וה-chain שלו",
+      "debug של זמני תגובה איטיים ב-web service"
+    ],
+    "scenarios_en": [
       "Testing if an API endpoint is reachable from a server",
       "Checking TLS certificate validity and chain",
       "Debugging slow response times on a web service"
     ],
     "mistakes": [
-      {"x": "Using curl without -L misses redirects", "fix": "Add <span>-L</span> to follow HTTP 301/302 redirects"},
-      {"x": "Ignoring TLS errors with -k in production", "fix": "<span>-k</span> is for debugging only — never skip cert validation in scripts"}
+      {
+        "x_he": "שימוש ב-curl ללא -L מחמיץ redirects",
+        "x_en": "Using curl without -L misses redirects",
+        "fix_he": "הוסף <span class=\"ltr-term\">-L</span> למעקב אחרי HTTP 301/302 redirects",
+        "fix_en": "Add <span class=\"ltr-term\">-L</span> to follow HTTP 301/302 redirects"
+      },
+      {
+        "x_he": "שימוש ב--k בסביבת production",
+        "x_en": "Using -k in production",
+        "fix_he": "<span class=\"ltr-term\">-k</span> הוא לdebugging בלבד — לעולם אל תדלג על אימות certificate ב-scripts",
+        "fix_en": "<span class=\"ltr-term\">-k</span> is for debugging only — never skip cert validation in scripts"
+      }
     ],
-    "secnote": "curl can exfiltrate data or download malware. If you see unexpected curl processes, inspect the command line immediately with ps aux.",
-    "tags": "http https api endpoint url request response header status code"
-  },
-  {
-    "id": "ps",
-    "name": "ps",
-    "cat": "process",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Snapshot of currently running processes. Outputs to stdout — ideal for scripting and piping.",
-    "source_url": "https://man7.org/linux/man-pages/man1/ps.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "ps aux", "cmt": "all processes, BSD-style — shows USER PID %CPU %MEM"},
-      {"cmd": "ps aux | grep nginx", "cmt": "find specific process"},
-      {"cmd": "ps aux --sort=-%cpu | head -10", "cmt": "top 10 CPU consumers"},
-      {"cmd": "ps aux --sort=-%mem | head -10", "cmt": "top 10 memory consumers"},
-      {"cmd": "ps -ef | grep defunct", "cmt": "find zombie processes"}
-    ],
-    "quick_flags": [
-      {"flag": "a", "desc": "show processes from all users"},
-      {"flag": "u", "desc": "user-oriented format (USER, CPU, MEM)"},
-      {"flag": "x", "desc": "include processes without a controlling terminal"},
-      {"flag": "--sort=-%cpu", "desc": "sort by CPU descending"},
-      {"flag": "-e", "desc": "every process on the system"}
-    ],
-    "scenarios": [
-      "Finding which process is consuming all CPU before killing it",
-      "Identifying zombie processes left by a crashed parent",
-      "Scripting process health checks"
-    ],
-    "mistakes": [
-      {"x": "Using ps alone without flags — shows only current user", "fix": "Use <span>ps aux</span> to see all processes from all users"},
-      {"x": "Grepping for process name catches the grep itself", "fix": "Use <span>grep [n]ginx</span> or <span>pgrep nginx</span> instead"}
-    ],
-    "tags": "process pid cpu memory running status list snapshot"
-  },
-  {
-    "id": "top",
-    "name": "top / htop",
-    "cat": "process",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Real-time interactive process monitor. htop is the color-coded, mouse-friendly version.",
-    "source_url": "https://man7.org/linux/man-pages/man1/top.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "htop -u www-data", "cmt": "filter to one user's processes"},
-      {"cmd": "htop -p 1234,5678", "cmt": "monitor specific PIDs only"},
-      {"cmd": "top -b -n 1 | head -25", "cmt": "non-interactive snapshot — good for scripts/cron"}
-    ],
-    "quick_flags": [
-      {"flag": "-u USER", "desc": "filter by user (htop)"},
-      {"flag": "-p PID", "desc": "watch specific PID(s)"},
-      {"flag": "-b", "desc": "batch mode — non-interactive (top)"},
-      {"flag": "-n N", "desc": "number of iterations before exiting (top)"}
-    ],
-    "scenarios": [
-      "Investigating a server slowdown in real time",
-      "Monitoring a specific service during load testing",
-      "Capturing a one-time snapshot for a report"
-    ],
-    "mistakes": [
-      {"x": "Killing processes from top/htop without checking dependencies", "fix": "Check <span>ps --ppid PID</span> first to see child processes"},
-      {"x": "Trusting a single CPU% reading — it fluctuates", "fix": "Watch for 10+ seconds before concluding high CPU"}
-    ],
-    "tags": "cpu memory load monitor processes real-time interactive"
-  },
-  {
-    "id": "kill",
-    "name": "kill / killall",
-    "cat": "process",
-    "diff": "beginner",
-    "sec": true,
-    "desc": "Send signals to processes. kill uses PID, killall uses process name.",
-    "source_url": "https://man7.org/linux/man-pages/man1/kill.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "kill -15 PID", "cmt": "SIGTERM — graceful shutdown (preferred)"},
-      {"cmd": "kill -9 PID", "cmt": "SIGKILL — force kill, no cleanup"},
-      {"cmd": "killall -HUP nginx", "cmt": "reload nginx config without restart"},
-      {"cmd": "pkill -f \"python script.py\"", "cmt": "kill by full command string match"}
-    ],
-    "quick_flags": [
-      {"flag": "-15", "desc": "SIGTERM: graceful shutdown request"},
-      {"flag": "-9", "desc": "SIGKILL: force kill, no cleanup possible"},
-      {"flag": "-HUP", "desc": "SIGHUP: reload config (many daemons honor this)"},
-      {"flag": "-l", "desc": "list all available signal names"}
-    ],
-    "scenarios": [
-      "Gracefully restarting a hung service",
-      "Force-killing a process that ignores SIGTERM",
-      "Reloading a service config without full restart"
-    ],
-    "mistakes": [
-      {"x": "Jumping straight to -9 (SIGKILL)", "fix": "Always try <span>-15</span> (SIGTERM) first — gives process time to clean up and close files properly"},
-      {"x": "killall matching too broadly", "fix": "Test with <span>pgrep -l processname</span> first to preview which processes match"}
-    ],
-    "secnote": "Malware may respawn after kill if it has a watchdog process. Verify with ps after killing. If it respawns, find and kill the parent first.",
-    "tags": "kill signal process stop terminate restart sigterm sigkill"
-  },
-  {
-    "id": "df",
-    "name": "df",
-    "cat": "disk",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Report disk space usage of filesystems. First stop for \"disk full\" investigation.",
-    "source_url": "https://man7.org/linux/man-pages/man1/df.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "df -h", "cmt": "human-readable sizes (GB/MB)"},
-      {"cmd": "df -h /var/log", "cmt": "check specific path's partition"},
-      {"cmd": "df -i", "cmt": "check inode usage — can be full even if disk space available"},
-      {"cmd": "df -h --output=source,size,used,avail,pcent,target", "cmt": "custom column output"}
-    ],
-    "quick_flags": [
-      {"flag": "-h", "desc": "human-readable sizes (KB/MB/GB)"},
-      {"flag": "-i", "desc": "show inode usage instead of blocks"},
-      {"flag": "-T", "desc": "show filesystem type"},
-      {"flag": "--output=...", "desc": "select specific output columns"}
-    ],
-    "scenarios": [
-      "Server stopped writing logs — check if /var or /var/log partition is full",
-      "Database crashes — often caused by 100% disk on data partition",
-      "CI/CD pipeline failing — tmp or build partition exhausted"
-    ],
-    "mistakes": [
-      {"x": "Only checking disk % and missing full inodes", "fix": "Run <span>df -i</span> too — inode exhaustion causes \"no space\" even with free disk"},
-      {"x": "Checking the wrong partition", "fix": "Always check the specific path: <span>df -h /var/log</span>, not just <span>df -h</span>"}
-    ],
-    "tags": "disk space storage filesystem full partition usage inode"
-  },
-  {
-    "id": "du",
-    "name": "du",
-    "cat": "disk",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Estimate file and directory space usage. Find what is consuming the disk.",
-    "source_url": "https://man7.org/linux/man-pages/man1/du.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "du -sh /var/log/*", "cmt": "size of each item in /var/log"},
-      {"cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "cmt": "top 10 largest directories from root"},
-      {"cmd": "du -ah /home/user | sort -rh | head -20", "cmt": "largest files in a directory"},
-      {"cmd": "du --max-depth=1 -h /var", "cmt": "one level deep summary"}
-    ],
-    "quick_flags": [
-      {"flag": "-s", "desc": "summarize — show total for each argument"},
-      {"flag": "-h", "desc": "human-readable sizes"},
-      {"flag": "-a", "desc": "show size for all files, not just directories"},
-      {"flag": "--max-depth=N", "desc": "limit directory recursion depth"}
-    ],
-    "scenarios": [
-      "Finding which directory consumed the suddenly full disk",
-      "Identifying log bloat or core dump accumulation",
-      "Pre-migration disk audit"
-    ],
-    "mistakes": [
-      {"x": "Running du / without 2>/dev/null — floods output with permission errors", "fix": "Always append <span>2>/dev/null</span> to suppress permission denied messages"},
-      {"x": "Forgetting sort -h for human sizes", "fix": "<span>sort -rh</span> correctly sorts 1G above 500M; plain <span>sort -r</span> does not"}
-    ],
-    "tags": "disk usage space files directory size find large storage"
-  },
-  {
-    "id": "chmod",
-    "name": "chmod",
-    "cat": "permission",
-    "diff": "beginner",
-    "sec": true,
-    "desc": "Change file and directory permissions. Controls read, write, execute access.",
-    "source_url": "https://man7.org/linux/man-pages/man1/chmod.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "chmod 644 file.conf", "cmt": "rw-r--r-- : owner rw, group r, others r"},
-      {"cmd": "chmod 755 script.sh", "cmt": "rwxr-xr-x : owner rwx, others rx (standard for executables)"},
-      {"cmd": "chmod -R 750 /var/app", "cmt": "recursive: owner rwx, group rx, others none"},
-      {"cmd": "chmod u+x,g-w file", "cmt": "symbolic: add exec for user, remove write for group"}
-    ],
-    "quick_flags": [
-      {"flag": "-R", "desc": "recursive — apply to all files in directory"},
-      {"flag": "u+x", "desc": "add execute for owner"},
-      {"flag": "go-w", "desc": "remove write from group and others"},
-      {"flag": "a+r", "desc": "add read for all (user, group, others)"}
-    ],
-    "scenarios": [
-      "Script won't execute — needs +x permission",
-      "Web server can't read config — wrong group permissions",
-      "Securing sensitive files to owner-only access"
-    ],
-    "mistakes": [
-      {"x": "Using chmod 777 as a quick fix", "fix": "777 gives everyone full access — use <span>755</span> for directories, <span>644</span> for files, diagnose the real issue"},
-      {"x": "Forgetting -R applies recursively including files", "fix": "Directories need execute to be entered; files generally should not have execute unless intentional"}
-    ],
-    "secnote": "chmod 777 is a critical security misconfiguration. If you see world-writable sensitive files, treat it as a finding. Check who modified it: stat file and check mtime.",
-    "tags": "permission file access read write execute mode octal"
-  },
-  {
-    "id": "chown",
-    "name": "chown",
-    "cat": "permission",
-    "diff": "beginner",
-    "sec": true,
-    "desc": "Change file ownership — user and group.",
-    "source_url": "https://man7.org/linux/man-pages/man1/chown.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "chown www-data:www-data /var/www/html", "cmt": "set owner and group"},
-      {"cmd": "chown -R deploy:deploy /opt/app", "cmt": "recursive ownership change"},
-      {"cmd": "chown root:root /etc/cron.d/job", "cmt": "cron files should be owned by root"}
-    ],
-    "quick_flags": [
-      {"flag": "-R", "desc": "recursive — change ownership of all files in directory"},
-      {"flag": "--from=OLD", "desc": "only change if current owner matches OLD"},
-      {"flag": "-v", "desc": "verbose — print each changed file"}
-    ],
-    "scenarios": [
-      "Web server 403 errors because files are owned by wrong user",
-      "Deployment script creates files owned by root instead of service user",
-      "After restore from backup, ownership is wrong"
-    ],
-    "mistakes": [
-      {"x": "Chowning /etc or /usr recursively to fix one broken file", "fix": "Always be specific — <span>chown -R</span> on system directories is destructive"},
-      {"x": "Forgetting the group in chown user file", "fix": "Use <span>chown user:group</span> to explicitly set both"}
-    ],
-    "secnote": "SUID/SGID bits combined with wrong ownership can be privilege escalation vectors. Check with: find / -perm /4000 -user root",
-    "tags": "ownership user group file permission chown root"
-  },
-  {
-    "id": "journalctl",
-    "name": "journalctl",
-    "cat": "logs",
-    "diff": "intermediate",
-    "sec": false,
-    "desc": "Query and display the systemd journal. The primary log tool on modern Linux.",
-    "source_url": "https://man7.org/linux/man-pages/man1/journalctl.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "journalctl -u nginx --since today", "cmt": "logs for nginx since midnight"},
-      {"cmd": "journalctl -u nginx -f", "cmt": "follow mode — live tail"},
-      {"cmd": "journalctl -p err -n 50", "cmt": "last 50 error-level entries across all services"},
-      {"cmd": "journalctl --since \"2024-01-15 14:00:00\" --until \"2024-01-15 15:00:00\"", "cmt": "specific time window"},
-      {"cmd": "journalctl -k --since -1h", "cmt": "kernel messages from the past hour"}
-    ],
-    "quick_flags": [
-      {"flag": "-u SERVICE", "desc": "filter to a specific systemd unit"},
-      {"flag": "-f", "desc": "follow mode — like tail -f"},
-      {"flag": "-p LEVEL", "desc": "priority filter: err, warning, info, debug"},
-      {"flag": "-n N", "desc": "show last N lines"},
-      {"flag": "-k", "desc": "show kernel ring buffer messages only"}
-    ],
-    "scenarios": [
-      "Service crashed — check exact error before last exit",
-      "Investigating a specific time window after an incident",
-      "Monitoring a service in real time during testing"
-    ],
-    "mistakes": [
-      {"x": "journalctl -u service without --since dumps everything", "fix": "Always scope with <span>--since today</span> or <span>--since -1h</span> to keep output manageable"},
-      {"x": "Missing -f for live watching", "fix": "Use <span>journalctl -u service -f</span> to tail — much cleaner than watching the whole system log"}
-    ],
-    "tags": "log journal systemd service error debug monitoring tail"
-  },
-  {
-    "id": "grep",
-    "name": "grep",
-    "cat": "logs",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Search text using patterns. Fundamental for filtering logs and files.",
-    "source_url": "https://man7.org/linux/man-pages/man1/grep.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "grep -i \"error\" /var/log/syslog", "cmt": "-i = case insensitive"},
-      {"cmd": "grep -r \"failed password\" /var/log/", "cmt": "-r = recursive through directory"},
-      {"cmd": "grep -n \"segfault\" /var/log/kern.log", "cmt": "-n = show line numbers"},
-      {"cmd": "grep -v \"DEBUG\" app.log | grep \"ERROR\"", "cmt": "exclude DEBUG then find ERROR"},
-      {"cmd": "grep -A 3 -B 3 \"CRITICAL\" app.log", "cmt": "show 3 lines before and after each match"}
-    ],
-    "quick_flags": [
-      {"flag": "-i", "desc": "case-insensitive search"},
-      {"flag": "-r", "desc": "recursive search through directories"},
-      {"flag": "-n", "desc": "show line numbers"},
-      {"flag": "-v", "desc": "invert match — show non-matching lines"},
-      {"flag": "-A/-B/-C N", "desc": "show N lines after/before/around match"}
-    ],
-    "scenarios": [
-      "Finding failed SSH attempts in auth log",
-      "Searching application logs for a specific error across a date range",
-      "Identifying which config file contains a specific setting"
-    ],
-    "mistakes": [
-      {"x": "Not using -i for log searches", "fix": "Log levels are often mixed case — <span>-i</span> catches ERROR, Error, error"},
-      {"x": "Grepping huge logs without restricting time range first", "fix": "Pre-filter with <span>awk</span> or <span>sed</span> for the time window before grepping"}
-    ],
-    "tags": "search text pattern log file filter find string"
-  },
-  {
-    "id": "systemctl",
-    "name": "systemctl",
-    "cat": "system",
-    "diff": "beginner",
-    "sec": false,
-    "desc": "Control the systemd system and service manager. Start, stop, enable, inspect services.",
-    "source_url": "https://man7.org/linux/man-pages/man1/systemctl.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "systemctl status nginx", "cmt": "detailed status + last log lines"},
-      {"cmd": "systemctl restart nginx", "cmt": "restart a service"},
-      {"cmd": "systemctl enable --now nginx", "cmt": "enable at boot AND start immediately"},
-      {"cmd": "systemctl list-units --failed", "cmt": "show all failed units"},
-      {"cmd": "systemctl daemon-reload", "cmt": "required after editing service unit files"}
-    ],
-    "quick_flags": [
-      {"flag": "status", "desc": "show service status and recent logs"},
-      {"flag": "start/stop/restart", "desc": "manage service lifecycle"},
-      {"flag": "enable/disable", "desc": "control auto-start at boot"},
-      {"flag": "--now", "desc": "combined with enable/disable — also start/stop immediately"},
-      {"flag": "daemon-reload", "desc": "reload systemd after editing .service files"}
-    ],
-    "scenarios": [
-      "Service not running after reboot — check if it's enabled",
-      "Service started but immediately crashes — check status for exit code",
-      "After editing /etc/systemd/system/*.service — reload before restart"
-    ],
-    "mistakes": [
-      {"x": "Restarting without daemon-reload after editing unit files", "fix": "Always run <span>systemctl daemon-reload</span> after modifying .service files"},
-      {"x": "Confusing start (now) with enable (at boot)", "fix": "Use <span>enable --now</span> to do both at once — common to miss one or the other"}
-    ],
-    "tags": "service start stop restart enable disable systemd unit boot"
-  },
-  {
-    "id": "cron",
-    "name": "crontab",
-    "cat": "system",
-    "diff": "intermediate",
-    "sec": true,
-    "desc": "Schedule recurring tasks. crontab -e edits user crons, /etc/cron.d/ for system-wide.",
-    "source_url": "https://man7.org/linux/man-pages/man5/crontab.5.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "crontab -l", "cmt": "list current user's cron jobs"},
-      {"cmd": "crontab -e", "cmt": "edit current user's crontab"},
-      {"cmd": "crontab -u www-data -l", "cmt": "view another user's crontab (root only)"},
-      {"cmd": "ls -la /etc/cron.d/ /etc/cron.daily/ /etc/crontab", "cmt": "check all system cron locations"}
-    ],
-    "quick_flags": [
-      {"flag": "-l", "desc": "list current crontab entries"},
-      {"flag": "-e", "desc": "edit crontab in default editor"},
-      {"flag": "-r", "desc": "remove the current crontab entirely"},
-      {"flag": "-u USER", "desc": "operate on another user's crontab (root only)"}
-    ],
-    "scenarios": [
-      "Scheduled backup never ran — check cron syntax and log",
-      "Investigating scheduled tasks after suspicious activity",
-      "Setting up automated log rotation or cleanup"
-    ],
-    "mistakes": [
-      {"x": "Forgetting % in cron date strings must be escaped as \\%", "fix": "In crontab, literal <span>%</span> is a newline — always escape: <span>\\%</span>"},
-      {"x": "New cron job not running — missing newline at end of file", "fix": "crontab files must end with a newline; some editors don't add one automatically"}
-    ],
-    "secnote": "Cron is a common persistence mechanism for malware. During IR, check ALL cron locations: /var/spool/cron/, /etc/cron.d/, /etc/crontab, /etc/cron.hourly daily weekly monthly.",
-    "tags": "schedule task cron job timer recurring automation"
-  },
-  {
-    "id": "useradd",
-    "name": "useradd / usermod",
-    "cat": "user",
-    "diff": "beginner",
-    "sec": true,
-    "desc": "Create and modify user accounts on the system.",
-    "source_url": "https://man7.org/linux/man-pages/man8/useradd.8.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "useradd -m -s /bin/bash -G sudo username", "cmt": "-m creates home, -G adds to sudo group"},
-      {"cmd": "usermod -aG docker username", "cmt": "add existing user to group without removing others"},
-      {"cmd": "usermod -L username", "cmt": "lock account (disable login)"},
-      {"cmd": "passwd -e username", "cmt": "expire password — force change at next login"},
-      {"cmd": "userdel -r username", "cmt": "delete user AND home directory"}
-    ],
-    "quick_flags": [
-      {"flag": "-m", "desc": "create home directory"},
-      {"flag": "-s SHELL", "desc": "set login shell"},
-      {"flag": "-G GROUP", "desc": "add to supplemental group"},
-      {"flag": "-aG GROUP", "desc": "append to group (use with usermod, -a prevents removing existing groups)"},
-      {"flag": "-L / -U", "desc": "lock / unlock account"}
-    ],
-    "scenarios": [
-      "Onboarding a new sysadmin — create account with correct groups",
-      "User locked out — check if account is locked with passwd -S",
-      "Post-incident — immediately lock a compromised account"
-    ],
-    "mistakes": [
-      {"x": "usermod -G group removes all OTHER groups", "fix": "Always use <span>-aG</span> (append) not <span>-G</span> alone when adding to a group"},
-      {"x": "Deleting users without -r leaves orphaned home directories", "fix": "Use <span>userdel -r</span> or manually clean /home/username after"}
-    ],
-    "secnote": "After any suspected compromise, immediately: usermod -L username. Then audit what they accessed with: last username and ausearch -ua UID.",
-    "tags": "user account create modify group sudo password lock delete"
-  },
-  {
-    "id": "last",
-    "name": "last / lastb",
-    "cat": "user",
-    "diff": "intermediate",
-    "sec": true,
-    "desc": "Show last logged-in users. lastb shows failed login attempts.",
-    "source_url": "https://man7.org/linux/man-pages/man1/last.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "last -n 20", "cmt": "last 20 successful logins"},
-      {"cmd": "lastb -n 20", "cmt": "last 20 FAILED login attempts (requires root)"},
-      {"cmd": "last -F username", "cmt": "full timestamps for a specific user"},
-      {"cmd": "who", "cmt": "who is currently logged in right now"}
-    ],
-    "quick_flags": [
-      {"flag": "-n N", "desc": "show last N entries"},
-      {"flag": "-F", "desc": "full date and time output"},
-      {"flag": "-x", "desc": "include system shutdowns and runlevel changes"},
-      {"flag": "-i", "desc": "show IP addresses instead of hostnames"}
-    ],
-    "scenarios": [
-      "Investigating unauthorized access — check login history",
-      "Checking if a user was logged in during an incident window",
-      "Auditing root login activity"
-    ],
-    "mistakes": [
-      {"x": "Trusting last alone — logs can be tampered with", "fix": "Cross-reference with <span>journalctl</span> auth logs and <span>/var/log/secure</span> or <span>/var/log/auth.log</span>"},
-      {"x": "Not checking lastb for brute force", "fix": "Run <span>lastb | head -30</span> regularly — high failure counts indicate active brute force"}
-    ],
-    "secnote": "lastb is critical for detecting brute force. Hundreds of failures from one IP = active attack. Block with: ufw deny from IP or add to /etc/hosts.deny.",
-    "tags": "login user history authentication last failed brute force"
-  },
-  {
-    "id": "find",
-    "name": "find",
-    "cat": "disk",
-    "diff": "intermediate",
-    "sec": true,
-    "desc": "Search for files by name, type, date, permissions, ownership, and size.",
-    "source_url": "https://man7.org/linux/man-pages/man1/find.1.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "find /var/log -name \"*.log\" -mtime +30 -delete", "cmt": "delete logs older than 30 days"},
-      {"cmd": "find / -perm /4000 -user root 2>/dev/null", "cmt": "find SUID root files — privilege escalation audit"},
-      {"cmd": "find /home -type f -name \"*.sh\" -newer /etc/passwd", "cmt": "scripts modified after passwd — suspicious"},
-      {"cmd": "find /tmp /var/tmp -type f -newer /proc/1 2>/dev/null", "cmt": "files created since boot in temp dirs"}
-    ],
-    "quick_flags": [
-      {"flag": "-name PATTERN", "desc": "match filename (case-sensitive)"},
-      {"flag": "-type f/d/l", "desc": "file, directory, or symlink"},
-      {"flag": "-mtime +N/-N", "desc": "modified more/less than N days ago"},
-      {"flag": "-perm /MODE", "desc": "match files with any of these permission bits set"},
-      {"flag": "-exec CMD {} \\;", "desc": "run command on each found file"}
-    ],
-    "scenarios": [
-      "Disk filling up from old log files — find and purge safely",
-      "Security audit — find unexpected SUID binaries",
-      "IR — find files created or modified in a suspect time window"
-    ],
-    "mistakes": [
-      {"x": "find / without 2>/dev/null floods with permission errors", "fix": "Always add <span>2>/dev/null</span> to suppress permission denied noise"},
-      {"x": "Using -delete on find results without testing first", "fix": "Run without <span>-delete</span> first to preview; add <span>-delete</span> only when result looks correct"}
-    ],
-    "secnote": "SUID files are prime privilege escalation vectors. Any unexpected SUID binary (not in standard distro package) is a critical finding. Baseline with: dpkg -S /path/to/binary.",
-    "tags": "find search file directory permission suid mtime size type locate"
-  },
-  {
-    "id": "iptables",
-    "name": "iptables / ufw",
-    "cat": "network",
-    "diff": "advanced",
-    "sec": true,
-    "desc": "Manage kernel netfilter firewall rules. ufw is the simplified frontend.",
-    "source_url": "https://man7.org/linux/man-pages/man8/iptables.8.html",
-    "source_name": "Linux man page (man7.org)",
-    "usage": [
-      {"cmd": "ufw status verbose", "cmt": "current ufw rules and status"},
-      {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH"},
-      {"cmd": "ufw deny from 192.168.1.100", "cmt": "block specific IP"},
-      {"cmd": "iptables -L -n -v", "cmt": "list all iptables rules with packet counts"},
-      {"cmd": "iptables -I INPUT 1 -s 10.10.10.10 -j DROP", "cmt": "immediately block an IP (insert at top)"}
-    ],
-    "quick_flags": [
-      {"flag": "-L", "desc": "list all rules in selected chain"},
-      {"flag": "-n", "desc": "numeric output — no DNS lookups"},
-      {"flag": "-v", "desc": "verbose — show packet/byte counters"},
-      {"flag": "-I CHAIN N", "desc": "insert rule at position N (1 = top)"},
-      {"flag": "-F", "desc": "flush (delete) all rules — DANGEROUS without allow-all fallback"}
-    ],
-    "scenarios": [
-      "Blocking an IP conducting a brute force attack",
-      "Opening a port for a new service without disabling the firewall",
-      "Auditing current firewall rules after an incident"
-    ],
-    "mistakes": [
-      {"x": "iptables -F flushes ALL rules — can lock you out of SSH", "fix": "Before flushing, add an ACCEPT rule for your IP or port 22, or use <span>ufw</span> which is safer"},
-      {"x": "ufw changes not persistent if ufw is disabled", "fix": "Always check <span>ufw status</span> is active; run <span>ufw enable</span> to persist rules"}
-    ],
-    "secnote": "In an active incident, the fastest block is: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. This takes effect immediately without restarting anything.",
-    "tags": "firewall rule block allow port ip iptables ufw network security"
+    "secnote_he": "curl יכול לדלוף נתונים או להוריד malware. אם ראית תהליכי curl לא מוכרים, בדוק מיד את שורת הפקודה עם ps aux.",
+    "secnote_en": "curl can exfiltrate data or download malware. If you see unexpected curl processes, inspect the command line immediately with ps aux.",
+    "tags": "http https api endpoint url request response header status code רשת"
   },
   {
     "id": "tcpdump",
@@ -667,32 +252,939 @@
     "cat": "network",
     "diff": "advanced",
     "sec": true,
-    "desc": "Capture and analyze network packets at the interface level.",
+    "desc_he": "לוכד ומנתח packets ברמת ה-network interface.",
+    "desc_en": "Capture and analyze network packets at the interface level.",
     "source_url": "https://www.tcpdump.org/manpages/tcpdump.1.html",
     "source_name": "tcpdump official man page (tcpdump.org)",
     "usage": [
-      {"cmd": "tcpdump -i eth0 -n port 80", "cmt": "capture HTTP on eth0, no DNS resolution"},
-      {"cmd": "tcpdump -i any -n \"host 10.0.0.50\"", "cmt": "all interfaces, traffic to/from specific host"},
-      {"cmd": "tcpdump -i eth0 -w capture.pcap", "cmt": "write to file for Wireshark analysis"},
-      {"cmd": "tcpdump -i eth0 -n \"tcp[tcpflags] & tcp-syn != 0\"", "cmt": "capture SYN packets only — detect scan"}
+      {"cmd": "tcpdump -i eth0 -n port 80", "cmt_he": "לכוד HTTP על eth0, ללא DNS resolution", "cmt_en": "Capture HTTP on eth0, no DNS resolution"},
+      {"cmd": "tcpdump -i any -n \"host 10.0.0.50\"", "cmt_he": "כל interfaces, traffic מ/אל host ספציפי", "cmt_en": "All interfaces, traffic to/from specific host"},
+      {"cmd": "tcpdump -i eth0 -w capture.pcap", "cmt_he": "כתוב לקובץ לניתוח ב-Wireshark", "cmt_en": "Write to file for Wireshark analysis"},
+      {"cmd": "tcpdump -i eth0 -n \"tcp[tcpflags] & tcp-syn != 0\"", "cmt_he": "לכוד רק packets עם SYN flag — זיהוי scan", "cmt_en": "Capture SYN packets only — detect scan"}
     ],
     "quick_flags": [
-      {"flag": "-i IFACE", "desc": "capture on specific interface (-i any for all)"},
-      {"flag": "-n", "desc": "no DNS reverse lookups (much faster)"},
-      {"flag": "-w FILE", "desc": "write raw packets to pcap file"},
-      {"flag": "-r FILE", "desc": "read from pcap file instead of interface"},
-      {"flag": "-c N", "desc": "capture exactly N packets then stop"}
+      {"flag": "-i IFACE", "desc_he": "לכוד על interface ספציפי (-i any לכולם)", "desc_en": "Capture on specific interface (-i any for all)"},
+      {"flag": "-n", "desc_he": "ללא DNS reverse lookups (מהיר בהרבה)", "desc_en": "No DNS reverse lookups (much faster)"},
+      {"flag": "-w FILE", "desc_he": "כתוב packets גולמיים לקובץ pcap", "desc_en": "Write raw packets to pcap file"},
+      {"flag": "-c N", "desc_he": "לכוד בדיוק N packets ועצור", "desc_en": "Capture exactly N packets then stop"}
     ],
-    "scenarios": [
+    "scenarios_he": [
+      "debug אפליקציה שטוענת ששולחת packets אך השרת לא מקבל",
+      "לכידת traffic לניתוח ב-Wireshark בזמן בעיית רשת",
+      "זיהוי port scan או ניסיונות חיבור חשודים בזמן אמת"
+    ],
+    "scenarios_en": [
       "Debugging an application that claims it's sending packets but server isn't receiving",
       "Capturing traffic for Wireshark analysis during a network issue",
       "Detecting a port scan or suspicious connection attempts in real time"
     ],
     "mistakes": [
-      {"x": "Running tcpdump without -n causes DNS lookups per packet — very slow", "fix": "Always use <span>-n</span> to disable reverse DNS resolution"},
-      {"x": "Capturing on the wrong interface", "fix": "Use <span>tcpdump -D</span> to list all interfaces; use <span>-i any</span> to capture all"}
+      {
+        "x_he": "הרצת tcpdump ללא -n גורמת ל-DNS lookup לכל packet — איטי מאוד",
+        "x_en": "Running tcpdump without -n causes DNS lookups per packet — very slow",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-n</span> לביטול reverse DNS resolution",
+        "fix_en": "Always use <span class=\"ltr-term\">-n</span> to disable reverse DNS resolution"
+      },
+      {
+        "x_he": "לכידה על ה-interface הלא נכון",
+        "x_en": "Capturing on the wrong interface",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">tcpdump -D</span> לרשימת interfaces; <span class=\"ltr-term\">-i any</span> ללכידה על הכל",
+        "fix_en": "Use <span class=\"ltr-term\">tcpdump -D</span> to list all interfaces; <span class=\"ltr-term\">-i any</span> to capture all"
+      }
     ],
-    "secnote": "tcpdump can capture credentials in plaintext on unencrypted protocols (FTP, Telnet, HTTP). This is exactly what attackers on your network do. Use it defensively — and ensure your network uses TLS.",
-    "tags": "packet capture network traffic analysis pcap wireshark tcp udp interface"
+    "secnote_he": "tcpdump יכול ללכוד credentials בטקסט גלוי ב-protocols לא מוצפנים (FTP, Telnet, HTTP). בדיוק מה שתוקפים ברשת שלך עושים. השתמש בו כהגנה — וודא שה-network שלך משתמש ב-TLS.",
+    "secnote_en": "tcpdump can capture credentials in plaintext on unencrypted protocols. This is exactly what attackers on your network do. Use it defensively — ensure your network uses TLS.",
+    "tags": "packet capture network traffic analysis pcap wireshark tcp udp interface לכידה"
+  },
+  {
+    "id": "ps",
+    "name": "ps",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מצלמת snapshot של תהליכים רצים. כותב ל-stdout — מושלם לscripting ו-piping.",
+    "desc_en": "Snapshot of currently running processes. Outputs to stdout — ideal for scripting and piping.",
+    "source_url": "https://man7.org/linux/man-pages/man1/ps.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "ps aux", "cmt_he": "כל התהליכים, BSD-style — מציג USER PID %CPU %MEM", "cmt_en": "All processes, BSD-style — shows USER PID %CPU %MEM"},
+      {"cmd": "ps aux | grep nginx", "cmt_he": "מצא תהליך ספציפי", "cmt_en": "Find specific process"},
+      {"cmd": "ps aux --sort=-%cpu | head -10", "cmt_he": "10 הצרכנים הגדולים ביותר של CPU", "cmt_en": "Top 10 CPU consumers"},
+      {"cmd": "ps aux --sort=-%mem | head -10", "cmt_he": "10 הצרכנים הגדולים ביותר של זיכרון", "cmt_en": "Top 10 memory consumers"},
+      {"cmd": "ps -ef | grep defunct", "cmt_he": "מצא zombie processes", "cmt_en": "Find zombie processes"}
+    ],
+    "quick_flags": [
+      {"flag": "a", "desc_he": "הצג תהליכים של כל המשתמשים", "desc_en": "Show processes from all users"},
+      {"flag": "u", "desc_he": "פורמט user-oriented (USER, CPU, MEM)", "desc_en": "User-oriented format (USER, CPU, MEM)"},
+      {"flag": "x", "desc_he": "כלול תהליכים ללא terminal", "desc_en": "Include processes without a controlling terminal"},
+      {"flag": "--sort=-%cpu", "desc_he": "מיין לפי CPU יורד", "desc_en": "Sort by CPU descending"}
+    ],
+    "scenarios_he": [
+      "מציאת התהליך שצורך את כל ה-CPU לפני שמסיימים אותו",
+      "זיהוי zombie processes שנוצרו מtהליך הורה שקרס",
+      "כתיבת בדיקות בריאות אוטומטיות ל-processes"
+    ],
+    "scenarios_en": [
+      "Finding which process is consuming all CPU before killing it",
+      "Identifying zombie processes left by a crashed parent",
+      "Scripting automated process health checks"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש ב-ps ללא flags — מציג רק תהליכי המשתמש הנוכחי",
+        "x_en": "Using ps alone without flags — shows only current user's processes",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">ps aux</span> לראיית כל התהליכים מכל המשתמשים",
+        "fix_en": "Use <span class=\"ltr-term\">ps aux</span> to see all processes from all users"
+      },
+      {
+        "x_he": "grep על שם תהליך לוכד גם את ה-grep עצמו",
+        "x_en": "Grepping for process name catches the grep itself",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">grep [n]ginx</span> או <span class=\"ltr-term\">pgrep nginx</span> במקום",
+        "fix_en": "Use <span class=\"ltr-term\">grep [n]ginx</span> or <span class=\"ltr-term\">pgrep nginx</span> instead"
+      }
+    ],
+    "tags": "process pid cpu memory running status list snapshot תהליך זיכרון"
+  },
+  {
+    "id": "top",
+    "name": "top / htop",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מוניטור תהליכים בזמן אמת. htop הוא הגרסה עם צבע ותמיכת עכבר.",
+    "desc_en": "Real-time interactive process monitor. htop is the color-coded, mouse-friendly version.",
+    "source_url": "https://man7.org/linux/man-pages/man1/top.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "htop -u www-data", "cmt_he": "סנן לתהליכי משתמש ספציפי", "cmt_en": "Filter to one user's processes"},
+      {"cmd": "htop -p 1234,5678", "cmt_he": "עקוב אחרי PIDs ספציפיים בלבד", "cmt_en": "Monitor specific PIDs only"},
+      {"cmd": "top -b -n 1 | head -25", "cmt_he": "snapshot לא אינטראקטיבי — טוב לscripts ו-cron", "cmt_en": "Non-interactive snapshot — good for scripts/cron"}
+    ],
+    "quick_flags": [
+      {"flag": "-u USER", "desc_he": "סנן לפי משתמש (htop)", "desc_en": "Filter by user (htop)"},
+      {"flag": "-p PID", "desc_he": "עקוב אחרי PID ספציפי", "desc_en": "Watch specific PID(s)"},
+      {"flag": "-b", "desc_he": "batch mode — לא אינטראקטיבי (top)", "desc_en": "Batch mode — non-interactive (top)"},
+      {"flag": "-n N", "desc_he": "מספר iterations לפני יציאה (top)", "desc_en": "Number of iterations before exiting (top)"}
+    ],
+    "scenarios_he": [
+      "חקירת האטה של שרת בזמן אמת",
+      "מעקב אחרי service ספציפי במהלך load testing",
+      "לכידת snapshot חד פעמי לדוח"
+    ],
+    "scenarios_en": [
+      "Investigating a server slowdown in real time",
+      "Monitoring a specific service during load testing",
+      "Capturing a one-time snapshot for a report"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הריגת תהליכים מ-top/htop מבלי לבדוק dependencies",
+        "x_en": "Killing processes from top/htop without checking dependencies",
+        "fix_he": "בדוק <span class=\"ltr-term\">ps --ppid PID</span> קודם לראיית child processes",
+        "fix_en": "Check <span class=\"ltr-term\">ps --ppid PID</span> first to see child processes"
+      },
+      {
+        "x_he": "הסתמכות על קריאת CPU% יחידה — היא משתנה",
+        "x_en": "Trusting a single CPU% reading — it fluctuates",
+        "fix_he": "עקוב לפחות 10 שניות לפני מסקנה על CPU גבוה",
+        "fix_en": "Watch for 10+ seconds before concluding high CPU"
+      }
+    ],
+    "tags": "cpu memory load monitor processes real-time interactive תהליך מעקב"
+  },
+  {
+    "id": "kill",
+    "name": "kill / killall",
+    "cat": "process",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "שולח signals לתהליכים. kill משתמש ב-PID, killall משתמש בשם התהליך.",
+    "desc_en": "Send signals to processes. kill uses PID, killall uses process name.",
+    "source_url": "https://man7.org/linux/man-pages/man1/kill.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "kill -15 PID", "cmt_he": "SIGTERM — סיום חינני (מומלץ)", "cmt_en": "SIGTERM — graceful shutdown (preferred)"},
+      {"cmd": "kill -9 PID", "cmt_he": "SIGKILL — כיבוי כפוי, ללא ניקוי", "cmt_en": "SIGKILL — force kill, no cleanup"},
+      {"cmd": "killall -HUP nginx", "cmt_he": "reload תצורת nginx ללא restart", "cmt_en": "Reload nginx config without restart"},
+      {"cmd": "pkill -f \"python script.py\"", "cmt_he": "הרוג לפי מחרוזת command מלאה", "cmt_en": "Kill by full command string match"}
+    ],
+    "quick_flags": [
+      {"flag": "-15", "desc_he": "SIGTERM: בקשת סיום חינני", "desc_en": "SIGTERM: graceful shutdown request"},
+      {"flag": "-9", "desc_he": "SIGKILL: כיבוי כפוי, ללא ניקוי אפשרי", "desc_en": "SIGKILL: force kill, no cleanup possible"},
+      {"flag": "-HUP", "desc_he": "SIGHUP: reload config (daemonים רבים מכבדים זאת)", "desc_en": "SIGHUP: reload config (many daemons honor this)"},
+      {"flag": "-l", "desc_he": "רשימת כל שמות ה-signals", "desc_en": "List all available signal names"}
+    ],
+    "scenarios_he": [
+      "הפעלה מחדש חיננית של service תקוע",
+      "כיבוי כפוי של תהליך שמתעלם מ-SIGTERM",
+      "reload תצורת service ללא restart מלא"
+    ],
+    "scenarios_en": [
+      "Gracefully restarting a hung service",
+      "Force-killing a process that ignores SIGTERM",
+      "Reloading a service config without full restart"
+    ],
+    "mistakes": [
+      {
+        "x_he": "קפיצה ישירות ל--9 (SIGKILL)",
+        "x_en": "Jumping straight to -9 (SIGKILL)",
+        "fix_he": "נסה תמיד <span class=\"ltr-term\">-15</span> (SIGTERM) קודם — נותן לתהליך זמן לנקות ולסגור קבצים",
+        "fix_en": "Always try <span class=\"ltr-term\">-15</span> (SIGTERM) first — gives the process time to clean up"
+      },
+      {
+        "x_he": "killall עם match רחב מדי",
+        "x_en": "killall matching too broadly",
+        "fix_he": "בדוק עם <span class=\"ltr-term\">pgrep -l processname</span> קודם לראות אילו תהליכים יתאימו",
+        "fix_en": "Test with <span class=\"ltr-term\">pgrep -l processname</span> first to preview which processes match"
+      }
+    ],
+    "secnote_he": "malware עשוי לקום לחיים שוב לאחר kill אם יש לו watchdog process. אמת עם ps לאחר הריגה. אם הוא קם שוב, מצא והרוג את ה-parent קודם.",
+    "secnote_en": "Malware may respawn after kill if it has a watchdog process. Verify with ps after killing. If it respawns, find and kill the parent first.",
+    "tags": "kill signal process stop terminate restart sigterm sigkill הרוג תהליך"
+  },
+  {
+    "id": "strace",
+    "name": "strace",
+    "cat": "process",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "מאזין ל-system calls של תהליך בזמן אמת. כלי מפתח לאבחון תהליכים תקועים.",
+    "desc_en": "Trace system calls of a process in real time. Key tool for diagnosing stuck processes.",
+    "source_url": "https://man7.org/linux/man-pages/man1/strace.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "strace -p PID", "cmt_he": "חבר לתהליך קיים לפי PID", "cmt_en": "Attach to an existing process by PID"},
+      {"cmd": "strace -e trace=openat ls /tmp", "cmt_he": "הצג רק קריאות open של קובץ", "cmt_en": "Show only file open calls"},
+      {"cmd": "strace -c dd if=/dev/zero of=/dev/null count=1000", "cmt_he": "ספור system calls — פרופיל ביצועים", "cmt_en": "Count system calls — performance profile"},
+      {"cmd": "strace -f -o trace.log ./server", "cmt_he": "עקוב אחרי child processes, כתוב לקובץ", "cmt_en": "Follow child processes, write to file"}
+    ],
+    "quick_flags": [
+      {"flag": "-p PID", "desc_he": "חבר לתהליך רץ", "desc_en": "Attach to running process"},
+      {"flag": "-e trace=TYPE", "desc_he": "סנן לפי סוג system call", "desc_en": "Filter by syscall type"},
+      {"flag": "-c", "desc_he": "ספור קריאות — הצג סטטיסטיקה בסיום", "desc_en": "Count calls — show stats at exit"},
+      {"flag": "-f", "desc_he": "עקוב אחרי child processes", "desc_en": "Follow child processes"},
+      {"flag": "-o FILE", "desc_he": "כתוב פלט לקובץ", "desc_en": "Write output to file"}
+    ],
+    "scenarios_he": [
+      "תהליך תקוע — בדוק באיזה system call הוא נתקע",
+      "אפליקציה לא מוצאת קבצי תצורה — בדוק אילו paths היא מנסה לפתוח",
+      "ביצועים איטיים — מצא system calls יקרים"
+    ],
+    "scenarios_en": [
+      "Process stuck — check which system call it's blocked on",
+      "Application can't find config files — check which paths it tries to open",
+      "Slow performance — find expensive system calls"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת strace על שרת production בזמן load גבוה",
+        "x_en": "Running strace on a production server under high load",
+        "fix_he": "strace מוסיף overhead משמעותי — השתמש בזהירות, תגביל עם <span class=\"ltr-term\">-c</span> או timeout קצר",
+        "fix_en": "strace adds significant overhead — use carefully, limit with <span class=\"ltr-term\">-c</span> or a short timeout"
+      },
+      {
+        "x_he": "לא לשמור פלט לקובץ",
+        "x_en": "Not saving output to a file",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-o trace.log</span> — הפלט מהיר מדי לקריאה ב-terminal",
+        "fix_en": "Use <span class=\"ltr-term\">-o trace.log</span> — the output scrolls too fast to read live"
+      }
+    ],
+    "secnote_he": "strace יכול לחשוף סיסמאות, tokens ומפתחות API שעוברים כ-system call arguments. לעולם אל תריץ strace על תהליכים של users אחרים בסביבת shared.",
+    "secnote_en": "strace can reveal passwords, tokens, and API keys passed as syscall arguments. Never run strace on other users' processes in a shared environment.",
+    "tags": "strace syscall debug process trace kernel system calls אבחון"
+  },
+  {
+    "id": "df",
+    "name": "df",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציג שימוש בדיסק לפי filesystems. הצעד הראשון בחקירת 'דיסק מלא'.",
+    "desc_en": "Report disk space usage per filesystem. First stop for any 'disk full' investigation.",
+    "source_url": "https://man7.org/linux/man-pages/man1/df.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "df -h", "cmt_he": "גדלים קריאים לבן אדם (GB/MB)", "cmt_en": "Human-readable sizes (GB/MB)"},
+      {"cmd": "df -h /var/log", "cmt_he": "בדוק partition של path ספציפי", "cmt_en": "Check specific path's partition"},
+      {"cmd": "df -i", "cmt_he": "בדוק שימוש ב-inodes — יכול להיות מלא גם אם יש מקום", "cmt_en": "Check inode usage — can be full even with free disk space"},
+      {"cmd": "df -h --output=source,size,used,avail,pcent,target", "cmt_he": "פלט עם עמודות מותאמות אישית", "cmt_en": "Custom column output"}
+    ],
+    "quick_flags": [
+      {"flag": "-h", "desc_he": "גדלים קריאים לבן אדם (KB/MB/GB)", "desc_en": "Human-readable sizes (KB/MB/GB)"},
+      {"flag": "-i", "desc_he": "הצג שימוש ב-inodes במקום blocks", "desc_en": "Show inode usage instead of blocks"},
+      {"flag": "-T", "desc_he": "הצג סוג filesystem", "desc_en": "Show filesystem type"}
+    ],
+    "scenarios_he": [
+      "שרת הפסיק לכתוב logs — בדוק אם /var או /var/log מלאים",
+      "database קורסת — לעתים קרובות בגלל 100% דיסק על partition הנתונים",
+      "CI/CD pipeline נכשל — tmp או build partition מוצו"
+    ],
+    "scenarios_en": [
+      "Server stopped writing logs — check if /var or /var/log partition is full",
+      "Database crashes — often caused by 100% disk on data partition",
+      "CI/CD pipeline failing — tmp or build partition exhausted"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בדיקת % דיסק בלבד ופספוס inodes מלאים",
+        "x_en": "Only checking disk % and missing full inodes",
+        "fix_he": "הרץ גם <span class=\"ltr-term\">df -i</span> — מיצוי inodes גורם לשגיאת 'no space' גם עם דיסק פנוי",
+        "fix_en": "Also run <span class=\"ltr-term\">df -i</span> — inode exhaustion causes 'no space' even with free disk"
+      },
+      {
+        "x_he": "בדיקת partition שגוי",
+        "x_en": "Checking the wrong partition",
+        "fix_he": "בדוק תמיד את ה-path הספציפי: <span class=\"ltr-term\">df -h /var/log</span>, לא רק <span class=\"ltr-term\">df -h</span>",
+        "fix_en": "Always check the specific path: <span class=\"ltr-term\">df -h /var/log</span>, not just <span class=\"ltr-term\">df -h</span>"
+      }
+    ],
+    "tags": "disk space storage filesystem full partition usage inode דיסק מקום"
+  },
+  {
+    "id": "du",
+    "name": "du",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מאמד שימוש בשטח קבצים ותיקיות. מוצא מה תופס את הדיסק.",
+    "desc_en": "Estimate file and directory space usage. Find what is consuming the disk.",
+    "source_url": "https://man7.org/linux/man-pages/man1/du.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "du -sh /var/log/*", "cmt_he": "גודל כל פריט ב-/var/log", "cmt_en": "Size of each item in /var/log"},
+      {"cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "cmt_he": "10 התיקיות הגדולות ביותר מה-root", "cmt_en": "Top 10 largest directories from root"},
+      {"cmd": "du -ah /home/user | sort -rh | head -20", "cmt_he": "הקבצים הגדולים ביותר בתיקייה", "cmt_en": "Largest files in a directory"},
+      {"cmd": "du --max-depth=1 -h /var", "cmt_he": "סיכום רמה אחת עמוקה", "cmt_en": "One level deep summary"}
+    ],
+    "quick_flags": [
+      {"flag": "-s", "desc_he": "סכם — הצג סה\"כ לכל argument", "desc_en": "Summarize — show total for each argument"},
+      {"flag": "-h", "desc_he": "גדלים קריאים לבן אדם", "desc_en": "Human-readable sizes"},
+      {"flag": "-a", "desc_he": "הצג גודל לכל הקבצים, לא רק תיקיות", "desc_en": "Show size for all files, not just directories"},
+      {"flag": "--max-depth=N", "desc_he": "הגבל עומק רקורסיה של תיקיות", "desc_en": "Limit directory recursion depth"}
+    ],
+    "scenarios_he": [
+      "מציאת התיקייה שבלעה את הדיסק שהתמלא פתאום",
+      "זיהוי log bloat או הצטברות core dumps",
+      "סקירת דיסק לפני migration"
+    ],
+    "scenarios_en": [
+      "Finding which directory consumed the suddenly full disk",
+      "Identifying log bloat or core dump accumulation",
+      "Pre-migration disk audit"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת du / ללא 2>/dev/null — שטף של שגיאות הרשאה",
+        "x_en": "Running du / without 2>/dev/null — floods with permission errors",
+        "fix_he": "הוסף תמיד <span class=\"ltr-term\">2>/dev/null</span> לדיכוי שגיאות permission denied",
+        "fix_en": "Always append <span class=\"ltr-term\">2>/dev/null</span> to suppress permission denied messages"
+      },
+      {
+        "x_he": "שכחת sort -h לגדלים קריאים",
+        "x_en": "Forgetting sort -h for human sizes",
+        "fix_he": "<span class=\"ltr-term\">sort -rh</span> ממיין 1G מעל 500M; <span class=\"ltr-term\">sort -r</span> רגיל אינו עושה זאת",
+        "fix_en": "<span class=\"ltr-term\">sort -rh</span> correctly sorts 1G above 500M; plain <span class=\"ltr-term\">sort -r</span> does not"
+      }
+    ],
+    "tags": "disk usage space files directory size find large storage דיסק קבצים"
+  },
+  {
+    "id": "find",
+    "name": "find",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "מחפש קבצים לפי שם, סוג, תאריך, הרשאות, בעלות וגודל.",
+    "desc_en": "Search for files by name, type, date, permissions, ownership, and size.",
+    "source_url": "https://man7.org/linux/man-pages/man1/find.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "find /var/log -name \"*.log\" -mtime +30 -delete", "cmt_he": "מחק logs ישנים מ-30 יום", "cmt_en": "Delete logs older than 30 days"},
+      {"cmd": "find / -perm /4000 -user root 2>/dev/null", "cmt_he": "מצא קבצי SUID של root — ביקורת privilege escalation", "cmt_en": "Find SUID root files — privilege escalation audit"},
+      {"cmd": "find /home -type f -name \"*.sh\" -newer /etc/passwd", "cmt_he": "scripts שהשתנו לאחר passwd — חשוד", "cmt_en": "Scripts modified after passwd — suspicious"},
+      {"cmd": "find /tmp /var/tmp -type f -newer /proc/1 2>/dev/null", "cmt_he": "קבצים שנוצרו מאז boot ב-temp dirs", "cmt_en": "Files created since boot in temp dirs"}
+    ],
+    "quick_flags": [
+      {"flag": "-name PATTERN", "desc_he": "התאם שם קובץ (case-sensitive)", "desc_en": "Match filename (case-sensitive)"},
+      {"flag": "-type f/d/l", "desc_he": "קובץ, תיקייה, או symlink", "desc_en": "File, directory, or symlink"},
+      {"flag": "-mtime +N/-N", "desc_he": "שונה יותר/פחות מ-N ימים", "desc_en": "Modified more/less than N days ago"},
+      {"flag": "-perm /MODE", "desc_he": "התאם קבצים עם bits הרשאה ספציפיים", "desc_en": "Match files with specific permission bits"},
+      {"flag": "-exec CMD {} \\;", "desc_he": "הרץ פקודה על כל קובץ שנמצא", "desc_en": "Run command on each found file"}
+    ],
+    "scenarios_he": [
+      "דיסק מתמלא מ-log files ישנים — מצא ומחק בבטחה",
+      "ביקורת אבטחה — מצא binaries עם SUID לא צפוי",
+      "IR — מצא קבצים שנוצרו או שונו בחלון זמן חשוד"
+    ],
+    "scenarios_en": [
+      "Disk filling up from old log files — find and purge safely",
+      "Security audit — find unexpected SUID binaries",
+      "IR — find files created or modified in a suspect time window"
+    ],
+    "mistakes": [
+      {
+        "x_he": "find / ללא 2>/dev/null מציף שגיאות הרשאה",
+        "x_en": "find / without 2>/dev/null floods with permission errors",
+        "fix_he": "הוסף תמיד <span class=\"ltr-term\">2>/dev/null</span> לדיכוי רעש permission denied",
+        "fix_en": "Always add <span class=\"ltr-term\">2>/dev/null</span> to suppress permission denied noise"
+      },
+      {
+        "x_he": "שימוש ב--delete על תוצאות find ללא בדיקה",
+        "x_en": "Using -delete on find results without testing first",
+        "fix_he": "הרץ קודם ללא <span class=\"ltr-term\">-delete</span> לתצוגה מקדימה; הוסף אותו רק כשהתוצאה נראית נכונה",
+        "fix_en": "Run without <span class=\"ltr-term\">-delete</span> first to preview; add it only when results look correct"
+      }
+    ],
+    "secnote_he": "קבצי SUID הם וקטור עיקרי ל-privilege escalation. כל binary SUID לא צפוי (שאינו בpackage סטנדרטי) הוא ממצא קריטי. Baseline עם: dpkg -S /path/to/binary.",
+    "secnote_en": "SUID files are prime privilege escalation vectors. Any unexpected SUID binary is a critical finding. Baseline with: dpkg -S /path/to/binary.",
+    "tags": "find search file directory permission suid mtime size type locate חיפוש קבצים"
+  },
+  {
+    "id": "lsof",
+    "name": "lsof",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציג את כל הקבצים הפתוחים במערכת ואיזה תהליכים מחזיקים בהם.",
+    "desc_en": "List all open files on the system and which processes hold them.",
+    "source_url": "https://man7.org/linux/man-pages/man8/lsof.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "lsof | grep deleted", "cmt_he": "קבצים שנמחקו אך עדיין מוחזקים פתוחים — תופסים דיסק", "cmt_en": "Deleted files still held open — consuming disk space"},
+      {"cmd": "lsof -i :80", "cmt_he": "מי משתמש ב-port 80", "cmt_en": "Who is using port 80"},
+      {"cmd": "lsof -p PID", "cmt_he": "כל הקבצים הפתוחים של תהליך ספציפי", "cmt_en": "All open files of a specific process"},
+      {"cmd": "lsof -u username", "cmt_he": "כל הקבצים הפתוחים של משתמש ספציפי", "cmt_en": "All open files of a specific user"}
+    ],
+    "quick_flags": [
+      {"flag": "-i :PORT", "desc_he": "הצג תהליכים שמשתמשים ב-port", "desc_en": "Show processes using a port"},
+      {"flag": "-p PID", "desc_he": "קבצים פתוחים של תהליך", "desc_en": "Open files of a process"},
+      {"flag": "-u USER", "desc_he": "קבצים פתוחים של משתמש", "desc_en": "Open files of a user"},
+      {"flag": "+D DIR", "desc_he": "כל הקבצים הפתוחים בתיקייה ותת-תיקיותיה", "desc_en": "All open files in a directory tree"}
+    ],
+    "scenarios_he": [
+      "דיסק מלא למרות מחיקת קבצים גדולים — תהליך מחזיק אותם פתוחים",
+      "מי משתמש ב-port שה-service שלך צריך",
+      "מציאת קבצי log של תהליך לפני חקירה"
+    ],
+    "scenarios_en": [
+      "Disk full despite deleting large files — a process is holding them open",
+      "Who is using a port your service needs",
+      "Finding a process's log files before investigation"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת lsof ללא sudo — מציג רק קבצי המשתמש הנוכחי",
+        "x_en": "Running lsof without sudo — shows only current user's files",
+        "fix_he": "הרץ עם <span class=\"ltr-term\">sudo lsof</span> לראיית כל הקבצים הפתוחים במערכת",
+        "fix_en": "Run with <span class=\"ltr-term\">sudo lsof</span> to see all open files system-wide"
+      },
+      {
+        "x_he": "חיפוש ב-lsof על שרת עמוס לוקח הרבה זמן",
+        "x_en": "lsof on a busy server takes a long time",
+        "fix_he": "סנן מיד: <span class=\"ltr-term\">lsof -i :PORT</span> במקום lsof ואז grep",
+        "fix_en": "Filter immediately: <span class=\"ltr-term\">lsof -i :PORT</span> rather than lsof then grep"
+      }
+    ],
+    "tags": "lsof open files process port network disk deleted קבצים פתוחים"
+  },
+  {
+    "id": "chmod",
+    "name": "chmod",
+    "cat": "permission",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "משנה הרשאות קבצים ותיקיות. שולט על גישת read, write ו-execute.",
+    "desc_en": "Change file and directory permissions. Controls read, write, and execute access.",
+    "source_url": "https://man7.org/linux/man-pages/man1/chmod.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "chmod 644 file.conf", "cmt_he": "rw-r--r-- : owner rw, group r, אחרים r", "cmt_en": "rw-r--r-- : owner rw, group r, others r"},
+      {"cmd": "chmod 755 script.sh", "cmt_he": "rwxr-xr-x : סטנדרט ל-executables", "cmt_en": "rwxr-xr-x : standard for executables"},
+      {"cmd": "chmod -R 750 /var/app", "cmt_he": "רקורסיבי: owner rwx, group rx, אחרים כלום", "cmt_en": "Recursive: owner rwx, group rx, others none"},
+      {"cmd": "chmod u+x,g-w file", "cmt_he": "symbolic: הוסף execute ל-user, הסר write מ-group", "cmt_en": "Symbolic: add execute for user, remove write for group"}
+    ],
+    "quick_flags": [
+      {"flag": "-R", "desc_he": "רקורסיבי — החל על כל הקבצים בתיקייה", "desc_en": "Recursive — apply to all files in directory"},
+      {"flag": "u+x", "desc_he": "הוסף execute ל-owner", "desc_en": "Add execute for owner"},
+      {"flag": "go-w", "desc_he": "הסר write מ-group ו-others", "desc_en": "Remove write from group and others"},
+      {"flag": "a+r", "desc_he": "הוסף read לכולם", "desc_en": "Add read for all (user, group, others)"}
+    ],
+    "scenarios_he": [
+      "script לא מתבצע — צריך +x permission",
+      "web server לא יכול לקרוא קובץ תצורה — הרשאות group שגויות",
+      "אבטחת קבצים רגישים לגישת owner בלבד"
+    ],
+    "scenarios_en": [
+      "Script won't execute — needs +x permission",
+      "Web server can't read config file — wrong group permissions",
+      "Securing sensitive files to owner-only access"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש ב-chmod 777 כפתרון מהיר",
+        "x_en": "Using chmod 777 as a quick fix",
+        "fix_he": "777 נותן גישה מלאה לכולם — השתמש ב-<span class=\"ltr-term\">755</span> לתיקיות, <span class=\"ltr-term\">644</span> לקבצים, אבחן את הבעיה האמיתית",
+        "fix_en": "777 gives everyone full access — use <span class=\"ltr-term\">755</span> for directories, <span class=\"ltr-term\">644</span> for files, diagnose the real issue"
+      },
+      {
+        "x_he": "שכחת ש--R מחיל גם על קבצים",
+        "x_en": "Forgetting -R applies recursively including files",
+        "fix_he": "תיקיות צריכות execute כדי להיכנס אליהן; לקבצים בדרך כלל אסור execute אלא אם מכוון",
+        "fix_en": "Directories need execute to be entered; files generally should not have execute unless intentional"
+      }
+    ],
+    "secnote_he": "chmod 777 הוא misconfiguration אבטחה קריטי. אם ראית קבצים רגישים עם גישה לכולם, טפל בזה מיד. בדוק מי שינה: stat file ובדוק את mtime.",
+    "secnote_en": "chmod 777 is a critical security misconfiguration. If you see world-writable sensitive files, treat it as a finding. Check who modified it: stat file and check mtime.",
+    "tags": "permission file access read write execute mode octal הרשאות גישה"
+  },
+  {
+    "id": "chown",
+    "name": "chown",
+    "cat": "permission",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "משנה בעלות קובץ — משתמש וקבוצה.",
+    "desc_en": "Change file ownership — user and group.",
+    "source_url": "https://man7.org/linux/man-pages/man1/chown.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "chown www-data:www-data /var/www/html", "cmt_he": "קבע owner וgroup", "cmt_en": "Set owner and group"},
+      {"cmd": "chown -R deploy:deploy /opt/app", "cmt_he": "שינוי בעלות רקורסיבי", "cmt_en": "Recursive ownership change"},
+      {"cmd": "chown root:root /etc/cron.d/job", "cmt_he": "קבצי cron צריכים להיות בבעלות root", "cmt_en": "Cron files should be owned by root"}
+    ],
+    "quick_flags": [
+      {"flag": "-R", "desc_he": "רקורסיבי — שנה בעלות של כל קבצים בתיקייה", "desc_en": "Recursive — change ownership of all files in directory"},
+      {"flag": "-v", "desc_he": "verbose — הדפס כל קובץ שהשתנה", "desc_en": "Verbose — print each changed file"}
+    ],
+    "scenarios_he": [
+      "שגיאות 403 ב-web server כי קבצים בבעלות משתמש שגוי",
+      "deployment script יצר קבצים בבעלות root במקום service user",
+      "לאחר שחזור מ-backup, בעלות שגויה"
+    ],
+    "scenarios_en": [
+      "Web server 403 errors because files are owned by wrong user",
+      "Deployment script creates files owned by root instead of service user",
+      "After restore from backup, ownership is wrong"
+    ],
+    "mistakes": [
+      {
+        "x_he": "chown על /etc או /usr רקורסיבי לתיקון קובץ אחד",
+        "x_en": "Chowning /etc or /usr recursively to fix one broken file",
+        "fix_he": "תמיד היה ספציפי — <span class=\"ltr-term\">chown -R</span> על תיקיות מערכת הוא הרסני",
+        "fix_en": "Always be specific — <span class=\"ltr-term\">chown -R</span> on system directories is destructive"
+      },
+      {
+        "x_he": "שכחת הקבוצה ב-chown user file",
+        "x_en": "Forgetting the group in chown user file",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">chown user:group</span> לקביעת שניהם במפורש",
+        "fix_en": "Use <span class=\"ltr-term\">chown user:group</span> to explicitly set both"
+      }
+    ],
+    "secnote_he": "bits של SUID/SGID יחד עם בעלות שגויה יכולים לשמש כ-privilege escalation vectors. בדוק עם: find / -perm /4000 -user root",
+    "secnote_en": "SUID/SGID bits combined with wrong ownership can be privilege escalation vectors. Check with: find / -perm /4000 -user root",
+    "tags": "ownership user group file permission chown root בעלות הרשאה"
+  },
+  {
+    "id": "sudo",
+    "name": "sudo",
+    "cat": "permission",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מבצע פקודה כמשתמש אחר (בדרך כלל root). מנגנון הפעלת הרשאות עיקרי ב-Linux.",
+    "desc_en": "Execute a command as another user (usually root). The primary privilege escalation mechanism on Linux.",
+    "source_url": "https://man7.org/linux/man-pages/man8/sudo.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "sudo command", "cmt_he": "הרץ פקודה בודדת כ-root", "cmt_en": "Run a single command as root"},
+      {"cmd": "sudo -u www-data command", "cmt_he": "הרץ כמשתמש ספציפי", "cmt_en": "Run as a specific user"},
+      {"cmd": "sudo -l", "cmt_he": "הצג מה מותר לך להריץ עם sudo", "cmt_en": "List what you're allowed to run with sudo"},
+      {"cmd": "sudo visudo", "cmt_he": "ערוך /etc/sudoers בבטחה", "cmt_en": "Safely edit /etc/sudoers"}
+    ],
+    "quick_flags": [
+      {"flag": "-u USER", "desc_he": "הרץ כמשתמש ספציפי", "desc_en": "Run as specific user"},
+      {"flag": "-l", "desc_he": "הצג הרשאות sudo", "desc_en": "List sudo permissions"},
+      {"flag": "-s", "desc_he": "פתח shell כ-root", "desc_en": "Open a root shell"},
+      {"flag": "-i", "desc_he": "התחבר כ-root (עם environment מלא)", "desc_en": "Login as root (with full environment)"}
+    ],
+    "scenarios_he": [
+      "פקודות ניהוליות ב-server מבלי להתחבר כ-root ישירות",
+      "הרצת service כ-user ספציפי בזמן debug",
+      "בדיקת מה מישהו יכול לעשות עם sudo ב-audit אבטחה"
+    ],
+    "scenarios_en": [
+      "Administrative commands on a server without logging in directly as root",
+      "Running a service as a specific user during debugging",
+      "Checking what someone can do with sudo during a security audit"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת sudo su - ואז שכחה שאתה root",
+        "x_en": "Running sudo su - and forgetting you're root",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">sudo command</span> ספציפי — מינימום הרשאות, audit trail ברור",
+        "fix_en": "Use specific <span class=\"ltr-term\">sudo command</span> — least privilege, clear audit trail"
+      },
+      {
+        "x_he": "הוספת ALL=(ALL) NOPASSWD:ALL ב-sudoers",
+        "x_en": "Adding ALL=(ALL) NOPASSWD:ALL to sudoers",
+        "fix_he": "זה שוקל NOPASSWD לכל פקודה — אפשר רק פקודות ספציפיות הנדרשות",
+        "fix_en": "This grants passwordless sudo for everything — allow only specific required commands"
+      }
+    ],
+    "secnote_he": "sudo הוא מנגנון escalation מועדף — כל sudo command מתועד ב-/var/log/auth.log. בזמן IR: ausearch -ua UID לבדיקת היסטוריית sudo.",
+    "secnote_en": "sudo is the preferred escalation mechanism — every sudo command is logged in /var/log/auth.log. During IR: ausearch -ua UID to check sudo history.",
+    "tags": "sudo root privilege escalation permission user הרשאות root"
+  },
+  {
+    "id": "journalctl",
+    "name": "journalctl",
+    "cat": "logs",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציג ומסנן את ה-systemd journal. כלי ה-log הראשי ב-Linux מודרני.",
+    "desc_en": "Query and display the systemd journal. The primary log tool on modern Linux.",
+    "source_url": "https://man7.org/linux/man-pages/man1/journalctl.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "journalctl -u nginx --since today", "cmt_he": "logs של nginx מאמצע הלילה", "cmt_en": "Nginx logs since midnight"},
+      {"cmd": "journalctl -u nginx -f", "cmt_he": "מצב מעקב — live tail", "cmt_en": "Follow mode — live tail"},
+      {"cmd": "journalctl -p err -n 50", "cmt_he": "50 הרשומות האחרונות ברמת error בכל ה-services", "cmt_en": "Last 50 error-level entries across all services"},
+      {"cmd": "journalctl --since \"2024-01-15 14:00:00\" --until \"2024-01-15 15:00:00\"", "cmt_he": "חלון זמן ספציפי", "cmt_en": "Specific time window"},
+      {"cmd": "journalctl -k --since -1h", "cmt_he": "הודעות kernel מהשעה האחרונה", "cmt_en": "Kernel messages from the past hour"}
+    ],
+    "quick_flags": [
+      {"flag": "-u SERVICE", "desc_he": "סנן ל-systemd unit ספציפי", "desc_en": "Filter to a specific systemd unit"},
+      {"flag": "-f", "desc_he": "מצב מעקב — כמו tail -f", "desc_en": "Follow mode — like tail -f"},
+      {"flag": "-p LEVEL", "desc_he": "סינון priority: err, warning, info, debug", "desc_en": "Priority filter: err, warning, info, debug"},
+      {"flag": "-n N", "desc_he": "הצג N שורות אחרונות", "desc_en": "Show last N lines"},
+      {"flag": "-k", "desc_he": "רק הודעות kernel ring buffer", "desc_en": "Kernel ring buffer messages only"}
+    ],
+    "scenarios_he": [
+      "service קרס — בדוק את השגיאה המדויקת לפני הצאצ'ה האחרון",
+      "חקירת חלון זמן ספציפי לאחר אירוע",
+      "מעקב אחרי service בזמן אמת בזמן בדיקות"
+    ],
+    "scenarios_en": [
+      "Service crashed — check exact error before last exit",
+      "Investigating a specific time window after an incident",
+      "Monitoring a service in real time during testing"
+    ],
+    "mistakes": [
+      {
+        "x_he": "journalctl -u service ללא --since מוריד הכל",
+        "x_en": "journalctl -u service without --since dumps everything",
+        "fix_he": "תחם תמיד עם <span class=\"ltr-term\">--since today</span> או <span class=\"ltr-term\">--since -1h</span> לשמירה על הפלט ניתן לניהול",
+        "fix_en": "Always scope with <span class=\"ltr-term\">--since today</span> or <span class=\"ltr-term\">--since -1h</span>"
+      },
+      {
+        "x_he": "פספוס -f למעקב חי",
+        "x_en": "Missing -f for live watching",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">journalctl -u service -f</span> ל-tail — הרבה יותר נקי",
+        "fix_en": "Use <span class=\"ltr-term\">journalctl -u service -f</span> to tail — much cleaner"
+      }
+    ],
+    "tags": "log journal systemd service error debug monitoring tail לוג שגיאות"
+  },
+  {
+    "id": "grep",
+    "name": "grep",
+    "cat": "logs",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מחפש טקסט לפי patterns. בסיסי לסינון logs וקבצים.",
+    "desc_en": "Search text using patterns. Fundamental for filtering logs and files.",
+    "source_url": "https://man7.org/linux/man-pages/man1/grep.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "grep -i \"error\" /var/log/syslog", "cmt_he": "-i = לא case-sensitive", "cmt_en": "-i = case insensitive"},
+      {"cmd": "grep -r \"failed password\" /var/log/", "cmt_he": "-r = רקורסיבי בתיקייה", "cmt_en": "-r = recursive through directory"},
+      {"cmd": "grep -n \"segfault\" /var/log/kern.log", "cmt_he": "-n = הצג מספרי שורה", "cmt_en": "-n = show line numbers"},
+      {"cmd": "grep -v \"DEBUG\" app.log | grep \"ERROR\"", "cmt_he": "הסר DEBUG ואז מצא ERROR", "cmt_en": "Exclude DEBUG then find ERROR"},
+      {"cmd": "grep -A 3 -B 3 \"CRITICAL\" app.log", "cmt_he": "הצג 3 שורות לפני ואחרי כל match", "cmt_en": "Show 3 lines before and after each match"}
+    ],
+    "quick_flags": [
+      {"flag": "-i", "desc_he": "חיפוש ללא הבחנה ב-case", "desc_en": "Case-insensitive search"},
+      {"flag": "-r", "desc_he": "חיפוש רקורסיבי בתיקיות", "desc_en": "Recursive search through directories"},
+      {"flag": "-n", "desc_he": "הצג מספרי שורה", "desc_en": "Show line numbers"},
+      {"flag": "-v", "desc_he": "הפוך match — הצג שורות שאינן מתאימות", "desc_en": "Invert match — show non-matching lines"},
+      {"flag": "-A/-B/-C N", "desc_he": "הצג N שורות אחרי/לפני/סביב match", "desc_en": "Show N lines after/before/around match"}
+    ],
+    "scenarios_he": [
+      "מציאת ניסיונות SSH כושלים ב-auth log",
+      "חיפוש שגיאה ספציפית ב-application logs לאורך טווח תאריכים",
+      "זיהוי איזה config file מכיל הגדרה ספציפית"
+    ],
+    "scenarios_en": [
+      "Finding failed SSH attempts in auth log",
+      "Searching application logs for a specific error across a date range",
+      "Identifying which config file contains a specific setting"
+    ],
+    "mistakes": [
+      {
+        "x_he": "אי-שימוש ב--i בחיפושי log",
+        "x_en": "Not using -i for log searches",
+        "fix_he": "רמות log לעתים קרובות עם mixed case — <span class=\"ltr-term\">-i</span> מוצאת ERROR, Error, error",
+        "fix_en": "Log levels are often mixed case — <span class=\"ltr-term\">-i</span> catches ERROR, Error, error"
+      },
+      {
+        "x_he": "grep על logs ענקיים ללא הגבלת טווח זמן קודם",
+        "x_en": "Grepping huge logs without restricting time range first",
+        "fix_he": "סנן מראש עם <span class=\"ltr-term\">awk</span> או <span class=\"ltr-term\">sed</span> לחלון הזמן לפני grep",
+        "fix_en": "Pre-filter with <span class=\"ltr-term\">awk</span> or <span class=\"ltr-term\">sed</span> for the time window before grepping"
+      }
+    ],
+    "tags": "search text pattern log file filter find string חיפוש טקסט"
+  },
+  {
+    "id": "systemctl",
+    "name": "systemctl",
+    "cat": "system",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "שולט ב-systemd service manager. מפעיל, מכבה, מאפשר ובודק services.",
+    "desc_en": "Control the systemd system and service manager. Start, stop, enable, and inspect services.",
+    "source_url": "https://man7.org/linux/man-pages/man1/systemctl.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "systemctl status nginx", "cmt_he": "סטטוס מפורט + שורות log אחרונות", "cmt_en": "Detailed status + last log lines"},
+      {"cmd": "systemctl restart nginx", "cmt_he": "הפעל מחדש service", "cmt_en": "Restart a service"},
+      {"cmd": "systemctl enable --now nginx", "cmt_he": "הפעל ב-boot AND הפעל עכשיו", "cmt_en": "Enable at boot AND start immediately"},
+      {"cmd": "systemctl list-units --failed", "cmt_he": "הצג את כל ה-units שנכשלו", "cmt_en": "Show all failed units"},
+      {"cmd": "systemctl daemon-reload", "cmt_he": "נדרש לאחר עריכת קובצי service unit", "cmt_en": "Required after editing service unit files"}
+    ],
+    "quick_flags": [
+      {"flag": "status", "desc_he": "הצג סטטוס service ו-logs אחרונים", "desc_en": "Show service status and recent logs"},
+      {"flag": "start/stop/restart", "desc_he": "נהל מחזור חיים של service", "desc_en": "Manage service lifecycle"},
+      {"flag": "enable/disable", "desc_he": "שלוט ב-auto-start ב-boot", "desc_en": "Control auto-start at boot"},
+      {"flag": "--now", "desc_he": "בשילוב enable/disable — הפעל/כבה גם עכשיו", "desc_en": "Combined with enable/disable — also start/stop now"},
+      {"flag": "daemon-reload", "desc_he": "reload systemd לאחר עריכת .service files", "desc_en": "Reload systemd after editing .service files"}
+    ],
+    "scenarios_he": [
+      "service לא רץ לאחר reboot — בדוק אם הוא enabled",
+      "service עלה ומיד קרס — בדוק status לקוד יציאה",
+      "לאחר עריכת /etc/systemd/system/*.service — reload לפני restart"
+    ],
+    "scenarios_en": [
+      "Service not running after reboot — check if it's enabled",
+      "Service started but immediately crashes — check status for exit code",
+      "After editing /etc/systemd/system/*.service — reload before restart"
+    ],
+    "mistakes": [
+      {
+        "x_he": "restart ללא daemon-reload לאחר עריכת unit files",
+        "x_en": "Restarting without daemon-reload after editing unit files",
+        "fix_he": "הרץ תמיד <span class=\"ltr-term\">systemctl daemon-reload</span> לאחר שינוי .service files",
+        "fix_en": "Always run <span class=\"ltr-term\">systemctl daemon-reload</span> after modifying .service files"
+      },
+      {
+        "x_he": "בלבול בין start (עכשיו) ו-enable (ב-boot)",
+        "x_en": "Confusing start (now) with enable (at boot)",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">enable --now</span> לשניהם בבת אחת",
+        "fix_en": "Use <span class=\"ltr-term\">enable --now</span> to do both at once"
+      }
+    ],
+    "tags": "service start stop restart enable disable systemd unit boot שירות"
+  },
+  {
+    "id": "cron",
+    "name": "crontab",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "מתזמן משימות חוזרות. crontab -e עורך crons של המשתמש; /etc/cron.d/ לרוחב המערכת.",
+    "desc_en": "Schedule recurring tasks. crontab -e edits user crons; /etc/cron.d/ for system-wide jobs.",
+    "source_url": "https://man7.org/linux/man-pages/man5/crontab.5.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "crontab -l", "cmt_he": "רשום את cron jobs של המשתמש הנוכחי", "cmt_en": "List current user's cron jobs"},
+      {"cmd": "crontab -e", "cmt_he": "ערוך את ה-crontab של המשתמש הנוכחי", "cmt_en": "Edit current user's crontab"},
+      {"cmd": "crontab -u www-data -l", "cmt_he": "הצג ה-crontab של משתמש אחר (root בלבד)", "cmt_en": "View another user's crontab (root only)"},
+      {"cmd": "ls -la /etc/cron.d/ /etc/cron.daily/ /etc/crontab", "cmt_he": "בדוק את כל מיקומי cron של המערכת", "cmt_en": "Check all system cron locations"}
+    ],
+    "quick_flags": [
+      {"flag": "-l", "desc_he": "הצג רשומות crontab נוכחיות", "desc_en": "List current crontab entries"},
+      {"flag": "-e", "desc_he": "ערוך crontab ב-editor ברירת מחדל", "desc_en": "Edit crontab in default editor"},
+      {"flag": "-r", "desc_he": "מחק את ה-crontab הנוכחי לגמרי", "desc_en": "Remove the current crontab entirely"},
+      {"flag": "-u USER", "desc_he": "פעל על ה-crontab של משתמש אחר (root בלבד)", "desc_en": "Operate on another user's crontab (root only)"}
+    ],
+    "scenarios_he": [
+      "גיבוי מתוזמן מעולם לא רץ — בדוק syntax של cron ו-log",
+      "חקירת משימות מתוזמנות לאחר פעילות חשודה",
+      "הגדרת log rotation או ניקוי אוטומטי"
+    ],
+    "scenarios_en": [
+      "Scheduled backup never ran — check cron syntax and log",
+      "Investigating scheduled tasks after suspicious activity",
+      "Setting up automated log rotation or cleanup"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שכחת ש-% במחרוזות cron חייב להיות escaped כ-\\%",
+        "x_en": "Forgetting % in cron strings must be escaped as \\%",
+        "fix_he": "ב-crontab, <span class=\"ltr-term\">%</span> מילולי הוא newline — תמיד escape: <span class=\"ltr-term\">\\%</span>",
+        "fix_en": "In crontab, literal <span class=\"ltr-term\">%</span> is a newline — always escape: <span class=\"ltr-term\">\\%</span>"
+      },
+      {
+        "x_he": "cron job חדש לא רץ — חסר newline בסוף הקובץ",
+        "x_en": "New cron job not running — missing newline at end of file",
+        "fix_he": "קובצי crontab חייבים להסתיים ב-newline; editors מסויימים לא מוסיפים אותו",
+        "fix_en": "Crontab files must end with a newline; some editors don't add one automatically"
+      }
+    ],
+    "secnote_he": "cron הוא מנגנון persistence נפוץ ל-malware. בזמן IR, בדוק את כל מיקומי cron: /var/spool/cron/, /etc/cron.d/, /etc/crontab, /etc/cron.hourly daily weekly monthly.",
+    "secnote_en": "Cron is a common malware persistence mechanism. During IR, check ALL cron locations: /var/spool/cron/, /etc/cron.d/, /etc/crontab, /etc/cron.hourly daily weekly monthly.",
+    "tags": "schedule task cron job timer recurring automation תזמון"
+  },
+  {
+    "id": "useradd",
+    "name": "useradd / usermod",
+    "cat": "user",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "יוצר ומשנה חשבונות משתמש במערכת.",
+    "desc_en": "Create and modify user accounts on the system.",
+    "source_url": "https://man7.org/linux/man-pages/man8/useradd.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "useradd -m -s /bin/bash -G sudo username", "cmt_he": "-m יוצר home, -G מוסיף לקבוצת sudo", "cmt_en": "-m creates home, -G adds to sudo group"},
+      {"cmd": "usermod -aG docker username", "cmt_he": "הוסף משתמש קיים לקבוצה ללא הסרת קבוצות אחרות", "cmt_en": "Add existing user to group without removing others"},
+      {"cmd": "usermod -L username", "cmt_he": "נעל חשבון (בטל כניסה)", "cmt_en": "Lock account (disable login)"},
+      {"cmd": "passwd -e username", "cmt_he": "פג תוקף password — כפה שינוי בכניסה הבאה", "cmt_en": "Expire password — force change at next login"},
+      {"cmd": "userdel -r username", "cmt_he": "מחק משתמש AND תיקיית home", "cmt_en": "Delete user AND home directory"}
+    ],
+    "quick_flags": [
+      {"flag": "-m", "desc_he": "צור תיקיית home", "desc_en": "Create home directory"},
+      {"flag": "-s SHELL", "desc_he": "קבע login shell", "desc_en": "Set login shell"},
+      {"flag": "-G GROUP", "desc_he": "הוסף לקבוצה supplemental", "desc_en": "Add to supplemental group"},
+      {"flag": "-aG GROUP", "desc_he": "append לקבוצה (השתמש עם usermod, -a מונע הסרת קבוצות)", "desc_en": "Append to group (use with usermod, -a prevents removing existing groups)"},
+      {"flag": "-L / -U", "desc_he": "נעל / שחרר נעילת חשבון", "desc_en": "Lock / unlock account"}
+    ],
+    "scenarios_he": [
+      "קבלת sysadmin חדש — צור חשבון עם הקבוצות הנכונות",
+      "משתמש ננעל — בדוק אם החשבון נעול עם passwd -S",
+      "לאחר אירוע — נעל מיד חשבון שנפגע"
+    ],
+    "scenarios_en": [
+      "Onboarding a new sysadmin — create account with correct groups",
+      "User locked out — check if account is locked with passwd -S",
+      "Post-incident — immediately lock a compromised account"
+    ],
+    "mistakes": [
+      {
+        "x_he": "usermod -G group מסיר את כל הקבוצות האחרות",
+        "x_en": "usermod -G group removes all OTHER groups",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-aG</span> (append) לא <span class=\"ltr-term\">-G</span> לבד בהוספה לקבוצה",
+        "fix_en": "Always use <span class=\"ltr-term\">-aG</span> (append) not <span class=\"ltr-term\">-G</span> alone when adding to a group"
+      },
+      {
+        "x_he": "מחיקת משתמשים ללא -r משאירה תיקיות home יתומות",
+        "x_en": "Deleting users without -r leaves orphaned home directories",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">userdel -r</span> או נקה ידנית /home/username לאחר",
+        "fix_en": "Use <span class=\"ltr-term\">userdel -r</span> or manually clean /home/username after"
+      }
+    ],
+    "secnote_he": "לאחר חשד לפריצה, מיד: usermod -L username. ואז בקר מה הם גישו עם: last username ו-ausearch -ua UID.",
+    "secnote_en": "After any suspected compromise, immediately: usermod -L username. Then audit what they accessed with: last username and ausearch -ua UID.",
+    "tags": "user account create modify group sudo password lock delete משתמש חשבון"
+  },
+  {
+    "id": "last",
+    "name": "last / lastb",
+    "cat": "user",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "מציג משתמשים שנכנסו לאחרונה. lastb מציג ניסיונות כניסה שנכשלו.",
+    "desc_en": "Show recently logged-in users. lastb shows failed login attempts.",
+    "source_url": "https://man7.org/linux/man-pages/man1/last.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "last -n 20", "cmt_he": "20 הכניסות המוצלחות האחרונות", "cmt_en": "Last 20 successful logins"},
+      {"cmd": "lastb -n 20", "cmt_he": "20 ניסיונות הכניסה הכושלים האחרונים (דורש root)", "cmt_en": "Last 20 FAILED login attempts (requires root)"},
+      {"cmd": "last -F username", "cmt_he": "timestamps מלאים למשתמש ספציפי", "cmt_en": "Full timestamps for a specific user"},
+      {"cmd": "who", "cmt_he": "מי מחובר עכשיו", "cmt_en": "Who is currently logged in right now"}
+    ],
+    "quick_flags": [
+      {"flag": "-n N", "desc_he": "הצג N רשומות אחרונות", "desc_en": "Show last N entries"},
+      {"flag": "-F", "desc_he": "פלט תאריך ושעה מלאים", "desc_en": "Full date and time output"},
+      {"flag": "-i", "desc_he": "הצג כתובות IP במקום hostnames", "desc_en": "Show IP addresses instead of hostnames"}
+    ],
+    "scenarios_he": [
+      "חקירת גישה לא מורשית — בדוק היסטוריית כניסות",
+      "בדיקה אם משתמש היה מחובר בחלון הזמן של אירוע",
+      "ביקורת פעילות root login"
+    ],
+    "scenarios_en": [
+      "Investigating unauthorized access — check login history",
+      "Checking if a user was logged in during an incident window",
+      "Auditing root login activity"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על last לבד — logs יכולים להיות מזויפים",
+        "x_en": "Trusting last alone — logs can be tampered with",
+        "fix_he": "השלב עם <span class=\"ltr-term\">journalctl</span> auth logs ו-/var/log/auth.log",
+        "fix_en": "Cross-reference with <span class=\"ltr-term\">journalctl</span> auth logs and /var/log/auth.log"
+      },
+      {
+        "x_he": "אי-בדיקת lastb ל-brute force",
+        "x_en": "Not checking lastb for brute force",
+        "fix_he": "הרץ <span class=\"ltr-term\">lastb | head -30</span> באופן קבוע — ספירה גבוהה של כשלים מ-IP אחד מצביעה על מתקפה פעילה",
+        "fix_en": "Run <span class=\"ltr-term\">lastb | head -30</span> regularly — high failure counts from one IP indicate active brute force"
+      }
+    ],
+    "secnote_he": "lastb הוא קריטי לזיהוי brute force. מאות כשלים מ-IP אחד = מתקפה פעילה. חסום עם: ufw deny from IP.",
+    "secnote_en": "lastb is critical for detecting brute force. Hundreds of failures from one IP = active attack. Block with: ufw deny from IP.",
+    "tags": "login user history authentication last failed brute force כניסה היסטוריה"
+  },
+  {
+    "id": "iptables",
+    "name": "iptables / ufw",
+    "cat": "network",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "מנהל חוקי firewall של ה-kernel. ufw הוא ה-frontend הפשוט.",
+    "desc_en": "Manage kernel netfilter firewall rules. ufw is the simplified frontend.",
+    "source_url": "https://man7.org/linux/man-pages/man8/iptables.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "ufw status verbose", "cmt_he": "חוקי ufw נוכחיים וסטטוס", "cmt_en": "Current ufw rules and status"},
+      {"cmd": "ufw allow 22/tcp", "cmt_he": "אפשר SSH", "cmt_en": "Allow SSH"},
+      {"cmd": "ufw deny from 192.168.1.100", "cmt_he": "חסום IP ספציפי", "cmt_en": "Block specific IP"},
+      {"cmd": "iptables -L -n -v", "cmt_he": "הצג את כל חוקי iptables עם ספירת packets", "cmt_en": "List all iptables rules with packet counts"},
+      {"cmd": "iptables -I INPUT 1 -s 10.10.10.10 -j DROP", "cmt_he": "חסום IP מיד (הכנס בראש)", "cmt_en": "Immediately block an IP (insert at top)"}
+    ],
+    "quick_flags": [
+      {"flag": "-L", "desc_he": "הצג את כל החוקים בchain שנבחר", "desc_en": "List all rules in selected chain"},
+      {"flag": "-n", "desc_he": "פלט מספרי — ללא DNS lookups", "desc_en": "Numeric output — no DNS lookups"},
+      {"flag": "-v", "desc_he": "verbose — הצג מונים של packets/bytes", "desc_en": "Verbose — show packet/byte counters"},
+      {"flag": "-I CHAIN N", "desc_he": "הכנס חוק במיקום N (1 = ראש)", "desc_en": "Insert rule at position N (1 = top)"},
+      {"flag": "-F", "desc_he": "flush (מחק) את כל החוקים — מסוכן!", "desc_en": "Flush (delete) all rules — DANGEROUS!"}
+    ],
+    "scenarios_he": [
+      "חסימת IP שמבצע מתקפת brute force",
+      "פתיחת port לservice חדש ללא כיבוי firewall",
+      "ביקורת חוקי firewall נוכחיים לאחר אירוע"
+    ],
+    "scenarios_en": [
+      "Blocking an IP conducting a brute force attack",
+      "Opening a port for a new service without disabling the firewall",
+      "Auditing current firewall rules after an incident"
+    ],
+    "mistakes": [
+      {
+        "x_he": "iptables -F מנקה את כל החוקים — יכול לנעול אותך מחוץ ל-SSH",
+        "x_en": "iptables -F flushes ALL rules — can lock you out of SSH",
+        "fix_he": "לפני flush, הוסף חוק ACCEPT ל-IP שלך או ל-port 22, או השתמש ב-<span class=\"ltr-term\">ufw</span> שהוא בטוח יותר",
+        "fix_en": "Before flushing, add an ACCEPT rule for your IP or port 22, or use <span class=\"ltr-term\">ufw</span> which is safer"
+      },
+      {
+        "x_he": "שינויי ufw לא persistent אם ufw מכובה",
+        "x_en": "ufw changes not persistent if ufw is disabled",
+        "fix_he": "בדוק תמיד ש-<span class=\"ltr-term\">ufw status</span> פעיל; הרץ <span class=\"ltr-term\">ufw enable</span> לשמירת חוקים",
+        "fix_en": "Always check <span class=\"ltr-term\">ufw status</span> is active; run <span class=\"ltr-term\">ufw enable</span> to persist rules"
+      }
+    ],
+    "secnote_he": "בזמן אירוע פעיל, החסימה המהירה ביותר: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. נכנס לתוקף מיד ללא restart.",
+    "secnote_en": "In an active incident, the fastest block: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. Takes effect immediately without restarting anything.",
+    "tags": "firewall rule block allow port ip iptables ufw network security חומת אש"
   }
 ]

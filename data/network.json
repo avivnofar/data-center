@@ -5,34 +5,51 @@
     "cat": "ports",
     "diff": "intermediate",
     "sec": true,
-    "desc": "Network scanner — discover hosts, open ports, services, and OS versions. The Swiss Army knife of network recon.",
+    "desc_he": "כלי סריקת רשת רב-עוצמה — מגלה hosts, ports פתוחים, גרסאות services ו-OS.",
+    "desc_en": "Powerful network scanner — discovers hosts, open ports, service versions, and OS.",
     "source_url": "https://nmap.org/book/man.html",
-    "source_name": "Nmap official reference guide (nmap.org)",
+    "source_name": "Nmap Reference Guide (nmap.org)",
     "usage": [
-      {"cmd": "nmap -sn 192.168.1.0/24", "cmt": "ping sweep — discover live hosts, no port scan"},
-      {"cmd": "nmap -sV -p 22,80,443 10.0.0.10", "cmt": "version detection on specific ports"},
-      {"cmd": "nmap -A -T4 10.0.0.10", "cmt": "aggressive scan: OS, version, scripts, traceroute"},
-      {"cmd": "nmap -p- --open 10.0.0.10", "cmt": "all 65535 ports, show only open ones"},
-      {"cmd": "nmap -sU -p 53,161 10.0.0.10", "cmt": "UDP scan for DNS and SNMP"}
+      {"cmd": "nmap -sV 192.168.1.1", "cmt_he": "scan port עם זיהוי גרסת service", "cmt_en": "Port scan with service version detection"},
+      {"cmd": "nmap -p 22,80,443 192.168.1.0/24", "cmt_he": "scan ports ספציפיים על subnet שלם", "cmt_en": "Scan specific ports on entire subnet"},
+      {"cmd": "nmap -sn 192.168.1.0/24", "cmt_he": "ping scan — רק גילוי hosts ללא port scan", "cmt_en": "Ping scan — host discovery only, no port scan"},
+      {"cmd": "nmap -O 192.168.1.1", "cmt_he": "ניסיון זיהוי OS (דורש root)", "cmt_en": "OS fingerprinting attempt (requires root)"},
+      {"cmd": "nmap -A --script=vuln 192.168.1.1", "cmt_he": "scan מקיף עם scripts לזיהוי vulnerabilities", "cmt_en": "Comprehensive scan with vulnerability detection scripts"}
     ],
     "quick_flags": [
-      {"flag": "-sn", "desc": "ping sweep only — no port scan"},
-      {"flag": "-sV", "desc": "probe ports for service/version info"},
-      {"flag": "-A", "desc": "aggressive: OS, version, scripts, traceroute"},
-      {"flag": "-p-", "desc": "scan all 65535 ports"},
-      {"flag": "-oA FILE", "desc": "save output in all formats simultaneously"}
+      {"flag": "-sV", "desc_he": "זהה גרסאות services", "desc_en": "Detect service versions"},
+      {"flag": "-sn", "desc_he": "ping scan — גילוי hosts בלבד", "desc_en": "Ping scan — host discovery only"},
+      {"flag": "-p PORT", "desc_he": "scan ports ספציפיים בלבד", "desc_en": "Scan specific ports only"},
+      {"flag": "-O", "desc_he": "זיהוי OS (דורש root)", "desc_en": "OS detection (requires root)"},
+      {"flag": "-A", "desc_he": "aggressive: OS + version + scripts + traceroute", "desc_en": "Aggressive: OS + version + scripts + traceroute"}
     ],
-    "scenarios": [
-      "Auditing which ports are exposed on a server before going to production",
-      "Discovering all devices on a network segment",
-      "Verifying a firewall rule change actually blocked the intended port"
+    "scenarios_he": [
+      "מיפוי כל hosts ברשת לפני audit אבטחה",
+      "בדיקה אילו ports פתוחים על server חדש לפני firewall rules",
+      "גילוי services ישנים עם vulnerabilities ידועות"
+    ],
+    "scenarios_en": [
+      "Mapping all hosts on a network before a security audit",
+      "Checking which ports are open on a new server before configuring firewall rules",
+      "Discovering outdated services with known vulnerabilities"
     ],
     "mistakes": [
-      {"x": "Running nmap -A on production without permission — intrusive", "fix": "Use <span>-sn</span> (ping sweep) or <span>-sV</span> (version) for less intrusive scans; full -A generates significant traffic and logs"},
-      {"x": "Not saving output", "fix": "Use <span>-oA filename</span> to save in all formats (normal, XML, grepable) simultaneously"}
+      {
+        "x_he": "הרצת nmap על רשתות לא שלך ללא אישור",
+        "x_en": "Running nmap on networks you don't own without authorization",
+        "fix_he": "nmap על רשתות חיצוניות ללא אישור הוא לא חוקי. scan רק על רשתות שאתה מורשה לבדוק",
+        "fix_en": "nmap on external networks without authorization is illegal. Scan only networks you're authorized to test"
+      },
+      {
+        "x_he": "שימוש ב--A (-sV -O --script) על כל subnet — איטי מאוד",
+        "x_en": "Using -A on an entire subnet — very slow",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-sn</span> לגילוי hosts קודם, ואז -sV על hosts ספציפיים",
+        "fix_en": "Use <span class=\"ltr-term\">-sn</span> for host discovery first, then -sV on specific hosts"
+      }
     ],
-    "secnote": "nmap is dual-use. Defenders use it for asset inventory and vulnerability assessment. Attackers use it for recon. Unauthorized nmap scanning is illegal in many jurisdictions. Always have written permission.",
-    "tags": "nmap scan port host network discover recon audit security"
+    "secnote_he": "nmap הוא כלי dual-use קריטי. תוקפים משתמשים בו לreconnaissance. כמגן: הרץ על הרשת שלך ומצא ports פתוחים לא צפויים לפני שהתוקף מוצא אותם.",
+    "secnote_en": "nmap is a critical dual-use tool. Attackers use it for reconnaissance. As defender: run it on your own network and find unexpected open ports before the attacker does.",
+    "tags": "nmap scan port network host discovery security audit vulnerability רשת סריקה"
   },
   {
     "id": "dig",
@@ -40,133 +57,296 @@
     "cat": "dns",
     "diff": "intermediate",
     "sec": false,
-    "desc": "DNS lookup and diagnostics. More powerful than nslookup with cleaner output.",
+    "desc_he": "כלי DNS lookup מתקדם. מפורט ומדויק יותר מ-nslookup.",
+    "desc_en": "Advanced DNS lookup tool. More detailed and precise than nslookup.",
     "source_url": "https://linux.die.net/man/1/dig",
     "source_name": "Linux man page (linux.die.net)",
     "usage": [
-      {"cmd": "dig example.com", "cmt": "standard A record lookup"},
-      {"cmd": "dig example.com MX", "cmt": "mail server records"},
-      {"cmd": "dig example.com ANY", "cmt": "all record types"},
-      {"cmd": "dig @8.8.8.8 example.com", "cmt": "query a specific DNS server"},
-      {"cmd": "dig +trace example.com", "cmt": "trace full delegation path from root servers"},
-      {"cmd": "dig -x 8.8.8.8", "cmt": "reverse DNS lookup (PTR record)"}
+      {"cmd": "dig example.com", "cmt_he": "A record lookup בסיסי", "cmt_en": "Basic A record lookup"},
+      {"cmd": "dig example.com MX", "cmt_he": "בדוק mail exchange records", "cmt_en": "Check mail exchange records"},
+      {"cmd": "dig @8.8.8.8 example.com", "cmt_he": "שאל DNS server ספציפי (Google Public DNS)", "cmt_en": "Query a specific DNS server (Google Public DNS)"},
+      {"cmd": "dig example.com +short", "cmt_he": "פלט קצר — רק ה-IP address", "cmt_en": "Short output — IP address only"},
+      {"cmd": "dig -x 8.8.8.8", "cmt_he": "reverse DNS lookup — IP ל-hostname", "cmt_en": "Reverse DNS lookup — IP to hostname"},
+      {"cmd": "dig example.com +trace", "cmt_he": "trace DNS resolution מ-root servers", "cmt_en": "Trace DNS resolution from root servers"}
     ],
     "quick_flags": [
-      {"flag": "@SERVER", "desc": "query a specific DNS server"},
-      {"flag": "+trace", "desc": "trace full delegation from root servers"},
-      {"flag": "+short", "desc": "terse output — just the answer"},
-      {"flag": "-x IP", "desc": "reverse lookup (IP to hostname)"},
-      {"flag": "TYPE", "desc": "record type: A, MX, TXT, CNAME, NS, PTR"}
+      {"flag": "+short", "desc_he": "פלט מינימלי — רק התשובה", "desc_en": "Minimal output — just the answer"},
+      {"flag": "@SERVER", "desc_he": "שאל DNS server ספציפי", "desc_en": "Query specific DNS server"},
+      {"flag": "-x IP", "desc_he": "reverse lookup — IP ל-hostname", "desc_en": "Reverse lookup — IP to hostname"},
+      {"flag": "+trace", "desc_he": "trace שלם מ-root servers", "desc_en": "Full trace from root servers"},
+      {"flag": "TYPE", "desc_he": "סוג record: A, MX, TXT, NS, CNAME, SOA", "desc_en": "Record type: A, MX, TXT, NS, CNAME, SOA"}
     ],
-    "scenarios": [
-      "DNS change not propagating — query multiple resolvers to check",
-      "Email delivery issues — check MX records and SPF/DKIM",
-      "Investigating DNS hijacking — compare results from different resolvers"
+    "scenarios_he": [
+      "בדיקת DNS propagation לאחר שינוי records",
+      "אבחון בעיות email — בדוק MX ו-SPF records",
+      "בדיקה מאיזה DNS server אתה מקבל תשובות"
+    ],
+    "scenarios_en": [
+      "Checking DNS propagation after record changes",
+      "Diagnosing email issues — check MX and SPF records",
+      "Checking which DNS server is answering your queries"
     ],
     "mistakes": [
-      {"x": "Using nslookup instead of dig", "fix": "<span>dig</span> gives TTL, authoritative flags, full section breakdown. nslookup is legacy and inconsistent"},
-      {"x": "Not using +trace to diagnose delegation issues", "fix": "<span>dig +trace</span> walks the full delegation chain and shows exactly where the problem is in DNS hierarchy"}
+      {
+        "x_he": "שכחת +short — פלט dig ארוך וקשה לקריאה",
+        "x_en": "Forgetting +short — dig output is long and hard to read",
+        "fix_he": "הוסף <span class=\"ltr-term\">+short</span> לפלט מינימלי כשאתה רוצה רק את ה-IP",
+        "fix_en": "Add <span class=\"ltr-term\">+short</span> for minimal output when you just want the IP"
+      },
+      {
+        "x_he": "אי-ציון @SERVER בבדיקת propagation",
+        "x_en": "Not specifying @SERVER when testing propagation",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">@8.8.8.8</span> לבדיקת DNS public — שרת ה-DNS שלך עשוי לcache תשובות ישנות",
+        "fix_en": "Use <span class=\"ltr-term\">@8.8.8.8</span> to test against public DNS — your local DNS may cache stale answers"
+      }
     ],
-    "tags": "dns lookup record query mx a ptr cname ttl nameserver"
+    "tags": "dns dig lookup resolve record mx txt a cname ns propagation"
   },
   {
-    "id": "nslookup",
-    "name": "nslookup",
+    "id": "mtr",
+    "name": "mtr",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "שילוב של ping ו-traceroute בזמן אמת. מציג packet loss בכל hop.",
+    "desc_en": "Combines ping and traceroute in real time. Shows packet loss at each hop.",
+    "source_url": "https://linux.die.net/man/8/mtr",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "mtr 8.8.8.8", "cmt_he": "mode אינטראקטיבי — trace מתעדכן בזמן אמת", "cmt_en": "Interactive mode — trace updates in real time"},
+      {"cmd": "mtr --report --report-cycles=50 8.8.8.8", "cmt_he": "שלח 50 packets ודווח — טוב לdocumentation", "cmt_en": "Send 50 packets and report — good for documentation"},
+      {"cmd": "mtr -n 8.8.8.8", "cmt_he": "mode מספרי — ללא DNS resolution", "cmt_en": "Numeric mode — no DNS resolution"},
+      {"cmd": "mtr --tcp --port 443 example.com", "cmt_he": "TCP trace על port 443 — עוקף חסימות ICMP", "cmt_en": "TCP trace on port 443 — bypasses ICMP blocks"}
+    ],
+    "quick_flags": [
+      {"flag": "--report", "desc_he": "mode לא אינטראקטיבי — שלח N packets ודווח", "desc_en": "Non-interactive mode — send N packets and report"},
+      {"flag": "-n", "desc_he": "mode מספרי — ללא DNS lookups", "desc_en": "Numeric mode — no DNS lookups"},
+      {"flag": "--tcp", "desc_he": "השתמש ב-TCP SYN במקום ICMP", "desc_en": "Use TCP SYN instead of ICMP"},
+      {"flag": "--port PORT", "desc_he": "port יעד ל-TCP probes", "desc_en": "Destination port for TCP probes"}
+    ],
+    "scenarios_he": [
+      "חקירת בעיית latency לסרת ספציפי — מציג loss בכל hop",
+      "תיעוד בעיית רשת לדוח ל-ISP",
+      "בדיקת קישוריות דרך firewall עם TCP mode"
+    ],
+    "scenarios_en": [
+      "Investigating latency to a specific server — shows loss per hop",
+      "Documenting a network issue for an ISP report",
+      "Testing connectivity through a firewall using TCP mode"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש ב-mode אינטראקטיבי כשצריך snapshot לתיעוד",
+        "x_en": "Using interactive mode when you need a snapshot for documentation",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">mtr --report --report-cycles=50 HOST</span> לדוח שאפשר לשמור",
+        "fix_en": "Use <span class=\"ltr-term\">mtr --report --report-cycles=50 HOST</span> for a saveable report"
+      },
+      {
+        "x_he": "מסקנה על loss מ-hop אחד בלבד",
+        "x_en": "Drawing conclusions from loss at a single hop",
+        "fix_he": "אם hops אחרי ה-hop עם loss נראים תקינים, ה-router פשוט מקדפריוריטיזה ICMP — זה נורמלי",
+        "fix_en": "If hops after the loss point look fine, the router just de-prioritizes ICMP — that's normal"
+      }
+    ],
+    "tags": "mtr traceroute ping latency packet loss hop network diagnostic"
+  },
+  {
+    "id": "nslookup-linux",
+    "name": "nslookup / host",
     "cat": "dns",
     "diff": "beginner",
     "sec": false,
-    "desc": "Query DNS servers interactively or non-interactively. Available on both Linux and Windows.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/nslookup",
-    "source_name": "Microsoft Docs",
+    "desc_he": "פקודות DNS פשוטות לפתרון hostnames ובדיקת records.",
+    "desc_en": "Simple DNS commands for resolving hostnames and checking records.",
+    "source_url": "https://linux.die.net/man/1/nslookup",
+    "source_name": "Linux man page (linux.die.net)",
     "usage": [
-      {"cmd": "nslookup example.com", "cmt": "default lookup"},
-      {"cmd": "nslookup example.com 8.8.8.8", "cmt": "query specific DNS server"},
-      {"cmd": "nslookup -type=MX example.com", "cmt": "MX records on Windows"},
-      {"cmd": "nslookup -type=TXT example.com 8.8.8.8", "cmt": "TXT records — SPF, DKIM, verification"}
+      {"cmd": "nslookup example.com", "cmt_he": "פתור hostname ל-IP", "cmt_en": "Resolve hostname to IP"},
+      {"cmd": "nslookup -type=MX example.com", "cmt_he": "בדוק mail server records", "cmt_en": "Check mail server records"},
+      {"cmd": "host example.com", "cmt_he": "פתור פשוט — פלט קצר ונקי", "cmt_en": "Simple resolve — short clean output"},
+      {"cmd": "host -t MX example.com", "cmt_he": "בדוק MX records עם host", "cmt_en": "Check MX records using host"}
     ],
     "quick_flags": [
-      {"flag": "-type=TYPE", "desc": "specify record type: A, MX, TXT, NS, PTR"},
-      {"flag": "-debug", "desc": "show verbose debug output"},
-      {"flag": "SERVER", "desc": "second argument: use this DNS server instead of default"}
+      {"flag": "-type=TYPE", "desc_he": "בדוק record type ספציפי (A/MX/TXT/NS)", "desc_en": "Check specific record type (A/MX/TXT/NS)"},
+      {"flag": "-t TYPE", "desc_he": "אותו הדבר עם פקודת host", "desc_en": "Same thing with host command"}
     ],
-    "scenarios": [
-      "Quick DNS check on Windows where dig is not installed",
-      "Checking if SPF records are published correctly for email",
-      "Verifying a newly deployed domain is resolving"
+    "scenarios_he": [
+      "בדיקה מהירה אם hostname נפתר",
+      "אבחון email — בדוק MX records",
+      "השוואה בין תשובות DNS servers שונים"
+    ],
+    "scenarios_en": [
+      "Quick check if a hostname resolves",
+      "Email diagnosis — check MX records",
+      "Comparing responses from different DNS servers"
     ],
     "mistakes": [
-      {"x": "nslookup uses system resolver by default — may return cached results", "fix": "Always specify a server: <span>nslookup example.com 8.8.8.8</span> to bypass local cache"},
-      {"x": "Not specifying record type gets only A record", "fix": "Use <span>-type=MX</span>, <span>-type=TXT</span> etc. for other record types"}
+      {
+        "x_he": "שימוש ב-nslookup ללא ציון DNS server עשוי להסתיר בעיית propagation",
+        "x_en": "Using nslookup without specifying a DNS server may hide propagation issues",
+        "fix_he": "ציין <span class=\"ltr-term\">nslookup domain 8.8.8.8</span> לבדיקה על DNS server ידוע",
+        "fix_en": "Specify <span class=\"ltr-term\">nslookup domain 8.8.8.8</span> to test against a known DNS server"
+      },
+      {
+        "x_he": "nslookup deprecated בחלק מ-distros — dig עדיף",
+        "x_en": "nslookup deprecated on some distros — dig is preferred",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">dig</span> לניתוח מפורט; nslookup לבדיקות מהירות",
+        "fix_en": "Use <span class=\"ltr-term\">dig</span> for detailed analysis; nslookup for quick checks"
+      }
     ],
-    "tags": "nslookup dns windows linux lookup query name resolution"
+    "tags": "dns nslookup host resolve mx txt a record lookup"
   },
   {
-    "id": "wireshark-cli",
-    "name": "tshark (Wireshark CLI)",
-    "cat": "diagnostic",
+    "id": "iptables-linux",
+    "name": "iptables rules",
+    "cat": "firewall",
     "diff": "advanced",
     "sec": true,
-    "desc": "Command-line version of Wireshark. Capture and analyze packets without a GUI.",
-    "source_url": "https://www.wireshark.org/docs/man-pages/tshark.html",
-    "source_name": "Wireshark official man page (wireshark.org)",
+    "desc_he": "הצגה ובדיקת חוקי firewall של Linux kernel netfilter.",
+    "desc_en": "View and inspect Linux kernel netfilter firewall rules.",
+    "source_url": "https://man7.org/linux/man-pages/man8/iptables.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "tshark -i eth0 -c 100", "cmt": "capture 100 packets on eth0"},
-      {"cmd": "tshark -i eth0 -Y \"http.request\" -T fields -e http.host -e http.request.uri", "cmt": "extract HTTP request URLs live"},
-      {"cmd": "tshark -r capture.pcap -Y \"tcp.port == 443\" -w filtered.pcap", "cmt": "filter an existing pcap file"},
-      {"cmd": "tshark -i eth0 -Y \"dns\" -T fields -e dns.qry.name", "cmt": "live DNS query monitoring"}
+      {"cmd": "iptables -L -n -v --line-numbers", "cmt_he": "הצג כל חוקים עם מספרים ומונים", "cmt_en": "Show all rules with numbers and counters"},
+      {"cmd": "iptables -L INPUT -n -v", "cmt_he": "הצג רק חוקי INPUT chain", "cmt_en": "Show only INPUT chain rules"},
+      {"cmd": "iptables-save", "cmt_he": "dump את כל החוקים לbackup", "cmt_en": "Dump all rules for backup"},
+      {"cmd": "iptables-restore < rules.bak", "cmt_he": "שחזר חוקים מקובץ backup", "cmt_en": "Restore rules from backup file"},
+      {"cmd": "iptables -I INPUT 1 -s 1.2.3.4 -j DROP", "cmt_he": "חסום IP מיד — הכנס בראש הchain", "cmt_en": "Block IP immediately — insert at top of chain"}
     ],
     "quick_flags": [
-      {"flag": "-i IFACE", "desc": "capture on network interface"},
-      {"flag": "-c N", "desc": "stop after capturing N packets"},
-      {"flag": "-Y FILTER", "desc": "display filter (Wireshark syntax)"},
-      {"flag": "-r FILE", "desc": "read from pcap file"},
-      {"flag": "-w FILE", "desc": "write captured packets to file"},
-      {"flag": "-T fields -e FIELD", "desc": "extract specific protocol fields"}
+      {"flag": "-L", "desc_he": "הצג חוקים", "desc_en": "List rules"},
+      {"flag": "-n", "desc_he": "פלט מספרי ללא DNS lookups", "desc_en": "Numeric output without DNS lookups"},
+      {"flag": "-v", "desc_he": "verbose: מונה packets ו-bytes", "desc_en": "Verbose: packet and byte counters"},
+      {"flag": "--line-numbers", "desc_he": "הצג מספרי שורה (לצורך delete)", "desc_en": "Show line numbers (needed for delete)"},
+      {"flag": "-I CHAIN N", "desc_he": "הכנס חוק במיקום N", "desc_en": "Insert rule at position N"}
     ],
-    "scenarios": [
-      "Headless server — capture packets without GUI",
-      "Automated packet capture in scripts",
-      "Filtering a large pcap for specific protocol or IP before opening in Wireshark"
+    "scenarios_he": [
+      "ביקורת חוקי firewall — מה מותר ומה חסום",
+      "חסימת IP מתקפה פעילה — -I לראש הchain",
+      "שמירת חוקים לפני שינויים גדולים"
+    ],
+    "scenarios_en": [
+      "Auditing firewall rules — what is allowed and what is blocked",
+      "Blocking an active attack IP — -I to top of chain",
+      "Saving rules before making major changes"
     ],
     "mistakes": [
-      {"x": "Not specifying -c or a time limit — runs until disk is full", "fix": "Always use <span>-c COUNT</span> or <span>-a duration:SECONDS</span> to limit capture size"},
-      {"x": "Capturing without saving — lose the data", "fix": "Add <span>-w output.pcap</span> for any serious capture that will need later analysis"}
+      {
+        "x_he": "שינויי iptables לא persistent לאחר reboot",
+        "x_en": "iptables changes are not persistent after reboot",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">iptables-save</span> ו-<span class=\"ltr-term\">iptables-restore</span>, או <span class=\"ltr-term\">ufw</span> שמנהל persistence",
+        "fix_en": "Use <span class=\"ltr-term\">iptables-save</span> and <span class=\"ltr-term\">iptables-restore</span>, or <span class=\"ltr-term\">ufw</span> which manages persistence"
+      },
+      {
+        "x_he": "iptables -F מנקה את כל החוקים — ייתכן שתנעל עצמך מחוץ ל-SSH",
+        "x_en": "iptables -F clears all rules — may lock you out of SSH",
+        "fix_he": "תמיד שמור קודם עם <span class=\"ltr-term\">iptables-save > backup.rules</span> לפני flush",
+        "fix_en": "Always save first with <span class=\"ltr-term\">iptables-save > backup.rules</span> before flushing"
+      }
     ],
-    "secnote": "tshark can extract plaintext credentials from unencrypted protocols. This is a critical tool for both network forensics and for understanding why your protocols MUST use TLS.",
-    "tags": "tshark wireshark packet capture network analysis pcap protocol"
+    "secnote_he": "iptables הוא כלי הגנה ומתקפה. בזמן incident: חסום מיד את IP התוקף עם -I INPUT 1 -s IP -j DROP — נכנס לתוקף ללא restart.",
+    "secnote_en": "iptables is both defensive and offensive. During incident: immediately block attacker with -I INPUT 1 -s IP -j DROP — takes effect without restart.",
+    "tags": "firewall iptables rules block allow chain network linux security חומת אש"
   },
   {
-    "id": "arp",
-    "name": "arp",
+    "id": "netcat",
+    "name": "netcat (nc)",
     "cat": "diagnostic",
     "diff": "intermediate",
     "sec": true,
-    "desc": "View and manipulate the ARP cache — maps IP addresses to MAC addresses.",
-    "source_url": "https://man7.org/linux/man-pages/man8/arp.8.html",
-    "source_name": "Linux man page (man7.org)",
+    "desc_he": "כלי רשת גמיש — בודק קישוריות ל-ports, שולח/מקבל נתונים, מאזין ל-connections.",
+    "desc_en": "Versatile network utility — test port connectivity, send/receive data, listen for connections.",
+    "source_url": "https://linux.die.net/man/1/nc",
+    "source_name": "Linux man page (linux.die.net)",
     "usage": [
-      {"cmd": "arp -a", "cmt": "display full ARP table (works on Linux and Windows)"},
-      {"cmd": "arp -d 192.168.1.1", "cmt": "delete a specific ARP entry (force refresh)"},
-      {"cmd": "arp -s 192.168.1.1 aa:bb:cc:dd:ee:ff", "cmt": "add static ARP entry (Linux)"},
-      {"cmd": "ip neigh show", "cmt": "modern Linux equivalent with more detail"}
+      {"cmd": "nc -zv 10.0.0.1 22", "cmt_he": "בדוק אם port 22 (SSH) פתוח", "cmt_en": "Check if port 22 (SSH) is open"},
+      {"cmd": "nc -zv 10.0.0.1 80 443 8080", "cmt_he": "בדוק מספר ports בבת אחת", "cmt_en": "Check multiple ports at once"},
+      {"cmd": "nc -l 9999", "cmt_he": "האזן ל-port 9999 (test server)", "cmt_en": "Listen on port 9999 (test server)"},
+      {"cmd": "nc -l 9999 | tar xvf -", "cmt_he": "קבל קובץ tar דרך רשת", "cmt_en": "Receive a tar file over the network"}
     ],
     "quick_flags": [
-      {"flag": "-a", "desc": "show ARP table (all cached entries)"},
-      {"flag": "-d IP", "desc": "delete ARP cache entry for IP"},
-      {"flag": "-s IP MAC", "desc": "set static ARP entry"},
-      {"flag": "-n", "desc": "numeric mode — no hostname resolution"}
+      {"flag": "-z", "desc_he": "zero I/O — בדוק רק אם port פתוח", "desc_en": "Zero I/O — just check if port is open"},
+      {"flag": "-v", "desc_he": "verbose — הצג תוצאת connection", "desc_en": "Verbose — show connection result"},
+      {"flag": "-l PORT", "desc_he": "mode האזנה — כ-server על port", "desc_en": "Listen mode — act as server on port"},
+      {"flag": "-w N", "desc_he": "timeout בשניות לניסיון connection", "desc_en": "Connection timeout in seconds"}
     ],
-    "scenarios": [
-      "Two devices claiming same IP — check ARP table for duplicate MACs",
-      "After router replacement — ARP cache pointing to old MAC",
-      "Investigating ARP spoofing/poisoning attack"
+    "scenarios_he": [
+      "בדיקה אם port של service נגיש מ-host מרוחק",
+      "בדיקת קישוריות דרך firewall לפני הפעלת service",
+      "העברת קבצים מהירה ברשת פנימית ללא SCP/FTP"
+    ],
+    "scenarios_en": [
+      "Testing if a service port is reachable from a remote host",
+      "Testing firewall connectivity before deploying a service",
+      "Quick file transfer on an internal network without SCP/FTP"
     ],
     "mistakes": [
-      {"x": "ARP cache entries expire — a clean table may just mean no recent traffic", "fix": "Ping the target first to populate the cache, then run <span>arp -a</span>"},
-      {"x": "arp -d doesn't prevent re-poisoning", "fix": "For ARP spoofing defense, use static entries <span>arp -s</span> for critical hosts (gateway, DNS)"}
+      {
+        "x_he": "שכחת -v — אין פלט ואי אפשר לדעת אם הconnection הצליח",
+        "x_en": "Forgetting -v — no output and can't tell if connection succeeded",
+        "fix_he": "השתמש תמיד ב-<span class=\"ltr-term\">-zv</span> יחד לקבל פידבק ברור",
+        "fix_en": "Always use <span class=\"ltr-term\">-zv</span> together for clear feedback"
+      },
+      {
+        "x_he": "שימוש ב-nc -l בסביבת production ללא אבטחה",
+        "x_en": "Using nc -l in production without security",
+        "fix_he": "nc אינו מוצפן — לעולם אל תשתמש בו להעברת נתונים רגישים ב-production",
+        "fix_en": "nc is unencrypted — never use it to transfer sensitive data in production"
+      }
     ],
-    "secnote": "ARP spoofing (poisoning) is a classic MitM attack. If two different MACs claim the same IP in your ARP table — especially the gateway IP — you may have an active ARP attack. Check with: arp -a | grep GATEWAY_IP.",
-    "tags": "arp mac address ip table cache spoofing mitm network layer2"
+    "secnote_he": "netcat מכונה 'סכין השוויצרי של רשת'. תוקפים משתמשים בו ל-reverse shells. חיבורי nc לא צפויים הם red flag קריטי.",
+    "secnote_en": "Netcat is called the 'Swiss army knife of networking.' Attackers use it for reverse shells. Unexpected nc connections are a critical red flag.",
+    "tags": "netcat nc port test connect listen tcp udp diagnostic network"
+  },
+  {
+    "id": "wget",
+    "name": "wget",
+    "cat": "diagnostic",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מוריד קבצים מ-URLs. כלי חיוני לבדיקת HTTP connectivity ולdownloads לא אינטראקטיביים.",
+    "desc_en": "Download files from URLs. Essential for testing HTTP connectivity and non-interactive downloads.",
+    "source_url": "https://linux.die.net/man/1/wget",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "wget -q --spider https://example.com", "cmt_he": "בדוק אם URL נגיש ללא הורדה (dry run)", "cmt_en": "Check URL reachability without downloading (dry run)"},
+      {"cmd": "wget -O /dev/null https://example.com/largefile", "cmt_he": "מדוד bandwidth ללא שמירת הקובץ", "cmt_en": "Measure bandwidth without saving the file"},
+      {"cmd": "wget -r --no-parent https://example.com/docs/", "cmt_he": "הורד directory שלם רקורסיבית", "cmt_en": "Download an entire directory recursively"},
+      {"cmd": "wget --continue https://example.com/bigfile.iso", "cmt_he": "המשך download שנקטע", "cmt_en": "Resume an interrupted download"}
+    ],
+    "quick_flags": [
+      {"flag": "-q", "desc_he": "quiet — הפחת פלט", "desc_en": "Quiet — reduce output"},
+      {"flag": "--spider", "desc_he": "בדוק URL בלבד — ללא הורדה", "desc_en": "Check URL only — no download"},
+      {"flag": "-O FILE", "desc_he": "שמור לשם קובץ ספציפי", "desc_en": "Save to specific filename"},
+      {"flag": "--continue", "desc_he": "המשך download חלקי", "desc_en": "Resume partial download"}
+    ],
+    "scenarios_he": [
+      "בדיקה אם URL נגיש מ-server (לא מה-laptop שלך)",
+      "מדידת bandwidth להורדה מ-CDN",
+      "הורדת קבצי config או scripts ל-servers"
+    ],
+    "scenarios_en": [
+      "Check if a URL is reachable from a server (not your laptop)",
+      "Measuring download bandwidth from a CDN",
+      "Downloading config files or scripts to servers"
+    ],
+    "mistakes": [
+      {
+        "x_he": "wget URL ל-script ישירות ב-pipe ל-bash",
+        "x_en": "Piping wget URL directly to bash",
+        "fix_he": "הורד קודם ובדוק את הqsScript לפני הרצה — <span class=\"ltr-term\">wget -O script.sh URL && cat script.sh</span>",
+        "fix_en": "Download first and inspect before running — <span class=\"ltr-term\">wget -O script.sh URL && cat script.sh</span>"
+      },
+      {
+        "x_he": "שכחת --continue לdownloads גדולים — מתחיל מחדש אם קטע",
+        "x_en": "Forgetting --continue for large downloads — restarts from scratch if cut",
+        "fix_he": "הוסף תמיד <span class=\"ltr-term\">--continue</span> להורדות גדולות שעשויות להיקטע",
+        "fix_en": "Always add <span class=\"ltr-term\">--continue</span> for large downloads that might be interrupted"
+      }
+    ],
+    "secnote_he": "wget | bash הוא vector התקפה נפוץ. בדוק תמיד את תוכן ה-script לפני הרצה, גם ממקורות שנראים אמינים.",
+    "secnote_en": "wget | bash is a common attack vector. Always inspect script content before execution, even from seemingly trusted sources.",
+    "tags": "wget download http url connectivity file bandwidth network"
   },
   {
     "id": "route",
@@ -174,101 +354,146 @@
     "cat": "routing",
     "diff": "intermediate",
     "sec": false,
-    "desc": "View and manage the IP routing table. Determine where packets will be sent.",
+    "desc_he": "מציג ומנהל את טבלת הניתוב. ip route הוא הכלי המודרני.",
+    "desc_en": "View and manage the routing table. ip route is the modern replacement.",
     "source_url": "https://man7.org/linux/man-pages/man8/ip-route.8.html",
     "source_name": "Linux man page (man7.org)",
     "usage": [
-      {"cmd": "ip route show", "cmt": "modern Linux routing table"},
-      {"cmd": "ip route add 10.20.0.0/16 via 192.168.1.254", "cmt": "add a static route"},
-      {"cmd": "ip route del 10.20.0.0/16", "cmt": "remove a route"},
-      {"cmd": "route print", "cmt": "Windows routing table"},
-      {"cmd": "ip route get 8.8.8.8", "cmt": "show which interface and gateway would be used for a specific destination"}
+      {"cmd": "ip route show", "cmt_he": "הצג טבלת ניתוב נוכחית", "cmt_en": "Show current routing table"},
+      {"cmd": "ip route get 8.8.8.8", "cmt_he": "הצג איזה route ישמש ל-IP ספציפי", "cmt_en": "Show which route will be used for a specific IP"},
+      {"cmd": "ip route add 10.0.0.0/8 via 192.168.1.1", "cmt_he": "הוסף static route", "cmt_en": "Add a static route"},
+      {"cmd": "ip route del default", "cmt_he": "מחק default gateway", "cmt_en": "Delete the default gateway"},
+      {"cmd": "route -n", "cmt_he": "route הישן — הצג טבלה מספרית", "cmt_en": "Old route command — show numeric table"}
     ],
     "quick_flags": [
-      {"flag": "show", "desc": "display routing table"},
-      {"flag": "add DEST via GW", "desc": "add a static route"},
-      {"flag": "del DEST", "desc": "remove a route"},
-      {"flag": "get DEST", "desc": "show which route would be used for destination"},
-      {"flag": "flush", "desc": "delete all routes (danger: drops all connectivity)"}
+      {"flag": "show", "desc_he": "הצג טבלת ניתוב", "desc_en": "Show routing table"},
+      {"flag": "get IP", "desc_he": "הצג route שישמש ל-IP ספציפי", "desc_en": "Show route that will be used for specific IP"},
+      {"flag": "add PREFIX via GW", "desc_he": "הוסף route", "desc_en": "Add a route"},
+      {"flag": "del PREFIX", "desc_he": "מחק route", "desc_en": "Delete a route"}
     ],
-    "scenarios": [
-      "After VPN connects but traffic still goes direct — routing table wrong",
-      "Server can reach local network but not internet — missing default route",
-      "Split-tunnel VPN not routing corporate subnets correctly"
+    "scenarios_he": [
+      "בדיקה מדוע traffic ל-subnet מסוים לא מגיע ליעד",
+      "הוספת static route ל-VPN tunnel",
+      "פתרון בעיית 'gateway לא ניגש' לאחר שינוי רשת"
+    ],
+    "scenarios_en": [
+      "Checking why traffic to a subnet isn't reaching destination",
+      "Adding a static route for a VPN tunnel",
+      "Resolving 'gateway unreachable' after a network change"
     ],
     "mistakes": [
-      {"x": "route add on Linux (old command) changes not persistent across reboots", "fix": "For persistent routes, add to <span>/etc/network/interfaces</span> or use <span>nmcli</span>"},
-      {"x": "Conflicting routes — wrong gateway used", "fix": "Use <span>ip route get DESTINATION</span> to verify which route is actually selected"}
+      {
+        "x_he": "שינויי ip route לא persistent לאחר reboot",
+        "x_en": "ip route changes are not persistent after reboot",
+        "fix_he": "שמור routes קבועים ב-/etc/network/interfaces או ב-/etc/sysconfig/network-scripts/",
+        "fix_en": "Save permanent routes in /etc/network/interfaces or /etc/sysconfig/network-scripts/"
+      },
+      {
+        "x_he": "מחיקת default route ללא backup — אובדן קישוריות",
+        "x_en": "Deleting default route without backup — connectivity loss",
+        "fix_he": "תמיד שמור את ה-default gateway הנוכחי לפני שינוי: <span class=\"ltr-term\">ip route show default</span>",
+        "fix_en": "Always note the current default gateway before changing: <span class=\"ltr-term\">ip route show default</span>"
+      }
     ],
-    "tags": "routing table route ip gateway default network path forwarding"
+    "tags": "route routing table gateway ip subnet linux network ניתוב"
   },
   {
-    "id": "iperf",
+    "id": "openssl",
+    "name": "openssl",
+    "cat": "diagnostic",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "בדיקת TLS/SSL certificates, handshakes וקישוריות מוצפנת.",
+    "desc_en": "Test TLS/SSL certificates, handshakes, and encrypted connectivity.",
+    "source_url": "https://linux.die.net/man/1/openssl",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "openssl s_client -connect example.com:443", "cmt_he": "בדוק TLS handshake מלא ובדוק certificate", "cmt_en": "Test full TLS handshake and inspect certificate"},
+      {"cmd": "openssl s_client -connect example.com:443 2>/dev/null | openssl x509 -noout -dates", "cmt_he": "בדוק תאריכי תוקף certificate", "cmt_en": "Check certificate expiry dates"},
+      {"cmd": "openssl x509 -in cert.pem -text -noout", "cmt_he": "פרסר קובץ certificate והצג פרטים", "cmt_en": "Parse a certificate file and display details"},
+      {"cmd": "openssl verify -CAfile ca.pem server.crt", "cmt_he": "אמת certificate מול CA", "cmt_en": "Verify certificate against a CA"}
+    ],
+    "quick_flags": [
+      {"flag": "s_client -connect HOST:PORT", "desc_he": "בדוק TLS על host:port", "desc_en": "Test TLS on host:port"},
+      {"flag": "x509 -in FILE -text", "cmt_he": "הצג פרטי certificate", "cmt_en": "Display certificate details"},
+      {"flag": "-noout", "desc_he": "הסתר את ה-certificate עצמו בפלט", "desc_en": "Suppress the certificate itself in output"},
+      {"flag": "-dates", "desc_he": "הצג רק תאריכי תוקף", "desc_en": "Show only validity dates"}
+    ],
+    "scenarios_he": [
+      "certificate פג תוקף — בדוק מתי פג ובדוק chain",
+      "TLS handshake נכשל — בדוק cipher mismatch",
+      "אמות שה-certificate ה-wildcard מכסה את ה-domain"
+    ],
+    "scenarios_en": [
+      "Certificate expired — check expiry date and validate chain",
+      "TLS handshake fails — check cipher mismatch",
+      "Verify that a wildcard certificate covers your domain"
+    ],
+    "mistakes": [
+      {
+        "x_he": "אי-בדיקת certificate chain — רק certificate עלה נבדק",
+        "x_en": "Not checking the certificate chain — only the leaf cert is checked",
+        "fix_he": "בדוק גם שה-CA intermediates נשלחים: <span class=\"ltr-term\">openssl s_client -showcerts</span>",
+        "fix_en": "Also verify intermediate CAs are sent: <span class=\"ltr-term\">openssl s_client -showcerts</span>"
+      },
+      {
+        "x_he": "שכחת 2>/dev/null — פלט openssl מלא ב-warnings",
+        "x_en": "Forgetting 2>/dev/null — openssl output full of warnings",
+        "fix_he": "הוסף <span class=\"ltr-term\">2>/dev/null</span> כשאתה pipe-ing פלט לעיבוד",
+        "fix_en": "Add <span class=\"ltr-term\">2>/dev/null</span> when piping output for processing"
+      }
+    ],
+    "secnote_he": "certificates פגי תוקף מנטרלים את כל ה-TLS protection. הגדר monitoring expiry — alerting 30 ימים לפני פקיעת תוקף.",
+    "secnote_en": "Expired certificates invalidate all TLS protection. Set up expiry monitoring — alert 30 days before expiry.",
+    "tags": "ssl tls certificate openssl https handshake expiry verify chain"
+  },
+  {
+    "id": "iperf3",
     "name": "iperf3",
     "cat": "diagnostic",
     "diff": "intermediate",
     "sec": false,
-    "desc": "Measure network bandwidth between two hosts. Requires iperf3 on both ends.",
-    "source_url": "https://linux.die.net/man/1/iperf",
-    "source_name": "Linux man page (linux.die.net)",
+    "desc_he": "מדיד bandwidth רשת בין שני hosts. חיוני לבדיקות ביצועי רשת.",
+    "desc_en": "Measure network bandwidth between two hosts. Essential for network performance testing.",
+    "source_url": "https://software.es.net/iperf/invoking.html",
+    "source_name": "iperf3 documentation (software.es.net)",
     "usage": [
-      {"cmd": "iperf3 -s", "cmt": "start iperf3 in server mode (on the target machine)"},
-      {"cmd": "iperf3 -c 10.0.0.5", "cmt": "run bandwidth test to server (client side)"},
-      {"cmd": "iperf3 -c 10.0.0.5 -u -b 100M", "cmt": "UDP test at 100 Mbps"},
-      {"cmd": "iperf3 -c 10.0.0.5 -t 30 -P 4", "cmt": "30s test with 4 parallel streams"}
+      {"cmd": "iperf3 -s", "cmt_he": "הפעל server mode — האזן ל-connections", "cmt_en": "Start server mode — listen for connections"},
+      {"cmd": "iperf3 -c 10.0.0.1", "cmt_he": "בדוק bandwidth מ-host זה ל-server", "cmt_en": "Test bandwidth from this host to server"},
+      {"cmd": "iperf3 -c 10.0.0.1 -R", "cmt_he": "בדוק bandwidth לכיוון ההפוך (server -> client)", "cmt_en": "Test bandwidth in reverse direction (server -> client)"},
+      {"cmd": "iperf3 -c 10.0.0.1 -t 30 -P 4", "cmt_he": "30 שניות, 4 parallel streams", "cmt_en": "30 seconds, 4 parallel streams"}
     ],
     "quick_flags": [
-      {"flag": "-s", "desc": "run as server"},
-      {"flag": "-c HOST", "desc": "run as client connecting to HOST"},
-      {"flag": "-u", "desc": "use UDP instead of TCP"},
-      {"flag": "-b RATE", "desc": "target bandwidth for UDP tests"},
-      {"flag": "-P N", "desc": "number of parallel client streams"},
-      {"flag": "-t SEC", "desc": "test duration in seconds"}
+      {"flag": "-s", "desc_he": "mode server", "desc_en": "Server mode"},
+      {"flag": "-c HOST", "desc_he": "mode client — תתחבר ל-server", "desc_en": "Client mode — connect to server"},
+      {"flag": "-R", "desc_he": "הפוך כיוון — server שולח, client מקבל", "desc_en": "Reverse direction — server sends, client receives"},
+      {"flag": "-t N", "desc_he": "משך בדיקה בשניות (ברירת מחדל: 10)", "desc_en": "Test duration in seconds (default: 10)"},
+      {"flag": "-P N", "desc_he": "parallel streams לסimulation של נפח גבוה", "desc_en": "Parallel streams for high-volume simulation"}
     ],
-    "scenarios": [
-      "Network feels slow — measure actual throughput vs expected bandwidth",
-      "After cabling or switch change — verify full speed is achievable",
-      "Testing Wi-Fi vs wired performance difference"
+    "scenarios_he": [
+      "בדיקת bandwidth לאחר שינויי network equipment",
+      "אבחון בעיית 'קישוריות איטית' — האם הבעיה ב-bandwidth או ב-latency",
+      "בדיקת throughput של VPN tunnel לפני deployment"
     ],
-    "mistakes": [
-      {"x": "Running iperf3 test over production traffic path during business hours", "fix": "Schedule bandwidth tests during maintenance windows — a 30s iperf3 test saturates the link"},
-      {"x": "Single-stream test not representative of real-world throughput", "fix": "Use <span>-P 4</span> for parallel streams to better simulate actual multi-connection workloads"}
-    ],
-    "tags": "bandwidth speed throughput network test iperf performance measurement"
-  },
-  {
-    "id": "ufw-cmd",
-    "name": "ufw (firewall)",
-    "cat": "firewall",
-    "diff": "beginner",
-    "sec": true,
-    "desc": "Uncomplicated Firewall — simplified iptables management for Ubuntu/Debian systems.",
-    "source_url": "https://ubuntu.com/server/docs/firewalls",
-    "source_name": "Ubuntu Server Documentation",
-    "usage": [
-      {"cmd": "ufw status verbose", "cmt": "show current rules and policy"},
-      {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH before enabling (critical order)"},
-      {"cmd": "ufw deny from 203.0.113.5", "cmt": "block specific IP all ports"},
-      {"cmd": "ufw allow from 10.0.0.0/8 to any port 3306", "cmt": "allow MySQL from internal network only"},
-      {"cmd": "ufw enable", "cmt": "activate firewall (ensure SSH is allowed first!)"}
-    ],
-    "quick_flags": [
-      {"flag": "status verbose", "desc": "show rules, default policies, and active status"},
-      {"flag": "allow PORT/PROTO", "desc": "permit incoming traffic"},
-      {"flag": "deny from IP", "desc": "block all traffic from an IP"},
-      {"flag": "delete RULE_NUM", "desc": "remove a rule by number (get numbers via status numbered)"},
-      {"flag": "reset", "desc": "disable ufw and delete all rules"}
-    ],
-    "scenarios": [
-      "New server setup — enable firewall with minimum exposure",
-      "Block an IP after detecting brute force",
-      "Open a port for a new application only from specific network"
+    "scenarios_en": [
+      "Testing bandwidth after network equipment changes",
+      "Diagnosing 'slow connection' — is it bandwidth or latency",
+      "Testing VPN tunnel throughput before deployment"
     ],
     "mistakes": [
-      {"x": "ufw enable before allowing SSH — locks you out", "fix": "ALWAYS run <span>ufw allow 22/tcp</span> BEFORE <span>ufw enable</span>"},
-      {"x": "ufw deny blocks new connections but doesn't kill existing ones", "fix": "To immediately drop active connections from a host, use <span>iptables -I INPUT 1 -s IP -j DROP</span>"}
+      {
+        "x_he": "שכחת להפעיל server על ה-host השני",
+        "x_en": "Forgetting to start server on the other host",
+        "fix_he": "iperf3 דורש <span class=\"ltr-term\">iperf3 -s</span> על ה-server לפני שהclient מתחבר",
+        "fix_en": "iperf3 requires <span class=\"ltr-term\">iperf3 -s</span> on the server before the client connects"
+      },
+      {
+        "x_he": "בדיקה ב-stream אחד בלבד — לא מייצגת traffic אמיתי",
+        "x_en": "Testing with a single stream only — not representative of real traffic",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-P 4</span> או יותר לsimulation של traffic מרובה connections",
+        "fix_en": "Use <span class=\"ltr-term\">-P 4</span> or more to simulate real multi-connection traffic"
+      }
     ],
-    "secnote": "Proper rule order matters: ufw processes rules top-to-bottom, first match wins. Use ufw insert NUMBER for priority. A deny-all default with explicit allows is better than allow-all with explicit denies.",
-    "tags": "ufw firewall rules allow deny block port ip ubuntu linux"
+    "tags": "iperf bandwidth throughput network performance test speed"
   }
 ]

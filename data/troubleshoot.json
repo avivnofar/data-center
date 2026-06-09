@@ -1,102 +1,533 @@
 [
   {
     "id": "ts-ssh",
-    "title": "SSH Connection Refused or Timeout",
+    "title_he": "חיבור SSH נכשל",
+    "title_en": "SSH Connection Failing",
     "plat": "linux",
     "severity": "high",
-    "desc": "Cannot connect via SSH — connection refused, timeout, or permission denied.",
-    "source_url": "https://man7.org/linux/man-pages/man5/sshd_config.5.html",
-    "source_name": "Linux man page — sshd_config (man7.org)",
+    "desc_he": "לא ניתן להתחבר ל-server דרך SSH — connection refused, timeout, או authentication error.",
+    "desc_en": "Unable to connect to a server via SSH — connection refused, timeout, or authentication error.",
     "steps": [
-      {"n": 1, "text": "Check if SSH service is running on the target", "cmd": "systemctl status sshd", "note": "Should show active (running). If not: systemctl start sshd"},
-      {"n": 2, "text": "Confirm SSH is listening on the expected port", "cmd": "ss -tlnp | grep 22", "note": "No output means SSH isn't bound to that port — check /etc/ssh/sshd_config"},
-      {"n": 3, "text": "Check firewall isn't blocking SSH", "cmd": "ufw status verbose", "note": "Port 22 or custom SSH port must be ALLOW IN"},
-      {"n": 4, "text": "Test from the target server itself", "cmd": "ssh localhost", "note": "If this works but remote doesn't, problem is network/firewall between hosts"},
-      {"n": 5, "text": "Check /var/log/auth.log for rejection reason", "cmd": "grep \"sshd\" /var/log/auth.log | tail -20", "note": "Look for \"refused connect\", \"invalid user\", \"publickey\" failures"},
-      {"n": 6, "text": "Verify the SSH port in config", "cmd": "grep Port /etc/ssh/sshd_config", "note": "Default is 22 — if changed, clients must specify: ssh -p PORT user@host"}
+      {
+        "n": 1,
+        "text_he": "בדוק שה-SSH service רץ על ה-server",
+        "text_en": "Verify the SSH service is running on the server",
+        "cmd": "systemctl status sshd",
+        "note_he": "חפש 'active (running)'. אם inactive: systemctl start sshd",
+        "note_en": "Look for 'active (running)'. If inactive: systemctl start sshd"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שה-SSH daemon מאזין על ה-port הנכון",
+        "text_en": "Verify SSH daemon is listening on the expected port",
+        "cmd": "ss -tlnp | grep sshd",
+        "note_he": "כברירת מחדל port 22. אם שונה, ציין אותו ב-client: ssh -p PORT user@host",
+        "note_en": "Default is port 22. If changed, specify in client: ssh -p PORT user@host"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק חוקי firewall",
+        "text_en": "Check firewall rules",
+        "cmd": "ufw status verbose && iptables -L INPUT -n",
+        "note_he": "וודא שport 22 (או ה-custom port) מותר ב-INPUT chain. אם חסום: ufw allow 22/tcp",
+        "note_en": "Ensure port 22 (or custom port) is allowed in INPUT chain. If blocked: ufw allow 22/tcp"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק logs של SSH authentication",
+        "text_en": "Examine SSH authentication logs",
+        "cmd": "journalctl -u sshd --since -30m | grep -i 'fail\\|error\\|refused'",
+        "note_he": "שגיאות נפוצות: 'Too many authentication failures', 'Permission denied (publickey)', 'Connection closed'",
+        "note_en": "Common errors: 'Too many authentication failures', 'Permission denied (publickey)', 'Connection closed'"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק הרשאות של SSH key",
+        "text_en": "Check SSH key permissions",
+        "cmd": "stat ~/.ssh && stat ~/.ssh/authorized_keys",
+        "note_he": ".ssh חייב להיות 700, authorized_keys חייב להיות 600 — אחרת SSH מסרב",
+        "note_en": ".ssh must be 700, authorized_keys must be 600 — otherwise SSH refuses"
+      },
+      {
+        "n": 6,
+        "text_he": "הרץ SSH ב-verbose mode לראיית המו negotiate",
+        "text_en": "Run SSH in verbose mode to see the negotiation",
+        "cmd": "ssh -vvv user@host 2>&1 | head -50",
+        "note_he": "שלושה v נותנים debug level גבוה. חפש איפה ה-handshake נעצר",
+        "note_en": "Three v flags give maximum debug. Look for where the handshake stops"
+      }
     ]
   },
   {
-    "id": "ts-diskfull",
-    "title": "Disk Full — System or Service Fails",
+    "id": "ts-disk-full",
+    "title_he": "דיסק מלא — שרת לא כותב קבצים",
+    "title_en": "Disk Full — Server Not Writing Files",
     "plat": "linux",
     "severity": "critical",
-    "desc": "Server stops writing logs, services crash, or \"no space left on device\" errors appear.",
-    "source_url": "https://man7.org/linux/man-pages/man1/df.1.html",
-    "source_name": "Linux man page — df (man7.org)",
+    "desc_he": "שרת מפסיק לכתוב logs, DB קורסת, services נכשלים — סימן ל-partition מלא.",
+    "desc_en": "Server stops writing logs, DB crashes, services fail — signs of a full partition.",
     "steps": [
-      {"n": 1, "text": "Confirm which partition is full", "cmd": "df -h", "note": "Look for 100% Use% — note which mount point"},
-      {"n": 2, "text": "Check inode exhaustion too (can cause same symptoms)", "cmd": "df -i", "note": "IUse% at 100% = inode exhaustion even with free disk space"},
-      {"n": 3, "text": "Find the largest directories", "cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "note": "Identifies top-level space consumers"},
-      {"n": 4, "text": "Drill down into the biggest offender", "cmd": "du --max-depth=1 -h /var | sort -rh", "note": "Repeat at each level until you find the culprit"},
-      {"n": 5, "text": "Check for large log files", "cmd": "find /var/log -type f -size +100M -ls", "note": "Log files over 100MB are common culprits"},
-      {"n": 6, "text": "Check for deleted files still held open by processes", "cmd": "lsof | grep deleted | awk '{print $7, $1}' | sort -rn | head", "note": "A process holding a deleted file keeps the space allocated — restart that process to free it"}
+      {
+        "n": 1,
+        "text_he": "בדוק אחוז שימוש בדיסק על כל partitions",
+        "text_en": "Check disk usage percentage across all partitions",
+        "cmd": "df -h",
+        "note_he": "חפש partitions ב-100% use%. בדוק /var, /tmp, / — אלו הנפוצים ביותר להתמלא",
+        "note_en": "Look for partitions at 100% use%. Check /var, /tmp, / — these fill up most often"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שימוש ב-inodes (יכול להיות מלא גם עם דיסק פנוי)",
+        "text_en": "Check inode usage (can be full even with free disk space)",
+        "cmd": "df -i",
+        "note_he": "inode exhaustion נותן שגיאת 'No space left on device' גם כשיש מקום פנוי. נפוץ עם מיליוני קבצים קטנים",
+        "note_en": "Inode exhaustion gives 'No space left on device' even with free space. Common with millions of small files"
+      },
+      {
+        "n": 3,
+        "text_he": "מצא את ה-directory הגדול ביותר ב-partition המלא",
+        "text_en": "Find the largest directory on the full partition",
+        "cmd": "du -sh /var/* 2>/dev/null | sort -rh | head -10",
+        "note_he": "שנה /var לroot של ה-partition המלא. חפש log directories, core dumps, application cache",
+        "note_en": "Replace /var with the root of the full partition. Look for log dirs, core dumps, app cache"
+      },
+      {
+        "n": 4,
+        "text_he": "מצא קבצים שנמחקו אך עדיין מוחזקים פתוחים",
+        "text_en": "Find deleted files still held open (consuming space)",
+        "cmd": "lsof | grep deleted",
+        "note_he": "space לא מתפנה עד שהprocess שמחזיק את הקובץ נסגר. restart the process to free space",
+        "note_en": "Space is not freed until the process holding the file is closed. Restart the process to free space"
+      },
+      {
+        "n": 5,
+        "text_he": "נקה logs ישנים בזהירות",
+        "text_en": "Clean old logs carefully",
+        "cmd": "find /var/log -name '*.log' -mtime +7 -size +100M -ls",
+        "note_he": "הרץ קודם ללא -delete לצפייה. הוסף -delete רק כשהתוצאות נראות נכונות",
+        "note_en": "Run without -delete first to preview. Add -delete only when results look correct"
+      },
+      {
+        "n": 6,
+        "text_he": "הגדל retention policy ב-journald",
+        "text_en": "Adjust journald retention policy",
+        "cmd": "journalctl --disk-usage && journalctl --vacuum-size=1G",
+        "note_he": "--vacuum-size מגביל journal ל-1GB. שנה ב-/etc/systemd/journald.conf ל-persistent fix",
+        "note_en": "--vacuum-size limits journal to 1GB. Modify /etc/systemd/journald.conf for a persistent fix"
+      }
     ]
   },
   {
-    "id": "ts-highcpu",
-    "title": "High CPU Usage — System Slow or Unresponsive",
+    "id": "ts-service-crash",
+    "title_he": "service עולה ומיד קורס",
+    "title_en": "Service Starts Then Immediately Crashes",
     "plat": "linux",
     "severity": "high",
-    "desc": "Server load is high, applications are slow, CPU at near 100%.",
-    "source_url": "https://man7.org/linux/man-pages/man1/ps.1.html",
-    "source_name": "Linux man page — ps (man7.org)",
+    "desc_he": "service מוגדר להפעלה אך מיד נכנס לסטטוס failed — לרוב בגלל config, הרשאות, או port תפוס.",
+    "desc_en": "Service is configured to run but immediately enters failed state — usually config, permissions, or port conflict.",
     "steps": [
-      {"n": 1, "text": "Identify the top CPU consumers", "cmd": "ps aux --sort=-%cpu | head -15", "note": "Top of list is your culprit — note PID and process name"},
-      {"n": 2, "text": "Get live view with thread-level detail", "cmd": "htop", "note": "Press F6 to sort by CPU, H to show threads, t for tree view"},
-      {"n": 3, "text": "Check system load average vs CPU count", "cmd": "uptime", "note": "Load > number of CPUs = overloaded. 4 CPUs with load 8.0 = severely overloaded"},
-      {"n": 4, "text": "Check if it's I/O wait (not pure CPU)", "cmd": "iostat -x 2 5", "note": "High %iowait means disk is the bottleneck, not the CPU itself"},
-      {"n": 5, "text": "Check for zombie processes (can accumulate)", "cmd": "ps aux | grep Z", "note": "Zombies don't consume CPU but indicate a parent process not cleaning up children"},
-      {"n": 6, "text": "If a process is runaway, check what it's doing", "cmd": "strace -p PID -e trace=all 2>&1 | head -30", "note": "Shows system calls — helps diagnose infinite loops or stuck operations"}
+      {
+        "n": 1,
+        "text_he": "בדוק סטטוס service ואת ה-exit code",
+        "text_en": "Check service status and exit code",
+        "cmd": "systemctl status servicename -l --no-pager",
+        "note_he": "בדוק 'Main PID' ו-'result='. exit-code=1 = general error, exit-code=2 = misuse, exit-code=126 = permission denied",
+        "note_en": "Look for 'Main PID' and 'result='. exit-code=1 = general error, exit-code=2 = misuse, exit-code=126 = permission denied"
+      },
+      {
+        "n": 2,
+        "text_he": "קרא את השגיאות המלאות מה-journal",
+        "text_en": "Read full error messages from the journal",
+        "cmd": "journalctl -u servicename -n 100 --no-pager",
+        "note_he": "חפש שורות ERROR, FATAL, 'Address already in use', 'Permission denied', 'No such file'",
+        "note_en": "Look for lines with ERROR, FATAL, 'Address already in use', 'Permission denied', 'No such file'"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם port תפוס",
+        "text_en": "Check if the port is already in use",
+        "cmd": "ss -tlnp | grep PORT",
+        "note_he": "החלף PORT במספר ה-port של ה-service. אם תפוס: מצא את ה-process עם PID בפלט ובדוק אם זה duplicate",
+        "note_en": "Replace PORT with the service's port number. If in use: find the process with PID in output and check for duplicate"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק הרשאות על קבצי config ו-data",
+        "text_en": "Check permissions on config and data files",
+        "cmd": "stat /etc/servicename/ /var/lib/servicename/ 2>/dev/null",
+        "note_he": "ה-service צריך לקרוא config ולכתוב ל-data directory. בדוק owner ו-group מול המשתמש שה-service רץ בו",
+        "note_en": "Service must read config and write to data directory. Check owner and group against the service user"
+      },
+      {
+        "n": 5,
+        "text_he": "הרץ את ה-service ידנית בforeground לראיית השגיאה ישירות",
+        "text_en": "Run the service manually in foreground to see the error directly",
+        "cmd": "sudo -u serviceuser /usr/bin/servicename --foreground --config /etc/servicename/config.conf",
+        "note_he": "החלף בflag הנכון של ה-service. הרצה ידנית נותנת שגיאות מפורטות יותר מ-systemctl",
+        "note_en": "Replace with the service's actual foreground flag. Manual run gives more detailed errors than systemctl"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק שינויים אחרונים שיכלו לגרום לקריסה",
+        "text_en": "Check recent changes that could have caused the crash",
+        "cmd": "find /etc/servicename /usr/lib/servicename -newer /etc/passwd -ls 2>/dev/null",
+        "note_he": "קבצים שהשתנו לאחרונה הם חשודים. בדוק גם package updates: rpm -q --last servicename | head",
+        "note_en": "Recently changed files are suspects. Also check package updates: rpm -q --last servicename | head"
+      }
     ]
   },
   {
-    "id": "ts-winnetwork",
-    "title": "Windows — No Network Connectivity",
-    "plat": "windows",
+    "id": "ts-high-cpu",
+    "title_he": "CPU גבוה — מה אוכל את ה-server",
+    "title_en": "High CPU — Finding What Is Consuming the Server",
+    "plat": "linux",
     "severity": "high",
-    "desc": "Windows machine cannot reach the network, internet, or specific hosts.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netsh",
-    "source_name": "Microsoft Docs — netsh",
+    "desc_he": "שרת איטי, load average גבוה — חקירה שיטתית של מי גורם לעומס.",
+    "desc_en": "Slow server, high load average — systematic investigation of what is causing overload.",
     "steps": [
-      {"n": 1, "text": "Check adapter status and IP address", "cmd": "ipconfig /all", "note": "Look for 169.254.x.x (APIPA) = DHCP failed. No IP = adapter problem."},
-      {"n": 2, "text": "Flush DNS cache and renew IP", "cmd": "ipconfig /flushdns && ipconfig /release && ipconfig /renew", "note": "Fixes stale DNS and DHCP issues. Run as admin."},
-      {"n": 3, "text": "Test loopback (local TCP stack)", "cmd": "ping 127.0.0.1", "note": "If this fails, TCP/IP stack is broken — netsh int ip reset"},
-      {"n": 4, "text": "Test gateway reachability", "cmd": "ping GATEWAY_IP", "note": "Get gateway from ipconfig. If unreachable: cable, switch, or adapter issue"},
-      {"n": 5, "text": "Test external DNS", "cmd": "ping 8.8.8.8", "note": "If this works but domain names don't: DNS issue, not routing"},
-      {"n": 6, "text": "Reset TCP/IP and Winsock if all else fails", "cmd": "netsh int ip reset && netsh winsock reset", "note": "Requires reboot. Resets entire network stack to defaults."}
+      {
+        "n": 1,
+        "text_he": "בדוק load average ומספר CPUs",
+        "text_en": "Check load average and CPU count",
+        "cmd": "uptime && nproc",
+        "note_he": "Load average > מספר CPUs = עומס. לדוגמה: load 8 על שרת עם 4 CPUs = 200% עומס",
+        "note_en": "Load average > CPU count = overloaded. Example: load 8 on 4-CPU server = 200% overload"
+      },
+      {
+        "n": 2,
+        "text_he": "מצא את 5 התהליכים הצורכים CPU",
+        "text_en": "Find the top 5 CPU-consuming processes",
+        "cmd": "ps aux --sort=-%cpu | head -6",
+        "note_he": "העמודה %CPU מציגה שימוש. תהליך עם 99% = כמעט כל ה-core. בדוק USER ו-COMMAND",
+        "note_en": "The %CPU column shows usage. A process at 99% = almost all of one core. Check USER and COMMAND"
+      },
+      {
+        "n": 3,
+        "text_he": "ראה live view של load עם htop",
+        "text_en": "See a live view of load with htop",
+        "cmd": "htop",
+        "note_he": "בtop: F6 לsort לפי CPU. לחץ F על תהליך לfollow mode. q ליציאה",
+        "note_en": "In htop: F6 to sort by CPU. Press F on a process for follow mode. q to quit"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק האם זה CPU-bound או I/O-bound",
+        "text_en": "Check if the issue is CPU-bound or I/O-bound",
+        "cmd": "iostat -x 2 5",
+        "note_he": "עמודת %util קרובה ל-100% = I/O bottleneck, לא CPU. אם CPU גבוה אבל I/O נמוך = CPU-bound",
+        "note_en": "%util near 100% = I/O bottleneck, not CPU. If high CPU but low I/O = CPU-bound"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק system calls לתהליך חשוד",
+        "text_en": "Inspect system calls of the suspicious process",
+        "cmd": "strace -p PID -c -e trace=all 2>&1 | head -30",
+        "note_he": "החלף PID. -c מציג סטטיסטיקת calls. חפש system calls חוזרים בתדירות גבוהה",
+        "note_en": "Replace PID. -c shows call statistics. Look for system calls repeating at high frequency"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק האם יש cron jobs שמריצים בזמן הזה",
+        "text_en": "Check if cron jobs are running at this time",
+        "cmd": "grep -r '' /var/spool/cron/ /etc/cron.d/ /etc/crontab 2>/dev/null",
+        "note_he": "cron jobs יכולים לגרום ל-CPU spikes בזמנים קבועים. בדוק scheduling מול זמן הבעיה",
+        "note_en": "Cron jobs can cause CPU spikes at regular intervals. Match scheduling against the time of the problem"
+      }
     ]
   },
   {
-    "id": "ts-portinuse",
-    "title": "Port Already in Use — Service Won't Start",
+    "id": "ts-no-internet",
+    "title_he": "אין חיבור לאינטרנט מ-workstation",
+    "title_en": "No Internet from a Workstation",
+    "plat": "network",
+    "severity": "medium",
+    "desc_he": "workstation יכול להגיע ל-hosts ברשת המקומית אך לא לאינטרנט — אבחון שיטתי של stack.",
+    "desc_en": "Workstation reaches local hosts but not the internet — systematic stack diagnosis.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק קישוריות לרמת physical/link",
+        "text_en": "Check physical/link layer connectivity",
+        "cmd": "ip link show",
+        "note_he": "חפש 'state UP' על ה-interface הנכון. אם DOWN: ip link set ethX up. בדוק כבל פיזי",
+        "note_en": "Look for 'state UP' on the correct interface. If DOWN: ip link set ethX up. Check physical cable"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שיש IP address ו-default gateway",
+        "text_en": "Verify IP address and default gateway exist",
+        "cmd": "ip addr show && ip route show",
+        "note_he": "חפש inet address על ה-interface. ב-ip route: חייב להיות שורת 'default via X.X.X.X'",
+        "note_en": "Look for inet address on the interface. In ip route: must have a 'default via X.X.X.X' line"
+      },
+      {
+        "n": 3,
+        "text_he": "ping ל-default gateway (נתב הבית/חברה)",
+        "text_en": "Ping the default gateway (home/office router)",
+        "cmd": "ping -c 4 $(ip route show default | awk '{print $3}')",
+        "note_he": "אם gateway לא מגיב: בעיית LAN מקומית. אם מגיב: הבעיה upstream מה-gateway",
+        "note_en": "If gateway doesn't respond: local LAN issue. If it does respond: problem is upstream of gateway"
+      },
+      {
+        "n": 4,
+        "text_he": "ping ל-IP ציבורי (לא hostname — כדי לדלג על DNS)",
+        "text_en": "Ping a public IP (not hostname — to skip DNS)",
+        "cmd": "ping -c 4 8.8.8.8",
+        "note_he": "אם 8.8.8.8 מגיב אבל domain לא נפתר: בעיית DNS. אם 8.8.8.8 לא מגיב: בעיית routing/WAN",
+        "note_en": "If 8.8.8.8 responds but domain doesn't resolve: DNS problem. If 8.8.8.8 fails: routing/WAN issue"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק DNS resolution",
+        "text_en": "Test DNS resolution",
+        "cmd": "dig @8.8.8.8 google.com +short",
+        "note_he": "אם מקבל IP מ-8.8.8.8 אבל לא מה-DNS המקומי: עדכן /etc/resolv.conf או קבל DHCP מחדש",
+        "note_en": "If getting IP from 8.8.8.8 but not from local DNS: update /etc/resolv.conf or renew DHCP"
+      },
+      {
+        "n": 6,
+        "text_he": "עקוב אחרי הנתיב מ-workstation לאינטרנט",
+        "text_en": "Trace the route from workstation to internet",
+        "cmd": "traceroute -n 8.8.8.8",
+        "note_he": "חפש איפה ה-trace נעצר. אם עוצר ב-hop ראשון (gateway): firewall/routing מקומי. אם עוצר ב-ISP hop: בעיית ספק",
+        "note_en": "Find where the trace stops. If stops at hop 1 (gateway): local firewall/routing. If stops at ISP hop: provider issue"
+      }
+    ]
+  },
+  {
+    "id": "ts-port-in-use",
+    "title_he": "Port תפוס — service לא יכול להפעיל",
+    "title_en": "Port Already in Use — Service Cannot Start",
     "plat": "linux",
     "severity": "medium",
-    "desc": "A service fails to start because its port is already bound by another process.",
-    "source_url": "https://man7.org/linux/man-pages/man8/ss.8.html",
-    "source_name": "Linux man page — ss (man7.org)",
+    "desc_he": "service נכשל בהפעלה עם שגיאת 'Address already in use' — מציאת וטיפול בholds על ה-port.",
+    "desc_en": "Service fails to start with 'Address already in use' error — finding and handling port holds.",
     "steps": [
-      {"n": 1, "text": "Find which process is using the port (Linux)", "cmd": "ss -tulnp | grep :PORT", "note": "Replace PORT with the number. Shows PID and process name."},
-      {"n": 2, "text": "Find which process is using the port (Windows)", "cmd": "netstat -ano | findstr :PORT", "note": "Note the PID in the last column, then use tasklist to identify it"},
-      {"n": 3, "text": "Identify the process name from PID", "cmd": "ps -p PID -o comm=", "note": "Get a human-readable name from the PID shown in step 1"},
-      {"n": 4, "text": "Decide: kill or reconfigure", "cmd": "kill -15 PID", "note": "If the process shouldn't be there, kill it. If it's a duplicate of your service, stop it via systemctl first."},
-      {"n": 5, "text": "Prevent recurrence — check what starts that process", "cmd": "systemctl list-units --type=service | grep running", "note": "If the process is a service that shouldn't run, disable it: systemctl disable name"}
+      {
+        "n": 1,
+        "text_he": "מצא מי מחזיק את ה-port",
+        "text_en": "Find who is holding the port",
+        "cmd": "ss -tlnp | grep :PORT",
+        "note_he": "החלף PORT במספר הנכון (לדוגמה: :80, :443). ה-PID וה-process name יופיעו בעמודה האחרונה",
+        "note_en": "Replace PORT with the actual number (e.g. :80, :443). PID and process name appear in the last column"
+      },
+      {
+        "n": 2,
+        "text_he": "קבל פרטים על ה-process שמחזיק את ה-port",
+        "text_en": "Get details on the process holding the port",
+        "cmd": "ps -fp PID",
+        "note_he": "החלף PID. בדוק USER, COMMAND ו-PPID (parent process). האם זה process לגיטימי או duplicate?",
+        "note_en": "Replace PID. Check USER, COMMAND, and PPID (parent). Is this a legitimate process or a duplicate?"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק האם זה instance ישן של ה-service עצמו",
+        "text_en": "Check if it's an old instance of the same service",
+        "cmd": "systemctl status servicename",
+        "note_he": "אם ה-service בסטטוס 'activating' או יש PID ישן: systemctl kill servicename && systemctl start servicename",
+        "note_en": "If service is 'activating' or has stale PID: systemctl kill servicename && systemctl start servicename"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק TIME_WAIT sockets — חיבורים שמחכים לsocket cleanup",
+        "text_en": "Check for TIME_WAIT sockets — connections waiting for cleanup",
+        "cmd": "ss -tnp state time-wait | grep :PORT",
+        "note_he": "TIME_WAIT נמשך 60 שניות אחרי סגירת חיבור. מחכה שה-socket יתפנה. ניתן לקצר עם: sysctl net.ipv4.tcp_fin_timeout=15",
+        "note_en": "TIME_WAIT lasts 60 seconds after connection close. Waiting for socket cleanup. Can shorten with: sysctl net.ipv4.tcp_fin_timeout=15"
+      },
+      {
+        "n": 5,
+        "text_he": "שנה ה-port של ה-service (אם הport הוא ב-conflict)",
+        "text_en": "Change the service port (if there's a genuine port conflict)",
+        "cmd": "grep -r 'listen\\|port' /etc/servicename/ 2>/dev/null | head -10",
+        "note_he": "מצא את הגדרת ה-port בconfig. שנה ל-port פנוי (> 1024 ללא root, או port ייעודי)",
+        "note_en": "Find the port setting in config. Change to a free port (>1024 without root, or a dedicated port)"
+      },
+      {
+        "n": 6,
+        "text_he": "Restart ה-service לאחר הסרת הconflict",
+        "text_en": "Restart the service after resolving the conflict",
+        "cmd": "systemctl start servicename && ss -tlnp | grep :PORT",
+        "note_he": "אמת שה-service עולה וה-port bound. בדוק journalctl -u servicename -n 20 לשגיאות חדשות",
+        "note_en": "Verify service starts and port is bound. Check journalctl -u servicename -n 20 for new errors"
+      }
     ]
   },
   {
-    "id": "ts-winfail",
-    "title": "Windows Service Fails to Start",
+    "id": "ts-win-bluscreen",
+    "title_he": "Windows BSOD / Stop Error",
+    "title_en": "Windows Blue Screen of Death (BSOD)",
     "plat": "windows",
-    "severity": "medium",
-    "desc": "A Windows service shows Stopped or fails immediately on start — Error 1053, 1067, etc.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-query",
-    "source_name": "Microsoft Docs — sc",
+    "severity": "critical",
+    "desc_he": "Windows נכנסת ל-Stop Error עם STOP code — חקירת ה-minidump וזיהוי הגורם.",
+    "desc_en": "Windows enters a Stop Error with STOP code — investigating the minidump and identifying the cause.",
     "steps": [
-      {"n": 1, "text": "Check service configuration and exe path", "cmd": "sc qc ServiceName", "note": "Verify the BINARY_PATH_NAME exists and is correct. Wrong path = immediate failure."},
-      {"n": 2, "text": "Try starting and get the exact error", "cmd": "sc start ServiceName", "note": "Note the error code: 1053 = didn't respond, 1067 = process terminated unexpectedly"},
-      {"n": 3, "text": "Check Application Event Log for details", "cmd": "wevtutil qe Application /q:\"*[System[Level=2]]\" /f:text /c:10 /rd:true", "note": "Error details are usually here with the exact exception or missing dependency"},
-      {"n": 4, "text": "Check if the service account has correct permissions", "cmd": "sc qc ServiceName", "note": "Check LOG_ON_AS — if it's a domain account, verify password hasn't changed"},
-      {"n": 5, "text": "Check for dependency services", "cmd": "sc enumdepend ServiceName", "note": "If a dependency service is stopped, this one will fail. Start dependencies first."}
+      {
+        "n": 1,
+        "text_he": "בדוק את ה-stop code מה-Event Log",
+        "text_en": "Read the stop code from the Event Log",
+        "cmd": "wevtutil qe System /q:\"*[System[EventID=41]]\" /c:5 /rd:true /f:text",
+        "note_he": "Event 41 = Kernel-Power unexpected shutdown. בדוק גם Event 1001 (Windows Error Reporting) לה-stop code המלא",
+        "note_en": "Event 41 = Kernel-Power unexpected shutdown. Also check Event 1001 (Windows Error Reporting) for full stop code"
+      },
+      {
+        "n": 2,
+        "text_he": "מצא את קובץ ה-minidump האחרון",
+        "text_en": "Find the most recent minidump file",
+        "cmd": "dir C:\\Windows\\Minidump /OD",
+        "note_he": "Minidump files = .dmp קבצים. הזמן שלהם מתאים לזמן ה-BSOD. WinDbg מנתח אותם לstack trace",
+        "note_en": "Minidump files = .dmp files. Their timestamps match the BSOD time. WinDbg analyzes them for stack trace"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק drivers שעודכנו לאחרונה",
+        "text_en": "Check recently updated drivers",
+        "cmd": "wevtutil qe System /q:\"*[System[EventID=7040]]\" /c:20 /rd:true /f:text",
+        "note_he": "driver updates לפני ה-BSOD הם חשודים ראשוניים. בדוק גם ב-Device Manager על drivers עם warning icon",
+        "note_en": "Driver updates just before the BSOD are prime suspects. Also check Device Manager for drivers with warning icons"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק שגיאות RAM עם Windows Memory Diagnostic",
+        "text_en": "Check for RAM errors with Windows Memory Diagnostic",
+        "cmd": "mdsched.exe",
+        "note_he": "זהו UI — הפעל בממשק ובחר 'Restart now'. התוצאות יופיעו ב-Event Log לאחר reboot (Event 1101)",
+        "note_en": "This is a UI tool — run it and select 'Restart now'. Results appear in Event Log after reboot (Event 1101)"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק שחיתות קבצי מערכת",
+        "text_en": "Check for system file corruption",
+        "cmd": "sfc /scannow",
+        "note_he": "System File Checker מחליף קבצים פגומים. דורש הרשאות admin. תוצאות ב-CBS.log. זמן ריצה: ~15 דקות",
+        "note_en": "System File Checker replaces corrupted files. Requires admin. Results in CBS.log. Runtime: ~15 minutes"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק שגיאות על ה-disk",
+        "text_en": "Check the disk for errors",
+        "cmd": "chkdsk C: /f /r",
+        "note_he": "/f מתקן שגיאות, /r מאתר bad sectors. ידרוש reboot לפני הרצה על drive פעיל. זמן ריצה: שעה+",
+        "note_en": "/f fixes errors, /r locates bad sectors. Will require reboot before running on active drive. Runtime: 1h+"
+      }
+    ]
+  },
+  {
+    "id": "ts-permission-denied",
+    "title_he": "Permission Denied — גישה נדחתה",
+    "title_en": "Permission Denied — Access Refused",
+    "plat": "linux",
+    "severity": "medium",
+    "desc_he": "תהליך או משתמש לא יכולים לגשת לקובץ או directory — אבחון שיטתי של הרשאות.",
+    "desc_en": "Process or user cannot access a file or directory — systematic permissions diagnosis.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את ה-permissions ו-ownership הנוכחיים",
+        "text_en": "Check current permissions and ownership",
+        "cmd": "ls -la /path/to/file",
+        "note_he": "קרא את הפורמט: רשאות [owner] [group]. לדוגמה: rw-r--r-- = owner rw, group r, others r",
+        "note_en": "Read the format: permissions [owner] [group]. Example: rw-r--r-- = owner rw, group r, others r"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק הרשאות של כל ה-path (כל directory בדרך)",
+        "text_en": "Check permissions of the entire path (every directory along the way)",
+        "cmd": "namei -l /full/path/to/file",
+        "note_he": "namei מציג את ה-permissions של כל component בpath. directory אחד ללא x permission מחסום כל הpath",
+        "note_en": "namei shows permissions of each component in the path. One directory without x permission blocks the entire path"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק באיזה user ובאיזה groups ה-process רץ",
+        "text_en": "Check which user and groups the process is running as",
+        "cmd": "ps aux | grep servicename && id serviceuser",
+        "note_he": "השווה בין ה-groups של ה-user ל-group owner של הקובץ. האם ה-user ב-group הנכון?",
+        "note_en": "Compare the user's groups against the file's group owner. Is the user in the correct group?"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק ACLs — הרשאות מתקדמות שמחפשות מעל chmod",
+        "text_en": "Check ACLs — extended permissions that override chmod",
+        "cmd": "getfacl /path/to/file",
+        "note_he": "ACLs יכולים להגביל גישה גם כשchmod נראה נכון. הפעל: setfacl לשינוי",
+        "note_en": "ACLs can restrict access even when chmod looks correct. Use: setfacl to modify"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק SELinux / AppArmor אם פעיל",
+        "text_en": "Check SELinux / AppArmor if active",
+        "cmd": "getenforce && audit2allow -a 2>/dev/null | head -20",
+        "note_he": "SELinux 'Enforcing' = מחסום מעל הרשאות רגילות. בדוק audit log: ausearch -m avc | tail -20",
+        "note_en": "SELinux 'Enforcing' = blocks above regular permissions. Check audit log: ausearch -m avc | tail -20"
+      },
+      {
+        "n": 6,
+        "text_he": "תקן הרשאות בדרך המינימלית",
+        "text_en": "Fix permissions using the minimal approach",
+        "cmd": "chown serviceuser:servicegroup /path/to/file && chmod 640 /path/to/file",
+        "note_he": "תמיד תקן בmounting approach: owner:group נכון + permissions מינימליים. הימנע מ-chmod 777",
+        "note_en": "Always fix with minimal approach: correct owner:group + minimal permissions. Avoid chmod 777"
+      }
+    ]
+  },
+  {
+    "id": "ts-dns-resolution",
+    "title_he": "בעיית DNS Resolution — hostnames לא נפתרים",
+    "title_en": "DNS Resolution Issue — Hostnames Not Resolving",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "חיבורי רשת נכשלים כי hostnames לא נפתרים ל-IPs — אבחון DNS stack שלם.",
+    "desc_en": "Network connections fail because hostnames don't resolve to IPs — full DNS stack diagnosis.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "אמת שה-issue הוא DNS ולא קישוריות",
+        "text_en": "Confirm the issue is DNS, not connectivity",
+        "cmd": "ping -c 4 8.8.8.8 && ping -c 4 google.com",
+        "note_he": "אם 8.8.8.8 עובד אך google.com נכשל = בעיית DNS. אם שניהם נכשלים = בעיית קישוריות, לא DNS",
+        "note_en": "If 8.8.8.8 works but google.com fails = DNS issue. If both fail = connectivity issue, not DNS"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק איזה DNS server מוגדר",
+        "text_en": "Check which DNS server is configured",
+        "cmd": "cat /etc/resolv.conf",
+        "note_he": "חפש שורות 'nameserver'. אם ריק או IP לא נגיש: הוסף nameserver 8.8.8.8 לtest",
+        "note_en": "Look for 'nameserver' lines. If empty or unreachable IP: add nameserver 8.8.8.8 for testing"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם ה-DNS server מגיב",
+        "text_en": "Test if the DNS server is responding",
+        "cmd": "dig @$(awk '/nameserver/{print $2; exit}' /etc/resolv.conf) google.com +short",
+        "note_he": "אם אין תשובה: DNS server לא נגיש. נסה 8.8.8.8 ישירות: dig @8.8.8.8 google.com +short",
+        "note_en": "If no answer: DNS server unreachable. Try 8.8.8.8 directly: dig @8.8.8.8 google.com +short"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק systemd-resolved אם פעיל",
+        "text_en": "Check systemd-resolved if active",
+        "cmd": "systemctl status systemd-resolved && resolvectl status",
+        "note_he": "ב-distros מודרניים, systemd-resolved מנהל DNS. בדוק ב-resolvectl status אילו servers בשימוש",
+        "note_en": "On modern distros, systemd-resolved manages DNS. Check resolvectl status for the servers in use"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק /etc/hosts לentries שמחפשים על DNS",
+        "text_en": "Check /etc/hosts for entries that override DNS",
+        "cmd": "grep -v '^#' /etc/hosts | grep -v '^$'",
+        "note_he": "/etc/hosts מנצח DNS. entry שגוי כאן יכול לגרום לresolution שגוי גם אם DNS תקין",
+        "note_en": "/etc/hosts wins over DNS. A wrong entry here causes wrong resolution even if DNS is working"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק nsswitch.conf לסדר resolution",
+        "text_en": "Check nsswitch.conf for resolution order",
+        "cmd": "grep ^hosts /etc/nsswitch.conf",
+        "note_he": "הסדר הרגיל: 'files dns'. files = /etc/hosts קודם, אחר כך DNS. שינוי סדר יכול לגרום לבעיות",
+        "note_en": "Normal order: 'files dns'. files = /etc/hosts first, then DNS. Changing the order can cause issues"
+      }
     ]
   }
 ]
