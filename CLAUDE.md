@@ -223,3 +223,19 @@ When adding new entries in a Claude Code session:
 - Never delete existing entries without explicit instruction
 - Never use `innerHTML` without `escHtml()` on user-controlled strings
 - Never add `dir="rtl"` to code blocks
+
+---
+
+## Infrastructure Costs
+
+Backend: Cloudflare Workers Free Tier
+- 100,000 requests/day included
+- $0/month at current usage
+- Upgrade trigger: only if daily requests exceed 100k
+- Paid tier if needed: $5/month
+
+Hosting: GitHub Pages — $0/month forever
+
+AI: Anthropic API — pay per use (~$3-8/mo estimated at personal use volume)
+
+Total: $0-8/month depending on API usage
