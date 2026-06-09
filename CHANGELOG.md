@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-06-10 — 7bd0b78] (master)
+
+- docs: update CLAUDE.md with Phase 2 architecture and Cloudflare setup ([7bd0b78](https://github.com/avivnofar/data-center/commit/7bd0b78))
+- feat: Phase 2 — AI search bar with streaming, modes, session memory ([c7f92c4](https://github.com/avivnofar/data-center/commit/c7f92c4))
+- feat: add Cloudflare Worker API proxy for Anthropic ([51a18e8](https://github.com/avivnofar/data-center/commit/51a18e8))
+
+
 ## [2026-06-09 — 7c4b2f6] (master)
 
 - docs: bilingual README, CLAUDE.md project bible, and updated ROADMAP ([7c4b2f6](https://github.com/avivnofar/data-center/commit/7c4b2f62c9f8e20941386a3d38be0f919273cf1b))
