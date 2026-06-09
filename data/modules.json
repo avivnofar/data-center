@@ -1,34 +1,41 @@
 [
   {
     "id": "linux",
-    "label": "Linux",
+    "label_he": "לינוקס",
+    "label_en": "Linux",
     "icon": "🐧",
     "data_file": "data/linux.json",
     "status": "active",
     "filter_type": "command",
+    "categories_he": {"network":"רשת","process":"תהליכים","disk":"דיסק","permission":"הרשאות","system":"מערכת","logs":"לוגים","user":"משתמשים"},
     "categories": ["network", "process", "disk", "permission", "system", "logs", "user"]
   },
   {
     "id": "cmd",
-    "label": "CMD / Windows",
-    "icon": "🪟",
+    "label_he": "CMD / Windows",
+    "label_en": "CMD / Windows",
+    "icon": "⊞",
     "data_file": "data/cmd.json",
     "status": "active",
     "filter_type": "command",
+    "categories_he": {"network":"רשת","process":"תהליכים","disk":"דיסק","system":"מערכת","user":"משתמשים"},
     "categories": ["network", "process", "disk", "system", "user"]
   },
   {
     "id": "network",
-    "label": "Network",
+    "label_he": "רשת",
+    "label_en": "Network",
     "icon": "🌐",
     "data_file": "data/network.json",
     "status": "active",
     "filter_type": "command",
+    "categories_he": {"diagnostic":"אבחון","ports":"פורטים","routing":"ניתוב","dns":"DNS","firewall":"חומת אש"},
     "categories": ["diagnostic", "ports", "routing", "dns", "firewall"]
   },
   {
     "id": "troubleshoot",
-    "label": "Troubleshoot",
+    "label_he": "פתרון תקלות",
+    "label_en": "Troubleshoot",
     "icon": "🔧",
     "data_file": "data/troubleshoot.json",
     "status": "active",
@@ -37,7 +44,8 @@
   },
   {
     "id": "powershell",
-    "label": "PowerShell",
+    "label_he": "PowerShell",
+    "label_en": "PowerShell",
     "icon": "💙",
     "data_file": "data/powershell.json",
     "status": "coming-soon",
@@ -46,7 +54,8 @@
   },
   {
     "id": "cloud",
-    "label": "Cloud / AWS",
+    "label_he": "Cloud / AWS",
+    "label_en": "Cloud / AWS",
     "icon": "☁️",
     "data_file": "data/cloud.json",
     "status": "coming-soon",
@@ -55,16 +64,38 @@
   },
   {
     "id": "security",
-    "label": "Security",
-    "icon": "🔒",
+    "label_he": "אבטחה",
+    "label_en": "Security",
+    "icon": "🔐",
     "data_file": "data/security.json",
     "status": "coming-soon",
     "filter_type": "command",
     "categories": []
   },
   {
+    "id": "docker",
+    "label_he": "Docker / Containers",
+    "label_en": "Docker / Containers",
+    "icon": "🐳",
+    "data_file": "data/docker.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
+  },
+  {
+    "id": "cicd",
+    "label_he": "CI/CD",
+    "label_en": "CI/CD",
+    "icon": "⚙️",
+    "data_file": "data/cicd.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
+  },
+  {
     "id": "casestudies",
-    "label": "Case Studies",
+    "label_he": "מקרי בוחן",
+    "label_en": "Case Studies",
     "icon": "📋",
     "data_file": "data/casestudies.json",
     "status": "coming-soon",
