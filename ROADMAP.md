@@ -1,46 +1,58 @@
-# Roadmap
+# Roadmap — Data Center
 
-Current version: **v1.0** — static, client-side knowledge base with 46 entries across Linux, Windows CMD, network tools, and troubleshooting scenarios.
-
----
-
-## Phase 2 — Anthropic API AI Search
-
-Replace the current keyword-only search bar with a natural-language query engine powered by the Anthropic Claude API.
-
-**Planned features:**
-- Type a problem in plain English ("my nginx keeps crashing after 2 hours") and receive ranked results with an AI-generated summary explaining which commands and scenarios are most relevant.
-- Fallback gracefully to the existing keyword search when the API is unavailable or rate-limited.
-- The `AI — coming soon` badge in the search bar becomes the entry point.
-- API key is injected via a server-side proxy so it is never exposed in client JS.
-
-**Why this matters:** The current `tags` field is a manual approximation of semantic search. Claude can understand intent and match against descriptions and scenario text that keywords miss.
+Current version: **v2.0** — bilingual Hebrew/English static knowledge base with 56 entries, RTL support, hover tooltips, and bilingual CI validation.
 
 ---
 
-## Phase 3 — Electron Desktop App
+## Phase 1 — Foundation ✅ (Done)
 
-Package the knowledge base as a cross-platform native desktop application.
+- [x] Static single-page app with dark terminal aesthetic
+- [x] Data-driven tab system from `modules.json`
+- [x] Hebrew/English bilingual schema with RTL layout
+- [x] `<html dir="rtl">` default, language toggle stored in `localStorage`
+- [x] Noto Sans Hebrew + JetBrains Mono fonts
+- [x] Hover tooltips with quick flags, 200ms delay, viewport-aware
+- [x] Command name click opens official `source_url`
+- [x] Global search (Hebrew + English)
+- [x] Hebrew FAQ pills
+- [x] Bilingual JSON schema: `desc_he/en`, `scenarios_he/en`, `mistakes` with `x_he/x_en/fix_he/fix_en`
+- [x] GitHub Actions: validate.yml (bilingual schema checks on push/PR)
+- [x] GitHub Actions: health.yml (weekly Monday 08:00 UTC + manual trigger)
+- [x] health.yml: GitHub Issue created on critical failures
+- [x] `.nojekyll` for GitHub Pages compatibility
+- [x] 24 Linux entries, 13 CMD entries, 10 Network entries, 9 Troubleshoot scenarios
 
-**Planned features:**
-- Offline-first: all data and the AI search cache are bundled inside the app, no internet required for core features.
-- Global hotkey to open the search overlay from any window (like Alfred or Raycast, but for sysadmin commands).
-- Auto-update: new command entries are pulled from the upstream JSON files on launch.
-- Tray icon with a quick-access menu for most-recently-used commands.
+## Phase 2 — Claude AI Search Integration (Planned)
 
-**Why this matters:** In an active incident, sysadmins can't always open a browser. A hotkey-triggered overlay is orders of magnitude faster than opening a tab and navigating to a URL.
+- [ ] Claude API backend proxy (Node.js / Python serverless function)
+- [ ] Natural-language query: "מה עושים כשה-SSH קורס?" → מפנה לכרטיסים הרלוונטיים
+- [ ] Semantic search across all modules
+- [ ] AI-generated troubleshoot hints per command
 
----
+## Phase 3 — Expanded Content Modules
 
-## Phase 4 — Community Contributions
+- [ ] PowerShell module (20+ cmdlets)
+- [ ] Cloud / AWS CLI module (aws ec2, s3, iam...)
+- [ ] Security audit module (nmap scripts, Lynis, auditd...)
+- [ ] Docker / Containers module (docker, docker-compose, kubectl basics)
+- [ ] CI/CD module (GitHub Actions, Jenkins CLI, GitLab CI)
 
-Open the knowledge base to community-maintained entries via a structured contribution workflow.
+## Phase 4 — Community & Contributions
 
-**Planned features:**
-- `CONTRIBUTING.md` with a guided template for new command entries and troubleshoot scenarios.
-- Pull request template pre-filled with the JSON schema and a checklist.
-- The `validate.yml` CI workflow already enforces schema correctness, so contributed PRs are blocked from merging if entries are malformed.
-- A web-based submission form (GitHub Discussions or a simple form-to-PR GitHub Action) to lower the barrier for non-git contributors.
-- Tagging system to credit contributors in the `secnote` or entry metadata.
+- [ ] Contribution guide (`CONTRIBUTING.md`)
+- [ ] GitHub Discussions for community Q&A
+- [ ] PR template for new entries (bilingual schema checklist)
+- [ ] Auto-tag: entries contributed by community vs. curated
 
-**Why this matters:** The current 46-entry database covers common scenarios but misses specialized domains (cloud CLI, Kubernetes, database administration, container networking). Community contributions scale this without a single-maintainer bottleneck.
+## Phase 5 — Offline / Desktop
+
+- [ ] Electron wrapper for offline `.exe` / macOS app
+- [ ] PWA (Service Worker) for offline browser use
+- [ ] Local-first data sync
+
+## Phase 6 — Advanced Features
+
+- [ ] Bookmarking / favorites (localStorage)
+- [ ] Copy-to-clipboard on command click
+- [ ] Export PDF cheat sheet
+- [ ] Dark/light theme toggle
