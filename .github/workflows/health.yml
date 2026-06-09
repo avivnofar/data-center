@@ -1,0 +1,29 @@
+name: Weekly Data Quality Report
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"   # Every Monday at 08:00 UTC
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  health-check:
+    name: Data quality report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run data quality check
+        id: health
+        run: node .github/scripts/health-check.js
+
+      - name: Post summary to GitHub Actions
+        run: |
+          echo "### Data Quality Report — $(date -u +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          node .github/scripts/health-check.js --summary >> $GITHUB_STEP_SUMMARY

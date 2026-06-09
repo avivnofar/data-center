@@ -6,11 +6,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Display active network connections, listening ports and routing tables.",
+    "source_url": "https://man7.org/linux/man-pages/man8/netstat.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "netstat -tulnp", "cmt": "TCP+UDP listening sockets with PID"},
       {"cmd": "netstat -anp | grep :443", "cmt": "filter by specific port"},
       {"cmd": "netstat -s", "cmt": "protocol statistics summary"},
       {"cmd": "netstat -rn", "cmt": "show kernel routing table"}
+    ],
+    "quick_flags": [
+      {"flag": "-t", "desc": "TCP sockets only"},
+      {"flag": "-u", "desc": "UDP sockets only"},
+      {"flag": "-l", "desc": "listening sockets only"},
+      {"flag": "-n", "desc": "skip reverse DNS (faster)"},
+      {"flag": "-p", "desc": "show PID/program name (needs root)"}
     ],
     "scenarios": [
       "Service not starting — check if the port is already bound",
@@ -31,11 +40,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Modern replacement for netstat. Faster, richer socket statistics directly from kernel.",
+    "source_url": "https://man7.org/linux/man-pages/man8/ss.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "ss -tulnp", "cmt": "all listening TCP+UDP with PIDs"},
       {"cmd": "ss -s", "cmt": "summary of socket counts"},
       {"cmd": "ss -tnp state established", "cmt": "only established TCP connections"},
       {"cmd": "ss -tnp dst 10.0.0.1", "cmt": "connections to a specific host"}
+    ],
+    "quick_flags": [
+      {"flag": "-t", "desc": "TCP sockets"},
+      {"flag": "-u", "desc": "UDP sockets"},
+      {"flag": "-l", "desc": "listening sockets only"},
+      {"flag": "-n", "desc": "numeric output, no DNS"},
+      {"flag": "-p", "desc": "show process using socket"}
     ],
     "scenarios": [
       "Preferred tool for live incident response — faster than netstat",
@@ -56,10 +74,18 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Test reachability and measure round-trip latency via ICMP echo requests.",
+    "source_url": "https://man7.org/linux/man-pages/man8/ping.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "ping -c 4 8.8.8.8", "cmt": "send exactly 4 packets"},
       {"cmd": "ping -i 0.2 -c 20 10.0.0.1", "cmt": "fast burst — check packet loss"},
       {"cmd": "ping -s 1400 gateway.local", "cmt": "test with larger packet size (MTU check)"}
+    ],
+    "quick_flags": [
+      {"flag": "-c N", "desc": "send N packets then stop"},
+      {"flag": "-i S", "desc": "interval between packets (seconds)"},
+      {"flag": "-s N", "desc": "packet size in bytes"},
+      {"flag": "-W N", "desc": "timeout per packet (seconds)"}
     ],
     "scenarios": [
       "First step in any network debug flow",
@@ -79,10 +105,18 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "Trace the route packets take to a destination, showing each hop and latency.",
+    "source_url": "https://linux.die.net/man/8/traceroute",
+    "source_name": "Linux man page (linux.die.net)",
     "usage": [
       {"cmd": "traceroute 8.8.8.8", "cmt": "standard trace"},
       {"cmd": "traceroute -n 8.8.8.8", "cmt": "numeric IPs, faster (skip DNS)"},
       {"cmd": "traceroute -T -p 443 example.com", "cmt": "TCP trace on port 443 (bypass ICMP blocks)"}
+    ],
+    "quick_flags": [
+      {"flag": "-n", "desc": "numeric output, skip DNS lookups"},
+      {"flag": "-T", "desc": "use TCP SYN probes instead of UDP"},
+      {"flag": "-p PORT", "desc": "destination port for probes"},
+      {"flag": "-m N", "desc": "maximum hop count (default 30)"}
     ],
     "scenarios": [
       "Pinpointing where in the network a connection fails",
@@ -102,11 +136,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Transfer data from URLs. Essential for testing HTTP endpoints, APIs, and connectivity.",
+    "source_url": "https://man7.org/linux/man-pages/man1/curl.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "curl -v https://example.com", "cmt": "verbose — shows full TLS handshake and headers"},
       {"cmd": "curl -I https://example.com", "cmt": "HEAD request — headers only, no body"},
       {"cmd": "curl -o /dev/null -w \"%{http_code} %{time_total}s\" https://api.local", "cmt": "check status code and response time"},
       {"cmd": "curl -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"val\"}' https://api.local/endpoint", "cmt": "POST JSON"}
+    ],
+    "quick_flags": [
+      {"flag": "-v", "desc": "verbose: show headers and TLS handshake"},
+      {"flag": "-I", "desc": "HEAD request only (no body)"},
+      {"flag": "-L", "desc": "follow redirects (301/302)"},
+      {"flag": "-o FILE", "desc": "write output to file"},
+      {"flag": "-k", "desc": "skip TLS cert verification (debug only)"}
     ],
     "scenarios": [
       "Testing if an API endpoint is reachable from a server",
@@ -127,12 +170,21 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Snapshot of currently running processes. Outputs to stdout — ideal for scripting and piping.",
+    "source_url": "https://man7.org/linux/man-pages/man1/ps.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "ps aux", "cmt": "all processes, BSD-style — shows USER PID %CPU %MEM"},
       {"cmd": "ps aux | grep nginx", "cmt": "find specific process"},
       {"cmd": "ps aux --sort=-%cpu | head -10", "cmt": "top 10 CPU consumers"},
       {"cmd": "ps aux --sort=-%mem | head -10", "cmt": "top 10 memory consumers"},
       {"cmd": "ps -ef | grep defunct", "cmt": "find zombie processes"}
+    ],
+    "quick_flags": [
+      {"flag": "a", "desc": "show processes from all users"},
+      {"flag": "u", "desc": "user-oriented format (USER, CPU, MEM)"},
+      {"flag": "x", "desc": "include processes without a controlling terminal"},
+      {"flag": "--sort=-%cpu", "desc": "sort by CPU descending"},
+      {"flag": "-e", "desc": "every process on the system"}
     ],
     "scenarios": [
       "Finding which process is consuming all CPU before killing it",
@@ -152,10 +204,18 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Real-time interactive process monitor. htop is the color-coded, mouse-friendly version.",
+    "source_url": "https://man7.org/linux/man-pages/man1/top.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "htop -u www-data", "cmt": "filter to one user's processes"},
       {"cmd": "htop -p 1234,5678", "cmt": "monitor specific PIDs only"},
       {"cmd": "top -b -n 1 | head -25", "cmt": "non-interactive snapshot — good for scripts/cron"}
+    ],
+    "quick_flags": [
+      {"flag": "-u USER", "desc": "filter by user (htop)"},
+      {"flag": "-p PID", "desc": "watch specific PID(s)"},
+      {"flag": "-b", "desc": "batch mode — non-interactive (top)"},
+      {"flag": "-n N", "desc": "number of iterations before exiting (top)"}
     ],
     "scenarios": [
       "Investigating a server slowdown in real time",
@@ -175,11 +235,19 @@
     "diff": "beginner",
     "sec": true,
     "desc": "Send signals to processes. kill uses PID, killall uses process name.",
+    "source_url": "https://man7.org/linux/man-pages/man1/kill.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "kill -15 PID", "cmt": "SIGTERM — graceful shutdown (preferred)"},
       {"cmd": "kill -9 PID", "cmt": "SIGKILL — force kill, no cleanup"},
       {"cmd": "killall -HUP nginx", "cmt": "reload nginx config without restart"},
       {"cmd": "pkill -f \"python script.py\"", "cmt": "kill by full command string match"}
+    ],
+    "quick_flags": [
+      {"flag": "-15", "desc": "SIGTERM: graceful shutdown request"},
+      {"flag": "-9", "desc": "SIGKILL: force kill, no cleanup possible"},
+      {"flag": "-HUP", "desc": "SIGHUP: reload config (many daemons honor this)"},
+      {"flag": "-l", "desc": "list all available signal names"}
     ],
     "scenarios": [
       "Gracefully restarting a hung service",
@@ -200,11 +268,19 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Report disk space usage of filesystems. First stop for \"disk full\" investigation.",
+    "source_url": "https://man7.org/linux/man-pages/man1/df.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "df -h", "cmt": "human-readable sizes (GB/MB)"},
       {"cmd": "df -h /var/log", "cmt": "check specific path's partition"},
       {"cmd": "df -i", "cmt": "check inode usage — can be full even if disk space available"},
       {"cmd": "df -h --output=source,size,used,avail,pcent,target", "cmt": "custom column output"}
+    ],
+    "quick_flags": [
+      {"flag": "-h", "desc": "human-readable sizes (KB/MB/GB)"},
+      {"flag": "-i", "desc": "show inode usage instead of blocks"},
+      {"flag": "-T", "desc": "show filesystem type"},
+      {"flag": "--output=...", "desc": "select specific output columns"}
     ],
     "scenarios": [
       "Server stopped writing logs — check if /var or /var/log partition is full",
@@ -224,11 +300,19 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Estimate file and directory space usage. Find what is consuming the disk.",
+    "source_url": "https://man7.org/linux/man-pages/man1/du.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "du -sh /var/log/*", "cmt": "size of each item in /var/log"},
       {"cmd": "du -sh /* 2>/dev/null | sort -rh | head -10", "cmt": "top 10 largest directories from root"},
       {"cmd": "du -ah /home/user | sort -rh | head -20", "cmt": "largest files in a directory"},
       {"cmd": "du --max-depth=1 -h /var", "cmt": "one level deep summary"}
+    ],
+    "quick_flags": [
+      {"flag": "-s", "desc": "summarize — show total for each argument"},
+      {"flag": "-h", "desc": "human-readable sizes"},
+      {"flag": "-a", "desc": "show size for all files, not just directories"},
+      {"flag": "--max-depth=N", "desc": "limit directory recursion depth"}
     ],
     "scenarios": [
       "Finding which directory consumed the suddenly full disk",
@@ -248,11 +332,19 @@
     "diff": "beginner",
     "sec": true,
     "desc": "Change file and directory permissions. Controls read, write, execute access.",
+    "source_url": "https://man7.org/linux/man-pages/man1/chmod.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "chmod 644 file.conf", "cmt": "rw-r--r-- : owner rw, group r, others r"},
       {"cmd": "chmod 755 script.sh", "cmt": "rwxr-xr-x : owner rwx, others rx (standard for executables)"},
       {"cmd": "chmod -R 750 /var/app", "cmt": "recursive: owner rwx, group rx, others none"},
       {"cmd": "chmod u+x,g-w file", "cmt": "symbolic: add exec for user, remove write for group"}
+    ],
+    "quick_flags": [
+      {"flag": "-R", "desc": "recursive — apply to all files in directory"},
+      {"flag": "u+x", "desc": "add execute for owner"},
+      {"flag": "go-w", "desc": "remove write from group and others"},
+      {"flag": "a+r", "desc": "add read for all (user, group, others)"}
     ],
     "scenarios": [
       "Script won't execute — needs +x permission",
@@ -273,10 +365,17 @@
     "diff": "beginner",
     "sec": true,
     "desc": "Change file ownership — user and group.",
+    "source_url": "https://man7.org/linux/man-pages/man1/chown.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "chown www-data:www-data /var/www/html", "cmt": "set owner and group"},
       {"cmd": "chown -R deploy:deploy /opt/app", "cmt": "recursive ownership change"},
       {"cmd": "chown root:root /etc/cron.d/job", "cmt": "cron files should be owned by root"}
+    ],
+    "quick_flags": [
+      {"flag": "-R", "desc": "recursive — change ownership of all files in directory"},
+      {"flag": "--from=OLD", "desc": "only change if current owner matches OLD"},
+      {"flag": "-v", "desc": "verbose — print each changed file"}
     ],
     "scenarios": [
       "Web server 403 errors because files are owned by wrong user",
@@ -297,12 +396,21 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "Query and display the systemd journal. The primary log tool on modern Linux.",
+    "source_url": "https://man7.org/linux/man-pages/man1/journalctl.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "journalctl -u nginx --since today", "cmt": "logs for nginx since midnight"},
       {"cmd": "journalctl -u nginx -f", "cmt": "follow mode — live tail"},
       {"cmd": "journalctl -p err -n 50", "cmt": "last 50 error-level entries across all services"},
       {"cmd": "journalctl --since \"2024-01-15 14:00:00\" --until \"2024-01-15 15:00:00\"", "cmt": "specific time window"},
       {"cmd": "journalctl -k --since -1h", "cmt": "kernel messages from the past hour"}
+    ],
+    "quick_flags": [
+      {"flag": "-u SERVICE", "desc": "filter to a specific systemd unit"},
+      {"flag": "-f", "desc": "follow mode — like tail -f"},
+      {"flag": "-p LEVEL", "desc": "priority filter: err, warning, info, debug"},
+      {"flag": "-n N", "desc": "show last N lines"},
+      {"flag": "-k", "desc": "show kernel ring buffer messages only"}
     ],
     "scenarios": [
       "Service crashed — check exact error before last exit",
@@ -322,12 +430,21 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Search text using patterns. Fundamental for filtering logs and files.",
+    "source_url": "https://man7.org/linux/man-pages/man1/grep.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "grep -i \"error\" /var/log/syslog", "cmt": "-i = case insensitive"},
       {"cmd": "grep -r \"failed password\" /var/log/", "cmt": "-r = recursive through directory"},
       {"cmd": "grep -n \"segfault\" /var/log/kern.log", "cmt": "-n = show line numbers"},
       {"cmd": "grep -v \"DEBUG\" app.log | grep \"ERROR\"", "cmt": "exclude DEBUG then find ERROR"},
       {"cmd": "grep -A 3 -B 3 \"CRITICAL\" app.log", "cmt": "show 3 lines before and after each match"}
+    ],
+    "quick_flags": [
+      {"flag": "-i", "desc": "case-insensitive search"},
+      {"flag": "-r", "desc": "recursive search through directories"},
+      {"flag": "-n", "desc": "show line numbers"},
+      {"flag": "-v", "desc": "invert match — show non-matching lines"},
+      {"flag": "-A/-B/-C N", "desc": "show N lines after/before/around match"}
     ],
     "scenarios": [
       "Finding failed SSH attempts in auth log",
@@ -347,12 +464,21 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Control the systemd system and service manager. Start, stop, enable, inspect services.",
+    "source_url": "https://man7.org/linux/man-pages/man1/systemctl.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "systemctl status nginx", "cmt": "detailed status + last log lines"},
       {"cmd": "systemctl restart nginx", "cmt": "restart a service"},
       {"cmd": "systemctl enable --now nginx", "cmt": "enable at boot AND start immediately"},
       {"cmd": "systemctl list-units --failed", "cmt": "show all failed units"},
       {"cmd": "systemctl daemon-reload", "cmt": "required after editing service unit files"}
+    ],
+    "quick_flags": [
+      {"flag": "status", "desc": "show service status and recent logs"},
+      {"flag": "start/stop/restart", "desc": "manage service lifecycle"},
+      {"flag": "enable/disable", "desc": "control auto-start at boot"},
+      {"flag": "--now", "desc": "combined with enable/disable — also start/stop immediately"},
+      {"flag": "daemon-reload", "desc": "reload systemd after editing .service files"}
     ],
     "scenarios": [
       "Service not running after reboot — check if it's enabled",
@@ -372,11 +498,19 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Schedule recurring tasks. crontab -e edits user crons, /etc/cron.d/ for system-wide.",
+    "source_url": "https://man7.org/linux/man-pages/man5/crontab.5.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "crontab -l", "cmt": "list current user's cron jobs"},
       {"cmd": "crontab -e", "cmt": "edit current user's crontab"},
       {"cmd": "crontab -u www-data -l", "cmt": "view another user's crontab (root only)"},
       {"cmd": "ls -la /etc/cron.d/ /etc/cron.daily/ /etc/crontab", "cmt": "check all system cron locations"}
+    ],
+    "quick_flags": [
+      {"flag": "-l", "desc": "list current crontab entries"},
+      {"flag": "-e", "desc": "edit crontab in default editor"},
+      {"flag": "-r", "desc": "remove the current crontab entirely"},
+      {"flag": "-u USER", "desc": "operate on another user's crontab (root only)"}
     ],
     "scenarios": [
       "Scheduled backup never ran — check cron syntax and log",
@@ -397,12 +531,21 @@
     "diff": "beginner",
     "sec": true,
     "desc": "Create and modify user accounts on the system.",
+    "source_url": "https://man7.org/linux/man-pages/man8/useradd.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "useradd -m -s /bin/bash -G sudo username", "cmt": "-m creates home, -G adds to sudo group"},
       {"cmd": "usermod -aG docker username", "cmt": "add existing user to group without removing others"},
       {"cmd": "usermod -L username", "cmt": "lock account (disable login)"},
       {"cmd": "passwd -e username", "cmt": "expire password — force change at next login"},
       {"cmd": "userdel -r username", "cmt": "delete user AND home directory"}
+    ],
+    "quick_flags": [
+      {"flag": "-m", "desc": "create home directory"},
+      {"flag": "-s SHELL", "desc": "set login shell"},
+      {"flag": "-G GROUP", "desc": "add to supplemental group"},
+      {"flag": "-aG GROUP", "desc": "append to group (use with usermod, -a prevents removing existing groups)"},
+      {"flag": "-L / -U", "desc": "lock / unlock account"}
     ],
     "scenarios": [
       "Onboarding a new sysadmin — create account with correct groups",
@@ -423,11 +566,19 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Show last logged-in users. lastb shows failed login attempts.",
+    "source_url": "https://man7.org/linux/man-pages/man1/last.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "last -n 20", "cmt": "last 20 successful logins"},
       {"cmd": "lastb -n 20", "cmt": "last 20 FAILED login attempts (requires root)"},
       {"cmd": "last -F username", "cmt": "full timestamps for a specific user"},
       {"cmd": "who", "cmt": "who is currently logged in right now"}
+    ],
+    "quick_flags": [
+      {"flag": "-n N", "desc": "show last N entries"},
+      {"flag": "-F", "desc": "full date and time output"},
+      {"flag": "-x", "desc": "include system shutdowns and runlevel changes"},
+      {"flag": "-i", "desc": "show IP addresses instead of hostnames"}
     ],
     "scenarios": [
       "Investigating unauthorized access — check login history",
@@ -448,11 +599,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Search for files by name, type, date, permissions, ownership, and size.",
+    "source_url": "https://man7.org/linux/man-pages/man1/find.1.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "find /var/log -name \"*.log\" -mtime +30 -delete", "cmt": "delete logs older than 30 days"},
       {"cmd": "find / -perm /4000 -user root 2>/dev/null", "cmt": "find SUID root files — privilege escalation audit"},
       {"cmd": "find /home -type f -name \"*.sh\" -newer /etc/passwd", "cmt": "scripts modified after passwd — suspicious"},
       {"cmd": "find /tmp /var/tmp -type f -newer /proc/1 2>/dev/null", "cmt": "files created since boot in temp dirs"}
+    ],
+    "quick_flags": [
+      {"flag": "-name PATTERN", "desc": "match filename (case-sensitive)"},
+      {"flag": "-type f/d/l", "desc": "file, directory, or symlink"},
+      {"flag": "-mtime +N/-N", "desc": "modified more/less than N days ago"},
+      {"flag": "-perm /MODE", "desc": "match files with any of these permission bits set"},
+      {"flag": "-exec CMD {} \\;", "desc": "run command on each found file"}
     ],
     "scenarios": [
       "Disk filling up from old log files — find and purge safely",
@@ -473,12 +633,21 @@
     "diff": "advanced",
     "sec": true,
     "desc": "Manage kernel netfilter firewall rules. ufw is the simplified frontend.",
+    "source_url": "https://man7.org/linux/man-pages/man8/iptables.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "ufw status verbose", "cmt": "current ufw rules and status"},
       {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH"},
       {"cmd": "ufw deny from 192.168.1.100", "cmt": "block specific IP"},
       {"cmd": "iptables -L -n -v", "cmt": "list all iptables rules with packet counts"},
       {"cmd": "iptables -I INPUT 1 -s 10.10.10.10 -j DROP", "cmt": "immediately block an IP (insert at top)"}
+    ],
+    "quick_flags": [
+      {"flag": "-L", "desc": "list all rules in selected chain"},
+      {"flag": "-n", "desc": "numeric output — no DNS lookups"},
+      {"flag": "-v", "desc": "verbose — show packet/byte counters"},
+      {"flag": "-I CHAIN N", "desc": "insert rule at position N (1 = top)"},
+      {"flag": "-F", "desc": "flush (delete) all rules — DANGEROUS without allow-all fallback"}
     ],
     "scenarios": [
       "Blocking an IP conducting a brute force attack",
@@ -499,11 +668,20 @@
     "diff": "advanced",
     "sec": true,
     "desc": "Capture and analyze network packets at the interface level.",
+    "source_url": "https://www.tcpdump.org/manpages/tcpdump.1.html",
+    "source_name": "tcpdump official man page (tcpdump.org)",
     "usage": [
       {"cmd": "tcpdump -i eth0 -n port 80", "cmt": "capture HTTP on eth0, no DNS resolution"},
       {"cmd": "tcpdump -i any -n \"host 10.0.0.50\"", "cmt": "all interfaces, traffic to/from specific host"},
       {"cmd": "tcpdump -i eth0 -w capture.pcap", "cmt": "write to file for Wireshark analysis"},
       {"cmd": "tcpdump -i eth0 -n \"tcp[tcpflags] & tcp-syn != 0\"", "cmt": "capture SYN packets only — detect scan"}
+    ],
+    "quick_flags": [
+      {"flag": "-i IFACE", "desc": "capture on specific interface (-i any for all)"},
+      {"flag": "-n", "desc": "no DNS reverse lookups (much faster)"},
+      {"flag": "-w FILE", "desc": "write raw packets to pcap file"},
+      {"flag": "-r FILE", "desc": "read from pcap file instead of interface"},
+      {"flag": "-c N", "desc": "capture exactly N packets then stop"}
     ],
     "scenarios": [
       "Debugging an application that claims it's sending packets but server isn't receiving",

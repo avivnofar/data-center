@@ -6,12 +6,21 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Network scanner — discover hosts, open ports, services, and OS versions. The Swiss Army knife of network recon.",
+    "source_url": "https://nmap.org/book/man.html",
+    "source_name": "Nmap official reference guide (nmap.org)",
     "usage": [
       {"cmd": "nmap -sn 192.168.1.0/24", "cmt": "ping sweep — discover live hosts, no port scan"},
       {"cmd": "nmap -sV -p 22,80,443 10.0.0.10", "cmt": "version detection on specific ports"},
       {"cmd": "nmap -A -T4 10.0.0.10", "cmt": "aggressive scan: OS, version, scripts, traceroute"},
       {"cmd": "nmap -p- --open 10.0.0.10", "cmt": "all 65535 ports, show only open ones"},
       {"cmd": "nmap -sU -p 53,161 10.0.0.10", "cmt": "UDP scan for DNS and SNMP"}
+    ],
+    "quick_flags": [
+      {"flag": "-sn", "desc": "ping sweep only — no port scan"},
+      {"flag": "-sV", "desc": "probe ports for service/version info"},
+      {"flag": "-A", "desc": "aggressive: OS, version, scripts, traceroute"},
+      {"flag": "-p-", "desc": "scan all 65535 ports"},
+      {"flag": "-oA FILE", "desc": "save output in all formats simultaneously"}
     ],
     "scenarios": [
       "Auditing which ports are exposed on a server before going to production",
@@ -32,6 +41,8 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "DNS lookup and diagnostics. More powerful than nslookup with cleaner output.",
+    "source_url": "https://linux.die.net/man/1/dig",
+    "source_name": "Linux man page (linux.die.net)",
     "usage": [
       {"cmd": "dig example.com", "cmt": "standard A record lookup"},
       {"cmd": "dig example.com MX", "cmt": "mail server records"},
@@ -39,6 +50,13 @@
       {"cmd": "dig @8.8.8.8 example.com", "cmt": "query a specific DNS server"},
       {"cmd": "dig +trace example.com", "cmt": "trace full delegation path from root servers"},
       {"cmd": "dig -x 8.8.8.8", "cmt": "reverse DNS lookup (PTR record)"}
+    ],
+    "quick_flags": [
+      {"flag": "@SERVER", "desc": "query a specific DNS server"},
+      {"flag": "+trace", "desc": "trace full delegation from root servers"},
+      {"flag": "+short", "desc": "terse output — just the answer"},
+      {"flag": "-x IP", "desc": "reverse lookup (IP to hostname)"},
+      {"flag": "TYPE", "desc": "record type: A, MX, TXT, CNAME, NS, PTR"}
     ],
     "scenarios": [
       "DNS change not propagating — query multiple resolvers to check",
@@ -58,11 +76,18 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Query DNS servers interactively or non-interactively. Available on both Linux and Windows.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/nslookup",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "nslookup example.com", "cmt": "default lookup"},
       {"cmd": "nslookup example.com 8.8.8.8", "cmt": "query specific DNS server"},
       {"cmd": "nslookup -type=MX example.com", "cmt": "MX records on Windows"},
       {"cmd": "nslookup -type=TXT example.com 8.8.8.8", "cmt": "TXT records — SPF, DKIM, verification"}
+    ],
+    "quick_flags": [
+      {"flag": "-type=TYPE", "desc": "specify record type: A, MX, TXT, NS, PTR"},
+      {"flag": "-debug", "desc": "show verbose debug output"},
+      {"flag": "SERVER", "desc": "second argument: use this DNS server instead of default"}
     ],
     "scenarios": [
       "Quick DNS check on Windows where dig is not installed",
@@ -82,11 +107,21 @@
     "diff": "advanced",
     "sec": true,
     "desc": "Command-line version of Wireshark. Capture and analyze packets without a GUI.",
+    "source_url": "https://www.wireshark.org/docs/man-pages/tshark.html",
+    "source_name": "Wireshark official man page (wireshark.org)",
     "usage": [
       {"cmd": "tshark -i eth0 -c 100", "cmt": "capture 100 packets on eth0"},
       {"cmd": "tshark -i eth0 -Y \"http.request\" -T fields -e http.host -e http.request.uri", "cmt": "extract HTTP request URLs live"},
       {"cmd": "tshark -r capture.pcap -Y \"tcp.port == 443\" -w filtered.pcap", "cmt": "filter an existing pcap file"},
       {"cmd": "tshark -i eth0 -Y \"dns\" -T fields -e dns.qry.name", "cmt": "live DNS query monitoring"}
+    ],
+    "quick_flags": [
+      {"flag": "-i IFACE", "desc": "capture on network interface"},
+      {"flag": "-c N", "desc": "stop after capturing N packets"},
+      {"flag": "-Y FILTER", "desc": "display filter (Wireshark syntax)"},
+      {"flag": "-r FILE", "desc": "read from pcap file"},
+      {"flag": "-w FILE", "desc": "write captured packets to file"},
+      {"flag": "-T fields -e FIELD", "desc": "extract specific protocol fields"}
     ],
     "scenarios": [
       "Headless server — capture packets without GUI",
@@ -107,11 +142,19 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "View and manipulate the ARP cache — maps IP addresses to MAC addresses.",
+    "source_url": "https://man7.org/linux/man-pages/man8/arp.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "arp -a", "cmt": "display full ARP table (works on Linux and Windows)"},
       {"cmd": "arp -d 192.168.1.1", "cmt": "delete a specific ARP entry (force refresh)"},
       {"cmd": "arp -s 192.168.1.1 aa:bb:cc:dd:ee:ff", "cmt": "add static ARP entry (Linux)"},
       {"cmd": "ip neigh show", "cmt": "modern Linux equivalent with more detail"}
+    ],
+    "quick_flags": [
+      {"flag": "-a", "desc": "show ARP table (all cached entries)"},
+      {"flag": "-d IP", "desc": "delete ARP cache entry for IP"},
+      {"flag": "-s IP MAC", "desc": "set static ARP entry"},
+      {"flag": "-n", "desc": "numeric mode — no hostname resolution"}
     ],
     "scenarios": [
       "Two devices claiming same IP — check ARP table for duplicate MACs",
@@ -132,12 +175,21 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "View and manage the IP routing table. Determine where packets will be sent.",
+    "source_url": "https://man7.org/linux/man-pages/man8/ip-route.8.html",
+    "source_name": "Linux man page (man7.org)",
     "usage": [
       {"cmd": "ip route show", "cmt": "modern Linux routing table"},
       {"cmd": "ip route add 10.20.0.0/16 via 192.168.1.254", "cmt": "add a static route"},
       {"cmd": "ip route del 10.20.0.0/16", "cmt": "remove a route"},
       {"cmd": "route print", "cmt": "Windows routing table"},
       {"cmd": "ip route get 8.8.8.8", "cmt": "show which interface and gateway would be used for a specific destination"}
+    ],
+    "quick_flags": [
+      {"flag": "show", "desc": "display routing table"},
+      {"flag": "add DEST via GW", "desc": "add a static route"},
+      {"flag": "del DEST", "desc": "remove a route"},
+      {"flag": "get DEST", "desc": "show which route would be used for destination"},
+      {"flag": "flush", "desc": "delete all routes (danger: drops all connectivity)"}
     ],
     "scenarios": [
       "After VPN connects but traffic still goes direct — routing table wrong",
@@ -157,11 +209,21 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "Measure network bandwidth between two hosts. Requires iperf3 on both ends.",
+    "source_url": "https://linux.die.net/man/1/iperf",
+    "source_name": "Linux man page (linux.die.net)",
     "usage": [
       {"cmd": "iperf3 -s", "cmt": "start iperf3 in server mode (on the target machine)"},
       {"cmd": "iperf3 -c 10.0.0.5", "cmt": "run bandwidth test to server (client side)"},
       {"cmd": "iperf3 -c 10.0.0.5 -u -b 100M", "cmt": "UDP test at 100 Mbps"},
       {"cmd": "iperf3 -c 10.0.0.5 -t 30 -P 4", "cmt": "30s test with 4 parallel streams"}
+    ],
+    "quick_flags": [
+      {"flag": "-s", "desc": "run as server"},
+      {"flag": "-c HOST", "desc": "run as client connecting to HOST"},
+      {"flag": "-u", "desc": "use UDP instead of TCP"},
+      {"flag": "-b RATE", "desc": "target bandwidth for UDP tests"},
+      {"flag": "-P N", "desc": "number of parallel client streams"},
+      {"flag": "-t SEC", "desc": "test duration in seconds"}
     ],
     "scenarios": [
       "Network feels slow — measure actual throughput vs expected bandwidth",
@@ -181,12 +243,21 @@
     "diff": "beginner",
     "sec": true,
     "desc": "Uncomplicated Firewall — simplified iptables management for Ubuntu/Debian systems.",
+    "source_url": "https://ubuntu.com/server/docs/firewalls",
+    "source_name": "Ubuntu Server Documentation",
     "usage": [
       {"cmd": "ufw status verbose", "cmt": "show current rules and policy"},
       {"cmd": "ufw allow 22/tcp", "cmt": "allow SSH before enabling (critical order)"},
       {"cmd": "ufw deny from 203.0.113.5", "cmt": "block specific IP all ports"},
       {"cmd": "ufw allow from 10.0.0.0/8 to any port 3306", "cmt": "allow MySQL from internal network only"},
       {"cmd": "ufw enable", "cmt": "activate firewall (ensure SSH is allowed first!)"}
+    ],
+    "quick_flags": [
+      {"flag": "status verbose", "desc": "show rules, default policies, and active status"},
+      {"flag": "allow PORT/PROTO", "desc": "permit incoming traffic"},
+      {"flag": "deny from IP", "desc": "block all traffic from an IP"},
+      {"flag": "delete RULE_NUM", "desc": "remove a rule by number (get numbers via status numbered)"},
+      {"flag": "reset", "desc": "disable ufw and delete all rules"}
     ],
     "scenarios": [
       "New server setup — enable firewall with minimum exposure",

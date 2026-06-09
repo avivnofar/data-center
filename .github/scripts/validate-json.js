@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Validates data/*.json against the expected schemas.
+// Enforces source_url presence and approved-domain allowlist.
 // Exits 1 and prints all errors if any entry is malformed.
 
 const fs = require('fs');
@@ -7,9 +8,74 @@ const path = require('path');
 
 const DATA_DIR = path.join(__dirname, '../../data');
 let errors = [];
+let passed = 0;
 
 function fail(file, id, msg) {
   errors.push(`[${file}] entry "${id}": ${msg}`);
+}
+
+// ── Approved source domains ───────────────────────────────────────────────────
+const APPROVED_DOMAINS = [
+  'man7.org',
+  'linux.die.net',
+  'learn.microsoft.com',
+  'docs.microsoft.com',
+  'ss64.com',
+  'linux.org',
+  'kernel.org',
+  'iana.org',
+  'rfc-editor.org',
+  'nmap.org',
+  'wireshark.org',
+  'ubuntu.com',
+  'redhat.com',
+  'debian.org',
+  'cloudflare.com',
+  'cisco.com',
+  'tcpdump.org',
+  'iperf.fr',
+];
+
+const BLOCKED_DOMAINS = [
+  'stackoverflow.com',
+  'reddit.com',
+  'medium.com',
+  'youtube.com',
+];
+
+function validateSourceUrl(url, file, id) {
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    fail(file, id, '"source_url" is REQUIRED — must be an official documentation URL');
+    return;
+  }
+
+  let hostname;
+  try {
+    hostname = new URL(url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    fail(file, id, `"source_url" is not a valid URL: ${url}`);
+    return;
+  }
+
+  for (const blocked of BLOCKED_DOMAINS) {
+    if (hostname === blocked || hostname.endsWith('.' + blocked)) {
+      fail(file, id, `"source_url" points to a blocked domain (${hostname}): ${url}`);
+      return;
+    }
+  }
+
+  const isApproved = APPROVED_DOMAINS.some(
+    (d) => hostname === d || hostname.endsWith('.' + d)
+  );
+
+  if (!isApproved) {
+    fail(
+      file,
+      id,
+      `"source_url" domain "${hostname}" is not on the approved list. ` +
+        `Approved: ${APPROVED_DOMAINS.join(', ')}`
+    );
+  }
 }
 
 // ── Command entry schema (linux / cmd / network) ─────────────────────────────
@@ -42,6 +108,11 @@ function validateCommandEntry(entry, file) {
   if (!entry.desc || typeof entry.desc !== 'string')
     fail(file, id, '"desc" must be a non-empty string');
 
+  // source_url and source_name — REQUIRED
+  validateSourceUrl(entry.source_url, file, id);
+  if (!entry.source_name || typeof entry.source_name !== 'string')
+    fail(file, id, '"source_name" is REQUIRED — e.g. "Linux man page", "Microsoft Docs"');
+
   if (!Array.isArray(entry.usage) || entry.usage.length < 1)
     fail(file, id, '"usage" must be a non-empty array');
   else {
@@ -51,6 +122,20 @@ function validateCommandEntry(entry, file) {
       if (typeof u.cmt !== 'string')
         fail(file, id, `usage[${i}].cmt must be a string`);
     });
+  }
+
+  // quick_flags — OPTIONAL but must be valid array if present
+  if (entry.quick_flags !== undefined) {
+    if (!Array.isArray(entry.quick_flags))
+      fail(file, id, '"quick_flags" must be an array when present');
+    else {
+      entry.quick_flags.forEach((f, i) => {
+        if (!f.flag || typeof f.flag !== 'string')
+          fail(file, id, `quick_flags[${i}].flag must be a non-empty string`);
+        if (!f.desc || typeof f.desc !== 'string')
+          fail(file, id, `quick_flags[${i}].desc must be a non-empty string`);
+      });
+    }
   }
 
   if (!Array.isArray(entry.scenarios) || entry.scenarios.length < 1)
@@ -82,8 +167,8 @@ function validateCommandEntry(entry, file) {
 }
 
 // ── Troubleshoot entry schema ────────────────────────────────────────────────
-const TS_PLAT = ['linux', 'windows', 'network'];
-const TS_SEV  = ['critical', 'high', 'medium'];
+const TS_PLAT = ['linux', 'windows', 'network', 'cross-platform'];
+const TS_SEV  = ['critical', 'high', 'medium', 'low'];
 
 function validateTsEntry(entry, file) {
   const id = entry.id || '(missing id)';
@@ -103,6 +188,11 @@ function validateTsEntry(entry, file) {
   if (!entry.desc || typeof entry.desc !== 'string')
     fail(file, id, '"desc" must be a non-empty string');
 
+  // source_url and source_name — REQUIRED
+  validateSourceUrl(entry.source_url, file, id);
+  if (!entry.source_name || typeof entry.source_name !== 'string')
+    fail(file, id, '"source_name" is REQUIRED');
+
   if (!Array.isArray(entry.steps) || entry.steps.length < 1)
     fail(file, id, '"steps" must be a non-empty array');
   else {
@@ -119,6 +209,33 @@ function validateTsEntry(entry, file) {
   }
 }
 
+// ── modules.json validation ──────────────────────────────────────────────────
+function validateModulesJson() {
+  const filepath = path.join(DATA_DIR, 'modules.json');
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+  } catch (e) {
+    errors.push(`[modules.json] JSON parse error: ${e.message}`);
+    return;
+  }
+  if (!Array.isArray(data)) {
+    errors.push('[modules.json] root must be a JSON array');
+    return;
+  }
+  const STATUSES = ['active', 'coming-soon'];
+  data.forEach((m, i) => {
+    const id = m.id || `(index ${i})`;
+    if (!m.id) errors.push(`[modules.json] entry ${i}: "id" is required`);
+    if (!m.label) errors.push(`[modules.json] entry "${id}": "label" is required`);
+    if (!m.data_file) errors.push(`[modules.json] entry "${id}": "data_file" is required`);
+    if (!STATUSES.includes(m.status))
+      errors.push(`[modules.json] entry "${id}": "status" must be one of: ${STATUSES.join(', ')}`);
+  });
+  console.log(`✓  modules.json: ${data.length} modules`);
+  passed++;
+}
+
 // ── Check for duplicate IDs across all files ─────────────────────────────────
 const seenIds = new Set();
 function checkDuplicateId(entry, file) {
@@ -130,6 +247,8 @@ function checkDuplicateId(entry, file) {
 }
 
 // ── Run validation ────────────────────────────────────────────────────────────
+validateModulesJson();
+
 const commandFiles = ['linux.json', 'cmd.json', 'network.json'];
 const tsFiles      = ['troubleshoot.json'];
 
@@ -151,6 +270,7 @@ for (const filename of commandFiles) {
     checkDuplicateId(entry, filename);
   });
   console.log(`✓  ${filename}: ${data.length} entries`);
+  passed++;
 }
 
 for (const filename of tsFiles) {
@@ -171,6 +291,7 @@ for (const filename of tsFiles) {
     checkDuplicateId(entry, filename);
   });
   console.log(`✓  ${filename}: ${data.length} entries`);
+  passed++;
 }
 
 if (errors.length > 0) {
@@ -178,5 +299,5 @@ if (errors.length > 0) {
   errors.forEach(e => console.error('  ' + e));
   process.exit(1);
 } else {
-  console.log('\n✓  All JSON files are valid.');
+  console.log(`\n✓  All ${passed} JSON files are valid. source_url domains checked against allowlist.`);
 }

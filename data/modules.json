@@ -1,0 +1,74 @@
+[
+  {
+    "id": "linux",
+    "label": "Linux",
+    "icon": "🐧",
+    "data_file": "data/linux.json",
+    "status": "active",
+    "filter_type": "command",
+    "categories": ["network", "process", "disk", "permission", "system", "logs", "user"]
+  },
+  {
+    "id": "cmd",
+    "label": "CMD / Windows",
+    "icon": "🪟",
+    "data_file": "data/cmd.json",
+    "status": "active",
+    "filter_type": "command",
+    "categories": ["network", "process", "disk", "system", "user"]
+  },
+  {
+    "id": "network",
+    "label": "Network",
+    "icon": "🌐",
+    "data_file": "data/network.json",
+    "status": "active",
+    "filter_type": "command",
+    "categories": ["diagnostic", "ports", "routing", "dns", "firewall"]
+  },
+  {
+    "id": "troubleshoot",
+    "label": "Troubleshoot",
+    "icon": "🔧",
+    "data_file": "data/troubleshoot.json",
+    "status": "active",
+    "filter_type": "troubleshoot",
+    "categories": ["linux", "windows", "network", "cross-platform"]
+  },
+  {
+    "id": "powershell",
+    "label": "PowerShell",
+    "icon": "💙",
+    "data_file": "data/powershell.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
+  },
+  {
+    "id": "cloud",
+    "label": "Cloud / AWS",
+    "icon": "☁️",
+    "data_file": "data/cloud.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
+  },
+  {
+    "id": "security",
+    "label": "Security",
+    "icon": "🔒",
+    "data_file": "data/security.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
+  },
+  {
+    "id": "casestudies",
+    "label": "Case Studies",
+    "icon": "📋",
+    "data_file": "data/casestudies.json",
+    "status": "coming-soon",
+    "filter_type": "casestudy",
+    "categories": []
+  }
+]

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SysOps Reference — IT Troubleshooting Database</title>
+<title>Data Center — IT Knowledge Base</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -33,9 +33,7 @@
 }
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-direction:column}
-
-/* scanlines */
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.015) 3px,rgba(0,0,0,0.015) 4px);pointer-events:none;z-index:9999}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.015) 3px,rgba(0,0,0,0.015) 4px);pointer-events:none;z-index:9998}
 
 /* TOPBAR */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:48px;display:flex;align-items:center;gap:0;flex-shrink:0}
@@ -43,10 +41,13 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .logo-box{width:26px;height:26px;border:1.5px solid var(--green);border-radius:4px;display:grid;place-items:center;color:var(--green);font-size:12px;font-weight:700;box-shadow:0 0 10px var(--green-glow);flex-shrink:0}
 .logo-text{color:var(--green);font-weight:700;font-size:13px;letter-spacing:.06em;text-shadow:0 0 12px var(--green-glow)}
 .logo-ver{color:var(--text3);font-size:9px;margin-left:6px;letter-spacing:.1em}
-.nav-tabs{display:flex;height:48px;gap:0}
+.nav-tabs{display:flex;height:48px;gap:0;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
 .nav-tab{padding:0 18px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px;transition:all .15s;white-space:nowrap}
 .nav-tab:hover{color:var(--text2)}
 .nav-tab.active{color:var(--green);border-bottom-color:var(--green);text-shadow:0 0 8px var(--green-glow)}
+.nav-tab.coming-soon{opacity:.45;cursor:default;position:relative}
+.nav-tab.coming-soon::after{content:'soon';font-size:8px;position:absolute;top:8px;right:4px;color:var(--amber);letter-spacing:.05em;background:var(--amber-soft);padding:1px 4px;border-radius:2px;border:1px solid rgba(227,179,65,.2)}
 .nav-tab .ti-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
 .stat-pill{font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:3px 9px;border-radius:3px;letter-spacing:.06em}
@@ -113,7 +114,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .cmd-card:hover{border-color:var(--border2)}
 .cmd-card.open{border-color:var(--green-dim);box-shadow:0 0 0 1px var(--green-soft)}
 .cmd-head{padding:11px 14px;display:flex;align-items:center;gap:10px}
-.cmd-name{color:var(--green);font-weight:700;font-size:13px;text-shadow:0 0 6px var(--green-glow);min-width:140px}
+.cmd-name-link{color:var(--green);font-weight:700;font-size:13px;text-shadow:0 0 6px var(--green-glow);min-width:140px;text-decoration:none;cursor:pointer;transition:text-shadow .15s;position:relative}
+.cmd-name-link:hover{text-shadow:0 0 16px var(--green-glow),0 0 4px var(--green);text-decoration:underline;text-underline-offset:3px}
 .cmd-desc-short{color:var(--text2);font-size:11px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmd-badges{display:flex;gap:5px;flex-shrink:0}
 .badge{font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:.06em;font-weight:500;text-transform:uppercase;white-space:nowrap}
@@ -151,6 +153,46 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .sec-note-lbl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--red);margin-bottom:5px}
 .sec-note-txt{font-size:11px;color:var(--text2);line-height:1.6}
 
+/* SOURCE LINK ROW */
+.source-row{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--border);background:var(--bg4)}
+.source-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3)}
+.source-link{font-size:10px;color:var(--cyan);text-decoration:none;font-family:var(--mono)}
+.source-link:hover{text-decoration:underline}
+
+/* QUICK FLAGS (shown in tooltip and expanded body) */
+.flags-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.flag-chip{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 8px;font-size:10px}
+.flag-chip .fc-flag{color:var(--cyan)}
+.flag-chip .fc-desc{color:var(--text3);margin-left:5px}
+
+/* HOVER TOOLTIP */
+.cmd-tooltip{
+  position:fixed;
+  z-index:9999;
+  background:var(--bg2);
+  border:1px solid var(--green-dim);
+  border-radius:6px;
+  padding:10px 14px;
+  max-width:320px;
+  min-width:200px;
+  box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 0 1px var(--green-soft);
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .15s,transform .15s;
+  font-size:11px;
+}
+.cmd-tooltip.visible{opacity:1;transform:translateY(0)}
+.tt-name{color:var(--green);font-weight:700;font-size:12px;margin-bottom:6px;text-shadow:0 0 8px var(--green-glow)}
+.tt-example{color:var(--text2);margin-bottom:8px;line-height:1.5;font-size:10px}
+.tt-example code{color:var(--green);background:var(--bg3);border:1px solid var(--border);padding:1px 5px;border-radius:2px;font-family:var(--mono)}
+.tt-flags-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.tt-flag-row{display:flex;gap:6px;padding:2px 0;align-items:baseline}
+.tt-flag{color:var(--cyan);min-width:80px;font-size:10px;flex-shrink:0}
+.tt-fdesc{color:var(--text3);font-size:10px}
+.tt-source{margin-top:8px;padding-top:6px;border-top:1px solid var(--border);font-size:9px;color:var(--text3)}
+.tt-source span{color:var(--cyan)}
+
 /* TROUBLESHOOT CARDS */
 .ts-card{background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
 .ts-card:hover{border-color:var(--border2)}
@@ -166,6 +208,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .ts-num{color:var(--amber);font-weight:700;min-width:20px;flex-shrink:0}
 .ts-cmd{display:inline-block;background:var(--bg);border:1px solid var(--border);color:var(--green);font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:3px;margin:2px 2px 2px 0}
 .ts-note{display:block;margin-top:3px;font-size:10px;color:var(--text3)}
+.ts-source-row{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:9px;color:var(--text3)}
+.ts-source-row a{color:var(--cyan);text-decoration:none}
+.ts-source-row a:hover{text-decoration:underline}
 
 /* STATUS BAR */
 .statusbar{background:var(--bg2);border-top:1px solid var(--border);padding:5px 20px;display:flex;gap:16px;font-size:10px;color:var(--text3);flex-shrink:0}
@@ -180,21 +225,18 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </head>
 <body>
 
-<!-- TOPBAR -->
+<!-- TOPBAR — tabs injected by JS from modules.json -->
 <div class="topbar">
   <div class="logo">
     <div class="logo-box">&gt;_</div>
     <div>
-      <span class="logo-text">SYSOPS.REF</span>
-      <span class="logo-ver">v1.0</span>
+      <span class="logo-text">DATA.CENTER</span>
+      <span class="logo-ver">v2.0</span>
     </div>
   </div>
-  <div class="nav-tabs">
+  <div class="nav-tabs" id="navTabs">
     <button class="nav-tab active" onclick="switchTab('search',this)"><span class="ti-dot"></span>Ask / Search</button>
-    <button class="nav-tab" onclick="switchTab('linux',this)"><span class="ti-dot"></span>Linux</button>
-    <button class="nav-tab" onclick="switchTab('cmd',this)"><span class="ti-dot"></span>CMD</button>
-    <button class="nav-tab" onclick="switchTab('network',this)"><span class="ti-dot"></span>Network</button>
-    <button class="nav-tab" onclick="switchTab('troubleshoot',this)"><span class="ti-dot"></span>Troubleshoot</button>
+    <!-- module tabs injected here -->
   </div>
   <div class="topbar-right">
     <span class="stat-pill" id="totalCount">loading...</span>
@@ -209,15 +251,15 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="sidebar-section">
     <div class="sidebar-heading">Quick scenarios</div>
     <button class="sidebar-item active" onclick="filterScenario('all',this)">⬡ All entries <span class="ct" id="sc-all">—</span></button>
-    <button class="sidebar-item" onclick="filterScenario('network',this)">⬡ Network issues <span class="ct">6</span></button>
-    <button class="sidebar-item" onclick="filterScenario('disk',this)">⬡ Disk &amp; storage <span class="ct">5</span></button>
-    <button class="sidebar-item" onclick="filterScenario('process',this)">⬡ Process &amp; CPU <span class="ct">5</span></button>
-    <button class="sidebar-item" onclick="filterScenario('permission',this)">⬡ Permissions <span class="ct">4</span></button>
-    <button class="sidebar-item" onclick="filterScenario('user',this)">⬡ Users &amp; auth <span class="ct">4</span></button>
+    <button class="sidebar-item" onclick="filterScenario('network',this)">⬡ Network issues</button>
+    <button class="sidebar-item" onclick="filterScenario('disk',this)">⬡ Disk &amp; storage</button>
+    <button class="sidebar-item" onclick="filterScenario('process',this)">⬡ Process &amp; CPU</button>
+    <button class="sidebar-item" onclick="filterScenario('permission',this)">⬡ Permissions</button>
+    <button class="sidebar-item" onclick="filterScenario('user',this)">⬡ Users &amp; auth</button>
   </div>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">
-    <div class="sidebar-heading">Filter by</div>
+    <div class="sidebar-heading">Filter by level</div>
     <button class="sidebar-item" onclick="filterDiff('beginner',this)">● Beginner</button>
     <button class="sidebar-item" onclick="filterDiff('intermediate',this)">● Intermediate</button>
     <button class="sidebar-item" onclick="filterDiff('advanced',this)">● Advanced</button>
@@ -230,14 +272,14 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   </div>
 </div>
 
-<!-- CONTENT AREA -->
-<div class="content-area">
+<!-- CONTENT AREA — panels injected by JS -->
+<div class="content-area" id="contentArea">
 
-  <!-- SEARCH TAB -->
+  <!-- SEARCH TAB (always static) -->
   <div id="tab-search" class="tab-panel active">
     <div class="search-zone">
       <div class="search-row">
-        <span class="search-prompt">root@sysops:~$</span>
+        <span class="search-prompt">root@datacenter:~$</span>
         <input class="search-input" id="mainSearch" type="text" placeholder="describe your problem or search any command..." oninput="globalSearch(this.value)" autofocus>
         <span class="ai-badge">AI — coming soon</span>
         <span class="search-hint" id="searchHint">all commands</span>
@@ -271,82 +313,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
     <div class="scroll-content" id="searchResults"></div>
   </div>
 
-  <!-- LINUX TAB -->
-  <div id="tab-linux" class="tab-panel">
-    <div class="filter-bar">
-      <span class="filter-label">Category:</span>
-      <button class="filter-btn active" onclick="setFilter('linux','cat','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','network',this)">Network</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','process',this)">Processes</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','disk',this)">Disk</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','permission',this)">Permissions</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','system',this)">System</button>
-      <button class="filter-btn" onclick="setFilter('linux','cat','logs',this)">Logs</button>
-      <div class="filter-sep"></div>
-      <span class="filter-label">Level:</span>
-      <button class="filter-btn active" onclick="setFilter('linux','diff','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('linux','diff','beginner',this)">Beginner</button>
-      <button class="filter-btn" onclick="setFilter('linux','diff','intermediate',this)">Intermediate</button>
-      <button class="filter-btn" onclick="setFilter('linux','diff','advanced',this)">Advanced</button>
-      <span class="result-count" id="linux-count"></span>
-    </div>
-    <div class="scroll-content" id="linux-list"></div>
-  </div>
-
-  <!-- CMD TAB -->
-  <div id="tab-cmd" class="tab-panel">
-    <div class="filter-bar">
-      <span class="filter-label">Category:</span>
-      <button class="filter-btn active" onclick="setFilter('cmd','cat','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('cmd','cat','network',this)">Network</button>
-      <button class="filter-btn" onclick="setFilter('cmd','cat','process',this)">Processes</button>
-      <button class="filter-btn" onclick="setFilter('cmd','cat','disk',this)">Disk</button>
-      <button class="filter-btn" onclick="setFilter('cmd','cat','system',this)">System</button>
-      <button class="filter-btn" onclick="setFilter('cmd','cat','user',this)">Users</button>
-      <div class="filter-sep"></div>
-      <span class="filter-label">Level:</span>
-      <button class="filter-btn active" onclick="setFilter('cmd','diff','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('cmd','diff','beginner',this)">Beginner</button>
-      <button class="filter-btn" onclick="setFilter('cmd','diff','intermediate',this)">Intermediate</button>
-      <button class="filter-btn" onclick="setFilter('cmd','diff','advanced',this)">Advanced</button>
-      <span class="result-count" id="cmd-count"></span>
-    </div>
-    <div class="scroll-content" id="cmd-list"></div>
-  </div>
-
-  <!-- NETWORK TAB -->
-  <div id="tab-network" class="tab-panel">
-    <div class="filter-bar">
-      <span class="filter-label">Category:</span>
-      <button class="filter-btn active" onclick="setFilter('network','cat','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('network','cat','diagnostic',this)">Diagnostic</button>
-      <button class="filter-btn" onclick="setFilter('network','cat','ports',this)">Ports</button>
-      <button class="filter-btn" onclick="setFilter('network','cat','routing',this)">Routing</button>
-      <button class="filter-btn" onclick="setFilter('network','cat','dns',this)">DNS</button>
-      <button class="filter-btn" onclick="setFilter('network','cat','firewall',this)">Firewall</button>
-      <div class="filter-sep"></div>
-      <span class="filter-label">Level:</span>
-      <button class="filter-btn active" onclick="setFilter('network','diff','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('network','diff','beginner',this)">Beginner</button>
-      <button class="filter-btn" onclick="setFilter('network','diff','intermediate',this)">Intermediate</button>
-      <button class="filter-btn" onclick="setFilter('network','diff','advanced',this)">Advanced</button>
-      <span class="result-count" id="network-count"></span>
-    </div>
-    <div class="scroll-content" id="network-list"></div>
-  </div>
-
-  <!-- TROUBLESHOOT TAB -->
-  <div id="tab-troubleshoot" class="tab-panel">
-    <div class="filter-bar">
-      <span class="filter-label">Platform:</span>
-      <button class="filter-btn active" onclick="setFilter('ts','plat','all',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('ts','plat','linux',this)">Linux</button>
-      <button class="filter-btn" onclick="setFilter('ts','plat','windows',this)">Windows</button>
-      <button class="filter-btn" onclick="setFilter('ts','plat','network',this)">Network</button>
-      <span class="result-count" id="ts-count"></span>
-    </div>
-    <div class="scroll-content" id="ts-list"></div>
-  </div>
+  <!-- Module tab panels injected dynamically -->
 
 </div><!-- /content-area -->
 </div><!-- /app-body -->
@@ -355,335 +322,565 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 <div class="statusbar">
   <div class="sb-item">platform: <span class="sb-val" id="sb-platform">search</span></div>
   <div class="sb-item">entries: <span class="sb-val" id="sb-entries">—</span></div>
-  <div class="sb-item">db: <span class="sb-val">sysops-ref v1.0</span></div>
-  <div class="sb-item" style="margin-left:auto">github: <span class="sb-val">avivnofar/sysops-ref</span></div>
+  <div class="sb-item">db: <span class="sb-val">data-center v2.0</span></div>
+  <div class="sb-item" style="margin-left:auto">
+    <a href="https://github.com/avivnofar/data-center" target="_blank" style="color:var(--text3);text-decoration:none">
+      github: <span class="sb-val">avivnofar/data-center</span>
+    </a>
+  </div>
 </div>
+
+<!-- HOVER TOOLTIP (singleton) -->
+<div id="cmdTooltip" class="cmd-tooltip"></div>
 
 <script>
 // ============================================================
-// DATABASE — loaded at runtime from data/*.json
+// DATABASE — loaded at runtime from modules.json + data/*.json
 // ============================================================
-const DB = { linux: [], cmd: [], network: [], troubleshoot: [] };
-
-
+const DB = {};
+let MODULES = [];
 
 // ============================================================
 // STATE
 // ============================================================
 const state = {
-  linux: {cat:'all', diff:'all'},
-  cmd:   {cat:'all', diff:'all'},
-  network:{cat:'all', diff:'all'},
-  ts:    {plat:'all'},
+  filters: {},         // { moduleId: { cat: 'all', diff: 'all' } }
   searchPlatform: 'all',
   currentTab: 'search'
 };
 
 // ============================================================
-// INIT
+// TOOLTIP ENGINE
 // ============================================================
-async function init(){
+const tooltip = document.getElementById('cmdTooltip');
+let tooltipTimer = null;
+let tooltipVisible = false;
+
+function showTooltip(entry, anchorEl) {
+  clearTimeout(tooltipTimer);
+  tooltipTimer = setTimeout(() => {
+    if (!entry) return;
+    const flagsHtml = (entry.quick_flags || []).slice(0, 5).map(f =>
+      `<div class="tt-flag-row"><span class="tt-flag">${escHtml(f.flag)}</span><span class="tt-fdesc">${escHtml(f.desc)}</span></div>`
+    ).join('');
+    const firstCmd = (entry.usage && entry.usage[0]) ? entry.usage[0] : null;
+
+    tooltip.innerHTML = `
+      <div class="tt-name">${escHtml(entry.name)}</div>
+      ${firstCmd ? `<div class="tt-example">e.g. <code>${escHtml(firstCmd.cmd)}</code> — ${escHtml(firstCmd.cmt)}</div>` : ''}
+      ${flagsHtml ? `<div class="tt-flags-label">Useful flags</div>${flagsHtml}` : ''}
+      <div class="tt-source">Source: <span>${escHtml(entry.source_name || 'official docs')}</span></div>
+    `;
+
+    // Position: prefer above, fall back to below
+    const rect = anchorEl.getBoundingClientRect();
+    const ttW = 320;
+    const ttH = tooltip.offsetHeight || 160;
+    let top = rect.top - ttH - 10;
+    if (top < 8) top = rect.bottom + 10;
+    let left = rect.left;
+    if (left + ttW > window.innerWidth - 8) left = window.innerWidth - ttW - 8;
+    if (left < 8) left = 8;
+
+    tooltip.style.top = top + 'px';
+    tooltip.style.left = left + 'px';
+    tooltip.classList.add('visible');
+    tooltipVisible = true;
+  }, 300);
+}
+
+function hideTooltip() {
+  clearTimeout(tooltipTimer);
+  tooltip.classList.remove('visible');
+  tooltipVisible = false;
+}
+
+// ============================================================
+// INIT — load modules.json, then each active data file
+// ============================================================
+async function init() {
   try {
-    const [linux, cmd, network, troubleshoot] = await Promise.all([
-      fetch('data/linux.json').then(r => r.json()),
-      fetch('data/cmd.json').then(r => r.json()),
-      fetch('data/network.json').then(r => r.json()),
-      fetch('data/troubleshoot.json').then(r => r.json())
-    ]);
-    DB.linux = linux;
-    DB.cmd = cmd;
-    DB.network = network;
-    DB.troubleshoot = troubleshoot;
-  } catch(e) {
-    console.error('Failed to load data:', e);
+    MODULES = await fetch('data/modules.json').then(r => r.json());
+  } catch (e) {
+    console.error('Failed to load modules.json:', e);
     document.getElementById('totalCount').textContent = 'error';
     return;
   }
-  const total = DB.linux.length + DB.cmd.length + DB.network.length + DB.troubleshoot.length;
+
+  // Build tabs and panels for active modules
+  const navTabs = document.getElementById('navTabs');
+  const contentArea = document.getElementById('contentArea');
+
+  for (const mod of MODULES) {
+    // Nav tab
+    const btn = document.createElement('button');
+    btn.className = 'nav-tab' + (mod.status === 'coming-soon' ? ' coming-soon' : '');
+    btn.id = 'tab-btn-' + mod.id;
+    btn.innerHTML = `<span class="ti-dot"></span>${mod.label}`;
+    if (mod.status !== 'coming-soon') {
+      btn.onclick = () => switchTab(mod.id, btn);
+    }
+    navTabs.appendChild(btn);
+
+    // Content panel
+    const panel = document.createElement('div');
+    panel.id = 'tab-' + mod.id;
+    panel.className = 'tab-panel';
+    contentArea.appendChild(panel);
+
+    state.filters[mod.id] = { cat: 'all', diff: 'all', plat: 'all' };
+  }
+
+  // Load data for active modules in parallel
+  const activeModules = MODULES.filter(m => m.status === 'active');
+  await Promise.all(activeModules.map(async (mod) => {
+    try {
+      DB[mod.id] = await fetch(mod.data_file).then(r => r.json());
+    } catch (e) {
+      console.error(`Failed to load ${mod.data_file}:`, e);
+      DB[mod.id] = [];
+    }
+  }));
+
+  // Render each active module panel
+  for (const mod of activeModules) {
+    renderModulePanel(mod);
+    if (mod.filter_type === 'command') renderList(mod.id);
+    else if (mod.filter_type === 'troubleshoot') renderTS(mod.id);
+  }
+
+  const total = activeModules.reduce((sum, m) => sum + (DB[m.id] || []).length, 0);
   document.getElementById('totalCount').textContent = total + ' entries';
   document.getElementById('sc-all').textContent = total;
   document.getElementById('sb-entries').textContent = total;
-  renderList('linux');
-  renderList('cmd');
-  renderList('network');
-  renderTS();
   renderSearchResults('');
+}
+
+// ============================================================
+// RENDER MODULE PANEL (filter bar + scroll container)
+// ============================================================
+function renderModulePanel(mod) {
+  const panel = document.getElementById('tab-' + mod.id);
+  if (!panel) return;
+
+  if (mod.filter_type === 'command') {
+    const cats = mod.categories || [];
+    const catBtns = cats.map(c =>
+      `<button class="filter-btn" onclick="setFilter('${mod.id}','cat','${c}',this)">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`
+    ).join('');
+    panel.innerHTML = `
+      <div class="filter-bar">
+        <span class="filter-label">Category:</span>
+        <button class="filter-btn active" onclick="setFilter('${mod.id}','cat','all',this)">All</button>
+        ${catBtns}
+        <div class="filter-sep"></div>
+        <span class="filter-label">Level:</span>
+        <button class="filter-btn active" onclick="setFilter('${mod.id}','diff','all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('${mod.id}','diff','beginner',this)">Beginner</button>
+        <button class="filter-btn" onclick="setFilter('${mod.id}','diff','intermediate',this)">Intermediate</button>
+        <button class="filter-btn" onclick="setFilter('${mod.id}','diff','advanced',this)">Advanced</button>
+        <span class="result-count" id="${mod.id}-count"></span>
+      </div>
+      <div class="scroll-content" id="${mod.id}-list"></div>
+    `;
+  } else if (mod.filter_type === 'troubleshoot') {
+    const plats = mod.categories || ['linux', 'windows', 'network', 'cross-platform'];
+    const platBtns = plats.map(p =>
+      `<button class="filter-btn" onclick="setFilter('${mod.id}','plat','${p}',this)">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`
+    ).join('');
+    panel.innerHTML = `
+      <div class="filter-bar">
+        <span class="filter-label">Platform:</span>
+        <button class="filter-btn active" onclick="setFilter('${mod.id}','plat','all',this)">All</button>
+        ${platBtns}
+        <span class="result-count" id="${mod.id}-count"></span>
+      </div>
+      <div class="scroll-content" id="${mod.id}-list"></div>
+    `;
+  }
 }
 
 // ============================================================
 // TABS
 // ============================================================
-function switchTab(tab, btn){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  btn.classList.add('active');
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('tab-' + tab);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
   state.currentTab = tab;
   document.getElementById('sb-platform').textContent = tab;
-  updateCount(tab);
-  if(tab==='search') document.getElementById('mainSearch').focus();
+  if (tab === 'search') document.getElementById('mainSearch').focus();
 }
 
 // ============================================================
-// RENDER COMMAND LISTS
+// RENDER COMMAND LIST
 // ============================================================
-function renderList(platform){
-  const list = document.getElementById(platform+'-list');
-  const s = state[platform];
-  const items = DB[platform].filter(c=>{
-    const catOk = s.cat==='all'||c.cat===s.cat;
-    const diffOk = s.diff==='all'||c.diff===s.diff;
-    return catOk&&diffOk;
+function renderList(modId) {
+  const list = document.getElementById(modId + '-list');
+  if (!list || !DB[modId]) return;
+  const s = state.filters[modId] || {};
+  const items = DB[modId].filter(c => {
+    const catOk = !s.cat || s.cat === 'all' || c.cat === s.cat;
+    const diffOk = !s.diff || s.diff === 'all' || c.diff === s.diff;
+    return catOk && diffOk;
   });
-  document.getElementById(platform+'-count').textContent = items.length+' commands';
 
-  // group by category
+  const countEl = document.getElementById(modId + '-count');
+  if (countEl) countEl.textContent = items.length + ' commands';
+
   const groups = {};
-  items.forEach(c=>{
-    if(!groups[c.cat]) groups[c.cat]=[];
+  items.forEach(c => {
+    if (!groups[c.cat]) groups[c.cat] = [];
     groups[c.cat].push(c);
   });
 
-  list.innerHTML = Object.entries(groups).map(([cat,cmds])=>`
+  list.innerHTML = Object.entries(groups).map(([cat, cmds]) => `
     <div class="sec-spacer"></div>
     <div class="sec-header">
       <span class="sec-title">${cat}</span>
-      <span class="sec-sub">— ${cmds.length} command${cmds.length!==1?'s':''}</span>
+      <span class="sec-sub">— ${cmds.length} command${cmds.length !== 1 ? 's' : ''}</span>
     </div>
-    ${cmds.map(c=>renderCard(c)).join('')}
+    ${cmds.map(c => renderCard(c)).join('')}
   `).join('');
-  updateCount(platform);
+
+  attachTooltipListeners(list);
 }
 
-function renderCard(c, highlight=''){
-  const diffClass = c.diff==='beginner'?'b-d1':c.diff==='intermediate'?'b-d2':'b-d3';
-  const catClass = c.cat==='network'?'b-net':c.cat==='process'?'b-proc':c.cat==='disk'||c.cat==='file'?'b-file':c.cat==='system'||c.cat==='logs'?'b-sys':c.cat==='permission'?'b-sys':c.cat==='user'?'b-proc':c.cat==='dns'?'b-net':c.cat==='ports'||c.cat==='routing'||c.cat==='diagnostic'||c.cat==='firewall'?'b-net':'b-cat';
-  let desc = c.desc;
-  if(highlight){
-    const re = new RegExp('('+highlight.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
-    desc = desc.replace(re,'<mark style="background:var(--amber-soft);color:var(--amber)">$1</mark>');
+// ============================================================
+// RENDER TROUBLESHOOT LIST
+// ============================================================
+function renderTS(modId) {
+  const list = document.getElementById(modId + '-list');
+  if (!list || !DB[modId]) return;
+  const s = state.filters[modId] || {};
+  const items = DB[modId].filter(t => !s.plat || s.plat === 'all' || t.plat === s.plat);
+
+  const countEl = document.getElementById(modId + '-count');
+  if (countEl) countEl.textContent = items.length + ' scenarios';
+
+  list.innerHTML = items.map(t => renderTSCard(t)).join('');
+}
+
+// ============================================================
+// RENDER CARD HTML
+// ============================================================
+function renderCard(c, highlight = '') {
+  const diffClass = c.diff === 'beginner' ? 'b-d1' : c.diff === 'intermediate' ? 'b-d2' : 'b-d3';
+  const catClass = catBadgeClass(c.cat);
+  let desc = escHtml(c.desc);
+  if (highlight) {
+    const re = new RegExp('(' + highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    desc = desc.replace(re, '<mark style="background:var(--amber-soft);color:var(--amber)">$1</mark>');
   }
-  return `<div class="cmd-card" id="card-${c.id}" onclick="toggleCard('${c.id}')">
-    <div class="cmd-head">
-      <span class="cmd-name">${c.name}</span>
+
+  const flagsHtml = (c.quick_flags || []).map(f =>
+    `<div class="flag-chip"><span class="fc-flag">${escHtml(f.flag)}</span><span class="fc-desc">${escHtml(f.desc)}</span></div>`
+  ).join('');
+
+  return `<div class="cmd-card" id="card-${c.id}">
+    <div class="cmd-head" onclick="toggleCard('${c.id}', event)">
+      <a class="cmd-name-link"
+         href="${escAttr(c.source_url || '#')}"
+         target="_blank"
+         rel="noopener noreferrer"
+         data-entry-id="${escAttr(c.id)}"
+         onclick="event.stopPropagation()"
+         title="Open official documentation in new tab"
+      >${escHtml(c.name)}</a>
       <span class="cmd-desc-short">${desc}</span>
       <div class="cmd-badges">
         <span class="badge ${catClass}">${c.cat}</span>
         <span class="badge ${diffClass}">${c.diff}</span>
-        ${c.sec?'<span class="badge b-sec">⚑ sec</span>':''}
+        ${c.sec ? '<span class="badge b-sec">⚑ sec</span>' : ''}
       </div>
     </div>
     <div class="cmd-body">
       <div class="body-grid">
         <div class="body-col">
           <div class="body-label">Usage examples</div>
-          ${c.usage.map(u=>`
+          ${c.usage.map(u => `
             <div class="code-block">
-              <button class="copy-btn" onclick="event.stopPropagation();copyText('${u.cmd.replace(/'/g,"\\'")}',this)">copy</button>
+              <button class="copy-btn" onclick="copyText('${u.cmd.replace(/'/g, "\\'")}',this)">copy</button>
               <div class="code-line">${fmtCmd(u.cmd)}</div>
-              ${u.cmt?`<div class="code-cmt"># ${u.cmt}</div>`:''}
+              ${u.cmt ? `<div class="code-cmt"># ${escHtml(u.cmt)}</div>` : ''}
             </div>
           `).join('')}
-          ${c.secnote?`<div class="sec-note-box"><div class="sec-note-lbl">⚑ Security note</div><div class="sec-note-txt">${c.secnote}</div></div>`:''}
+          ${flagsHtml ? `<div class="body-label" style="margin-top:4px">Quick flags</div><div class="flags-grid">${flagsHtml}</div>` : ''}
+          ${c.secnote ? `<div class="sec-note-box"><div class="sec-note-lbl">⚑ Security note</div><div class="sec-note-txt">${c.secnote}</div></div>` : ''}
         </div>
         <div class="body-col">
-          ${c.scenarios?`<div class="body-label">When to use this</div>
-          <div style="margin-bottom:12px">${c.scenarios.map(s=>`<div class="scenario-item"><span class="scenario-bullet">▸</span><span>${s}</span></div>`).join('')}</div>`:''}
-          ${c.mistakes?`<div class="body-label">Common mistakes</div>
-          ${c.mistakes.map(m=>`<div class="mistake-item"><span class="mistake-x">✕</span><span class="mistake-fix"><span style="color:var(--red)">${m.x}</span><br><span style="color:var(--text3)">→ </span>${m.fix}</span></div>`).join('')}`:''}
+          ${c.scenarios ? `<div class="body-label">When to use this</div>
+          <div style="margin-bottom:12px">${c.scenarios.map(s => `<div class="scenario-item"><span class="scenario-bullet">▸</span><span>${escHtml(s)}</span></div>`).join('')}</div>` : ''}
+          ${c.mistakes ? `<div class="body-label">Common mistakes</div>
+          ${c.mistakes.map(m => `<div class="mistake-item"><span class="mistake-x">✕</span><span class="mistake-fix"><span style="color:var(--red)">${escHtml(m.x)}</span><br><span style="color:var(--text3)">→ </span>${m.fix}</span></div>`).join('')}` : ''}
         </div>
       </div>
+      ${c.source_url ? `
+        <div class="source-row">
+          <span class="source-lbl">📖 source:</span>
+          <a class="source-link" href="${escAttr(c.source_url)}" target="_blank" rel="noopener noreferrer">${escHtml(c.source_name || c.source_url)}</a>
+        </div>
+      ` : ''}
     </div>
   </div>`;
 }
 
-function fmtCmd(cmd){
-  return cmd
-    .replace(/(-{1,2}[a-zA-Z\d_-]+)/g,'<span class="code-flag">$1</span>')
-    .replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d+)?)\b/g,'<span class="code-arg">$1</span>');
+function renderTSCard(t) {
+  return `<div class="ts-card" id="ts-${t.id}" onclick="toggleTS('${t.id}')">
+    <div class="ts-head">
+      <span class="ts-icon">${t.severity === 'critical' ? '🔴' : t.severity === 'high' ? '🟠' : '🟡'}</span>
+      <span class="ts-title">${escHtml(t.title)}</span>
+      <span class="ts-tag">${t.plat}</span>
+      <span class="ts-tag" style="background:var(--red-soft);border-color:rgba(248,81,73,.2);color:var(--red)">${t.severity}</span>
+    </div>
+    <div class="ts-body">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${escHtml(t.desc)}</div>
+      ${t.steps.map(s => `
+        <div class="ts-step">
+          <span class="ts-num">${s.n}.</span>
+          <div>
+            <div style="margin-bottom:4px">${escHtml(s.text)}</div>
+            <code class="ts-cmd">${escHtml(s.cmd)}</code>
+            <span class="ts-note">${escHtml(s.note)}</span>
+          </div>
+        </div>
+      `).join('')}
+      ${t.source_url ? `
+        <div class="ts-source-row">
+          📖 Reference: <a href="${escAttr(t.source_url)}" target="_blank" rel="noopener noreferrer">${escHtml(t.source_name || t.source_url)}</a>
+        </div>
+      ` : ''}
+    </div>
+  </div>`;
 }
 
 // ============================================================
-// RENDER TROUBLESHOOT
+// TOOLTIP LISTENERS — attach after rendering
 // ============================================================
-function renderTS(){
-  const list = document.getElementById('ts-list');
-  const s = state.ts;
-  const items = DB.troubleshoot.filter(t=>s.plat==='all'||t.plat===s.plat);
-  document.getElementById('ts-count').textContent = items.length+' scenarios';
-  list.innerHTML = items.map(t=>`
-    <div class="ts-card" id="ts-${t.id}" onclick="toggleTS('${t.id}')">
-      <div class="ts-head">
-        <span class="ts-icon">${t.severity==='critical'?'🔴':t.severity==='high'?'🟠':'🟡'}</span>
-        <span class="ts-title">${t.title}</span>
-        <span class="ts-tag">${t.plat}</span>
-        <span class="ts-tag" style="background:var(--red-soft);border-color:rgba(248,81,73,.2);color:var(--red)">${t.severity}</span>
-      </div>
-      <div class="ts-body">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${t.desc}</div>
-        ${t.steps.map(s=>`
-          <div class="ts-step">
-            <span class="ts-num">${s.n}.</span>
-            <div>
-              <div style="margin-bottom:4px">${s.text}</div>
-              <code class="ts-cmd">${s.cmd}</code>
-              <span class="ts-note">${s.note}</span>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+function attachTooltipListeners(container) {
+  container.querySelectorAll('.cmd-name-link[data-entry-id]').forEach(el => {
+    const id = el.getAttribute('data-entry-id');
+    el.addEventListener('mouseenter', () => {
+      // Find entry across all DB collections
+      let entry = null;
+      for (const key of Object.keys(DB)) {
+        if (Array.isArray(DB[key])) {
+          entry = DB[key].find(e => e.id === id);
+          if (entry) break;
+        }
+      }
+      if (entry) showTooltip(entry, el);
+    });
+    el.addEventListener('mouseleave', hideTooltip);
+  });
 }
 
 // ============================================================
 // TOGGLE CARDS
 // ============================================================
-function toggleCard(id){
-  const el = document.getElementById('card-'+id);
+function toggleCard(id, event) {
+  if (event && event.target.closest('.cmd-name-link')) return;
+  const el = document.getElementById('card-' + id);
   const wasOpen = el.classList.contains('open');
-  document.querySelectorAll('.cmd-card.open').forEach(c=>c.classList.remove('open'));
-  if(!wasOpen) el.classList.add('open');
+  document.querySelectorAll('.cmd-card.open').forEach(c => c.classList.remove('open'));
+  if (!wasOpen) el.classList.add('open');
 }
-function toggleTS(id){
-  const el = document.getElementById('ts-'+id);
-  el.classList.toggle('open');
+
+function toggleTS(id) {
+  const el = document.getElementById('ts-' + id);
+  if (el) el.classList.toggle('open');
 }
 
 // ============================================================
 // SEARCH
 // ============================================================
 let searchPlatformState = 'all';
-function globalSearch(q){
-  const hint = document.getElementById('searchHint');
+function globalSearch(q) {
   renderSearchResults(q);
-  hint.textContent = q ? 'searching...' : 'all commands';
+  document.getElementById('searchHint').textContent = q ? 'searching...' : 'all commands';
 }
-function setSearch(q){
+function setSearch(q) {
   document.getElementById('mainSearch').value = q;
   globalSearch(q);
 }
-function setSearchPlatform(plat, btn){
+function setSearchPlatform(plat, btn) {
   searchPlatformState = plat;
-  btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSearchResults(document.getElementById('mainSearch').value);
 }
-function renderSearchResults(q){
+
+function renderSearchResults(q) {
   const container = document.getElementById('searchResults');
-  const platforms = searchPlatformState==='all'?['linux','cmd','network']:([searchPlatformState]);
-  let html='', count=0;
+  const commandMods = MODULES.filter(m => m.status === 'active' && m.filter_type === 'command');
+  const activePlatforms = searchPlatformState === 'all'
+    ? commandMods.map(m => m.id)
+    : [searchPlatformState];
+
+  let html = '', count = 0;
   const ql = q.toLowerCase();
 
-  platforms.forEach(plat=>{
-    if(!DB[plat]) return;
-    const matches = DB[plat].filter(c=>{
-      if(!q) return true;
-      return c.name.toLowerCase().includes(ql)||
-             c.desc.toLowerCase().includes(ql)||
-             (c.tags&&c.tags.toLowerCase().includes(ql))||
-             (c.scenarios&&c.scenarios.some(s=>s.toLowerCase().includes(ql)))||
-             (c.mistakes&&c.mistakes.some(m=>m.x.toLowerCase().includes(ql)||m.fix.toLowerCase().includes(ql)));
+  activePlatforms.forEach(modId => {
+    if (!DB[modId]) return;
+    const matches = DB[modId].filter(c => {
+      if (!q) return true;
+      return c.name.toLowerCase().includes(ql) ||
+             c.desc.toLowerCase().includes(ql) ||
+             (c.tags && c.tags.toLowerCase().includes(ql)) ||
+             (c.scenarios && c.scenarios.some(s => s.toLowerCase().includes(ql))) ||
+             (c.mistakes && c.mistakes.some(m => m.x.toLowerCase().includes(ql) || m.fix.toLowerCase().includes(ql)));
     });
-    if(matches.length){
-      html+=`<div class="sec-header" style="margin-top:16px"><span class="sec-title">${plat}</span><span class="sec-sub">— ${matches.length} match${matches.length!==1?'es':''}</span></div>`;
-      html+=matches.map(c=>renderCard(c,ql)).join('');
-      count+=matches.length;
+    if (matches.length) {
+      const mod = MODULES.find(m => m.id === modId);
+      html += `<div class="sec-header" style="margin-top:16px"><span class="sec-title">${mod ? mod.label : modId}</span><span class="sec-sub">— ${matches.length} match${matches.length !== 1 ? 'es' : ''}</span></div>`;
+      html += matches.map(c => renderCard(c, ql)).join('');
+      count += matches.length;
     }
   });
 
   // Also search troubleshoot
-  if(searchPlatformState==='all'&&q){
-    const tsMatches = DB.troubleshoot.filter(t=>
-      t.title.toLowerCase().includes(ql)||
-      t.desc.toLowerCase().includes(ql)||
-      t.steps.some(s=>s.text.toLowerCase().includes(ql)||s.cmd.toLowerCase().includes(ql))
-    );
-    if(tsMatches.length){
-      html+=`<div class="sec-header" style="margin-top:16px"><span class="sec-title">troubleshoot scenarios</span><span class="sec-sub">— ${tsMatches.length} match${tsMatches.length!==1?'es':''}</span></div>`;
-      html+=tsMatches.map(t=>`
-        <div class="ts-card" id="sr-ts-${t.id}" onclick="toggleTS('sr-ts-${t.id}')">
-          <div class="ts-head">
-            <span class="ts-icon">${t.severity==='critical'?'🔴':t.severity==='high'?'🟠':'🟡'}</span>
-            <span class="ts-title">${t.title}</span>
-            <span class="ts-tag">${t.plat}</span>
-          </div>
-          <div class="ts-body">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:10px">${t.desc}</div>
-            ${t.steps.map(s=>`<div class="ts-step"><span class="ts-num">${s.n}.</span><div><div style="margin-bottom:4px">${s.text}</div><code class="ts-cmd">${s.cmd}</code><span class="ts-note">${s.note}</span></div></div>`).join('')}
-          </div>
-        </div>
-      `).join('');
-      count+=tsMatches.length;
-    }
+  const tsMods = MODULES.filter(m => m.status === 'active' && m.filter_type === 'troubleshoot');
+  if (searchPlatformState === 'all' && q) {
+    tsMods.forEach(mod => {
+      const data = DB[mod.id] || [];
+      const tsMatches = data.filter(t =>
+        t.title.toLowerCase().includes(ql) ||
+        t.desc.toLowerCase().includes(ql) ||
+        t.steps.some(s => s.text.toLowerCase().includes(ql) || s.cmd.toLowerCase().includes(ql))
+      );
+      if (tsMatches.length) {
+        html += `<div class="sec-header" style="margin-top:16px"><span class="sec-title">${escHtml(mod.label)}</span><span class="sec-sub">— ${tsMatches.length} match${tsMatches.length !== 1 ? 'es' : ''}</span></div>`;
+        html += tsMatches.map(t => renderTSCard(t)).join('');
+        count += tsMatches.length;
+      }
+    });
   }
 
-  if(!html&&q) html='<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">No results for "'+q+'" — try a different keyword or check the FAQ pills above.</div>';
-  if(!q) html='<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">Type above to search, or click a common problem above ↑</div>';
+  if (!html && q) html = `<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">No results for "${escHtml(q)}" — try a different keyword or click a common problem above ↑</div>`;
+  if (!q) html = '<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:12px">Type above to search, or click a common problem above ↑</div>';
 
   container.innerHTML = html;
-  document.getElementById('searchResultCount').textContent = q?(count+' result'+(count!==1?'s':'')):'';
-  document.getElementById('searchHint').textContent = q?(count+' found'):'all commands';
+  attachTooltipListeners(container);
+  document.getElementById('searchResultCount').textContent = q ? (count + ' result' + (count !== 1 ? 's' : '')) : '';
+  document.getElementById('searchHint').textContent = q ? (count + ' found') : 'all commands';
 }
 
 // ============================================================
 // FILTERS
 // ============================================================
-function setFilter(platform, type, val, btn){
-  state[platform][type]=val;
+function setFilter(modId, type, val, btn) {
+  if (!state.filters[modId]) state.filters[modId] = {};
+  state.filters[modId][type] = val;
   const bar = btn.closest('.filter-bar');
-  const sameGroup = [...bar.querySelectorAll('.filter-btn')].filter(b=>{
-    const opts = type==='cat'?['all','network','process','disk','permission','system','logs','user','dns','ports','routing','diagnostic','firewall']:['all','beginner','intermediate','advanced'];
-    return opts.some(o=>b.textContent.trim().toLowerCase()===o);
+  // Deactivate buttons in same logical group
+  const allBtns = [...bar.querySelectorAll('.filter-btn')];
+  const catVals = ['all', 'network', 'process', 'disk', 'permission', 'system', 'logs', 'user', 'dns', 'ports', 'routing', 'diagnostic', 'firewall', 'linux', 'windows', 'cross-platform'];
+  const diffVals = ['all', 'beginner', 'intermediate', 'advanced'];
+  const sameGroup = allBtns.filter(b => {
+    const txt = b.textContent.trim().toLowerCase();
+    if (type === 'diff') return diffVals.includes(txt);
+    if (type === 'cat') return catVals.includes(txt);
+    if (type === 'plat') return ['all', 'linux', 'windows', 'network', 'cross-platform'].includes(txt);
+    return false;
   });
-  sameGroup.forEach(b=>b.classList.remove('active'));
+  sameGroup.forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if(platform==='ts') renderTS(); else renderList(platform);
+
+  const mod = MODULES.find(m => m.id === modId);
+  if (!mod) return;
+  if (mod.filter_type === 'troubleshoot') renderTS(modId);
+  else renderList(modId);
 }
-function filterScenario(tag, btn){
-  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+
+function filterScenario(tag, btn) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  // for demo, just switch to appropriate tab
-  if(tag!=='all'){
-    const tabMap={network:'linux',disk:'linux',process:'linux',permission:'linux',user:'linux'};
-    const tab = tabMap[tag]||'linux';
-    state[tab].cat = tag==='network'?'network':tag==='disk'?'disk':tag==='process'?'process':tag==='permission'?'permission':tag==='user'?'user':'all';
-    const tabBtn = [...document.querySelectorAll('.nav-tab')].find(b=>b.textContent.toLowerCase().includes(tab));
-    if(tabBtn) switchTab(tab, tabBtn);
-    const catBtn = document.querySelector(`#tab-${tab} .filter-btn`);
-    if(catBtn){
-      const target = [...document.querySelectorAll(`#tab-${tab} .filter-btn`)].find(b=>b.textContent.toLowerCase()===tag);
-      if(target) { state[tab].cat=tag; renderList(tab); }
+  if (tag !== 'all') {
+    // Switch to linux tab, set category filter
+    const linuxMod = MODULES.find(m => m.id === 'linux');
+    if (!linuxMod) return;
+    state.filters['linux'] = state.filters['linux'] || {};
+    state.filters['linux'].cat = tag;
+    const tabBtn = document.getElementById('tab-btn-linux');
+    if (tabBtn) switchTab('linux', tabBtn);
+    renderList('linux');
+    // Visually activate the correct cat filter button
+    const panel = document.getElementById('tab-linux');
+    if (panel) {
+      const target = [...panel.querySelectorAll('.filter-btn')].find(b =>
+        b.textContent.trim().toLowerCase() === tag
+      );
+      if (target) {
+        panel.querySelectorAll('.filter-btn').forEach(b => {
+          if (['all','network','process','disk','permission','system','logs','user'].includes(b.textContent.trim().toLowerCase()))
+            b.classList.remove('active');
+        });
+        target.classList.add('active');
+      }
     }
   }
 }
-function filterDiff(diff, btn){
-  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+
+function filterDiff(diff, btn) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
-function filterSpecial(type){
-  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
-  if(type==='all'){
-    ['linux','cmd','network'].forEach(p=>{state[p]={cat:'all',diff:'all'}; renderList(p);});
-    state.ts={plat:'all'}; renderTS();
+
+function filterSpecial(type) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  if (type === 'all') {
+    MODULES.forEach(mod => {
+      state.filters[mod.id] = { cat: 'all', diff: 'all', plat: 'all' };
+      if (mod.status === 'active') {
+        if (mod.filter_type === 'command') renderList(mod.id);
+        else if (mod.filter_type === 'troubleshoot') renderTS(mod.id);
+      }
+    });
   }
 }
-function updateCount(tab){
-  const el = document.getElementById('sb-entries');
-  if(['linux','cmd','network'].includes(tab)){
-    const count = document.querySelectorAll(`#${tab}-list .cmd-card`).length;
-    el.textContent = count;
-  }
+
+// ============================================================
+// HELPERS
+// ============================================================
+function catBadgeClass(cat) {
+  const map = {
+    network:'b-net', process:'b-proc', disk:'b-file', permission:'b-sys',
+    system:'b-sys', logs:'b-sys', user:'b-proc', dns:'b-net',
+    ports:'b-net', routing:'b-net', diagnostic:'b-net', firewall:'b-net',
+  };
+  return map[cat] || 'b-cat';
+}
+
+function fmtCmd(cmd) {
+  return escHtml(cmd)
+    .replace(/(-{1,2}[a-zA-Z\d_-]+)/g, '<span class="code-flag">$1</span>')
+    .replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d+)?)\b/g, '<span class="code-arg">$1</span>');
+}
+
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function escAttr(str) {
+  if (str == null) return '';
+  return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // ============================================================
 // COPY
 // ============================================================
-function copyText(text, btn){
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.textContent='copied!';
-    btn.style.color='var(--green)';
-    setTimeout(()=>{btn.textContent='copy';btn.style.color='';},1500);
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; }, 1500);
   });
 }
 

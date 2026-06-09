@@ -5,6 +5,8 @@
     "plat": "linux",
     "severity": "high",
     "desc": "Cannot connect via SSH — connection refused, timeout, or permission denied.",
+    "source_url": "https://man7.org/linux/man-pages/man5/sshd_config.5.html",
+    "source_name": "Linux man page — sshd_config (man7.org)",
     "steps": [
       {"n": 1, "text": "Check if SSH service is running on the target", "cmd": "systemctl status sshd", "note": "Should show active (running). If not: systemctl start sshd"},
       {"n": 2, "text": "Confirm SSH is listening on the expected port", "cmd": "ss -tlnp | grep 22", "note": "No output means SSH isn't bound to that port — check /etc/ssh/sshd_config"},
@@ -20,6 +22,8 @@
     "plat": "linux",
     "severity": "critical",
     "desc": "Server stops writing logs, services crash, or \"no space left on device\" errors appear.",
+    "source_url": "https://man7.org/linux/man-pages/man1/df.1.html",
+    "source_name": "Linux man page — df (man7.org)",
     "steps": [
       {"n": 1, "text": "Confirm which partition is full", "cmd": "df -h", "note": "Look for 100% Use% — note which mount point"},
       {"n": 2, "text": "Check inode exhaustion too (can cause same symptoms)", "cmd": "df -i", "note": "IUse% at 100% = inode exhaustion even with free disk space"},
@@ -35,6 +39,8 @@
     "plat": "linux",
     "severity": "high",
     "desc": "Server load is high, applications are slow, CPU at near 100%.",
+    "source_url": "https://man7.org/linux/man-pages/man1/ps.1.html",
+    "source_name": "Linux man page — ps (man7.org)",
     "steps": [
       {"n": 1, "text": "Identify the top CPU consumers", "cmd": "ps aux --sort=-%cpu | head -15", "note": "Top of list is your culprit — note PID and process name"},
       {"n": 2, "text": "Get live view with thread-level detail", "cmd": "htop", "note": "Press F6 to sort by CPU, H to show threads, t for tree view"},
@@ -50,6 +56,8 @@
     "plat": "windows",
     "severity": "high",
     "desc": "Windows machine cannot reach the network, internet, or specific hosts.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netsh",
+    "source_name": "Microsoft Docs — netsh",
     "steps": [
       {"n": 1, "text": "Check adapter status and IP address", "cmd": "ipconfig /all", "note": "Look for 169.254.x.x (APIPA) = DHCP failed. No IP = adapter problem."},
       {"n": 2, "text": "Flush DNS cache and renew IP", "cmd": "ipconfig /flushdns && ipconfig /release && ipconfig /renew", "note": "Fixes stale DNS and DHCP issues. Run as admin."},
@@ -65,6 +73,8 @@
     "plat": "linux",
     "severity": "medium",
     "desc": "A service fails to start because its port is already bound by another process.",
+    "source_url": "https://man7.org/linux/man-pages/man8/ss.8.html",
+    "source_name": "Linux man page — ss (man7.org)",
     "steps": [
       {"n": 1, "text": "Find which process is using the port (Linux)", "cmd": "ss -tulnp | grep :PORT", "note": "Replace PORT with the number. Shows PID and process name."},
       {"n": 2, "text": "Find which process is using the port (Windows)", "cmd": "netstat -ano | findstr :PORT", "note": "Note the PID in the last column, then use tasklist to identify it"},
@@ -79,6 +89,8 @@
     "plat": "windows",
     "severity": "medium",
     "desc": "A Windows service shows Stopped or fails immediately on start — Error 1053, 1067, etc.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-query",
+    "source_name": "Microsoft Docs — sc",
     "steps": [
       {"n": 1, "text": "Check service configuration and exe path", "cmd": "sc qc ServiceName", "note": "Verify the BINARY_PATH_NAME exists and is correct. Wrong path = immediate failure."},
       {"n": 2, "text": "Try starting and get the exact error", "cmd": "sc start ServiceName", "note": "Note the error code: 1053 = didn't respond, 1067 = process terminated unexpectedly"},

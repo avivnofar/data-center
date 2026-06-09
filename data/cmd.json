@@ -6,11 +6,20 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Display and manage Windows IP configuration for all network adapters.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ipconfig",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "ipconfig /all", "cmt": "full details: MAC, DHCP server, lease times, DNS"},
       {"cmd": "ipconfig /release && ipconfig /renew", "cmt": "release then renew DHCP lease"},
       {"cmd": "ipconfig /flushdns", "cmt": "flush DNS resolver cache — fix stale DNS"},
       {"cmd": "ipconfig /displaydns", "cmt": "show current DNS cache entries"}
+    ],
+    "quick_flags": [
+      {"flag": "/all", "desc": "show full details including MAC and DHCP info"},
+      {"flag": "/release", "desc": "release current DHCP lease"},
+      {"flag": "/renew", "desc": "request new DHCP lease"},
+      {"flag": "/flushdns", "desc": "clear DNS resolver cache"},
+      {"flag": "/displaydns", "desc": "display contents of DNS cache"}
     ],
     "scenarios": [
       "Machine can't reach the internet — check if IP is APIPA (169.254.x.x) which means DHCP failed",
@@ -30,11 +39,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Display active TCP connections, listening ports, and Ethernet statistics on Windows.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netstat",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "netstat -ano", "cmt": "all connections with PID, no DNS resolution"},
       {"cmd": "netstat -ano | findstr :443", "cmt": "filter by port 443"},
       {"cmd": "netstat -ano | findstr LISTENING", "cmt": "only listening ports"},
       {"cmd": "tasklist | findstr PID", "cmt": "correlate PID from netstat to process name"}
+    ],
+    "quick_flags": [
+      {"flag": "-a", "desc": "show all connections and listening ports"},
+      {"flag": "-n", "desc": "numeric addresses — skip DNS resolution"},
+      {"flag": "-o", "desc": "show owning process ID (PID)"},
+      {"flag": "-e", "desc": "show Ethernet statistics"},
+      {"flag": "-s", "desc": "show per-protocol statistics"}
     ],
     "scenarios": [
       "Application won't start — port already in use",
@@ -55,12 +73,21 @@
     "diff": "beginner",
     "sec": false,
     "desc": "List running processes (tasklist) and terminate them (taskkill). Windows equivalent of ps/kill.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tasklist",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "tasklist", "cmt": "list all running processes with PID and memory"},
       {"cmd": "tasklist /fi \"imagename eq chrome.exe\"", "cmt": "filter by process name"},
       {"cmd": "tasklist /svc", "cmt": "show which services are running inside each process"},
       {"cmd": "taskkill /pid 1234 /f", "cmt": "/f = force kill"},
       {"cmd": "taskkill /im notepad.exe /f", "cmt": "kill by image name"}
+    ],
+    "quick_flags": [
+      {"flag": "/fi FILTER", "desc": "filter output (e.g. imagename eq process.exe)"},
+      {"flag": "/svc", "desc": "show hosted services for each process"},
+      {"flag": "/v", "desc": "verbose — show full path and window title"},
+      {"flag": "/f", "desc": "force termination (taskkill)"},
+      {"flag": "/im NAME", "desc": "kill by image (exe) name (taskkill)"}
     ],
     "scenarios": [
       "Application frozen — identify PID and force kill it",
@@ -80,11 +107,20 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "System File Checker (sfc) and DISM repair Windows system file corruption.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sfc",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "sfc /scannow", "cmt": "scan and repair corrupted system files (run as admin)"},
       {"cmd": "DISM /Online /Cleanup-Image /ScanHealth", "cmt": "check Windows image for corruption"},
       {"cmd": "DISM /Online /Cleanup-Image /RestoreHealth", "cmt": "repair image using Windows Update"},
       {"cmd": "DISM /Online /Cleanup-Image /CheckHealth", "cmt": "quick check, no repair"}
+    ],
+    "quick_flags": [
+      {"flag": "/scannow", "desc": "scan and automatically repair protected system files"},
+      {"flag": "/verifyonly", "desc": "scan but do not repair"},
+      {"flag": "/ScanHealth", "desc": "DISM: check image for corruption"},
+      {"flag": "/RestoreHealth", "desc": "DISM: repair image from Windows Update"},
+      {"flag": "/CheckHealth", "desc": "DISM: quick check, no repair"}
     ],
     "scenarios": [
       "After malware removal — system behaving strangely",
@@ -104,12 +140,21 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Windows Management Instrumentation command line. Query hardware and system info.",
+    "source_url": "https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmic",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "wmic cpu get caption,numberofcores,maxclockspeed", "cmt": "CPU details"},
       {"cmd": "wmic memorychip get capacity", "cmt": "RAM modules and sizes"},
       {"cmd": "wmic diskdrive get caption,size,status", "cmt": "disk info and health status"},
       {"cmd": "wmic process get name,processid,commandline", "cmt": "all processes with full command line"},
       {"cmd": "wmic startup get caption,command,location", "cmt": "startup programs — malware hunting"}
+    ],
+    "quick_flags": [
+      {"flag": "cpu", "desc": "target CPU class"},
+      {"flag": "process", "desc": "target running processes"},
+      {"flag": "startup", "desc": "target startup entries"},
+      {"flag": "diskdrive", "desc": "target disk drives"},
+      {"flag": "get FIELD", "desc": "specify which properties to display"}
     ],
     "scenarios": [
       "Inventorying hardware before a software deployment",
@@ -130,11 +175,20 @@
     "diff": "beginner",
     "sec": false,
     "desc": "Test connectivity and latency to a host. Windows ping sends 4 packets by default.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ping",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "ping 8.8.8.8", "cmt": "4 packets, shows RTT and TTL"},
       {"cmd": "ping -t 10.0.0.1", "cmt": "continuous ping until Ctrl+C — good for monitoring"},
       {"cmd": "ping -n 20 -l 1400 gateway", "cmt": "20 packets, 1400 byte payload — MTU test"},
       {"cmd": "ping -a 192.168.1.1", "cmt": "resolve hostname from IP (-a flag)"}
+    ],
+    "quick_flags": [
+      {"flag": "-t", "desc": "continuous ping until Ctrl+C"},
+      {"flag": "-n N", "desc": "send N echo requests (default 4)"},
+      {"flag": "-l SIZE", "desc": "send buffer of SIZE bytes"},
+      {"flag": "-a", "desc": "resolve IP addresses to hostnames"},
+      {"flag": "-w MS", "desc": "timeout in milliseconds per reply"}
     ],
     "scenarios": [
       "Checking if a server is reachable after a change",
@@ -154,11 +208,20 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "Windows trace route — shows each network hop to a destination.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tracert",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "tracert 8.8.8.8", "cmt": "trace to Google DNS"},
       {"cmd": "tracert -d 8.8.8.8", "cmt": "-d = no DNS lookups, faster"},
       {"cmd": "tracert -h 30 destination", "cmt": "max 30 hops (default 30)"},
       {"cmd": "pathping 8.8.8.8", "cmt": "combines ping+tracert — shows packet loss per hop"}
+    ],
+    "quick_flags": [
+      {"flag": "-d", "desc": "do not resolve IP addresses to hostnames"},
+      {"flag": "-h MAX_HOPS", "desc": "max number of hops to search (default 30)"},
+      {"flag": "-w TIMEOUT", "desc": "wait TIMEOUT milliseconds per reply"},
+      {"flag": "-4", "desc": "force IPv4"},
+      {"flag": "-6", "desc": "force IPv6"}
     ],
     "scenarios": [
       "Identifying which hop in the path is dropping packets",
@@ -178,6 +241,8 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Query, start, stop, and configure Windows services from the command line.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sc-query",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "sc query", "cmt": "list all services and their state"},
       {"cmd": "sc query type= all state= all", "cmt": "include stopped services"},
@@ -185,6 +250,13 @@
       {"cmd": "sc stop servicename", "cmt": "stop a service"},
       {"cmd": "sc qc servicename", "cmt": "query service configuration (exe path, start type)"},
       {"cmd": "sc failure servicename actions= restart/5000/restart/10000// reset= 3600", "cmt": "configure auto-restart on failure"}
+    ],
+    "quick_flags": [
+      {"flag": "query", "desc": "display status of service(s)"},
+      {"flag": "start NAME", "desc": "start a service"},
+      {"flag": "stop NAME", "desc": "stop a service"},
+      {"flag": "qc NAME", "desc": "query service configuration"},
+      {"flag": "failure NAME", "desc": "configure failure recovery actions"}
     ],
     "scenarios": [
       "Service failing — check configuration and executable path before editing in GUI",
@@ -205,11 +277,20 @@
     "diff": "intermediate",
     "sec": true,
     "desc": "Query Windows Event Logs from the command line without opening Event Viewer GUI.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "wevtutil qe System /c:20 /f:text /rd:true", "cmt": "last 20 System events, newest first"},
       {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4625]]\" /f:text /c:50", "cmt": "last 50 failed logons (Event 4625)"},
       {"cmd": "wevtutil qe Security /q:\"*[System[EventID=4624]]\" /f:text /c:20", "cmt": "last 20 successful logons"},
       {"cmd": "wevtutil qe Application /q:\"*[System[Level=2]]\" /f:text /c:30", "cmt": "Application errors only"}
+    ],
+    "quick_flags": [
+      {"flag": "qe LOG", "desc": "query events from a log (System, Security, Application)"},
+      {"flag": "/c:N", "desc": "return at most N events"},
+      {"flag": "/f:text", "desc": "format as readable text (not XML)"},
+      {"flag": "/rd:true", "desc": "read events newest-first"},
+      {"flag": "/q:XPATH", "desc": "XPath filter expression for event fields"}
     ],
     "scenarios": [
       "Remote server without RDP — pull logs via command line",
@@ -230,11 +311,20 @@
     "diff": "intermediate",
     "sec": false,
     "desc": "Robust file copy. Far more reliable than xcopy for large transfers, with resume capability.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "robocopy C:\\Source D:\\Dest /E /Z /LOG:copy.log", "cmt": "/E = all subdirs, /Z = restartable, /LOG = log to file"},
       {"cmd": "robocopy C:\\Source \\\\server\\share /E /COPYALL /R:3 /W:5", "cmt": "/COPYALL preserves permissions, retry 3 times, wait 5s"},
       {"cmd": "robocopy C:\\Source D:\\Dest /E /MIR", "cmt": "/MIR = mirror — deletes files in dest not in source, use with care"},
       {"cmd": "robocopy C:\\Data \\\\backup\\Data /E /Z /XA:SH", "cmt": "exclude system and hidden files"}
+    ],
+    "quick_flags": [
+      {"flag": "/E", "desc": "copy all subdirectories including empty ones"},
+      {"flag": "/Z", "desc": "restartable mode — resumes after network drop"},
+      {"flag": "/MIR", "desc": "mirror — deletes extra files at destination"},
+      {"flag": "/COPYALL", "desc": "copy all file info including permissions"},
+      {"flag": "/L", "desc": "list only — no actual copy (dry run)"}
     ],
     "scenarios": [
       "Migrating a file server — robust transfer with full resume on network drop",
@@ -254,11 +344,20 @@
     "diff": "advanced",
     "sec": true,
     "desc": "Query, add, delete, and export Windows Registry keys from the command line.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/reg-query",
+    "source_name": "Microsoft Docs",
     "usage": [
       {"cmd": "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "cmt": "query startup registry run key"},
       {"cmd": "reg add HKCU\\Software\\App /v Setting /t REG_SZ /d \"value\"", "cmt": "add a string value"},
       {"cmd": "reg export HKLM\\System\\CurrentControlSet\\Services backup.reg", "cmt": "export a key to file"},
       {"cmd": "reg delete HKCU\\Software\\BadApp /f", "cmt": "delete key without confirmation"}
+    ],
+    "quick_flags": [
+      {"flag": "query KEY", "desc": "read values from a registry key"},
+      {"flag": "add KEY /v NAME /t TYPE /d DATA", "desc": "create or set a registry value"},
+      {"flag": "delete KEY /f", "desc": "delete a key or value (force, no prompt)"},
+      {"flag": "export KEY FILE", "desc": "save a key and subkeys to a .reg file"},
+      {"flag": "import FILE", "desc": "restore a .reg file into the registry"}
     ],
     "scenarios": [
       "During IR — check classic persistence locations in the registry",
