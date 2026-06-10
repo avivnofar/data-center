@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-10 — e1da738] (master)
+
+- fix: trigger Pages redeploy ([e1da738](https://github.com/avivnofar/data-center/commit/e1da738b2b957a931347da28916b2f2c50c51d00))
+
+
 ## [2026-06-10 — 4c93a29] (master)
 
 - fix: trigger GitHub Pages rebuild ([4c93a29](https://github.com/avivnofar/data-center/commit/4c93a2904c63f716d19fb6b4c6a9217e2c4de42c))
