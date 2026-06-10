@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026-06-10 — 859dfba] (master)
+
+- docs(agents): add agent simulation README, spec summary, and CLAUDE.md section ([859dfba](https://github.com/avivnofar/data-center/commit/859dfba4eeeb7165a40a6d6156aa5f1d3735530d))
+- ci(agents): add weekly case batch and report workflows ([360263b](https://github.com/avivnofar/data-center/commit/360263bb6d9691afba74e18514af751e40e3322f))
+- feat: add gated Admin tab for AI agent simulation dashboard ([a55928b](https://github.com/avivnofar/data-center/commit/a55928b58db3a6932a42a237afb60659cd88c3cc))
+- feat(agents): add standalone admin dashboard and report templates ([de3ccab](https://github.com/avivnofar/data-center/commit/de3ccab6a5a631ff3f6bf25750685eaa4f9373a8))
+- feat(agents): add agent-runner worker with admin API ([e2995a7](https://github.com/avivnofar/data-center/commit/e2995a741492093769fb3bacddc4cd0606cb8ee0))
+- feat(agents): add case generator and scheduler worker ([2529493](https://github.com/avivnofar/data-center/commit/25294930ac802622e61459b5b9764e1987d55d17))
+- feat(agents): implement Phase 1 agents 1-4 and stub template ([0832e24](https://github.com/avivnofar/data-center/commit/0832e2460064caa8c942050a5f48afe280af2472))
+- feat(agents): add AgentBase, Gemini client, and state manager ([9eb1169](https://github.com/avivnofar/data-center/commit/9eb1169fdd038f479698ea1433dd1b458e47fc4c))
+- feat(agents): add D1 schema and seed data for agent simulation ([6862326](https://github.com/avivnofar/data-center/commit/6862326b384c4c616d89e78e6e97207d51bac99e))
+- feat(agents): add AI agent simulation config (Phase 1 draft) ([452c04e](https://github.com/avivnofar/data-center/commit/452c04e255f948344c1e3ce4e7164938a110c6b2))
+
+
 ## [2026-06-10 — 15ace88] (master)
 
 - docs: document Workflows archive, PDF export, bookmarks, flagging, and brain rules ([15ace88](https://github.com/avivnofar/data-center/commit/15ace88038ff193b60233a975bd4106e74a9de1a))
