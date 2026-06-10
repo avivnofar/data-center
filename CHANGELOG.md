@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-10 — ff0bd31] (master)
+
+- feat: extend knowledge base with 8 new entries ([ff0bd31](https://github.com/avivnofar/data-center/commit/ff0bd311e93da33a7b0ad15d59f2a0c100d006e4))
+
+
 ## [2026-06-10 — a15706c] (master)
 
 - config: connect Cloudflare Worker API endpoint ([a15706c](https://github.com/avivnofar/data-center/commit/a15706ca6d364f9bc4966334526f7ebf28d769b2))
