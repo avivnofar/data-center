@@ -24,20 +24,33 @@ data-center/
 │   ├── cmd.json                 # Windows CMD commands (13 entries)
 │   ├── network.json             # Cross-platform network tools (10 entries)
 │   └── troubleshoot.json        # Step-by-step troubleshoot scenarios (9 entries)
+├── flagged/                      # Source flagging system (see Rules section)
+│   ├── README.md                # How the pending → approved/rejected flow works
+│   ├── pending-review.md        # Candidate source URLs awaiting review
+│   ├── approved-sources.md      # Specific URLs verified and in use
+│   └── rejected-sources.md      # URLs rejected, with reason
 ├── .github/
 │   ├── scripts/
 │   │   ├── validate-json.js     # Schema + bilingual field validator
-│   │   └── health-check.js      # Weekly quality checks with Hebrew QA
+│   │   ├── health-check.js      # Weekly quality checks with Hebrew QA
+│   │   └── check-links.js       # Daily source_url reachability check
 │   └── workflows/
 │       ├── validate.yml         # Runs on every push/PR
 │       ├── changelog.yml        # Auto-generates CHANGELOG.md
-│       └── health.yml           # Weekly Monday 08:00 UTC + manual trigger
+│       ├── health.yml           # Weekly Monday 08:00 UTC + manual trigger
+│       ├── link-check.yml       # Daily 06:00 UTC — checks source_url links
+│       └── monthly-review.yml   # Monthly 1st @ 08:00 UTC — flags pending sources
+├── cloudflare-worker/            # AI Search backend (Cloudflare Worker, Claude API)
 ├── .nojekyll                    # Prevents GitHub Pages Jekyll processing
 ├── CLAUDE.md                    # This file
 ├── ROADMAP.md                   # Phase milestones
 ├── CHANGELOG.md                 # Auto-generated
 └── .gitignore
 ```
+
+**Sibling repo:** [`data-center-archive`](https://github.com/avivnofar/data-center-archive) holds longer-form
+bilingual workflow documents (rendered in the in-app "Workflows" tab) and
+generated PDFs. See [Workflows Archive](#workflows-archive-data-center-archive) below.
 
 ---
 
@@ -205,6 +218,93 @@ The `t(entry, 'field')` helper in `index.html` returns the correct language base
 
 ---
 
+## Workflows Archive (`data-center-archive`)
+
+The **Workflows** tab (`📋`, `dataset.moduleId = 'workflows'`, built by
+`buildWorkflowsTabBtn()` / `buildWorkflowsPanelShell()` / `renderWorkflowsPanel()`
+in `index.html`) renders longer-form bilingual step-by-step workflow documents
+that don't fit the command-card schema.
+
+- Workflow metadata lives in the `WORKFLOWS` array in `index.html` (id, bilingual
+  title/desc, `path`, `updated`).
+- `ARCHIVE_RAW_BASE` points at `raw.githubusercontent.com/avivnofar/data-center-archive/master/`;
+  `openWorkflow(id)` fetches `ARCHIVE_RAW_BASE + wf.path` and renders the markdown
+  via `renderMarkdown()` (which supports headings, lists, code blocks, and pipe-tables).
+- **Graceful fallback**: if the fetch fails (repo not yet pushed, 404, CORS), the
+  panel shows a bilingual "archive not connected yet" message linking to
+  `ARCHIVE_REPO_BASE + wf.path` on GitHub instead of erroring.
+- The archive repo structure: `workflows/<platform>/*.md` (the docs themselves and
+  `templates/` for new docs), `pdfs/` (generated PDFs, see below), `flagged/`
+  (mirrors this repo's approved/blocked domain rules), `guides/` and `raw/`
+  (placeholders for future short-form content).
+
+**Keep the archive lean** — per explicit project direction, do **not** build a
+large "raw materials" research database there. Only workflow markdown files and
+generated PDFs belong in `data-center-archive`. Anything else worth remembering
+(reference links, research notes, source candidates) belongs in Claude's own
+persistent memory, not in repo files. See [Autonomous Brain Rules](#autonomous-brain-rules).
+
+---
+
+## PDF Export (Print-Based)
+
+Workflow pages can be exported to PDF via the **"📄 Generate PDF"** floating
+action button (`#pdf-fab`, shown/hidden by `showPdfFab()`/`hidePdfFab()`).
+
+- `generatePdf()` simply calls `window.print()` — **no bundler, server, or
+  headless-browser dependency** (consistent with the "no build step" rule).
+- The active workflow's content container gets a `.print-target` class.
+- A `@media print` CSS block hides everything except `.print-target`
+  (topbar, tab nav, search, AI banner, workflow list, FAB, back button are all
+  force-hidden), forces white background / black text, and keeps `<pre>`/`<code>`
+  blocks LTR even when the page is RTL.
+- Resulting PDFs are expected to be saved into `data-center-archive/pdfs/`
+  (manually, or via future automation) — see that repo's `pdfs/TABLE_OF_CONTENTS.md`.
+
+---
+
+## Bookmark System
+
+In AI chat responses, any URL Claude mentions gets a small "bookmark bar"
+(`renderBookmarkBars()`, called from `finalizeStreamingBubble()` and
+`appendMessageBubble()`) with **Save** / **Dismiss** actions.
+
+- Saved URLs persist to `localStorage` key `dc-bookmarks`; dismissed ones to
+  `dc-dismissed-bookmarks`. Both read/written via `getSavedBookmarks()` /
+  `getDismissedBookmarks()`.
+- **Client-side only, no credentials** — this intentionally replaces an earlier
+  design that would have committed bookmarks to GitHub via a client-embedded
+  write token. Never reintroduce a design that ships write credentials to the
+  browser; if "save to archive" is wanted later, it must go through a
+  server-side component (e.g. the Cloudflare Worker) that holds the token.
+
+---
+
+## Source Flagging System
+
+`flagged/` tracks candidate documentation sources before they become a
+`source_url`: `pending-review.md` → `approved-sources.md` or
+`rejected-sources.md`. See `flagged/README.md` for the workflow. The
+canonical approved/blocked **domain** lists remain Rules 7-8 below — `flagged/`
+tracks specific **URLs**, not domains, and is not a duplicate of those rules.
+
+---
+
+## Automation Workflows
+
+| Workflow | Schedule | Purpose |
+|----------|----------|---------|
+| `validate.yml` | every push/PR | Schema + bilingual field validation (`validate-json.js`) |
+| `link-check.yml` | daily 06:00 UTC | Checks every `source_url` is reachable (`check-links.js`); opens/closes a `broken-link` issue |
+| `health.yml` | weekly, Mon 08:00 UTC | Data quality + Hebrew QA (`health-check.js`); opens a `data-quality` issue on critical failure |
+| `monthly-review.yml` | monthly, 1st @ 08:00 UTC | Opens a `source-review` issue if `flagged/pending-review.md` has unreviewed entries |
+| `changelog.yml` | on push to master | Auto-generates `CHANGELOG.md` |
+
+All scheduled workflows also support `workflow_dispatch` for manual runs and
+require no secrets beyond the default `GITHUB_TOKEN`.
+
+---
+
 ## ⚠️ Hebrew Session Reminder
 
 When adding new entries in a Claude Code session:
@@ -216,6 +316,38 @@ When adding new entries in a Claude Code session:
 
 ---
 
+## Autonomous Brain Rules
+
+When operating autonomously across sessions on this project:
+
+1. **Memory over files for research** — when you learn reference information
+   (useful links, domain notes, command details, prior decisions) that isn't a
+   finished workflow doc, save it to Claude's persistent memory
+   (`~/.claude/projects/.../memory/`), not as new files in this repo or in
+   `data-center-archive`. Search the internet in real time for current
+   information rather than stockpiling raw copies.
+2. **Keep both repos lean** — `data-center-archive` holds only workflow `.md`
+   files and generated PDFs. This repo holds the app, data, automation, and
+   `flagged/` tracking files. Resist creating "just in case" reference dumps.
+3. **Security first** — never design a feature that ships write credentials
+   (GitHub tokens, API keys) to the browser. Client-side persistence
+   (`localStorage`) is fine for user-local state (bookmarks, sessions,
+   language); anything that needs to write to GitHub or call paid APIs goes
+   through the Cloudflare Worker.
+4. **No build step, ever** — solve new requirements (PDF export, etc.) within
+   the static-HTML-plus-`fetch()` architecture. If a requirement seems to need
+   a bundler/server, find the static-web-platform equivalent first.
+5. **Validate before committing** — always run `validate-json.js` and
+   `health-check.js` after touching `data/*.json`, and sanity-check
+   `index.html` loads (`python -m http.server 8080`) after JS/CSS edits.
+6. **Pause before pushing to `master`** — after committing locally, summarize
+   what changed and what automation/workflows it affects, and wait for
+   explicit confirmation before `git push`.
+7. **Don't delete without instruction** — existing entries, workflow docs, and
+   automation files are not removed unless the user explicitly asks.
+
+---
+
 ## Never
 
 - Never commit `.env` files
@@ -223,6 +355,7 @@ When adding new entries in a Claude Code session:
 - Never delete existing entries without explicit instruction
 - Never use `innerHTML` without `escHtml()` on user-controlled strings
 - Never add `dir="rtl"` to code blocks
+- Never ship GitHub write tokens or other credentials to the browser/client
 
 ---
 
@@ -235,6 +368,9 @@ Backend: Cloudflare Workers Free Tier
 - Paid tier if needed: $5/month
 
 Hosting: GitHub Pages — $0/month forever
+
+`data-center-archive`: plain GitHub repo (workflow docs + PDFs) — $0/month,
+no Pages/Actions billing impact
 
 AI: Anthropic API — pay per use (~$3-8/mo estimated at personal use volume)
 
