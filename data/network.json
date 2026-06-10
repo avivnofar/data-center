@@ -495,5 +495,100 @@
       }
     ],
     "tags": "iperf bandwidth throughput network performance test speed"
+  },
+  {
+    "id": "arp",
+    "name": "arp",
+    "cat": "diagnostic",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מציגה ומנהלת את טבלת ה-ARP — המיפוי בין כתובות IP לכתובות MAC ברשת המקומית.",
+    "desc_en": "Display and manage the ARP table — the mapping between IP addresses and MAC addresses on the local network.",
+    "source_url": "https://man7.org/linux/man-pages/man8/arp.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "arp -a", "cmt_he": "הצג את כל רשומות ה-ARP (לינוקס וגם Windows)", "cmt_en": "Show all ARP entries (Linux and Windows)"},
+      {"cmd": "ip neigh", "cmt_he": "התחליף המודרני בלינוקס לטבלת ARP", "cmt_en": "Modern Linux replacement for the ARP table"},
+      {"cmd": "arp -d 192.168.1.1", "cmt_he": "מחק רשומת ARP ספציפית מה-cache", "cmt_en": "Delete a specific ARP entry from the cache"},
+      {"cmd": "arp -s 192.168.1.10 00:11:22:33:44:55", "cmt_he": "הוסף רשומת ARP סטטית", "cmt_en": "Add a static ARP entry"}
+    ],
+    "quick_flags": [
+      {"flag": "-a", "desc_he": "הצג את כל הרשומות", "desc_en": "Show all entries"},
+      {"flag": "-d", "desc_he": "מחק רשומה מה-cache", "desc_en": "Delete an entry from the cache"},
+      {"flag": "-s", "desc_he": "הוסף רשומה סטטית", "desc_en": "Add a static entry"},
+      {"flag": "-n", "desc_he": "הצג כתובות IP בלבד, ללא resolve שמות (Linux)", "desc_en": "Show numeric IPs only, no name resolution (Linux)"}
+    ],
+    "scenarios_he": [
+      "חשד ל-ARP spoofing — בדוק אם כתובת ה-MAC של ה-gateway השתנתה ללא הסבר",
+      "אזהרת 'Duplicate IP address' — מצא איזה מכשיר טוען לאותה כתובת IP",
+      "אימות כתובת MAC של מכשיר עבור DHCP reservation או חוק firewall"
+    ],
+    "scenarios_en": [
+      "Suspected ARP spoofing — check if the gateway's MAC address changed unexpectedly",
+      "'Duplicate IP address' warning — find which device is claiming that IP",
+      "Verify a device's MAC address for a DHCP reservation or firewall rule"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על רשומת ARP ישנה אחרי שמכשיר קיבל IP חדש",
+        "x_en": "Relying on a stale ARP entry after a device gets a new IP",
+        "fix_he": "נקה את הרשומה עם <span class=\"ltr-term\">arp -d</span> כדי לאלץ ARP request חדש",
+        "fix_en": "Clear the entry with <span class=\"ltr-term\">arp -d</span> to force a fresh ARP request"
+      },
+      {
+        "x_he": "ציפייה ש-ARP יראה מכשירים מחוץ ל-subnet המקומי",
+        "x_en": "Expecting ARP to show devices outside the local subnet",
+        "fix_he": "ARP פועל רק ב-layer 2 — מכשירים מעבר ל-router לא יופיעו בטבלה",
+        "fix_en": "ARP only operates at layer 2 — devices beyond a router won't appear in the table"
+      }
+    ],
+    "secnote_he": "שינוי פתאומי בכתובת ה-MAC של ה-gateway בטבלת ה-ARP יכול להעיד על <b>ARP spoofing / MITM attack</b>. נטר רשומות קריטיות עם כלים כמו arpwatch.",
+    "secnote_en": "A sudden change in the gateway's MAC address in the ARP table can indicate an <b>ARP spoofing / MITM attack</b>. Monitor critical entries with tools like arpwatch.",
+    "tags": "arp mac address cache spoofing neighbor table local network רשת"
+  },
+  {
+    "id": "whois",
+    "name": "whois",
+    "cat": "dns",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "שולפת מידע רישום על דומיין או כתובת IP: בעלים, רשם, נציגי DNS ותאריך תפוגה.",
+    "desc_en": "Query registration information for a domain or IP address: owner, registrar, nameservers and expiry date.",
+    "source_url": "https://www.iana.org/help/whois",
+    "source_name": "IANA — WHOIS",
+    "usage": [
+      {"cmd": "whois example.com", "cmt_he": "מידע רישום מלא על הדומיין", "cmt_en": "Full registration info for the domain"},
+      {"cmd": "whois 8.8.8.8", "cmt_he": "מצא לאיזה ארגון שייכת כתובת ה-IP", "cmt_en": "Find which organization owns an IP address"},
+      {"cmd": "whois example.com | grep -i expir", "cmt_he": "חלץ רק את תאריך תפוגת הדומיין", "cmt_en": "Extract just the domain's expiration date"},
+      {"cmd": "whois -h whois.arin.net 8.8.8.8", "cmt_he": "שאילתה מול שרת WHOIS אזורי ספציפי", "cmt_en": "Query a specific regional WHOIS server"}
+    ],
+    "quick_flags": [
+      {"flag": "-h HOST", "desc_he": "שלח שאילתה לשרת WHOIS ספציפי", "desc_en": "Send the query to a specific WHOIS server"}
+    ],
+    "scenarios_he": [
+      "דומיין עומד לפוג — בדוק תאריך תפוגה לפני שהוא נופל",
+      "זיהוי הבעלים או ה-ISP של כתובת IP חשודה במהלך חקירה",
+      "מציאת ה-nameservers הסמכותיים של דומיין לפני אבחון DNS"
+    ],
+    "scenarios_en": [
+      "Domain about to expire — check the expiration date before it's lost",
+      "Identify the owner or ISP behind a suspicious IP during an investigation",
+      "Find a domain's authoritative nameservers before DNS troubleshooting"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על פורמט קבוע של פלט whois ב-script",
+        "x_en": "Relying on a fixed whois output format in a script",
+        "fix_he": "הפורמט משתנה בין רשמים ו-TLDs שונים — אל תבסס עליו parsing נוקשה",
+        "fix_en": "The format varies between registrars and TLDs — don't build rigid parsing on top of it"
+      },
+      {
+        "x_he": "ציפייה לראות פרטי בעלים אמיתיים על דומיין עם הגנת פרטיות",
+        "x_en": "Expecting to see real owner details on a domain with privacy protection",
+        "fix_he": "דומיינים רבים משתמשים ב-WHOIS privacy/proxy שמסתיר את פרטי הרישום האמיתיים",
+        "fix_en": "Many domains use WHOIS privacy/proxy services that hide the real registrant details"
+      }
+    ],
+    "tags": "whois domain registration owner registrar dns ip lookup דומיין"
   }
 ]

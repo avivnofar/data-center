@@ -1186,5 +1186,152 @@
     "secnote_he": "בזמן אירוע פעיל, החסימה המהירה ביותר: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. נכנס לתוקף מיד ללא restart.",
     "secnote_en": "In an active incident, the fastest block: iptables -I INPUT 1 -s ATTACKER_IP -j DROP. Takes effect immediately without restarting anything.",
     "tags": "firewall rule block allow port ip iptables ufw network security חומת אש"
+  },
+  {
+    "id": "ip",
+    "name": "ip",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "מציגה ומנהלת כתובות IP, ממשקי רשת וטבלאות ניתוב — התחליף המודרני ל-ifconfig, route ו-arp.",
+    "desc_en": "Show and manage IP addresses, network interfaces and routing tables — the modern replacement for ifconfig, route and arp.",
+    "source_url": "https://man7.org/linux/man-pages/man8/ip.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "ip a", "cmt_he": "הצג את כל כתובות ה-IP וממשקי הרשת", "cmt_en": "Show all IP addresses and network interfaces"},
+      {"cmd": "ip route", "cmt_he": "הצג את טבלת הניתוב כולל ה-default gateway", "cmt_en": "Show the routing table including the default gateway"},
+      {"cmd": "ip link set eth0 up", "cmt_he": "הפעל ממשק רשת שמושבת", "cmt_en": "Bring up a disabled network interface"},
+      {"cmd": "ip -s link show eth0", "cmt_he": "סטטיסטיקות חבילות ושגיאות לממשק", "cmt_en": "Show packet/error statistics for an interface"}
+    ],
+    "quick_flags": [
+      {"flag": "-4", "desc_he": "הצג רק כתובות IPv4", "desc_en": "Show IPv4 addresses only"},
+      {"flag": "-6", "desc_he": "הצג רק כתובות IPv6", "desc_en": "Show IPv6 addresses only"},
+      {"flag": "-br", "desc_he": "פלט תמציתי בשורה אחת לכל ממשק", "desc_en": "Brief one-line-per-interface output"},
+      {"flag": "-s", "desc_he": "הצג סטטיסטיקות (חבילות, שגיאות, drops)", "desc_en": "Show statistics (packets, errors, drops)"}
+    ],
+    "scenarios_he": [
+      "אימות שכתובת ה-IP נכונה אחרי שינוי הגדרות רשת",
+      "אין אינטרנט — בדוק אם קיים default gateway בטבלת הניתוב",
+      "ממשק רשת לא מגיב — בדוק את מצב ה-link (UP/DOWN) ושגיאות חבילות"
+    ],
+    "scenarios_en": [
+      "Verify the IP address is correct after a network configuration change",
+      "No internet — check whether a default gateway exists in the routing table",
+      "Interface unresponsive — check link state (UP/DOWN) and packet errors"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על <span class=\"ltr-term\">ifconfig</span> או <span class=\"ltr-term\">route</span> שאינם מותקנים כברירת מחדל בהפצות מודרניות",
+        "x_en": "Relying on <span class=\"ltr-term\">ifconfig</span> or <span class=\"ltr-term\">route</span>, which aren't installed by default on modern distros",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">ip a</span> וב-<span class=\"ltr-term\">ip route</span> — חלק מ-iproute2 שמותקן תמיד",
+        "fix_en": "Use <span class=\"ltr-term\">ip a</span> and <span class=\"ltr-term\">ip route</span> — part of iproute2, always installed"
+      },
+      {
+        "x_he": "שינוי כתובת IP עם <span class=\"ltr-term\">ip addr add</span> בלי לעדכן קובצי קונפיגורציה",
+        "x_en": "Changing an IP with <span class=\"ltr-term\">ip addr add</span> without updating config files",
+        "fix_he": "שינויי <span class=\"ltr-term\">ip</span> זמניים ונעלמים אחרי reboot — עדכן בהתאם את netplan / NetworkManager / interfaces",
+        "fix_en": "<span class=\"ltr-term\">ip</span> changes are temporary and lost on reboot — also update netplan / NetworkManager / interfaces config"
+      }
+    ],
+    "secnote_he": "פלט <b>ip a</b> ו-<b>ip route</b> חושף את טופולוגיית הרשת הפנימית (subnets, gateways, ממשקים). הגבל גישה לכלי זה במערכות רגישות.",
+    "secnote_en": "Output of <b>ip a</b> and <b>ip route</b> reveals internal network topology (subnets, gateways, interfaces). Restrict access to this tool on sensitive systems.",
+    "tags": "ip address interface route routing gateway network ifconfig iproute2 רשת כתובת ממשק ניתוב"
+  },
+  {
+    "id": "free",
+    "name": "free",
+    "cat": "system",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציגה את כמות הזיכרון הפנוי, בשימוש וה-swap במערכת.",
+    "desc_en": "Display the amount of free, used and swap memory in the system.",
+    "source_url": "https://man7.org/linux/man-pages/man1/free.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "free -h", "cmt_he": "תצוגה קריאה לבן אדם (GB/MB)", "cmt_en": "Human-readable output (GB/MB)"},
+      {"cmd": "free -h -t", "cmt_he": "כולל שורת סה\"כ עבור RAM ו-swap", "cmt_en": "Include a combined total line for RAM + swap"},
+      {"cmd": "free -h -s 5", "cmt_he": "רענון אוטומטי כל 5 שניות", "cmt_en": "Auto-refresh every 5 seconds"},
+      {"cmd": "free -w", "cmt_he": "הפרדת buffers ו-cache לעמודות נפרדות", "cmt_en": "Split buffers and cache into separate columns"}
+    ],
+    "quick_flags": [
+      {"flag": "-h", "desc_he": "גדלים קריאים לבן אדם (KB/MB/GB)", "desc_en": "Human-readable sizes (KB/MB/GB)"},
+      {"flag": "-s N", "desc_he": "רענן כל N שניות עד Ctrl+C", "desc_en": "Refresh every N seconds until Ctrl+C"},
+      {"flag": "-t", "desc_he": "הצג שורת סיכום של RAM ו-swap", "desc_en": "Show a combined RAM + swap total line"},
+      {"flag": "-m", "desc_he": "הצג גדלים ב-megabytes", "desc_en": "Show sizes in megabytes"}
+    ],
+    "scenarios_he": [
+      "השרת איטי — בדוק כמה זיכרון זמין באמת לפני שמאשימים את ה-CPU",
+      "OOM killer חיסל תהליך — אמת שהזיכרון אכן אזל לפני הקריסה",
+      "שימוש גבוה ב-swap מעיד על לחץ זיכרון מתמשך"
+    ],
+    "scenarios_en": [
+      "Server feels slow — check actual available memory before blaming CPU",
+      "OOM killer terminated a process — confirm memory was exhausted before the crash",
+      "High swap usage indicates sustained memory pressure"
+    ],
+    "mistakes": [
+      {
+        "x_he": "התבססות על עמודת <span class=\"ltr-term\">free</span> כדי להעריך זיכרון פנוי",
+        "x_en": "Relying on the <span class=\"ltr-term\">free</span> column to judge available memory",
+        "fix_he": "בדוק את עמודת <span class=\"ltr-term\">available</span> — היא כוללת cache שניתן לשחרר בעת הצורך",
+        "fix_en": "Check the <span class=\"ltr-term\">available</span> column — it includes reclaimable cache"
+      },
+      {
+        "x_he": "התעלמות משימוש ב-swap כי 'יש עוד RAM פנוי'",
+        "x_en": "Ignoring swap usage because 'there's still free RAM'",
+        "fix_he": "swap בשימוש לצד RAM פנוי יכול להעיד על תהליך שצרך זיכרון רב בעבר — בדוק עם <span class=\"ltr-term\">vmstat 1</span>",
+        "fix_en": "Swap usage alongside free RAM can indicate a process spiked memory earlier — check with <span class=\"ltr-term\">vmstat 1</span>"
+      }
+    ],
+    "tags": "memory ram swap usage available free זיכרון"
+  },
+  {
+    "id": "tar",
+    "name": "tar",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "יוצרת וחולצת ארכיוני קבצים, לרוב בשילוב עם דחיסת gzip/bzip2.",
+    "desc_en": "Create and extract file archives, usually combined with gzip/bzip2 compression.",
+    "source_url": "https://linux.die.net/man/1/tar",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "tar -czvf backup.tar.gz /etc/nginx", "cmt_he": "יצירת ארכיון דחוס עם gzip", "cmt_en": "Create a gzip-compressed archive"},
+      {"cmd": "tar -xzvf backup.tar.gz", "cmt_he": "חילוץ ארכיון gzip לתיקייה הנוכחית", "cmt_en": "Extract a gzip archive to the current directory"},
+      {"cmd": "tar -tvf backup.tar.gz", "cmt_he": "הצג את תוכן הארכיון בלי לחלץ", "cmt_en": "List archive contents without extracting"},
+      {"cmd": "tar -czvf backup.tar.gz --exclude='*.log' /var/www", "cmt_he": "יצירת ארכיון תוך החרגת קבצים לפי תבנית", "cmt_en": "Create an archive while excluding files matching a pattern"}
+    ],
+    "quick_flags": [
+      {"flag": "-c", "desc_he": "צור ארכיון חדש", "desc_en": "Create a new archive"},
+      {"flag": "-x", "desc_he": "חלץ קבצים מארכיון", "desc_en": "Extract files from an archive"},
+      {"flag": "-z", "desc_he": "דחוס/פתח עם gzip", "desc_en": "Compress/decompress with gzip"},
+      {"flag": "-v", "desc_he": "מצב verbose — הצג כל קובץ בעיבוד", "desc_en": "Verbose — show each file being processed"},
+      {"flag": "-f", "desc_he": "שם קובץ הארכיון (חייב להיות אחרון לפני השם)", "desc_en": "Archive filename (must come last before the name)"}
+    ],
+    "scenarios_he": [
+      "גיבוי תיקיית קונפיגורציה לפני שינוי מסוכן",
+      "העברת כמה קבצים כקובץ דחוס אחד בין שרתים",
+      "חילוץ tarball של קוד מקור לפני קומפילציה"
+    ],
+    "scenarios_en": [
+      "Back up a configuration directory before a risky change",
+      "Transfer multiple files as a single compressed archive between servers",
+      "Extract a source code tarball before compiling"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שכחת <span class=\"ltr-term\">-f</span> גורמת ל-tar לכתוב ל-stdout או להתקן ברירת המחדל",
+        "x_en": "Forgetting <span class=\"ltr-term\">-f</span> causes tar to write to stdout or the default device",
+        "fix_he": "תמיד כלול <span class=\"ltr-term\">-f filename.tar.gz</span> כדגל האחרון לפני שם הקובץ",
+        "fix_en": "Always include <span class=\"ltr-term\">-f filename.tar.gz</span> as the last flag before the filename"
+      },
+      {
+        "x_he": "ארכוב עם נתיבים מוחלטים (<span class=\"ltr-term\">/etc/...</span>)",
+        "x_en": "Archiving with absolute paths (<span class=\"ltr-term\">/etc/...</span>)",
+        "fix_he": "השתמש בנתיבים יחסיים או ב-<span class=\"ltr-term\">-C</span> כדי למנוע דריסת קבצי מערכת בעת חילוץ",
+        "fix_en": "Use relative paths or <span class=\"ltr-term\">-C</span> to avoid overwriting system files on extraction"
+      }
+    ],
+    "tags": "archive compress gzip backup extract tarball ארכיון גיבוי דחיסה"
   }
 ]

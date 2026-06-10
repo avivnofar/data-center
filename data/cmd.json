@@ -638,5 +638,103 @@
       }
     ],
     "tags": "event log windows security system application eventlog wevtutil לוג אירועים"
+  },
+  {
+    "id": "netsh",
+    "name": "netsh",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "כלי שורת פקודה להצגה ושינוי של הגדרות רשת ב-Windows: ממשקים, חומת אש, Wi-Fi ו-Winsock.",
+    "desc_en": "Command-line tool to display and configure Windows network settings: interfaces, firewall, Wi-Fi and Winsock.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/networking/technologies/netsh/netsh-contexts",
+    "source_name": "Microsoft Docs — Netsh",
+    "usage": [
+      {"cmd": "netsh interface ip show config", "cmt_he": "הצג את הגדרות ה-IP של כל הממשקים", "cmt_en": "Show IP configuration for all interfaces"},
+      {"cmd": "netsh wlan show profiles", "cmt_he": "רשימת רשתות Wi-Fi שמורות", "cmt_en": "List saved Wi-Fi profiles"},
+      {"cmd": "netsh advfirewall show allprofiles", "cmt_he": "מצב חומת האש בכל הפרופילים", "cmt_en": "Firewall state for all profiles"},
+      {"cmd": "netsh winsock reset", "cmt_he": "איפוס מחסנית הרשת — דורש restart", "cmt_en": "Reset the network stack — requires a restart"}
+    ],
+    "quick_flags": [
+      {"flag": "interface", "desc_he": "ניהול ממשקי רשת והגדרות IP", "desc_en": "Manage network interfaces and IP settings"},
+      {"flag": "wlan", "desc_he": "ניהול פרופילי Wi-Fi", "desc_en": "Manage Wi-Fi profiles"},
+      {"flag": "advfirewall", "desc_he": "ניהול חומת האש של Windows", "desc_en": "Manage Windows Firewall"},
+      {"flag": "winsock", "desc_he": "איפוס Winsock catalog", "desc_en": "Reset the Winsock catalog"}
+    ],
+    "scenarios_he": [
+      "אין אינטרנט אחרי הסרת VPN או תוכנת אבטחה — אפס עם netsh winsock reset",
+      "אפליקציה חסומה — בדוק חוקי חומת אש עם netsh advfirewall",
+      "שחזור סיסמת Wi-Fi שמורה ממחשב המחובר לאותה רשת"
+    ],
+    "scenarios_en": [
+      "No internet after removing a VPN or security software — reset with netsh winsock reset",
+      "Application blocked — check firewall rules with netsh advfirewall",
+      "Recover a saved Wi-Fi password from a machine on that network"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">netsh winsock reset</span> או <span class=\"ltr-term\">netsh int ip reset</span> בלי restart",
+        "x_en": "Running <span class=\"ltr-term\">netsh winsock reset</span> or <span class=\"ltr-term\">netsh int ip reset</span> without rebooting",
+        "fix_he": "השינויים נכנסים לתוקף רק אחרי <span class=\"ltr-term\">restart</span> מלא של המחשב",
+        "fix_en": "These changes only take effect after a full system <span class=\"ltr-term\">restart</span>"
+      },
+      {
+        "x_he": "כיבוי חומת האש לגמרי כדי לבדוק קישוריות",
+        "x_en": "Disabling the firewall entirely just to test connectivity",
+        "fix_he": "הוסף חוק ספציפי עם <span class=\"ltr-term\">netsh advfirewall firewall add rule</span> במקום לכבות הכל",
+        "fix_en": "Add a specific rule with <span class=\"ltr-term\">netsh advfirewall firewall add rule</span> instead of disabling everything"
+      }
+    ],
+    "secnote_he": "<b>netsh wlan show profile name=\"SSID\" key=clear</b> חושף סיסמאות Wi-Fi שמורות בטקסט גלוי — טכניקת post-exploitation נפוצה. <b>netsh advfirewall set allprofiles state off</b> מכבה את חומת האש לגמרי — לשימוש זמני בלבד.",
+    "secnote_en": "<b>netsh wlan show profile name=\"SSID\" key=clear</b> reveals saved Wi-Fi passwords in plaintext — a common post-exploitation technique. <b>netsh advfirewall set allprofiles state off</b> disables the firewall entirely — temporary use only.",
+    "tags": "network configuration firewall wifi winsock interface windows רשת חומת אש"
+  },
+  {
+    "id": "chkdsk",
+    "name": "chkdsk",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "בודקת את מערכת הקבצים והדיסק לאיתור שגיאות, ומתקנת סקטורים פגומים.",
+    "desc_en": "Check the file system and disk for errors, and repair bad sectors.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/chkdsk",
+    "source_name": "Microsoft Docs — chkdsk",
+    "usage": [
+      {"cmd": "chkdsk C:", "cmt_he": "דוח בדיקה בלבד, ללא תיקון", "cmt_en": "Read-only report, no repairs"},
+      {"cmd": "chkdsk C: /f", "cmt_he": "תקן שגיאות מערכת קבצים שנמצאו", "cmt_en": "Fix file system errors that are found"},
+      {"cmd": "chkdsk C: /r", "cmt_he": "אתר סקטורים פגומים ושחזר מידע קריא (כולל /f)", "cmt_en": "Locate bad sectors and recover readable data (implies /f)"},
+      {"cmd": "chkdsk C: /scan", "cmt_he": "סריקה מקוונת ללא ניתוק הכרך", "cmt_en": "Online scan without dismounting the volume"}
+    ],
+    "quick_flags": [
+      {"flag": "/f", "desc_he": "תקן שגיאות שנמצאו בדיסק", "desc_en": "Fix errors found on the disk"},
+      {"flag": "/r", "desc_he": "אתר סקטורים פגומים ושחזר מידע (כולל /f)", "desc_en": "Locate bad sectors and recover information (implies /f)"},
+      {"flag": "/x", "desc_he": "נתק את הכרך בכוח לפני הבדיקה", "desc_en": "Force the volume to dismount before checking"},
+      {"flag": "/scan", "desc_he": "סריקה מקוונת בזמן שהכרך פעיל", "desc_en": "Run an online scan while the volume is in use"}
+    ],
+    "scenarios_he": [
+      "כיבוי לא תקין או קריסת מערכת — בדוק שחיתות במערכת הקבצים",
+      "דיסק איטי או משמיע רעשי קליקים — חפש סקטורים פגומים עם /r",
+      "הודעת 'A disk read error occurred' באתחול — תזמן chkdsk /f לאתחול הבא"
+    ],
+    "scenarios_en": [
+      "Unsafe shutdown or system crash — check for file system corruption",
+      "Disk is slow or making clicking noises — search for bad sectors with /r",
+      "'A disk read error occurred' at boot — schedule chkdsk /f for next restart"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">chkdsk /r</span> על דיסקים גדולים בשעות העבודה",
+        "x_en": "Running <span class=\"ltr-term\">chkdsk /r</span> on large drives during business hours",
+        "fix_he": "הסריקה יכולה לקחת שעות ולנעול את הדיסק — תזמן לחלון תחזוקה",
+        "fix_en": "The scan can take hours and locks the drive — schedule it for a maintenance window"
+      },
+      {
+        "x_he": "ציפייה ש-<span class=\"ltr-term\">chkdsk C: /f</span> ירוץ מיד על כונן המערכת",
+        "x_en": "Expecting <span class=\"ltr-term\">chkdsk C: /f</span> to run immediately on the system drive",
+        "fix_he": "Windows לא יכול לנעול את כונן ה-C: בזמן שימוש — הוא יתזמן בדיקה לאתחול הבא וידרוש אישור",
+        "fix_en": "Windows can't lock the C: drive while in use — it schedules the check for the next reboot and prompts for confirmation"
+      }
+    ],
+    "tags": "disk check filesystem repair bad sectors corruption windows דיסק תיקון"
   }
 ]

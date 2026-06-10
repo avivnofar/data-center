@@ -529,5 +529,56 @@
         "note_en": "Normal order: 'files dns'. files = /etc/hosts first, then DNS. Changing the order can cause issues"
       }
     ]
+  },
+  {
+    "id": "ts-time-sync",
+    "title_he": "פערי שעון — כשלי אימות <span class=\"ltr-term\">Kerberos</span> ו-<span class=\"ltr-term\">SSL/TLS</span>",
+    "title_en": "Clock Skew — Kerberos and SSL/TLS Authentication Failures",
+    "plat": "cross-platform",
+    "severity": "medium",
+    "desc_he": "שעון המערכת לא מסונכרן עם NTP, מה שגורם לכשלי אימות Kerberos (\"Clock skew too great\"), שגיאות תוקף תעודות SSL/TLS, וכשלי login ל-Active Directory.",
+    "desc_en": "The system clock is out of sync with NTP, causing Kerberos authentication failures (\"Clock skew too great\"), SSL/TLS certificate validity errors, and Active Directory login failures.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את השעון, אזור הזמן והסטטוס של סנכרון NTP",
+        "text_en": "Check the current clock, timezone, and NTP sync status",
+        "cmd": "timedatectl status",
+        "note_he": "חפש 'System clock synchronized: yes' ו-'NTP service: active'. אם 'no'/'inactive' — זה סימן ראשון לבעיה",
+        "note_en": "Look for 'System clock synchronized: yes' and 'NTP service: active'. If 'no'/'inactive' — that's the first sign of a problem"
+      },
+      {
+        "n": 2,
+        "text_he": "השווה את השעה המקומית מול שרת זמן חיצוני",
+        "text_en": "Compare local time against an external time server",
+        "cmd": "ntpdate -q pool.ntp.org",
+        "note_he": "השדה 'offset' מראה את ההפרש בשניות. הפרש מעל 5 דקות גורם בדרך כלל לכשל Kerberos (\"Clock skew too great\")",
+        "note_en": "The 'offset' field shows the difference in seconds. A gap of more than 5 minutes usually causes Kerberos to fail (\"Clock skew too great\")"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק את הסטטוס המפורט של chrony, אם הוא בשימוש",
+        "text_en": "Check chrony's detailed sync status, if in use",
+        "cmd": "chronyc tracking",
+        "note_he": "שדה 'System time' מראה את הסטייה הנוכחית מה-NTP. 'Leap status: Not synchronised' מצביע על כך ש-chronyd עדיין לא הסתנכרן",
+        "note_en": "The 'System time' field shows the current deviation from NTP. 'Leap status: Not synchronised' indicates chronyd hasn't synced yet"
+      },
+      {
+        "n": 4,
+        "text_he": "אלץ סנכרון מיידי אחד-פעמי מול שרת NTP",
+        "text_en": "Force an immediate one-time sync against an NTP server",
+        "cmd": "sudo chronyd -q 'server pool.ntp.org iburst'",
+        "note_he": "מתקן פערים גדולים מיידית. לאחר מכן ודא ש-chronyd/ntpd רץ ברקע כדי שהסנכרון יישמר לאורך זמן",
+        "note_en": "Fixes large gaps immediately. Afterwards make sure chronyd/ntpd is running in the background so sync is maintained over time"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק את אזור הזמן המוגדר — שעון תקין באזור זמן שגוי גם גורם לבעיות",
+        "text_en": "Check the configured timezone — a correct clock in the wrong timezone also causes issues",
+        "cmd": "timedatectl list-timezones | grep -i jerusalem",
+        "note_he": "אם אזור הזמן שגוי, קבע אותו עם timedatectl set-timezone. ב-Windows: בדוק עם w32tm /query /status ותקן עם w32tm /resync",
+        "note_en": "If the timezone is wrong, set it with timedatectl set-timezone. On Windows: check with w32tm /query /status and fix with w32tm /resync"
+      }
+    ]
   }
 ]

@@ -1,6 +1,6 @@
 # Roadmap — Data Center
 
-Current version: **v2.0** — bilingual Hebrew/English static knowledge base with 56 entries, RTL support, hover tooltips, and bilingual CI validation.
+Current version: **v2.0** — bilingual Hebrew/English static knowledge base with 64 entries, RTL support, hover tooltips, and bilingual CI validation.
 
 ---
 
@@ -20,7 +20,7 @@ Current version: **v2.0** — bilingual Hebrew/English static knowledge base wit
 - [x] GitHub Actions: health.yml (weekly Monday 08:00 UTC + manual trigger)
 - [x] health.yml: GitHub Issue created on critical failures
 - [x] `.nojekyll` for GitHub Pages compatibility
-- [x] 24 Linux entries, 13 CMD entries, 10 Network entries, 9 Troubleshoot scenarios
+- [x] 27 Linux entries, 15 CMD entries, 12 Network entries, 10 Troubleshoot scenarios
 
 ## Phase 2 — Claude AI Search Integration (Planned)
 
