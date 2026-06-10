@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-10 — 15ace88] (master)
+
+- docs: document Workflows archive, PDF export, bookmarks, flagging, and brain rules ([15ace88](https://github.com/avivnofar/data-center/commit/15ace88038ff193b60233a975bd4106e74a9de1a))
+- docs: add source flagging system (pending/approved/rejected) ([080b1da](https://github.com/avivnofar/data-center/commit/080b1daba242c16591251e3959c95b34bc076570))
+- ci: add daily link-check and monthly source-review workflows ([2f799d5](https://github.com/avivnofar/data-center/commit/2f799d573a29845e6043264571ddfbd6c018f389))
+- feat: add Workflows tab, print-based PDF export, AI bookmark bars, and diagnose progress indicator ([5bf2b37](https://github.com/avivnofar/data-center/commit/5bf2b374b56558a4061bd726a9bc9c0f606eb31c))
+
+
 ## [2026-06-10 — ff0bd31] (master)
 
 - feat: extend knowledge base with 8 new entries ([ff0bd31](https://github.com/avivnofar/data-center/commit/ff0bd311e93da33a7b0ad15d59f2a0c100d006e4))
