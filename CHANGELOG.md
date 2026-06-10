@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-10 — 4c93a29] (master)
+
+- fix: trigger GitHub Pages rebuild ([4c93a29](https://github.com/avivnofar/data-center/commit/4c93a2904c63f716d19fb6b4c6a9217e2c4de42c))
+
+
 ## [2026-06-10 — 7bd0b78] (master)
 
 - docs: update CLAUDE.md with Phase 2 architecture and Cloudflare setup ([7bd0b78](https://github.com/avivnofar/data-center/commit/7bd0b78))
