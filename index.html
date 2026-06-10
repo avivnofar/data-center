@@ -937,6 +937,146 @@
     }
     #ai-sidebar-overlay.visible { display: block; }
 
+    /* ── Workflows tab ─────────────────────────────────────────────────────── */
+    #panel-workflows { padding: 16px 0; }
+    .workflow-list { display: flex; flex-direction: column; gap: 12px; }
+    .workflow-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 16px;
+    }
+    .workflow-card h3 { color: var(--text); font-size: 1rem; margin-bottom: 6px; }
+    .workflow-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px; }
+    .workflow-card-meta { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 10px; }
+    .workflow-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .workflow-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .workflow-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .workflow-btn.primary { border-color: var(--accent); color: var(--accent); }
+
+    #workflow-detail { display: none; }
+    #workflow-detail.visible { display: block; }
+    #workflow-detail-back {
+      background: none;
+      border: none;
+      color: var(--accent2);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      padding: 0;
+    }
+    #workflow-detail-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      padding: 20px;
+    }
+    #workflow-detail-content h3 { color: var(--accent2); margin: 14px 0 6px; }
+    #workflow-detail-content pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      direction: ltr;
+      margin: 8px 0;
+      overflow-x: auto;
+      padding: 28px 12px 10px;
+      position: relative;
+    }
+    #workflow-detail-content code { background: #1a2235; border-radius: 3px; color: var(--accent); padding: 1px 5px; }
+    #workflow-detail-content pre code { background: none; padding: 0; }
+    #workflow-detail-content ol, #workflow-detail-content ul { margin: 6px 0; padding-inline-start: 1.5em; }
+    #workflow-detail-content li { margin-bottom: 4px; }
+
+    /* ── Markdown tables (workflows + AI responses) ───────────────────────── */
+    #workflow-detail-content table, .ai-bubble table {
+      border-collapse: collapse;
+      font-size: 0.85em;
+      margin: 10px 0;
+      width: 100%;
+    }
+    #workflow-detail-content th, #workflow-detail-content td,
+    .ai-bubble th, .ai-bubble td {
+      border: 1px solid var(--border);
+      padding: 5px 9px;
+      text-align: start;
+    }
+    #workflow-detail-content th, .ai-bubble th { background: var(--surface2); color: var(--text); }
+
+    /* ── Bookmark recommendation bar ──────────────────────────────────────── */
+    .bookmark-bar {
+      align-items: center;
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 0.76rem;
+      gap: 8px;
+      margin-top: 6px;
+      max-width: 82%;
+      padding: 7px 10px;
+    }
+    .bookmark-bar .bm-domain { color: var(--accent2); direction: ltr; font-family: var(--mono); unicode-bidi: isolate; }
+    .bookmark-bar button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      padding: 3px 9px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .bookmark-bar button:hover { border-color: var(--accent2); color: var(--accent2); }
+    .bookmark-bar .bm-saved { color: var(--accent); }
+
+    /* ── PDF export FAB ────────────────────────────────────────────────────── */
+    #pdf-fab {
+      background: var(--accent);
+      border: none;
+      border-radius: 24px;
+      bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      color: #06240f;
+      cursor: pointer;
+      display: none;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 700;
+      inset-inline-end: 20px;
+      padding: 10px 18px;
+      position: fixed;
+      z-index: 200;
+    }
+    #pdf-fab.visible { display: block; }
+    #pdf-fab:hover { background: #86efac; }
+
+    /* ── Print styles ──────────────────────────────────────────────────────── */
+    @media print {
+      body * { visibility: hidden; }
+      .print-target, .print-target * { visibility: visible; }
+      .print-target { background: #fff; color: #000; inset: 0; padding: 24px; position: absolute; }
+      .print-target pre, .print-target code { background: #f4f4f4 !important; color: #000 !important; direction: ltr; unicode-bidi: isolate; }
+      #pdf-fab, #topbar, #tab-nav, #search-section, #ai-banner, .workflow-list, #workflow-detail-back { display: none !important; }
+    }
+
     /* ── Mobile (≤768px) ───────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       #tab-nav {
@@ -1034,6 +1174,10 @@
 
 <div id="tooltip" role="tooltip"></div>
 <div id="ai-sidebar-overlay" onclick="toggleAiSidebar()"></div>
+<button id="pdf-fab" onclick="generatePdf()">
+  <span class="he">📄 צור PDF</span>
+  <span class="en" style="display:none">📄 Generate PDF</span>
+</button>
 
 <script>
 "use strict";
@@ -1056,6 +1200,40 @@ const FAQ_PILLS = {
   he: ['Port תפוס', 'דיסק מלא', 'גישה נדחתה', 'חיבור SSH נכשל', 'CPU גבוה', 'DNS לא עובד', 'Service קרס'],
   en: ['Port in use', 'Disk full', 'Permission denied', 'SSH failed', 'High CPU', 'DNS broken', 'Service crash'],
 };
+
+/* ── Workflows (data-center-archive) ─────────────────────────────────────── */
+const ARCHIVE_RAW_BASE = 'https://raw.githubusercontent.com/avivnofar/data-center-archive/master/';
+const ARCHIVE_REPO_BASE = 'https://github.com/avivnofar/data-center-archive/blob/master/';
+
+const WORKFLOWS = [
+  {
+    id: 'linux-workflow',
+    title_he: 'לינוקס — ניהול מערכת',
+    title_en: 'Linux — System Administration',
+    desc_he: 'משתמשים, מערכת קבצים, הרשאות, תהליכים, שירותים, לוגים, cron וניהול חבילות — 16 פקודות.',
+    desc_en: 'Users, filesystem, permissions, processes, services, logs, cron and package management — 16 commands.',
+    path: 'workflows/linux/linux-workflow.md',
+    updated: '2026-06-10',
+  },
+  {
+    id: 'linux-workflow-networking',
+    title_he: 'לינוקס — רשת',
+    title_en: 'Linux — Networking',
+    desc_he: 'ממשקי רשת, קישוריות, סריקת פורטים, חומת אש, לכידת חבילות, DNS וניתוב — 13 פקודות.',
+    desc_en: 'Interfaces, connectivity, port scanning, firewall, packet capture, DNS and routing — 13 commands.',
+    path: 'workflows/linux/linux-workflow-networking.md',
+    updated: '2026-06-10',
+  },
+  {
+    id: 'networking-workflow',
+    title_he: 'מתודולוגיית אבחון רשת',
+    title_en: 'Network Troubleshooting Methodology',
+    desc_he: 'מודל OSI, זרימת אבחון חוצת-פלטפורמות (Linux/Windows), השוואת כלים.',
+    desc_en: 'OSI model, cross-platform (Linux/Windows) diagnostic flow, tool comparison.',
+    path: 'workflows/networking/networking-workflow.md',
+    updated: '2026-06-10',
+  },
+];
 
 function escHtml(str) {
   if (!str) return '';
@@ -1092,6 +1270,10 @@ function applyLang() {
     const id = btn.dataset.moduleId;
     if (id === 'ai') {
       btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'חיפוש AI' : 'AI Search';
+      return;
+    }
+    if (id === 'workflows') {
+      btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'מדריכים' : 'Workflows';
       return;
     }
     const mod = DB.modules.find(m => m.id === id);
@@ -1158,6 +1340,8 @@ function buildTabNav() {
     if (isCS && !aiInserted) {
       nav.appendChild(buildAiTabBtn());
       contents.appendChild(buildAiPanelShell());
+      nav.appendChild(buildWorkflowsTabBtn());
+      contents.appendChild(buildWorkflowsPanelShell());
       aiInserted = true;
     }
 
@@ -1189,7 +1373,34 @@ function buildTabNav() {
   if (!aiInserted) {
     nav.appendChild(buildAiTabBtn());
     contents.appendChild(buildAiPanelShell());
+    nav.appendChild(buildWorkflowsTabBtn());
+    contents.appendChild(buildWorkflowsPanelShell());
   }
+}
+
+function buildWorkflowsTabBtn() {
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn';
+  btn.dataset.moduleId = 'workflows';
+  btn.id = 'tab-workflows';
+  btn.setAttribute('role', 'tab');
+  btn.setAttribute('aria-controls', 'panel-workflows');
+  btn.setAttribute('aria-selected', 'false');
+  btn.setAttribute('tabindex', '-1');
+  const label = LANG === 'he' ? 'מדריכים' : 'Workflows';
+  btn.innerHTML = `<span class="tab-icon" aria-hidden="true">📋</span><span class="tab-label">${escHtml(label)}</span>`;
+  btn.onclick = () => switchTab('workflows');
+  return btn;
+}
+
+function buildWorkflowsPanelShell() {
+  const panel = document.createElement('div');
+  panel.id = 'panel-workflows';
+  panel.style.display = 'none';
+  panel.setAttribute('role', 'tabpanel');
+  panel.setAttribute('aria-labelledby', 'tab-workflows');
+  panel.setAttribute('tabindex', '0');
+  return panel;
 }
 
 function buildAiTabBtn() {
@@ -1264,6 +1475,7 @@ function renderActiveTab() {
 
 function renderPanel(id, panel) {
   if (id === 'ai') { renderAiPanel(panel); return; }
+  if (id === 'workflows') { renderWorkflowsPanel(panel); return; }
   const mod = DB.modules.find(m => m.id === id);
   if (!mod) return;
   if (mod.filter_type === 'troubleshoot') renderTsPanel(id, panel, mod);
@@ -1826,10 +2038,29 @@ function renderMarkdown(text) {
   html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => `<ol>${m.replace(/\n/g, '')}</ol>`);
 
+  // pipe tables -> <table>
+  html = html.replace(/(^\|.*\|[ \t]*$\n?)+/gm, block => {
+    const lines = block.trim().split('\n');
+    if (lines.length < 2) return block;
+    const toCells = l => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    const isSep = cells => cells.every(c => /^:?-+:?$/.test(c));
+    let header = null, bodyLines = lines;
+    const secondRow = toCells(lines[1]);
+    if (isSep(secondRow)) {
+      header = toCells(lines[0]);
+      bodyLines = lines.slice(2);
+    }
+    let out = '<table>';
+    if (header) out += '<thead><tr>' + header.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+    out += '<tbody>' + bodyLines.map(l => '<tr>' + toCells(l).map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody>';
+    out += '</table>';
+    return out;
+  });
+
   // remaining newlines -> <br>, but not around block elements
   html = html.replace(/\n/g, '<br>');
-  html = html.replace(/<br>(<\/?(?:pre|ol|li|h3)>)/g, '$1');
-  html = html.replace(/(<\/?(?:pre|ol|li|h3)>)<br>/g, '$1');
+  html = html.replace(/<br>(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)/g, '$1');
+  html = html.replace(/(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)<br>/g, '$1');
 
   return { html, relatedCmds };
 }
@@ -1842,6 +2073,86 @@ function copyAiCode(btn) {
     btn.textContent = LANG === 'he' ? '✓ הועתק' : '✓ Copied';
     setTimeout(() => { btn.textContent = original; }, 1500);
   });
+}
+
+/* ── Workflows panel ──────────────────────────────────────────────────────── */
+function renderWorkflowsPanel(panel) {
+  const heading = LANG === 'he' ? 'מדריכי עבודה מלאים' : 'Complete Workflow Guides';
+  const sub = LANG === 'he'
+    ? 'מסמכים מקיפים בנושא אחד — התקנה, פקודות, פתרון תקלות, אבטחה ומשאבים מאושרים.'
+    : 'Comprehensive single-topic documents — setup, commands, troubleshooting, security and approved resources.';
+  const openLabel = LANG === 'he' ? '📖 פתח' : '📖 Open';
+  const ghLabel = LANG === 'he' ? '🔗 פתח ב-GitHub' : '🔗 View on GitHub';
+  const updatedLabel = LANG === 'he' ? 'עודכן לאחרונה' : 'Last updated';
+  const backLabel = LANG === 'he' ? '→ חזרה לרשימה' : '← Back to list';
+
+  const cards = WORKFLOWS.map(w => `
+    <div class="workflow-card">
+      <h3>${escHtml(LANG === 'he' ? w.title_he : w.title_en)}</h3>
+      <p>${escHtml(LANG === 'he' ? w.desc_he : w.desc_en)}</p>
+      <div class="workflow-card-meta">${escHtml(updatedLabel)}: ${escHtml(w.updated)}</div>
+      <div class="workflow-card-actions">
+        <button class="workflow-btn primary" onclick="openWorkflow('${w.id}')">${escHtml(openLabel)}</button>
+        <a class="workflow-btn" href="${ARCHIVE_REPO_BASE}${w.path}" target="_blank" rel="noopener noreferrer">${escHtml(ghLabel)}</a>
+      </div>
+    </div>`).join('');
+
+  panel.innerHTML = `
+    <h2 style="font-size:1.1rem;margin-bottom:4px;">${escHtml(heading)}</h2>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">${escHtml(sub)}</p>
+    <div class="workflow-list" id="workflow-list">${cards}</div>
+    <div id="workflow-detail">
+      <button id="workflow-detail-back" onclick="backToWorkflowList()">${escHtml(backLabel)}</button>
+      <div id="workflow-detail-content"></div>
+    </div>
+  `;
+  hidePdfFab();
+}
+
+async function openWorkflow(id) {
+  const wf = WORKFLOWS.find(w => w.id === id);
+  if (!wf) return;
+  document.getElementById('workflow-list').style.display = 'none';
+  const detail = document.getElementById('workflow-detail');
+  const content = document.getElementById('workflow-detail-content');
+  detail.classList.add('visible');
+  content.classList.remove('print-target');
+  content.innerHTML = `<p>${LANG === 'he' ? 'טוען...' : 'Loading...'}</p>`;
+  hidePdfFab();
+
+  try {
+    const res = await fetch(ARCHIVE_RAW_BASE + wf.path);
+    if (!res.ok) throw new Error('not found');
+    const md = await res.text();
+    content.innerHTML = renderMarkdown(md).html;
+    content.classList.add('print-target');
+    showPdfFab();
+  } catch (e) {
+    const notConnected = LANG === 'he'
+      ? 'הארכיון (data-center-archive) עדיין לא מחובר. ראו <code dir="ltr">CLAUDE.md</code> להוראות חיבור.'
+      : 'The data-center-archive repo isn\'t connected yet. See <code dir="ltr">CLAUDE.md</code> for setup instructions.';
+    const tryGh = LANG === 'he' ? 'נסה לפתוח ב-GitHub' : 'Try opening on GitHub';
+    content.innerHTML = `<p>${notConnected}</p><p><a href="${ARCHIVE_REPO_BASE}${wf.path}" target="_blank" rel="noopener noreferrer">${escHtml(tryGh)}</a></p>`;
+  }
+}
+
+function backToWorkflowList() {
+  document.getElementById('workflow-list').style.display = '';
+  document.getElementById('workflow-detail').classList.remove('visible');
+  hidePdfFab();
+}
+
+/* ── PDF export (browser print) ───────────────────────────────────────────── */
+function showPdfFab() {
+  const fab = document.getElementById('pdf-fab');
+  if (fab) fab.classList.add('visible');
+}
+function hidePdfFab() {
+  const fab = document.getElementById('pdf-fab');
+  if (fab) fab.classList.remove('visible');
+}
+function generatePdf() {
+  window.print();
 }
 
 /* ── Panel rendering ──────────────────────────────────────────────────────── */
@@ -1974,7 +2285,16 @@ function updateAiModeButtons() {
 function updateAiInputHint() {
   const hint = document.getElementById('ai-input-hint');
   if (!hint) return;
-  hint.textContent = AI_MODE === 'search' ? AI_STRINGS.hintSearch[LANG] : AI_STRINGS.hintDiagnose[LANG];
+  let text = AI_MODE === 'search' ? AI_STRINGS.hintSearch[LANG] : AI_STRINGS.hintDiagnose[LANG];
+  if (AI_MODE === 'diagnose') {
+    const session = getCurrentSession();
+    const userMsgCount = session ? session.messages.filter(m => m.role === 'user').length : 0;
+    if (userMsgCount > 0) {
+      const step = Math.min(userMsgCount + 1, 5);
+      text += LANG === 'he' ? ` · שלב ${step} מתוך ~5` : ` · Step ${step} of ~5`;
+    }
+  }
+  hint.textContent = text;
 }
 
 function updateAiLangToggle() {
@@ -2114,6 +2434,7 @@ async function sendAiMessage() {
   appendMessageBubble('user', text);
   addMessageToSession('user', text);
   renderSessionList();
+  updateAiInputHint();
 
   const dbContext = buildDbContext(text);
   const session = getCurrentSession();
@@ -2224,6 +2545,81 @@ function finalizeStreamingBubble(el, fullText) {
   const bubble = el.querySelector('.ai-bubble');
   if (bubble) bubble.innerHTML = html || '&nbsp;';
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
+  renderBookmarkBars(el, fullText);
+}
+
+/* ── Bookmark recommendations (localStorage only — no external writes) ──────
+   Detects URLs in AI responses and offers to save them locally for later
+   review. Nothing is sent to GitHub or any external API from the client. */
+const BOOKMARK_SAVED_KEY = 'dc-bookmarks';
+const BOOKMARK_DISMISSED_KEY = 'dc-dismissed-bookmarks';
+
+function extractUrls(text) {
+  const matches = String(text).match(/https?:\/\/[^\s<>"'`)\]]+/g) || [];
+  return [...new Set(matches)];
+}
+
+function getSavedBookmarks() {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_SAVED_KEY)) || []; } catch (e) { return []; }
+}
+
+function getDismissedBookmarks() {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_DISMISSED_KEY)) || []; } catch (e) { return []; }
+}
+
+function renderBookmarkBars(container, text) {
+  const dismissed = getDismissedBookmarks();
+  const saved = getSavedBookmarks().map(b => b.url);
+  const urls = extractUrls(text).filter(u => !dismissed.includes(u));
+  if (!urls.length) return;
+
+  urls.forEach(url => {
+    let domain;
+    try { domain = new URL(url).hostname; } catch (e) { domain = url; }
+    const bar = document.createElement('div');
+    bar.className = 'bookmark-bar';
+    if (saved.includes(url)) {
+      bar.innerHTML = `
+        <span>${LANG === 'he' ? '💾 מקור שימושי' : '💾 Useful resource'}</span>
+        <span class="bm-domain">${escHtml(domain)}</span>
+        <span class="bm-saved">${LANG === 'he' ? '✅ נשמר לעיון' : '✅ Saved for later'}</span>`;
+    } else {
+      const encoded = encodeURIComponent(url);
+      bar.innerHTML = `
+        <span>${LANG === 'he' ? '💾 שמור מקור שימושי?' : '💾 Bookmark this resource?'}</span>
+        <span class="bm-domain">${escHtml(domain)}</span>
+        <button onclick="saveBookmark(this, '${encoded}')">${LANG === 'he' ? 'שמור' : 'Save'}</button>
+        <button onclick="dismissBookmark(this, '${encoded}')">${LANG === 'he' ? 'התעלם' : 'Dismiss'}</button>`;
+    }
+    container.appendChild(bar);
+  });
+}
+
+function saveBookmark(btn, encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const saved = getSavedBookmarks();
+  if (!saved.find(b => b.url === url)) {
+    saved.push({ url, dateAdded: new Date().toISOString() });
+    localStorage.setItem(BOOKMARK_SAVED_KEY, JSON.stringify(saved));
+  }
+  const bar = btn.closest('.bookmark-bar');
+  if (!bar) return;
+  bar.querySelectorAll('button').forEach(b => b.remove());
+  const span = document.createElement('span');
+  span.className = 'bm-saved';
+  span.textContent = LANG === 'he' ? '✅ נשמר לעיון' : '✅ Saved for later';
+  bar.appendChild(span);
+}
+
+function dismissBookmark(btn, encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const dismissed = getDismissedBookmarks();
+  if (!dismissed.includes(url)) {
+    dismissed.push(url);
+    localStorage.setItem(BOOKMARK_DISMISSED_KEY, JSON.stringify(dismissed));
+  }
+  const bar = btn.closest('.bookmark-bar');
+  if (bar) bar.remove();
 }
 
 function appendMessageBubble(role, content) {
@@ -2249,6 +2645,7 @@ function appendMessageBubble(role, content) {
   chatArea.appendChild(div);
 
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
+  if (!isUser) renderBookmarkBars(div, content);
 }
 
 function appendErrorMessage(msg) {
