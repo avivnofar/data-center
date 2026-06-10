@@ -1139,6 +1139,18 @@
     .admin-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .admin-error { color: var(--danger); margin-top: 10px; font-size: 0.85rem; }
     .admin-loading { color: var(--text-muted); padding: 40px; text-align: center; }
+    .admin-loading::before {
+      content: ''; display: inline-block; width: 16px; height: 16px;
+      margin-inline-end: 8px; vertical-align: middle;
+      border: 2px solid var(--surface2); border-top-color: var(--accent2);
+      border-radius: 50%; animation: admin-spin 0.7s linear infinite;
+    }
+    @keyframes admin-spin { to { transform: rotate(360deg); } }
+    .admin-empty { color: var(--text-muted); padding: 16px; text-align: center; font-size: 0.85rem; }
+    .admin-controls-row select {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 7px 10px; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem;
+    }
     .admin-toolbar { display: flex; gap: 10px; margin-bottom: 20px; }
     .admin-section { margin-bottom: 28px; }
     .admin-section > h2 {
@@ -2349,6 +2361,7 @@ const AI_STRINGS = {
   placeholderDiagnose: { en: "Describe the issue you're seeing...", he: 'תאר את הבעיה שאתה רואה...' },
   hintSearch:     { en: 'Claude will answer + show related commands from the database', he: 'Claude יענה + יציג פקודות קשורות מהמסד' },
   hintDiagnose:   { en: 'Claude will ask you questions to diagnose the issue step by step', he: 'Claude ישאל אותך שאלות לאבחון השלב אחרי שלב' },
+  connectionError: { en: 'Connection error — check Worker URL', he: 'שגיאת חיבור — בדוק את כתובת ה-Worker' },
 };
 
 function updateAiPanelLang() {
@@ -2555,7 +2568,8 @@ async function sendAiMessage() {
     await streamFromWorker(messages, AI_MODE, AI_LANG, dbContext);
   } catch (e) {
     showAiThinking(false);
-    appendErrorMessage(e.message || (LANG === 'he' ? 'שגיאת תקשורת' : 'Connection failed'));
+    const isConnectionError = e instanceof TypeError;
+    appendErrorMessage(isConnectionError ? AI_STRINGS.connectionError[LANG] : (e.message || AI_STRINGS.connectionError[LANG]));
   } finally {
     AI_STREAMING = false;
     if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = AI_STRINGS.send[LANG]; }
@@ -2917,7 +2931,10 @@ async function loadAdminDashboard(panel) {
       renderAdminLogin(panel);
       return;
     }
-    panel.innerHTML = `<div class="admin-error">${LANG === 'he' ? 'שגיאה בטעינת נתונים: ' : 'Failed to load data: '}${escHtml(err.message)}</div>`;
+    const msg = err instanceof TypeError
+      ? (LANG === 'he' ? `Worker הסוכנים אינו זמין (${CONFIG.AGENTS_API_BASE}).` : `Agents Worker unreachable (${CONFIG.AGENTS_API_BASE}).`)
+      : `${LANG === 'he' ? 'שגיאה בטעינת נתונים: ' : 'Failed to load data: '}${err.message}`;
+    panel.innerHTML = `<div class="admin-error">${escHtml(msg)}</div>`;
     return;
   }
 
@@ -3003,7 +3020,7 @@ function renderAdminFeed(sessions) {
   if (!feed) return;
 
   if (!sessions.length) {
-    feed.innerHTML = `<div>${LANG === 'he' ? 'אין אינטראקציות עדיין.' : 'No interactions logged yet.'}</div>`;
+    feed.innerHTML = `<div class="admin-empty">${LANG === 'he' ? 'אין נתונים עדיין — הסימולציה עוד לא רצה.' : "No data yet — simulation hasn't run."}</div>`;
     return;
   }
 
@@ -3047,7 +3064,7 @@ async function adminShowReportTab(type, btn) {
       : await adminFetch(`/api/agents/reports?type=${type}`);
 
     if (!items.length) {
-      container.innerHTML = `<div class="admin-sub">${LANG === 'he' ? 'אין פריטים עדיין.' : 'Nothing here yet.'}</div>`;
+      container.innerHTML = `<div class="admin-empty">${LANG === 'he' ? 'אין נתונים עדיין — הסימולציה עוד לא רצה.' : "No data yet — simulation hasn't run."}</div>`;
       return;
     }
 
@@ -3082,6 +3099,17 @@ function adminAcknowledge(type, id, btn) {
   if (btn) btn.style.display = 'none';
 }
 
+const ADMIN_MEETING_TYPES = [
+  { value: 'daily_standup', he: 'עדכון בוקר יומי', en: 'Daily standup' },
+  { value: 'weekly', he: 'ישיבה שבועית', en: 'Weekly meeting' },
+  { value: 'monthly', he: 'דוח חודשי', en: 'Monthly report meeting' },
+  { value: 'quarterly', he: 'ישיבה רבעונית', en: 'Quarterly meeting' },
+  { value: 'semi_yearly', he: 'ישיבה חצי-שנתית', en: 'Semi-yearly meeting' },
+  { value: 'yearly', he: 'ישיבת סיכום שנתית', en: 'Yearly meeting' },
+  { value: 'emergency_huddle', he: 'כינוס חירום', en: 'Emergency huddle' },
+  { value: 'audit_session', he: 'ביקורת QA', en: 'QA audit session' },
+];
+
 function renderAdminControls(simState, statuses) {
   const container = document.getElementById('admin-controls');
   if (!container) return;
@@ -3094,8 +3122,16 @@ function renderAdminControls(simState, statuses) {
   const pauseLabel = simState.paused
     ? (LANG === 'he' ? '▶ המשך סימולציה' : '▶ Resume simulation')
     : (LANG === 'he' ? '⏸ השהה סימולציה' : '⏸ Pause simulation');
-  const advanceLabel = LANG === 'he' ? '⏭ קדם יום עבודה' : '⏭ Advance work day';
+  const dayLabel = LANG === 'he' ? '⏭ הפעל מחזור יום' : '⏭ Trigger Day Cycle';
+  const meetingLabel = LANG === 'he' ? '📋 כנס ישיבה' : '📋 Trigger Meeting';
+  const resetLabel = LANG === 'he' ? '🔄 איפוס שבוע' : '🔄 Reset Week';
+  const resetConfirm = LANG === 'he'
+    ? 'לאפס את כל מצב הסוכנים לתחילת השבוע? פעולה זו אינה הפיכה.'
+    : 'Reset all agent state back to the start of the week? This cannot be undone.';
   const agentsLabel = LANG === 'he' ? 'סוכנים פעילים / טיוטה' : 'Active / stub agents';
+  const meetingOptions = ADMIN_MEETING_TYPES.map(m =>
+    `<option value="${m.value}">${escHtml(LANG === 'he' ? m.he : m.en)}</option>`
+  ).join('');
 
   container.innerHTML = `
     <div class="admin-controls-row">
@@ -3109,14 +3145,23 @@ function renderAdminControls(simState, statuses) {
         ${escHtml(inspectionLabel)}
       </label>
       <button class="admin-btn admin-btn-secondary" onclick="adminTogglePause()">${escHtml(pauseLabel)}</button>
-      <button class="admin-btn admin-btn-secondary" onclick="adminAdvanceDay(this)">${escHtml(advanceLabel)}</button>
+    </div>
+    <div class="admin-controls-row">
+      <button class="admin-btn" onclick="adminTriggerDay(this)">${escHtml(dayLabel)}</button>
+      <select id="admin-meeting-type">${meetingOptions}</select>
+      <button class="admin-btn" onclick="adminTriggerMeeting(this)">${escHtml(meetingLabel)}</button>
+      <button class="admin-btn admin-btn-secondary" onclick="adminResetWeek(this, '${resetConfirm.replace(/'/g, "\\'")}')">${escHtml(resetLabel)}</button>
     </div>
     <div id="admin-controls-msg" class="admin-sub"></div>`;
 }
 
 async function adminToggleInspection(checkbox) {
+  const active = checkbox.checked;
   try {
-    await adminPost('/api/simulation', { inspection_mode: checkbox.checked });
+    await adminPost('/api/agents/trigger', { type: 'inspection', active });
+    adminControlsMsg(active
+      ? (LANG === 'he' ? 'מצב פיקוח הופעל.' : 'Inspection mode enabled.')
+      : (LANG === 'he' ? 'מצב פיקוח כובה.' : 'Inspection mode disabled.'), false);
   } catch (err) {
     checkbox.checked = !checkbox.checked;
     adminControlsMsg(err.message, true);
@@ -3133,19 +3178,50 @@ async function adminTogglePause() {
   }
 }
 
-/** Manual day advance hits the scheduler Worker's /run/day endpoint directly. */
-async function adminAdvanceDay(btn) {
+/** Runs one simulated work day inline via the unified /api/agents/trigger endpoint. */
+async function adminTriggerDay(btn) {
+  await adminRunTrigger(btn, { type: 'day' },
+    LANG === 'he' ? 'מחזור היום הורץ.' : 'Day cycle complete.');
+}
+
+/**
+ * Runs the selected meeting type via /api/agents/trigger. audit_session and
+ * emergency_huddle have required opts (meeting-engine.js MEETING_TYPES); for
+ * a manual admin trigger we supply sensible defaults (audit agent 1,
+ * "manual_admin_trigger") rather than exposing extra controls.
+ */
+async function adminTriggerMeeting(btn) {
+  const select = document.getElementById('admin-meeting-type');
+  const meetingType = select ? select.value : 'daily_standup';
+  const opts = {};
+  if (meetingType === 'audit_session') opts.auditedAgentId = 1;
+  if (meetingType === 'emergency_huddle') opts.trigger = 'manual_admin_trigger';
+  await adminRunTrigger(btn, { type: 'meeting', meetingType, opts },
+    LANG === 'he' ? 'הישיבה הסתיימה.' : 'Meeting complete.');
+}
+
+/** Resets all agent state to the start of the week, after explicit confirmation. */
+async function adminResetWeek(btn, confirmMsg) {
+  if (!window.confirm(confirmMsg)) return;
+  await adminRunTrigger(btn, { type: 'week_reset' },
+    LANG === 'he' ? 'השבוע אופס.' : 'Week reset.');
+}
+
+/** Shared helper: disables btn, shows loading state, posts to /api/agents/trigger, refreshes dashboard. */
+async function adminRunTrigger(btn, body, successMsg) {
   if (btn) btn.disabled = true;
+  adminControlsMsg(LANG === 'he' ? 'מבצע...' : 'Running...', false);
   try {
-    const res = await fetch(`${CONFIG.AGENTS_SCHEDULER_BASE}/run/day`, {
-      method: 'POST',
-      headers: { 'X-Admin-Token': getAdminToken() },
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    adminControlsMsg(LANG === 'he' ? 'יום עבודה הורץ.' : 'Work day advanced.', false);
+    await adminPost('/api/agents/trigger', body);
+    adminControlsMsg(successMsg, false);
     await renderAdminPanel(document.getElementById('panel-admin'));
   } catch (err) {
-    adminControlsMsg(err.message, true);
+    adminControlsMsg(
+      err.message === 'unauthorized'
+        ? (LANG === 'he' ? 'אסימון לא מורשה.' : 'Unauthorized — check admin token.')
+        : (LANG === 'he' ? `שגיאה: ${err.message}` : `Error: ${err.message}`),
+      true
+    );
   } finally {
     if (btn) btn.disabled = false;
   }
