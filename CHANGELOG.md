@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-10 — f0a6e52] (master)
+
+- fix: remove nested data-center folder, clean node_modules from tracking ([f0a6e52](https://github.com/avivnofar/data-center/commit/f0a6e5278f0c74a76f884d2a5813b340b267dd28))
+
+
 ## [2026-06-10 — e1da738] (master)
 
 - fix: trigger Pages redeploy ([e1da738](https://github.com/avivnofar/data-center/commit/e1da738b2b957a931347da28916b2f2c50c51d00))
