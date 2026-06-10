@@ -39,8 +39,19 @@ data-center/
 │       ├── changelog.yml        # Auto-generates CHANGELOG.md
 │       ├── health.yml           # Weekly Monday 08:00 UTC + manual trigger
 │       ├── link-check.yml       # Daily 06:00 UTC — checks source_url links
-│       └── monthly-review.yml   # Monthly 1st @ 08:00 UTC — flags pending sources
+│       ├── monthly-review.yml   # Monthly 1st @ 08:00 UTC — flags pending sources
+│       ├── agent-cases.yml      # Weekly Monday 09:00 UTC — generates agent simulation case batch
+│       └── agent-reports.yml    # Weekly Tuesday 08:00 UTC — agent simulation weekly report
 ├── cloudflare-worker/            # AI Search backend (Cloudflare Worker, Claude API)
+├── agents/                       # AI Agent Simulation (DRAFT, Phase 1) — see agents/README.md
+│   ├── config/                   # simulation-config.json, agents-config.json
+│   ├── workers/                  # agent-runner.js, scheduler.js, case-generator.js, gemini-client.js, state-manager.js
+│   ├── agents/                   # agent-base.js + per-agent classes (agent-1..4-*.js, agent-stub.js)
+│   ├── dashboard/                # standalone admin dashboard (admin-panel.html, dashboard.js)
+│   ├── reports/templates/        # incident/status/weekly report markdown templates
+│   ├── database/                 # D1 schema.sql + seed-cases.sql
+│   ├── README.md                 # setup, architecture, env vars
+│   └── AGENTS.md                 # agent specification reference (summary, not final)
 ├── .nojekyll                    # Prevents GitHub Pages Jekyll processing
 ├── CLAUDE.md                    # This file
 ├── ROADMAP.md                   # Phase milestones
@@ -290,6 +301,41 @@ tracks specific **URLs**, not domains, and is not a duplicate of those rules.
 
 ---
 
+## AI Agent Simulation (`agents/`)
+
+`agents/` scaffolds a simulated "AI agent team" that uses the live app
+(via `data-center-api`'s `/api/chat`) like real sysadmins, role-played by
+Gemini 2.0 Flash. **Status: DRAFT (Phase 1 foundation)** — agents 1-4
+("The Perfectionist", "The Productive", "The Standard Agent", "The Trainee")
+have full mood/irritation/panic state machines; agents 5-11 are placeholder
+stubs (`agent-stub.js`) pending a finalized spec. See `agents/README.md`
+(architecture, setup, env vars) and `agents/AGENTS.md` (per-agent behavior
+summary).
+
+- **Workers**: `agent-runner.js` (admin HTTP API + agent execution) and
+  `scheduler.js` (cron-driven hourly "work day" / daily "work week" cycles)
+  are Cloudflare Workers backed by D1 (`agents/database/schema.sql`),
+  Durable Objects (`state-manager.js`), and KV (`SIM_KV` for live
+  `inspection_mode`/`paused`/`phase` overrides). None of this is deployed by
+  this commit — see `agents/README.md`'s manual setup steps.
+- **Admin tab**: the in-app 🔐 Admin tab (`dataset.moduleId = 'admin'`,
+  `buildAdminTabBtn()`/`buildAdminPanelShell()`/`renderAdminPanel()` in
+  `index.html`) is a read-only-by-default dashboard (agent status grid, live
+  session feed, reports/suggestions, simulation controls, performance
+  metrics). A standalone equivalent lives at `agents/dashboard/admin-panel.html`.
+- **Admin auth**: the dashboard never ships a real secret. The admin types a
+  token into the page once (stored in `localStorage` as `dc-admin-token`,
+  sent as the `X-Admin-Token` header); `agent-runner.js` and `scheduler.js`
+  validate it server-side against `env.ADMIN_TOKEN` (a Worker secret). This
+  is the same pattern required by the credential rules below — never embed
+  `ADMIN_TOKEN` (or `GEMINI_API_KEY`/`GITHUB_TOKEN`) in `index.html` or
+  `dashboard.js`.
+- **CI**: `agent-cases.yml` and `agent-reports.yml` (see Automation
+  Workflows below) keep the simulation's case pool and weekly reports
+  flowing once the Workers are deployed.
+
+---
+
 ## Automation Workflows
 
 | Workflow | Schedule | Purpose |
@@ -299,9 +345,14 @@ tracks specific **URLs**, not domains, and is not a duplicate of those rules.
 | `health.yml` | weekly, Mon 08:00 UTC | Data quality + Hebrew QA (`health-check.js`); opens a `data-quality` issue on critical failure |
 | `monthly-review.yml` | monthly, 1st @ 08:00 UTC | Opens a `source-review` issue if `flagged/pending-review.md` has unreviewed entries |
 | `changelog.yml` | on push to master | Auto-generates `CHANGELOG.md` |
+| `agent-cases.yml` | weekly, Mon 09:00 UTC | Generates the AI Agent Simulation's weekly case batch (`generate-agent-cases.mjs`) and commits `agents/database/cases-*.json` |
+| `agent-reports.yml` | weekly, Tue 08:00 UTC | Triggers the simulation's weekly reset cycle and commits a generated report to `agents/reports/`; opens an `agent-incident` issue on critical incidents. No-ops until `AGENTS_API_BASE`/`AGENTS_SCHEDULER_BASE` repo variables and `ADMIN_TOKEN` secret are configured (see `agents/README.md`) |
 
-All scheduled workflows also support `workflow_dispatch` for manual runs and
-require no secrets beyond the default `GITHUB_TOKEN`.
+All scheduled workflows also support `workflow_dispatch` for manual runs.
+`validate.yml`, `link-check.yml`, `health.yml`, `monthly-review.yml`, and
+`changelog.yml` require no secrets beyond the default `GITHUB_TOKEN`.
+`agent-cases.yml` likewise needs nothing extra. `agent-reports.yml` requires
+the agent-simulation variables/secrets above.
 
 ---
 
