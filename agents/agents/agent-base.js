@@ -47,6 +47,12 @@ export class AgentBase {
     // "slow_ui"/"sloppy_design" irritation that persists until fixed)
     this.permanentIrritationFlags = [];
 
+    // Durable per-agent config tweaks written by meeting-engine.js
+    // (decisions.config_overrides) and agent-runner.js (rolling
+    // model_usage_rate adjustments). Merged over `this.config` on load and
+    // persisted alongside the rest of the state so they survive restarts.
+    this.configOverrides = {};
+
     this.session = null;
   }
 
@@ -383,6 +389,7 @@ export class AgentBase {
       isPanic: this.isPanic,
       panicLevel: this.panicLevel,
       permanentIrritationFlags: this.permanentIrritationFlags,
+      configOverrides: this.configOverrides,
       session: this.session,
       updated_at: new Date().toISOString(),
     };
@@ -411,6 +418,14 @@ export class AgentBase {
       this.panicLevel = data.panicLevel ?? this.panicLevel;
       this.permanentIrritationFlags = data.permanentIrritationFlags ?? this.permanentIrritationFlags;
       this.session = data.session ?? this.session;
+
+      // Merge durable config overrides (set by meeting-engine.js decisions
+      // or agent-runner.js's rolling model_usage_rate adjustments) over the
+      // static agents-config.json entry for this session.
+      this.configOverrides = data.configOverrides ?? this.configOverrides;
+      if (Object.keys(this.configOverrides).length) {
+        this.config = { ...this.config, ...this.configOverrides };
+      }
     }
     return data;
   }

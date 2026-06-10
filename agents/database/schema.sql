@@ -39,6 +39,10 @@ CREATE TABLE IF NOT EXISTS cases (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   resolved_at TIMESTAMP,
   resolution_time_minutes INTEGER,
+  client_name TEXT,
+  severity TEXT,
+  is_unique_client BOOLEAN DEFAULT FALSE,
+  requires_it_chief BOOLEAN DEFAULT FALSE,
   FOREIGN KEY (assigned_to) REFERENCES agents(id)
 );
 
@@ -95,7 +99,58 @@ CREATE TABLE IF NOT EXISTS weekly_analytics (
   FOREIGN KEY (agent_id) REFERENCES agents(id)
 );
 
+-- Office simulation: meetings (meeting-engine.js), side plots
+-- (side-plots.json), promotions/PIP track (promotion-config.json), and
+-- year-tracker.json's running stats (agent-runner.js getYearState/persistYearState).
+
+CREATE TABLE IF NOT EXISTS meetings (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  attendees TEXT NOT NULL,
+  transcript TEXT,
+  decisions TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS side_plots (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  agents TEXT NOT NULL,
+  start_day INTEGER NOT NULL,
+  duration_days INTEGER NOT NULL,
+  current_stage INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active',
+  log TEXT DEFAULT '',
+  report_path TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  resolved_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS promotions (
+  id TEXT PRIMARY KEY,
+  agent_id INTEGER NOT NULL,
+  track TEXT NOT NULL,
+  status TEXT DEFAULT 'recorded',
+  details TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (agent_id) REFERENCES agents(id)
+);
+
+CREATE TABLE IF NOT EXISTS year_stats (
+  id TEXT PRIMARY KEY,
+  simulation_start TEXT,
+  current_day INTEGER DEFAULT 0,
+  current_week INTEGER DEFAULT 0,
+  current_month INTEGER DEFAULT 0,
+  current_quarter INTEGER DEFAULT 0,
+  stats TEXT,
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_sessions_agent ON agent_sessions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_cases_assigned ON cases(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_interactions_session ON interactions(session_id);
 CREATE INDEX IF NOT EXISTS idx_reports_agent ON reports(agent_id);
+CREATE INDEX IF NOT EXISTS idx_side_plots_status ON side_plots(status);
+CREATE INDEX IF NOT EXISTS idx_promotions_agent ON promotions(agent_id);
+CREATE INDEX IF NOT EXISTS idx_year_stats_recorded ON year_stats(recorded_at);
