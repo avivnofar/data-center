@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-10 — a15706c] (master)
+
+- config: connect Cloudflare Worker API endpoint ([a15706c](https://github.com/avivnofar/data-center/commit/a15706ca6d364f9bc4966334526f7ebf28d769b2))
+
+
 ## [2026-06-10 — f0a6e52] (master)
 
 - fix: remove nested data-center folder, clean node_modules from tracking ([f0a6e52](https://github.com/avivnofar/data-center/commit/f0a6e5278f0c74a76f884d2a5813b340b267dd28))
