@@ -1,0 +1,58 @@
+name: Monthly Source Review Reminder
+
+on:
+  schedule:
+    - cron: "0 8 1 * *"   # First day of every month at 08:00 UTC
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  review-reminder:
+    name: Check flagged sources for pending review
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for pending sources
+        id: check
+        run: |
+          if grep -qE '^\| *\[' flagged/pending-review.md; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open reminder issue
+        if: steps.check.outputs.pending == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'source-review',
+            });
+            if (issues.length > 0) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Monthly Review] Sources pending review — ${date}`,
+              body: [
+                '## Monthly Source Review',
+                '',
+                `\`flagged/pending-review.md\` has entries awaiting review as of **${date}**.`,
+                '',
+                'Review each entry:',
+                '- **Approve**: confirm the domain is on the CLAUDE.md Rule 7 allowlist and the link is reachable, then move the row to `approved-sources.md` and use it as a `source_url`.',
+                '- **Reject**: if the domain is on the CLAUDE.md Rule 8 blocklist or the content is unsuitable, move the row to `rejected-sources.md` with a reason.',
+                '',
+                '---',
+                '_Auto-opened by the monthly review workflow._',
+              ].join('\n'),
+              labels: ['source-review', 'automated'],
+            });
