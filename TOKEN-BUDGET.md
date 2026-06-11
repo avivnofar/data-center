@@ -178,6 +178,43 @@ sign-off, starts real recurring cost), Step 8 (doc/code gaps:
 `weekly_analytics` population, no `POST /api/agents/reports/:id/ack`
 endpoint).
 
+## Pre-launch readiness check (2026-06-11, no simulation run)
+
+Per request, audited readiness for the office simulation WITHOUT triggering
+`runWorkDayCycle`/`runWeeklyResetCycle` (those make ~50 Gemini calls +
+many Claude calls per simulated day — explicitly not run this session).
+
+- **Step 6 done**: `AGENTS_SCHEDULER_BASE` in `index.html` CONFIG was
+  confirmed dead (grep showed only `AGENTS_API_BASE` is used at lines
+  3263/3272/3375) — removed the unused key.
+- **Static checks, all clean**: `node --check` on every file in
+  `agents/workers/*.js` and `agents/agents/*.js` (no syntax errors);
+  module resolution already proven by the successful `wrangler deploy`
+  (esbuild would fail on missing imports/exports); SQL column names in
+  `meeting-engine.js` cross-checked against `schema.sql` — all match.
+- **CRM case generation is safe to run**: `crm-engine.js` IDs
+  (`crm-<year>-w<week>-d<day>-<n>`) can't collide with seeded `case-XXXX`
+  rows, and `persistCrmCases()` uses `INSERT OR IGNORE`.
+- **Empty `year_stats`/`SIM_KV` are handled gracefully**: `getYearState()`
+  seeds from `year-tracker.json` if no row exists; `getSimulationState()`
+  defaults to `paused: false` if `SIM_KV` is empty (current actual state).
+- **`GITHUB_TOKEN` absence is a clean no-op** everywhere it's checked
+  (`agent-runner.js`, `meeting-engine.js`, `scheduler.js`).
+- **Flagged, not fixed (design question, not a bug)**: `simulation-config.json`
+  `TIME_SCALE.real_hours_per_work_week: 24` ("24h = 1 work week of 5 days")
+  doesn't match the actual cron design in `agent-runner.js`'s `scheduled()` —
+  hourly cron = 1 simulated day, daily cron = reset cycle covering the last
+  24h via `getWeeklyCasesHandled()`'s hardcoded 24h lookback (i.e. ~24
+  simulated days per "weekly" reset, not 5). `TIME_SCALE` isn't read by any
+  code (only referenced in a comment), so this is harmless today but worth
+  reconciling — pick the real intended cadence — before finalizing the
+  cron strings in Step 7.
+
+**Verdict**: code is ready for a manual `runWorkDayCycle` test (or Step 7
+cron) from an infra/correctness standpoint. The cron-cadence question above
+and the agent-stub.js "good enough for 5-11" open question (Step 5) are the
+two remaining product decisions before Step 7.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work
