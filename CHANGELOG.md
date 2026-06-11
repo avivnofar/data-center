@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-11 — 13decd2] (master)
+
+- fix(ui): prevent iOS auto-zoom on input focus; update queue status ([13decd2](https://github.com/avivnofar/data-center/commit/13decd273ba26300275a4f8a9479c7dc6b345d4f))
+
+
 ## [2026-06-11 — 1b71238] (master)
 
 - fix(worker): update Claude model to claude-sonnet-4-6 ([1b71238](https://github.com/avivnofar/data-center/commit/1b71238ff9af075b6039fe66d021f449066bfbfa))
