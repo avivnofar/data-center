@@ -26,6 +26,13 @@ class_name = "AgentStateDO"
 tag = "v1"
 new_sqlite_classes = ["AgentStateDO"]
 
+# Service binding to data-center-api — required because Cloudflare blocks a
+# Worker from fetch()-ing another Worker's *.workers.dev URL directly (error
+# 1042). interactWithApp() in agents/agents/agent-base.js uses this binding.
+[[services]]
+binding = "APP_API"
+service = "data-center-api"
+
 # Secrets (set via `wrangler secret put <NAME>`, not here):
 #   GEMINI_API_KEY - required, Gemini role-play calls
 #   ADMIN_TOKEN    - required, validates X-Admin-Token on /api/agents/*

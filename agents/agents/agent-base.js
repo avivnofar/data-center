@@ -287,22 +287,29 @@ export class AgentBase {
     const base = this.env.APP_API_BASE || 'https://data-center-api.avivnofar.workers.dev';
     const moodBefore = this.mood;
 
+    const requestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: this.env.APP_ORIGIN || 'https://avivnofar.github.io',
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: query }],
+        mode: mode === 'diagnose' ? 'diagnose' : 'search',
+        language: 'en',
+        db_context: '',
+      }),
+    };
+
     let ok = true;
     let responseText = '';
     try {
-      const res = await fetch(`${base}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Origin: this.env.APP_ORIGIN || 'https://avivnofar.github.io',
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: query }],
-          mode: mode === 'diagnose' ? 'diagnose' : 'search',
-          language: 'en',
-          db_context: '',
-        }),
-      });
+      // Cloudflare blocks a Worker from fetch()-ing another Worker's
+      // *.workers.dev URL directly (error 1042) — use the APP_API service
+      // binding when available, falling back to a plain fetch for local dev.
+      const res = this.env.APP_API
+        ? await this.env.APP_API.fetch(`${base}/api/chat`, requestInit)
+        : await fetch(`${base}/api/chat`, requestInit);
       ok = res.ok;
       responseText = await res.text();
     } catch (err) {

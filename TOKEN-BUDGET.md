@@ -34,9 +34,8 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
    `agents/config/agents-config.json` (v0.2.0, fully specified for all 11).
    `agents/README.md` and `agents/AGENTS.md` still describe agents 5-11
    with stale placeholder names — fix when next touching that folder.
-4. **Test the single Gemini agent against the live app** — run it through
-   `data-center-api`'s `/api/chat`, verify mood/state transitions and
-   reports per `agents-config.json`. Blocked on item 1's Worker redeploy.
+4. **Test the single Gemini agent against the live app** — DONE. See
+   "Launch session progress (continued)" below.
 5. **Full 1-year office simulation run** — once items 1-4 are solid.
 
 ## Outstanding blocker
@@ -126,6 +125,58 @@ exists — now call `agent-runner.js`'s `/api/agents/trigger
 {"type":"week_reset"}`. And aligned `simulation-config.json`'s
 `PERMISSIONS` block with each agent's actual `clearance`. Two commits, not
 yet pushed — pending review per the pause-before-push rule.
+
+## Launch session progress (continued, 2026-06-11)
+
+Cloudflare auth blocker RESOLVED (`wrangler whoami` now authenticated). Steps
+0-5 of `OFFICE-PROJECT-BRIEF.txt` section 5 are now done:
+
+- **Step 1 (D1 schema/seed)**: schema tables already existed; `agents` and
+  `cases` tables were empty. Applied `agents/database/seed-cases.sql`
+  (11 agents + 12 sample cases) — first time, safe (was empty).
+- **Step 2 (secrets)**: `GEMINI_API_KEY` and `ADMIN_TOKEN` were already set
+  on `data-center-agents` from an earlier deploy. Rotated `ADMIN_TOKEN` to a
+  new value (given to the user out-of-band for the in-app Admin tab's
+  `dc-admin-token`; not stored in this repo).
+- **Step 3 (deploy)**: Worker was already deployed (2026-06-11T14:01 UTC).
+- **Step 4 (smoke test)**: `GET /api/agents/status` with `X-Admin-Token`
+  returns `200` with all 11 agents (ids 1-11), correct names from
+  `agents-config.json` v0.2.0, mood/irritation/status fields present.
+- **Step 5 (single-agent test)**: ran `POST /api/agents/run` for agent 3
+  (Standard Agent, Phase 1 dedicated class) and agent 6 (QA, Phase 2
+  `agent-stub.js`), each against a real seeded case.
+  - **Found and fixed a real bug**: the first attempt for both agents
+    returned `{"ok":false, "response":"error code: 1042"}` —
+    Cloudflare blocks a Worker from `fetch()`-ing another Worker's
+    `*.workers.dev` URL directly. `interactWithApp()` in
+    `agents/agents/agent-base.js` was calling
+    `https://data-center-api.avivnofar.workers.dev/api/chat` via plain
+    `fetch()`. Fixed by adding a service binding (`agents/wrangler.toml`:
+    `[[services]] binding = "APP_API" service = "data-center-api"`) and
+    updating `interactWithApp()` to use `env.APP_API.fetch()` when present
+    (falls back to plain `fetch()` for local dev). Redeployed
+    `data-center-agents` (version `84f6c805`).
+  - After the fix, both agents got real Claude responses (`ok:true,
+    quality:1`) via the live app, and `agent_sessions`/`interactions` rows
+    were written correctly to D1. Agent 3 also filed a Gemini-generated
+    status report (`reports` table).
+  - **Open question still unresolved** (per `AGENTS.md`): agent 6's run
+    confirms `agent-stub.js` mechanically works (session/interaction
+    recording, config-driven app-usage rate, real app responses) for a
+    Phase-2 "specified" agent, but it doesn't produce the
+    persona-specific Gemini reports/state transitions that Phase-1 agents
+    (1-4) do. Whether that's "good enough" for launch or needs Phase-1-style
+    state machines for 5-11 is still an open decision.
+- Test runs left 4 rows in `agent_sessions`/`interactions` (2 from the
+  pre-fix 1042 failures, 2 from the post-fix successes) and 1 row in
+  `reports` — harmless test data, not cleaned up.
+
+**Not yet done**: Step 6 (index.html `AGENTS_SCHEDULER_BASE` cleanup — grep
+usages first, per the brief), Step 7 (cron triggers — needs explicit user
+sign-off, starts real recurring cost), Step 8 (doc/code gaps:
+`evaluateResponseQuality()`/`getDbContext()` placeholders, missing
+`weekly_analytics` population, no `POST /api/agents/reports/:id/ack`
+endpoint).
 
 ## Notes
 
