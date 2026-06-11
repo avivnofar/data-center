@@ -18,26 +18,37 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
    re-verify with a live `/api/chat` call. The relationship between the
    top `#search-input` (local DB only) and the AI Search tab is
    intentional/unchanged — not revisited this session.
-2. **Mobile responsiveness + design optimization** — IN PROGRESS.
+2. **Mobile responsiveness + design optimization** — DONE.
    Reviewed existing `@media` breakpoints (640px/768px/480px): tab-nav
    horizontal scroll, off-canvas AI sidebar, AI mode selector wrap, logo
    shrink, copy-btn touch targets, and tooltip max-width were already in
-   place. Fixed one real bug this session: `#search-input`/`#ai-input`/
-   `#admin-token-input` were below 16px, which triggers iOS Safari
-   auto-zoom on focus — added a `font-size: 16px` override at ≤768px.
-   Remaining for next session: tap-target sizing for `.tab-btn`/
-   `.faq-pill`/`.filter-btn` (currently ~31px, below the 44px
-   guideline), and a real visual pass in a mobile browser/devtools
-   (no browser tooling available this session — only static CSS review).
-3. **Consolidate agent runtime into one Gemini engine** — re-architect
-   `agents/workers/agent-runner.js` so a single Worker role-plays all 11
-   personas from `agents/config/agents-config.json`, instead of assuming
-   11 independent Workers/Durable Objects. No deletions — existing configs
-   become the engine's input data.
+   place. Fixed `#search-input`/`#ai-input`/`#admin-token-input` being
+   below 16px (iOS Safari auto-zoom on focus — `font-size: 16px` override
+   at ≤768px), and brought `.tab-btn`/`.filter-btn`/`.faq-pill` up to the
+   44px minimum touch target (WCAG 2.5.5 / Apple HIG) at ≤768px (commit
+   `122a4d4`). Verified via Playwright screenshots at 375px/768px/1280px
+   — no console errors, layout intact.
+3. **Consolidate agent runtime into one Gemini engine** — DONE (commit
+   `b57fc99`). `agents/workers/agent-runner.js` is already a single Worker
+   that role-plays all 11 personas via `instantiateAgent()` +
+   `agents/config/agents-config.json` (v0.2.0, fully specified for all 11).
+   `agents/README.md` and `agents/AGENTS.md` still describe agents 5-11
+   with stale placeholder names — fix when next touching that folder.
 4. **Test the single Gemini agent against the live app** — run it through
    `data-center-api`'s `/api/chat`, verify mood/state transitions and
-   reports per `agents-config.json`.
+   reports per `agents-config.json`. Blocked on item 1's Worker redeploy.
 5. **Full 1-year office simulation run** — once items 1-4 are solid.
+
+## Outstanding blocker
+
+The deployed `data-center-api` Cloudflare Worker is still running stale
+code (old 404ing model name) — `cloudflare-worker/worker.js` was already
+fixed and pushed (commit `1b71238`, `MODEL = 'claude-sonnet-4-6'`) but
+never redeployed. AI Search/Diagnose/CLI mode do not work until this is
+redeployed via the Cloudflare dashboard or `wrangler` with a valid token.
+Handoff docs for a session with dashboard access:
+`C:\Users\97252\Documents\01 work\01 תיק עבודות\AI Projects\PROJECT-STATUS-FOR-WEB-CLAUDE.md`
+and `CLOUDFLARE-WORKER-AGENT-API-ISSUE.txt`.
 
 ## Notes
 
