@@ -7,7 +7,7 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 
 ## Queue
 
-1. **UI polish + verify AI Search end-to-end** — DONE (this session).
+1. **UI polish + verify AI Search end-to-end** — DONE.
    Root cause found and fixed: `cloudflare-worker/worker.js` had
    `MODEL = 'claude-sonnet-4-20250514'`, which returns a 404
    `not_found_error` from Anthropic for this account — every AI
@@ -41,14 +41,12 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 
 ## Outstanding blocker
 
-The deployed `data-center-api` Cloudflare Worker is still running stale
-code (old 404ing model name) — `cloudflare-worker/worker.js` was already
-fixed and pushed (commit `1b71238`, `MODEL = 'claude-sonnet-4-6'`) but
-never redeployed. AI Search/Diagnose/CLI mode do not work until this is
-redeployed via the Cloudflare dashboard or `wrangler` with a valid token.
-Handoff docs for a session with dashboard access:
-`C:\Users\97252\Documents\01 work\01 תיק עבודות\AI Projects\PROJECT-STATUS-FOR-WEB-CLAUDE.md`
-and `CLOUDFLARE-WORKER-AGENT-API-ISSUE.txt`.
+RESOLVED. The `data-center-api` Cloudflare Worker was redeployed with the
+fixed `cloudflare-worker/worker.js` (commit `1b71238`,
+`MODEL = 'claude-sonnet-4-6'`) via the Cloudflare dashboard. Live
+`/api/chat` test confirms a correct streaming response — AI Search/
+Diagnose/CLI mode are working end-to-end. Item 4 (test the single Gemini
+agent against the live app) is now unblocked.
 
 ## Notes
 
