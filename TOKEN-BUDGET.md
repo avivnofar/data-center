@@ -371,6 +371,65 @@ limiting to `gemini-client.js` (flagged twice now, still not implemented —
 no behavior changes were made *during* either run, per the rules, but this
 is a between-runs code fix candidate for a future session).
 
+## Per-block cron wired (2026-06-12)
+
+Per owner request ("set the automation to start tomorrow morning at
+8:00-17:00 israel time") and two explicit architecture choices —
+**"Multiple crons across 08:00-17:00 IST"** and **"Schedule the cron for
+11:00 IST instead (Recommended)"** (the latter for the *quota-reset* angle,
+see below) — re-architected `agent-runner.js` from a single
+`runWorkDayCycle()` call per cron tick to a per-block dispatcher driven by
+`agents/config/daily-schedule.json`:
+
+- **New `israelTimeParts(date)`**: converts `event.scheduledTime` (UTC) to
+  `{ time: "HH:MM", dayOfWeek }` Israel local time. `ISRAEL_UTC_OFFSET_HOURS
+  = 3` (IDT). **DST CAVEAT**: when Israel switches to IST (UTC+2, ~late Oct)
+  or back to IDT (~late Mar), this constant AND `wrangler.toml`'s cron
+  window must both be updated by 1 hour — flagged in both files.
+- **New `runScheduledBlock(env, israelTime, dayOfWeek)`**: looks up
+  `daily-schedule.json`'s blocks for `dayOfWeek`; no-ops if nothing is due
+  at `israelTime`. On the day's first due block, generates+persists the
+  day's CRM cases and partitions them into `case_batch` blocks (mirrors the
+  old `runWorkDayCycle` setup). Persists a day-in-progress "cycle" to
+  `SIM_KV` key `daily-cycle-state` between ticks. On the day's last due
+  block, calls `finalizeScheduledDay()` (mirrors the old `runWorkDayCycle`
+  tail: agent summary, side plots, year-stats, daily report commit) and
+  clears the cycle.
+- **New `logScheduledError(env, {...})`**: per-block try/catch — any error
+  (e.g. Gemini 429) is logged as a `reports` row (`type='incident'`,
+  `agent_id=10` "The Architect", `severity='warning'`) and the tick moves
+  on. A failed `case_batch` block's cases are simply not processed that day
+  (logged, not retried) — acceptable for now per the "contained, non-cascading"
+  stop-logic reading; flagged as a known limitation.
+- **`agents/config/daily-schedule.json`**: `saturday_schedule`'s single
+  block moved from `"00:00"` to `"08:00"` — the new cron window
+  (05:00-13:30 UTC = 08:00-16:30 IDT) never covers midnight, so the
+  Saturday idle block needed to land inside the window (it's both the
+  first and last block, so it still inits+finalizes in one tick).
+  `_meta.cron_status` updated to "WIRED".
+- **`agents/wrangler.toml`**: added `[triggers]\ncrons =
+  ["*/30 5-13 * * *"]` — every 30 min, 05:00-13:30 UTC = 08:00-16:30 IDT,
+  covering every block time in `full_day_schedule`/`friday_schedule`
+  (08:00-16:00 IDT) and the relocated Saturday block (08:00 IDT) with a
+  single cron entry (avoids per-block cron-count concerns).
+- **Deployed** via `wrangler deploy` — cron confirmed active
+  (`schedule: */30 5-13 * * *`). Simulation was **left paused**
+  (`SIM_KV.paused = true`, confirmed before deploy) — the cron will fire on
+  schedule starting tomorrow morning but `runScheduledBlock` returns
+  `{skipped: true, reason: 'paused'}` for every tick until unpaused.
+
+**Open item re: "11:00 IST" quota-reset choice** — `full_day_schedule`'s
+first block is still `08:00` (case_batch, 30% share). With the cron live,
+the 08:00 IDT tick *will* fire and attempt that batch even if the Gemini
+quota hasn't reset yet (~11:00 IST per the take-2 attempt above). Per-block
+error containment means a 429 there is logged and contained (doesn't crash
+the day), but that batch's cases won't be processed. **Next session,
+before unpausing**: either (a) accept this — the 09:30/11:00+ batches will
+likely succeed once quota resets, only the 08:00 batch (30% of the day) is
+at risk on day 1; or (b) reorder/shrink the 08:00 block's `case_share`
+temporarily for the first live day. Decide with the owner before flipping
+`paused: false`.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work

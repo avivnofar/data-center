@@ -578,12 +578,34 @@ product's version by **+0.01** (starting at `1.00`), recording it in both
 
 ### Status
 
-This session **built the schedule/config/wiring only**. `runWorkDayCycle()`
-reads `daily-schedule.json`/`ai-tools.json` and processes their blocks within
-a single invocation — **no per-block cron exists yet**
-(`daily-schedule.json _meta.cron_status`). The next session launches one
-scheduled day manually (via `/api/agents/trigger {"type":"day"}`) with
-explicit sign-off, then reviews the result.
+**Per-block cron is live (wired 2026-06-12).** `agents/wrangler.toml` has a
+single Cloudflare Cron Trigger, `*/30 5-13 * * *` (every 30 min,
+05:00-13:30 UTC = 08:00-16:30 IDT). Each tick, `agent-runner.js`'s
+`scheduled()` converts `event.scheduledTime` to Israel local time via
+`israelTimeParts()` and calls `runScheduledBlock(env, time, dayOfWeek)`,
+which is a no-op unless `daily-schedule.json` has a block at that exact
+`time` for that `dayOfWeek`. A day-in-progress "cycle" (cases, batches,
+agent stats, block results) persists in `SIM_KV` key `daily-cycle-state`
+between ticks; the day's last block finalizes it (`finalizeScheduledDay()`)
+and clears the cycle. Per-block errors (e.g. Gemini 429) are logged to
+`reports` (`logScheduledError`, `agent_id=10`/"The Architect",
+`severity='warning'`) and never abort the day — see `TOKEN-BUDGET.md`
+"Per-block cron wired" for the failed-batch caveat.
+
+`runWorkDayCycle()` (single-invocation, whole-day) remains available for
+manual testing via `/api/agents/trigger {"type":"day"}`.
+
+**DST CAVEAT**: `ISRAEL_UTC_OFFSET_HOURS = 3` in `agent-runner.js` assumes
+IDT (UTC+3, roughly Mar-Oct). When Israel switches to IST (UTC+2, ~late
+Oct) or back to IDT (~late Mar), update BOTH that constant and
+`wrangler.toml`'s cron window (`*/30 5-13 * * *` → `*/30 6-14 * * *` for
+IST) by 1 hour.
+
+The simulation itself is left **paused** (`SIM_KV.paused = true`) — the
+cron will fire on schedule regardless, but `runScheduledBlock` no-ops with
+`{skipped: true, reason: 'paused'}` until a human/Claude-Code session
+unpauses it (see `TOKEN-BUDGET.md` for the Gemini-quota timing decision
+before doing so).
 
 ---
 
