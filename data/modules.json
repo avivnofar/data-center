@@ -101,5 +101,15 @@
     "status": "coming-soon",
     "filter_type": "casestudy",
     "categories": []
+  },
+  {
+    "id": "cli",
+    "label_he": "כלי שורת פקודה",
+    "label_en": "CLI Tools",
+    "icon": "⌨️",
+    "data_file": "data/cli.json",
+    "status": "coming-soon",
+    "filter_type": "command",
+    "categories": []
   }
 ]

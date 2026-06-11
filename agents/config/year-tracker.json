@@ -88,6 +88,7 @@
     "total_trainee_panic_escalations": 0,
     "total_guides_generated": 0,
     "avg_mood_by_agent": {},
-    "rivalry_escalation_count": 0
+    "rivalry_escalation_count": 0,
+    "product_versions": {}
   }
 }
