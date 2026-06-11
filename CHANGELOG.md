@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-06-11 — c9f2098] (master)
+
+- docs: log agents docs/CI cleanup in session queue ([c9f2098](https://github.com/avivnofar/data-center/commit/c9f209806d665966ff30b47b18b65a3fe45a5e97))
+- fix(ci): retarget weekly agent report at agent-runner.js ([4a2c01d](https://github.com/avivnofar/data-center/commit/4a2c01dc21ecb026623495e54973c3c414604bd3))
+- docs(agents): rewrite README/AGENTS for single-Worker architecture ([48625fa](https://github.com/avivnofar/data-center/commit/48625fa6bf06ddb874a0538d1f29244832717665))
+
+
 ## [2026-06-11 — 27f4030] (master)
 
 - docs: record launch-session progress and Cloudflare auth blocker ([27f4030](https://github.com/avivnofar/data-center/commit/27f4030d10f9a019fe01f5db3bae06254b711a49))
