@@ -2,11 +2,12 @@
  * Data Center — AI Agent Simulation — weekly report generator.
  *
  * Run by .github/workflows/agent-reports.yml after the workflow triggers
- * the scheduler Worker's weekly reset cycle (POST /run/week) and pulls
- * incidents/suggestions/status from the agent-runner Worker's admin API.
+ * the agent-runner Worker's weekly reset cycle
+ * (POST /api/agents/trigger {"type":"week_reset"}) and pulls
+ * incidents/suggestions/status from the same Worker's admin API.
  *
  * Reads JSON dumps written by the workflow's curl steps:
- *   $WEEKLY_SUMMARY_FILE - { ok, summary: { week_start, agents: [...] } } from /run/week
+ *   $WEEKLY_SUMMARY_FILE - { ok, type, result: { week_start, agents: [...] } } from /api/agents/trigger
  *   $INCIDENTS_FILE      - rows from /api/agents/reports?type=incident
  *   $SUGGESTIONS_FILE    - rows from /api/agents/suggestions
  *   $STATUS_FILE         - rows from /api/agents/status (for id -> name)
@@ -63,12 +64,11 @@ const incidents = await readJson('INCIDENTS_FILE', []);
 const suggestions = await readJson('SUGGESTIONS_FILE', []);
 const status = await readJson('STATUS_FILE', []);
 
-if (!weeklyResult?.summary) {
+const summary = weeklyResult?.result;
+if (!summary?.agents) {
   console.log('No weekly summary available — skipping report generation.');
   process.exit(0);
 }
-
-const { summary } = weeklyResult;
 const now = new Date(summary.week_start || Date.now());
 const week = isoWeekNumber(now);
 const year = now.getUTCFullYear();

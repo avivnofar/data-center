@@ -24,7 +24,7 @@ jobs:
       - name: Check configuration
         id: config
         run: |
-          if [ -n "${{ vars.AGENTS_SCHEDULER_BASE }}" ] && [ -n "${{ vars.AGENTS_API_BASE }}" ] && [ -n "${{ secrets.ADMIN_TOKEN }}" ]; then
+          if [ -n "${{ vars.AGENTS_API_BASE }}" ] && [ -n "${{ secrets.ADMIN_TOKEN }}" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -35,13 +35,15 @@ jobs:
         run: |
           echo "### Agent Simulation — Weekly Report" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: set the \`AGENTS_SCHEDULER_BASE\` and \`AGENTS_API_BASE\` repo variables and the \`ADMIN_TOKEN\` secret to enable (see agents/README.md)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Skipped: set the \`AGENTS_API_BASE\` repo variable and the \`ADMIN_TOKEN\` secret to enable (see agents/README.md)." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Trigger weekly reset cycle
         if: steps.config.outputs.ready == 'true'
         run: |
-          curl -sf -X POST "${{ vars.AGENTS_SCHEDULER_BASE }}/run/week" \
+          curl -sf -X POST "${{ vars.AGENTS_API_BASE }}/api/agents/trigger" \
             -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"week_reset"}' \
             -o /tmp/weekly-summary.json
 
       - name: Fetch incident reports
