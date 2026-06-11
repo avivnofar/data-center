@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-06-11 — 27f4030] (master)
+
+- docs: record launch-session progress and Cloudflare auth blocker ([27f4030](https://github.com/avivnofar/data-center/commit/27f4030d10f9a019fe01f5db3bae06254b711a49))
+- feat(ui): brighten palette, enlarge AI chat, add CLI terminal look and Solve-a-Case controls ([bdffbdf](https://github.com/avivnofar/data-center/commit/bdffbdf86bc6a18ee7ffe10320ea409af977979d))
+- docs: add Launch Decisions, Source Validation, and AI Capabilities sections ([d2a5be0](https://github.com/avivnofar/data-center/commit/d2a5be006d060c17b83baaaec3f40246392e9e53))
+- feat(agents): add asset-generation pipeline for admin-tier agents ([770cf86](https://github.com/avivnofar/data-center/commit/770cf86f0d82c096abfec1ae0f272cce2e7f420c))
+- feat(worker): add web_search tool and self-extension/learning hooks ([0be34ec](https://github.com/avivnofar/data-center/commit/0be34ec00003cc1749920510ac15fda95cccf12b))
+- chore(agents): wire up agent-runner Worker for Cloudflare deploy ([9e20080](https://github.com/avivnofar/data-center/commit/9e200806614b8532de7f7f7129254710a20f807e))
+
+
 ## [2026-06-11 — 13a0844] (master)
 
 - docs: confirm AI Search Worker redeploy resolved ([13a0844](https://github.com/avivnofar/data-center/commit/13a0844485c690e5b759d58ecb46e61fddade7f4))
