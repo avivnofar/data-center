@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-11 — 2409877] (master)
+
+- fix(agents): use service binding for agent-runner -> data-center-api calls ([2409877](https://github.com/avivnofar/data-center/commit/2409877fc058c13ad9c8724168328d8f8f2efadd))
+
+
 ## [2026-06-11 — c9f2098] (master)
 
 - docs: log agents docs/CI cleanup in session queue ([c9f2098](https://github.com/avivnofar/data-center/commit/c9f209806d665966ff30b47b18b65a3fe45a5e97))
