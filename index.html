@@ -1225,6 +1225,9 @@
       .copy-btn { min-height: 44px; min-width: 44px; }
 
       #tooltip { max-width: min(280px, 80vw); }
+
+      /* Prevent iOS Safari auto-zoom on focus (inputs <16px trigger it) */
+      #search-input, #ai-input, #admin-token-input { font-size: 16px; }
     }
 
     /* ── Small mobile (≤480px) ─────────────────────────────────────────────── */
