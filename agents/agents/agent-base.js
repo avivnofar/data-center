@@ -213,7 +213,7 @@ export class AgentBase {
 
     return queryGemini({
       apiKey: this.env.GEMINI_API_KEY,
-      model: simConfig.model || 'gemini-2.0-flash',
+      model: simConfig.model || 'gemini-2.5-flash-lite',
       endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
       temperature: simConfig.temperature ?? 0.8,
       maxTokens: simConfig.max_tokens ?? 1024,

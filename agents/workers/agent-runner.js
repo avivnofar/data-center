@@ -28,6 +28,8 @@
  * Status: DRAFT (Phase 1 foundation, Phase 2 office simulation).
  */
 
+export { AgentStateDO } from './state-manager.js';
+
 import agentsConfig from '../config/agents-config.json';
 import simulationConfig from '../config/simulation-config.json';
 import sidePlotsConfig from '../config/side-plots.json';

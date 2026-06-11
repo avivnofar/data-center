@@ -11,7 +11,7 @@
     "inspection_mode_multiplier": 2
   },
   "GEMINI": {
-    "model": "gemini-2.0-flash",
+    "model": "gemini-2.5-flash-lite",
     "max_tokens": 1024,
     "temperature": 0.8,
     "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/models"

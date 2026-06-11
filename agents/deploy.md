@@ -29,16 +29,26 @@ one of the two options below.
 ## Option A — Wrangler CLI (recommended)
 
 1. Complete `README.md` Setup steps 1-6 (Gemini key, D1, Durable Objects, KV,
-   cron triggers, `ADMIN_TOKEN`) and write a `wrangler.toml` in
-   `agents/workers/` binding `DB`, `AGENT_STATE`, and `SIM_KV`.
-2. From `agents/workers/`:
+   cron triggers, `ADMIN_TOKEN`). `agents/wrangler.toml` already binds `DB`,
+   `AGENT_STATE`, and `SIM_KV` and points `main` at `workers/agent-runner.js`
+   (which re-exports `AgentStateDO` from `state-manager.js` for the DO
+   binding).
+2. Authenticate once with `npx wrangler login` (or set `CLOUDFLARE_API_TOKEN`
+   for non-interactive use), then set the secrets:
    ```bash
-   npx wrangler deploy agent-runner.js --name data-center-agents
+   npx wrangler secret put GEMINI_API_KEY
+   npx wrangler secret put ADMIN_TOKEN
+   npx wrangler secret put GITHUB_TOKEN   # optional
    ```
-3. Repeat for the scheduler:
+3. From `agents/`:
    ```bash
-   npx wrangler deploy scheduler.js --name data-center-scheduler
+   npx wrangler deploy
    ```
+4. The scheduler's cron-driven cycles run from `agent-runner.js`'s own
+   `scheduled()` handler (see its header comment) — no separate
+   `data-center-scheduler` Worker is deployed. Add cron triggers to
+   `agents/wrangler.toml` only when ready for the quarter-run (see
+   `TOKEN-BUDGET.md`).
 
 ## Option B — Dashboard multi-file editor
 

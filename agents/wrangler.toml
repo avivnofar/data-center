@@ -1,0 +1,36 @@
+name = "data-center-agents"
+main = "workers/agent-runner.js"
+compatibility_date = "2026-06-11"
+
+# D1 database — storage for agents/agent_sessions/cases/interactions/reports/
+# suggestions/weekly_analytics/meetings/side_plots/promotions/year_stats
+# (agents/database/schema.sql).
+[[d1_databases]]
+binding = "DB"
+database_name = "data-center-db"
+database_id = "0819c65e-fa93-40cb-9894-c8dae0906f09"
+
+# Live simulation overrides (inspection_mode/paused/phase) — see
+# getSimulationState()/updateSimulationState() in agent-runner.js.
+[[kv_namespaces]]
+binding = "SIM_KV"
+id = "62dd88c9524c4d048f99022a751a895e"
+
+# Per-agent persisted state (mood/irritation/configOverrides) — see
+# state-manager.js AgentStateDO.
+[[durable_objects.bindings]]
+name = "AGENT_STATE"
+class_name = "AgentStateDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AgentStateDO"]
+
+# Secrets (set via `wrangler secret put <NAME>`, not here):
+#   GEMINI_API_KEY - required, Gemini role-play calls
+#   ADMIN_TOKEN    - required, validates X-Admin-Token on /api/agents/*
+#   GITHUB_TOKEN   - optional, gates report/guide commits to GitHub
+
+# No cron triggers configured yet — adding "0 */1 * * *" / "0 0 * * *" here
+# starts the simulation (runWorkDayCycle / runWeeklyResetCycle). Add only
+# when ready for the quarter-run (see TOKEN-BUDGET.md).
