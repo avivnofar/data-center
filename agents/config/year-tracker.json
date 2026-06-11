@@ -64,8 +64,17 @@
     { "target_day": 365, "version": null, "shipped": false, "shipped_day": null, "summary": null }
   ],
 
+  "asset_pipeline": {
+    "_meta": {
+      "description": "Tracks AI-generated assets/web-app prototypes from admin-tier agents (see agents-config.json can_generate_assets and agents/config/asset-platforms.json) through review. Live state persists in D1 (a future `assets` table); this is the seed/reset value.",
+      "stages": ["generated", "tested", "optimized", "implemented"]
+    },
+    "items": []
+  },
+
   "stats": {
     "total_cases_handled": 0,
+    "total_assets_by_stage": { "generated": 0, "tested": 0, "optimized": 0, "implemented": 0 },
     "total_cases_by_agent": {},
     "total_meetings": 0,
     "total_meetings_by_type": {},
