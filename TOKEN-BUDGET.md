@@ -7,6 +7,10 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 
 ## Queue
 
+0. **Month-1 launch run** — STOPPED ON DAY 1 (2026-06-11), see "Launch
+   attempt" section below. Blocked on Gemini API quota/billing — needs user
+   action before retry. Resume here once unblocked.
+
 1. **UI polish + verify AI Search end-to-end** — DONE.
    Root cause found and fixed: `cloudflare-worker/worker.js` had
    `MODEL = 'claude-sonnet-4-20250514'`, which returns a 404
@@ -214,6 +218,45 @@ many Claude calls per simulated day — explicitly not run this session).
 cron) from an infra/correctness standpoint. The cron-cadence question above
 and the agent-stub.js "good enough for 5-11" open question (Step 5) are the
 two remaining product decisions before Step 7.
+
+## Launch attempt — Month 1, Day 1 (2026-06-11)
+
+Per the project owner's launch prompt, ran preflight (all green: D1 schema
+complete, `data-center-agents` deployed at version `84f6c805` with the
+service-binding fix, `GEMINI_API_KEY`/`ADMIN_TOKEN` secrets present, models
+correct). **`ADMIN_TOKEN` was rotated** this session (new value given to the
+user directly in chat — update `dc-admin-token` in the dashboard).
+
+Triggered `POST /api/agents/trigger {"type":"day"}` as a smoke test (this
+code path — `runWorkDayCycle()` — had never run end-to-end before). Result:
+**HTTP 500 after 449s** — `Gemini API error (429): "You exceeded your
+current quota, please check your plan and billing details"`.
+
+- **Root cause**: `GEMINI_API_KEY`'s Google AI Studio project hit a 429
+  quota/billing limit on `gemini-2.5-flash-lite` partway through day 1's
+  case loop (47 of 50 cases processed). `gemini-client.js` has no
+  retry/backoff, so the first 429 became a 500. CLAUDE.md assumes a "paid"
+  Gemini tier — this key appears to be on free-tier limits, or the daily
+  free quota was already partly used by prior testing sessions.
+- **Cost**: negligible. Gemini calls cost $0 (free tier). 26 real Claude
+  (`data-center-api`) calls succeeded (25 search + 1 diagnose) — estimated
+  ~$0.10-0.50 total. Nowhere near the $5 cap.
+- **Partial D1 state for day 1** (crm-2026-w01-d1-001..050): 50 cases
+  persisted, 47 `agent_sessions`, 26 `interactions`, 10 status reports
+  (agent 3). `year_stats` has 0 rows — day 1 never officially completed.
+  Full diagnostic snapshot: `agents/checkpoints/month-01/day-01-attempt.json`.
+- **Before retrying day 1**: (1) resolve the Gemini quota/billing issue —
+  check https://aistudio.google.com billing for this key's project; (2)
+  decide whether to clean up the 47 partial day-1 sessions/interactions/
+  reports (crm-2026-w01-d1-*) before a clean retry, since `runWorkDayCycle`
+  has no "already processed today" guard and would reprocess all 50 cases
+  on a second attempt; (3) consider adding retry/backoff to
+  `gemini-client.js` before the next attempt (not done this session — no
+  behavior changes during the run, per CLAUDE.md).
+
+**Per the HARD RULES** ("HALT only if unfixable after retries, or cost cap
+hit"), this halted the run — the quota/billing issue is unfixable from
+within this session. Days 2-20 and month-end were not attempted.
 
 ## Notes
 
