@@ -113,6 +113,20 @@ values, don't invent), `npx wrangler deploy` from `agents/`, smoke test
 simulation start**, (3) once deploy is verified: item 4 above (single-agent
 test against the live app), then the full quarter launch.
 
+### Docs cleanup while Part 3 is blocked
+
+While blocked on Cloudflare auth, fixed the staleness CLAUDE.md flagged in
+`agents/README.md`/`agents/AGENTS.md` (old two-Worker design, wrong agent
+5-11 names): both now describe the consolidated `agent-runner.js` Worker
+and the correct agents-config.json v0.2.0 roster (IT Chief, QA, Team Lead,
+Lead QA, Designer, Architect, CEO). Also fixed `agent-reports.yml` /
+`generate-weekly-report.mjs`, which still pointed at a `/run/week` endpoint
+on a separate `AGENTS_SCHEDULER_BASE` scheduler Worker that no longer
+exists — now call `agent-runner.js`'s `/api/agents/trigger
+{"type":"week_reset"}`. And aligned `simulation-config.json`'s
+`PERMISSIONS` block with each agent's actual `clearance`. Two commits, not
+yet pushed — pending review per the pause-before-push rule.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work
