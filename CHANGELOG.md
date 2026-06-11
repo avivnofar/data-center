@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-11 — 1b71238] (master)
+
+- fix(worker): update Claude model to claude-sonnet-4-6 ([1b71238](https://github.com/avivnofar/data-center/commit/1b71238ff9af075b6039fe66d021f449066bfbfa))
+
+
 ## [2026-06-11 — c36fd77] (master)
 
 - docs: sync strategy - one Gemini engine plays all 11 personas, UI-first ([c36fd77](https://github.com/avivnofar/data-center/commit/c36fd77c67f8ef0280e2fbea01925fb19bbe180b))
