@@ -325,16 +325,51 @@ on Week-1-stop commit `1c14a12`).
   Coordination" (schedule, tool matrix, asset pipeline, weekly summary,
   version-bump rule, status note) and "## Future Assimilation: CLI Tools".
 
-**No cron added. No simulation run this session** — `SIM_KV.paused` stays
-`true` from the Week-1 stop.
+**No cron added.** `SIM_KV.paused` stays `true` from the Week-1 stop as of
+the build itself; see the launch attempt below for what happened after.
 
-**Next session**: with explicit owner sign-off, launch tomorrow's
-scheduled work day manually via `POST /api/agents/trigger {"type":"day"}`
-(unpause first via `POST /api/simulation`), observe the new schedule-driven
-`runWorkDayCycle` end-to-end (case batches, tool-task window, AI-experience
-report, spare time, and — if it lands on a Friday — the weekly summary +
-version-bump path), then review output/cost before deciding on cron
-(Step 7, still pending from the 2026-06-11 launch session).
+## Launch attempt — schedule-driven day, take 2 (2026-06-11, ~23:08 UTC)
+
+With explicit owner sign-off, generated a fresh `ADMIN_TOKEN`
+(`wrangler secret put ADMIN_TOKEN --name data-center-agents` — new value
+given to the owner directly in chat, update `dc-admin-token`), confirmed
+`/api/agents/status` healthy (11 agents), unpaused via `POST
+/api/simulation {"paused": false}`, then triggered `POST
+/api/agents/trigger {"type":"day"}`.
+
+- **Result: HTTP 500 after ~146s** — same `Gemini API error (429):
+  "You exceeded your current quota..."` as the 2026-06-11 Month-1 Day-1
+  attempt (see above), but failing **3x faster** (146s vs 449s) and
+  **before any new D1 writes** — `cases` count unchanged (62), `reports`
+  unchanged (10 status rows, latest timestamp 21:56 UTC — *before* this
+  run), `year_stats` still empty.
+- **Root cause confirmed**: this is the *same* exhausted daily quota from
+  the 2026-06-11 ~21:55-21:58 UTC attempt, not a new/separate issue. Google
+  AI Studio free-tier daily quotas reset at midnight Pacific Time
+  (~08:00 UTC / ~11:00 Israel time) — at 23:08 UTC June 11 that reset had
+  **not yet happened**, so the key was still exhausted from ~1h10m earlier.
+  This run hit the limit on essentially its first Gemini call, hence the
+  much faster failure.
+- **Immediately re-paused** (`SIM_KV.paused = true`) — no further calls
+  attempted. Cost: effectively $0 (the 429 fires before any Claude
+  `data-center-api` calls in the case-batch loop).
+
+**Per HARD RULES / Launch Decisions stop logic** ("halt only if unfixable
+after retries, or cost cap hit"): this is unfixable from within a session —
+it requires either (a) waiting past the daily quota reset (~08:00 UTC /
+~11:00 Israel time) before retrying, or (b) the owner checking/upgrading
+billing for this `GEMINI_API_KEY` project at
+https://aistudio.google.com (CLAUDE.md assumes a "paid" tier; this key's
+behavior — hard daily cap, fast exhaustion — looks like free tier).
+
+**Next session**: (1) confirm it's past the quota reset window, (2) retry
+`POST /api/agents/trigger {"type":"day"}` (unpause first) — if it again
+fails near-instantly with 429, the key is not on the paid tier the cost
+model assumes and needs an owner-side billing fix before any further
+attempts; (3) separately, consider adding retry/backoff + request-rate
+limiting to `gemini-client.js` (flagged twice now, still not implemented —
+no behavior changes were made *during* either run, per the rules, but this
+is a between-runs code fix candidate for a future session).
 
 ## Notes
 
