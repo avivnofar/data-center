@@ -104,6 +104,33 @@ explanation. Avoid background theory unless the user explicitly asks for it.`;
     prompt += `\n\n${dbContext.trim()}`;
   }
 
+  prompt += `
+
+CAPABILITIES:
+- A web_search tool is available. Use it when your training data may be
+  outdated, or the user asks about current versions, recent CVEs, or
+  something not covered by the local knowledge base. Prefer official
+  documentation domains: man7.org, learn.microsoft.com, docs.microsoft.com,
+  ss64.com, linux.org, kernel.org, iana.org, rfc-editor.org, nmap.org,
+  wireshark.org, ubuntu.com, redhat.com, debian.org, cloudflare.com,
+  cisco.com, tcpdump.org, iperf.fr, software.es.net. Treat any other
+  domain, or an unfamiliar publisher, with caution: verify against an
+  official source before relying on it, and never present an unverified
+  claim as fact.
+- If this session exposed a genuine, specific gap in the knowledge base (a
+  missing command, module, file type, or schema field — not a vague "could
+  be more"), end your response with a line "---" followed by:
+    CAPABILITY_SUGGESTION: {"type": "...", "summary": "...", "proposed_change": "...", "affected_files": ["..."]}
+- If a web_search result surfaced a source worth adding as a source_url for
+  an existing command/category, end your response with:
+    LEARNED_SOURCE: {"url": "...", "proposed_field": "linux.json:netstat.source_url", "reason": "..."}
+  Only propose sources from the approved-domain list above. Never propose
+  stackoverflow.com, reddit.com, medium.com, youtube.com, github.com,
+  geeksforgeeks.org, w3schools.com, or *.blogspot.com.
+Both suggestion blocks are optional, machine-readable hints for the app —
+omit them entirely on most responses. They are proposals only; a human
+reviews them before anything changes.`;
+
   return prompt;
 }
 
@@ -208,6 +235,9 @@ export default {
           system,
           messages,
           stream: true,
+          // Server-side web search — capped per request to bound cost
+          // (see CLAUDE.md "Launch Decisions" cost ceiling).
+          tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
         }),
       });
     } catch (err) {
