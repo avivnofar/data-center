@@ -268,6 +268,74 @@ Day 1 and write a report on the first week/period. Done — set
 the 47/50-case partial Day 1), and removed the temporary `agents/_day1_*.json`
 scratch files used to gather the report data.
 
+## Daily automation + AI-tool coordination build (2026-06-12)
+
+Per the project owner's "autonomous architect" prompt (build the DAILY
+AUTOMATION + SCHEDULING SYSTEM, config + wiring only, no cron, no live
+run this session). Preflight was green (CLAUDE.md Current Strategy +
+Launch Decisions read, `agents/config/*.json` reviewed, `git log` clean
+on Week-1-stop commit `1c14a12`).
+
+- **Part 1 — `agents/config/daily-schedule.json`** (NEW): tactical 24h
+  cycle. Work 08:00-16:00, overtime 16:00-18:00. Day-type mapping
+  (1=Sun..5=Thu full work days with 5 case-batches at 0.30/0.20/0.20/0.20/0.10
+  share, daily standup, tool-task window, AI-experience report, spare time;
+  6=Fri short day with 2 batches + weekly summary meeting at 12:00; 7=Sat
+  off, `force_idle:true`, zero API calls). `model_education_program`
+  (quality threshold 0.6, max 3 case studies/day) and
+  `weekly_summary_program` (3 Friday outputs: summary.md, data.csv,
+  public-summary.md) defined. `_meta.case_volume_design_note` documents
+  the existing ~50/day CRM pool being *partitioned* by `case_share`, not
+  multiplied.
+- **Part 2 — `agents/config/ai-tools.json`** (NEW): tool-access matrix.
+  NotebookLM (primary: Agent 6/QA), Stitch (Agents 9+10, joint-only),
+  Base44 (all admins, preferred 9/10), Google AI Studio (Agents 9+10).
+  `weekly_rotation` Sun-Thu maps each day to one tool + agent(s) + session
+  mode, staggered to avoid conflicts/token exhaustion.
+- **Part 3 — asset pipeline seeded** (NEW): `agents/reports/asset-pipeline/board.json`
+  + 4 spec files in `agents/reports/asset-pipeline/issues/`:
+  `qa-knowledge-base.md` (Agent 6 NotebookLM DB build — goal: app answers
+  almost exclusively from QA-built knowledge bases, very-high source
+  scrutiny applies), `archives-app.md` (joint 6+9+10, "archive mentality"
+  + thin AI brain, reuses data-center-archive concepts), `designer-tooling-suite.md`
+  (Agent 9, free design tools), `architect-org-products.md` (Agent 10,
+  org-facing products, joint w/ Designer for important ones). CRM flagged
+  as `not_scheduled:true` placeholder in board.json. CLI tools: added
+  `data/modules.json` "coming-soon" stub (`id:"cli"`) + CLAUDE.md "Future
+  Assimilation: CLI Tools" section — not built.
+- **Part 4 — `agents/workers/agent-runner.js` wiring**: `runWorkDayCycle`
+  now reads `daily-schedule.json`/`ai-tools.json` via `getDaySchedule()`,
+  partitions cases via `partitionCasesByShare()`, runs each batch through
+  `processCaseBatch()` (logs low-quality interactions for model-education
+  case studies), then iterates the day's schedule blocks: tool-task window
+  -> `maybeOpenAssetTask()`, report block -> `runDailyAiExperienceReports()`,
+  spare time -> `runSpareTimeForAgent()` (20% coworker-interaction / 80%
+  idle, Saturday always idle/zero calls), Friday weekly_summary ->
+  `generateWeeklySummary()` + `checkProductVersionBumps()` (+0.01 per
+  shipped weekly product, tracked in `year-tracker.json` `stats.product_versions`).
+  `commitFileToRepo` now sha-aware (create+update); new `fileGitHubIssue`/
+  `fileAssetTaskIssue`/`fileModelEducationIssue`/`fetchAssetBoard` helpers
+  — all no-op cleanly without `GITHUB_TOKEN` (confirmed absent this
+  session), queuing to D1 `reports`/board.json instead. `agent-base.js`
+  gained `fileModelEducationCaseStudy()`. `renderDailySummary()` gained a
+  "## Daily Schedule" section via new `renderScheduleSection()`.
+  Validated: `node --check` clean on both files, all touched JSON files
+  parse, `validate-json.js` passes (11 modules, 27/15/12/10 entries).
+- **Part 5 — docs**: CLAUDE.md gained "## Daily Automation & AI-Tool
+  Coordination" (schedule, tool matrix, asset pipeline, weekly summary,
+  version-bump rule, status note) and "## Future Assimilation: CLI Tools".
+
+**No cron added. No simulation run this session** — `SIM_KV.paused` stays
+`true` from the Week-1 stop.
+
+**Next session**: with explicit owner sign-off, launch tomorrow's
+scheduled work day manually via `POST /api/agents/trigger {"type":"day"}`
+(unpause first via `POST /api/simulation`), observe the new schedule-driven
+`runWorkDayCycle` end-to-end (case batches, tool-task window, AI-experience
+report, spare time, and — if it lands on a Friday — the weekly summary +
+version-bump path), then review output/cost before deciding on cron
+(Step 7, still pending from the 2026-06-11 launch session).
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work

@@ -466,6 +466,140 @@ design and are due a rewrite (see `TOKEN-BUDGET.md`).
 
 ---
 
+## Daily Automation & AI-Tool Coordination
+
+Built on the 2026-06-12 daily-automation session. Defines the tactical
+24-hour schedule the office simulation runs (config only — **no cron is
+wired to it yet**; see "Status" at the end of this section).
+
+### Day types (`agents/config/daily-schedule.json`)
+
+`runWorkDayCycle()` maps `dayOfWeek` (1-7, derived from `current_day` as
+before) to an Israeli work week, per the Launch Decisions' "work days
+Sunday-Thursday":
+
+| `dayOfWeek` | Day | Schedule |
+|---|---|---|
+| 1-5 | Sun-Thu | **Full day**: 5 case-batch triggers (08:00 30%, 09:30 20%, 11:00 20%, 13:00 20%, 14:30 10%), a tool-task window (11:30), the daily AI-experience report block (15:30), daily standup + spare time (16:00) |
+| 6 | Fri | **Short day**: 2 case batches (08:00 60%, 10:00 40%), AI-experience report (10:30), weekly executive summary meeting + PDF/Excel (12:00), standup + spare time (12:00) |
+| 7 | Sat | **Off**: zero case batches, zero meetings, zero Gemini/Claude calls — pure idle (token-saving) |
+
+**Case volume is unchanged** — the existing ~50/day CRM pool
+(`crm-engine.js generateAssignedDailyBatch()`) is generated once per day as
+before and then *partitioned* across that day's case-batch blocks by
+`case_share`, preserving each case's unique ID. Per-agent quotas in
+`agents-config.json` (`cases_per_day_min/max: 30-50`) remain capacity
+ceilings, not a multiplier on this pool — see `daily-schedule.json
+_meta.case_volume_design_note`.
+
+### Daily AI-experience reports & model education
+
+At the day's `report` block, every agent who handled >=1 case today files a
+short, casual **status report** on their AI Search experience
+(`fileStatusReport()` — permission: private, staff/agents + owner). Up to 3
+of the day's lowest-quality interactions (quality < 0.6) become **model-
+education case studies** (`fileModelEducationCaseStudy()`, `reports` type
+`model_education`, permission: special) and — if `GITHUB_TOKEN` is
+configured — a `claude-action` + `model-education` GitHub Issue via
+`fileModelEducationIssue()`. Without `GITHUB_TOKEN` the report stays queued
+in D1 for a human/Claude-Code session to batch-file.
+
+### Spare time / idle (token discipline)
+
+When an agent has no more cases and no meeting, `runSpareTimeForAgent()`
+rolls a 20% chance of one short logged "coworker chat" (1 Gemini call,
+`interactions` type `coworker_chat`); the other 80% — and *always* on the
+Saturday off day — the agent goes **idle**: an `interactions` row (type
+`idle`) is logged with **zero** Gemini/Claude calls. This is the primary
+token-discipline lever for spare time.
+
+### AI-Tool Access Coordination (`agents/config/ai-tools.json`)
+
+External creative tools (**NotebookLM**, **Stitch**, **Base44**, **Google AI
+Studio**) have no unattended API — they are never called programmatically.
+The tool-access matrix:
+
+| Tool | Who | Mode |
+|---|---|---|
+| NotebookLM | Agent 6 (QA) primary; Agents 9/10 secondary | Builds the project's knowledge centers — goal: Claude AI Search answers almost exclusively from these |
+| Stitch | Agents 9+10 | Joint sessions only — large/high-value tools/projects |
+| Base44 | Any admin (5-11); 9/10 most often | Any, joint sessions get priority |
+| Google AI Studio | Agents 9/10 | Joint or independent |
+
+A 5-day Sun-Thu `weekly_rotation` staggers one tool-task slot/day so no two
+agents compete for the same tool on the same day, with joint Stitch/Base44
+sessions on Mon/Thu. Only the four listed tools are used for content/product
+generation — routine cases use the regular models. Default product type is a
+**lightweight app**.
+
+### Human-in-the-loop asset pipeline (`agents/reports/asset-pipeline/`)
+
+`board.json` tracks tool-tasks through `queued -> in-progress (human) ->
+returned -> tested -> optimized -> implemented`. At each Sun-Thu
+`tool_task_window`, `maybeOpenAssetTask()` checks the day's `weekly_rotation`
+entry; if the assigned board item is `queued` and not yet filed, it opens an
+`asset-task` + `AGENT-N` GitHub Issue (no-ops without `GITHUB_TOKEN`) linking
+to a full spec under `agents/reports/asset-pipeline/issues/`. A human
+executes the work in the real tool and updates the board entry; agents then
+test/optimize the returned asset.
+
+**Seeded standing projects**: `qa-knowledge-base` (NotebookLM, Agent 6),
+`archives-app` (Stitch, joint Agents 6/9/10 — "archive mentality" + thin AI
+brain over `data-center-archive`), `designer-tooling-suite` (Base44/Google AI
+Studio, Agent 9 — free design-tool products), `architect-org-products`
+(Google AI Studio, Agent 10 — org-facing products, joint with Designer for
+important ones), and `crm-placeholder` (flagged for future development, not
+scheduled, no owner agent).
+
+### Weekly Friday executive summary
+
+The Friday `weekly_summary` block (`generateWeeklySummary()`) generates
+three files under `agents/reports/weekly/`:
+
+- `week-NN-summary.md` — the "PDF": a ~10-section executive markdown
+  (case volume, agent performance/mood, model-education findings, incidents,
+  side plots, asset pipeline status, suggestions queue, cost/token estimate,
+  action items). Print-ready per the existing PDF Export convention.
+  Permission: **private/special**.
+- `week-NN-data.csv` — the "Excel": per-agent weekly stats (cases, mood,
+  irritation). Permission: **private/special**.
+- `week-NN-public-summary.md` — short, business-facing excerpt. Permission:
+  **public**.
+
+It also runs the existing `weekly` meeting type.
+
+### Product versioning
+
+Each admin-tier agent (5-11) may own at most one "weekly project" on the
+asset-pipeline board. When a board item's `history` shows it reached
+`implemented` on the current day, `checkProductVersionBumps()` bumps that
+product's version by **+0.01** (starting at `1.00`), recording it in both
+`board.json` (`item.version`) and `year_stats.stats.product_versions[item.id]`.
+
+### Status
+
+This session **built the schedule/config/wiring only**. `runWorkDayCycle()`
+reads `daily-schedule.json`/`ai-tools.json` and processes their blocks within
+a single invocation — **no per-block cron exists yet**
+(`daily-schedule.json _meta.cron_status`). The next session launches one
+scheduled day manually (via `/api/agents/trigger {"type":"day"}`) with
+explicit sign-off, then reviews the result.
+
+---
+
+## Future Assimilation: CLI Tools
+
+A `cli` module stub (`status: "coming-soon"`, `data_file: "data/cli.json"`)
+has been added to `data/modules.json` so the app is ready to absorb a future
+CLI-tools knowledge module (e.g. cross-platform CLI utilities, scripting
+snippets) without further schema changes. **Not built this session** — per
+Launch Decisions Part 3, CLI tooling is intentionally deferred. When it is
+picked up, follow the same bilingual schema as `data/linux.json`/`cmd.json`
+(Rules 1-9 above) and flip `status` to `"active"` once `data/cli.json` exists
+with real entries.
+
+---
+
 ## Automation Workflows
 
 | Workflow | Schedule | Purpose |
