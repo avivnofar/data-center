@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "status": "specified",
     "description": "Tactical 24h schedule the Phase-2 office simulation reads each simulated work day. agent-runner.js's runWorkDayCycle() iterates `blocks` in order within a single invocation (no per-block cron yet — see 'cron_status'). Each block represents a point in the simulated day where a specific activity fires, so the day's ~50-case CRM pool, meetings, AI-experience reports, and spare time are spread out instead of all happening at once.",
-    "cron_status": "NOT WIRED THIS SESSION. agent-runner.js's scheduled() still only distinguishes hourly (runWorkDayCycle) vs daily (runWeeklyResetCycle) cron strings. Adding a per-block cron (or a single cron that walks `blocks` with a stored cursor) is a follow-up session with explicit sign-off.",
+    "cron_status": "WIRED (2026-06-12). agents/wrangler.toml has a single Cloudflare Cron Trigger ('*/30 5-13 * * *', every 30 min 05:00-13:30 UTC = 08:00-16:30 IDT). Each tick, agent-runner.js's scheduled() converts event.scheduledTime to Israel local time (israelTimeParts()) and calls runScheduledBlock(env, time, dayOfWeek), which is a no-op unless a block below has that exact `time` for that day-of-week. Day-in-progress state lives in SIM_KV under 'daily-cycle-state' between blocks. Per-block errors (e.g. Gemini 429) are logged to `reports` (logScheduledError) and do not abort the day.",
     "week_mapping": {
       "description": "dayOfWeek = ((current_day - 1) % 7) + 1, as already computed by runWorkDayCycle(). This schedule maps it to an Israeli Sun-Thu work week per the Launch Decisions ('work days Sunday-Thursday'), with Friday as a short summary day and Saturday off.",
       "1": "Sunday (full work day)",
@@ -52,7 +52,7 @@
     "applies_to_day_of_week": [7],
     "label": "Day off: no case batches, no meetings, no Gemini/Claude calls. Pure idle to preserve tokens.",
     "blocks": [
-      { "time": "00:00", "type": "spare_time", "label": "Full-day idle (off day)", "force_idle": true, "ref": "spare_time_program" }
+      { "time": "08:00", "type": "spare_time", "label": "Full-day idle (off day)", "force_idle": true, "ref": "spare_time_program" }
     ]
   },
 

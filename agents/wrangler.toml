@@ -38,6 +38,12 @@ service = "data-center-api"
 #   ADMIN_TOKEN    - required, validates X-Admin-Token on /api/agents/*
 #   GITHUB_TOKEN   - optional, gates report/guide commits to GitHub
 
-# No cron triggers configured yet — adding "0 */1 * * *" / "0 0 * * *" here
-# starts the simulation (runWorkDayCycle / runWeeklyResetCycle). Add only
-# when ready for the quarter-run (see TOKEN-BUDGET.md).
+# Per-block office-simulation cron (2026-06-12 launch). Fires every 30 min,
+# 05:00-13:30 UTC = 08:00-16:30 IDT (Israel Daylight Time, UTC+3). Each tick,
+# scheduled() converts to Israel local time and calls runScheduledBlock(),
+# which is a no-op unless agents/config/daily-schedule.json has a block at
+# that exact time for that day-of-week. DST CAVEAT: when Israel switches to
+# IST (UTC+2, late Oct) or back to IDT (late Mar), update BOTH this cron
+# window and ISRAEL_UTC_OFFSET_HOURS in agent-runner.js — see CLAUDE.md.
+[triggers]
+crons = ["*/30 5-13 * * *"]

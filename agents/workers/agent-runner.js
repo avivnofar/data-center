@@ -1271,6 +1271,278 @@ export async function runWorkDayCycle(env) {
   };
 }
 
+/* ───────────────────── Per-block scheduled dispatcher ───────────────────── */
+
+// Cloudflare Cron Triggers fire in UTC; daily-schedule.json's block times are
+// Israel local time. IDT (UTC+3) applies roughly Mar-Oct, IST (UTC+2) the
+// rest of the year. Update this constant (and wrangler.toml's cron window)
+// when Israel's clocks change — see CLAUDE.md "Daily Automation" DST note.
+const ISRAEL_UTC_OFFSET_HOURS = 3;
+
+/** Converts a UTC Date to { time: "HH:MM", dayOfWeek } in Israel local time. dayOfWeek matches daily-schedule.json's week_mapping (1=Sun..7=Sat). */
+function israelTimeParts(date) {
+  const israel = new Date(date.getTime() + ISRAEL_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+  const hh = String(israel.getUTCHours()).padStart(2, '0');
+  const mm = String(israel.getUTCMinutes()).padStart(2, '0');
+  return { time: `${hh}:${mm}`, dayOfWeek: israel.getUTCDay() + 1 };
+}
+
+const CYCLE_STATE_KEY = 'daily-cycle-state';
+
+async function getCycleState(env) {
+  if (!env.SIM_KV) return null;
+  return env.SIM_KV.get(CYCLE_STATE_KEY, 'json');
+}
+
+async function setCycleState(env, state) {
+  if (!env.SIM_KV) return;
+  await env.SIM_KV.put(CYCLE_STATE_KEY, JSON.stringify(state));
+}
+
+async function clearCycleState(env) {
+  if (!env.SIM_KV) return;
+  await env.SIM_KV.delete(CYCLE_STATE_KEY);
+}
+
+/**
+ * Logs a scheduled-block failure (e.g. a Gemini 429) as a `reports` row
+ * without throwing, so one bad tick can't cascade or trigger Cloudflare cron
+ * retries. Filed under agent 10 (The Architect) as the simulation's
+ * system/ops agent — `reports.agent_id` is NOT NULL with a FK to `agents`.
+ */
+async function logScheduledError(env, { israelTime, dayOfWeek, blockType, error }) {
+  if (!env.DB) return;
+  try {
+    await env.DB.prepare(
+      `INSERT INTO reports (id, agent_id, type, title, content, severity) VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      crypto.randomUUID(),
+      10,
+      'incident',
+      `Scheduled block error — ${blockType} @ ${israelTime} (day-of-week ${dayOfWeek})`,
+      String(error?.message || error),
+      'warning'
+    ).run();
+  } catch {
+    // best-effort only — never let logging itself break the cron tick
+  }
+}
+
+/**
+ * Cron entry point for one Israel-time tick (called from `scheduled()` with
+ * the tick's { time, dayOfWeek }). Looks up which daily-schedule.json
+ * block(s), if any, are due right now; on the day's first due block it
+ * starts a fresh day-in-progress "cycle" (generates + persists the day's
+ * CRM cases and partitions them per daily-schedule.json), processes the due
+ * block(s) with per-block error containment (`logScheduledError`, never
+ * throws), persists the cycle to SIM_KV between ticks, and on the day's
+ * last due block finalizes the day (`finalizeScheduledDay`) and clears the
+ * cycle. Ticks with no due block (most of them, given the 30-minute cron)
+ * are a cheap no-op.
+ */
+export async function runScheduledBlock(env, israelTime, dayOfWeek) {
+  const sim = await getSimulationState(env);
+  if (sim.paused) return { skipped: true, reason: 'paused' };
+
+  const schedule = getDaySchedule(dayOfWeek);
+  const dueBlocks = schedule.blocks.filter((b) => b.time === israelTime);
+  if (!dueBlocks.length) return { skipped: true, reason: 'no_block_at_time', israelTime, dayOfWeek };
+
+  const isOffDay = schedule === dailyScheduleConfig.saturday_schedule;
+  const isFirstBlock = israelTime === schedule.blocks[0].time;
+  const isLastBlock = israelTime === schedule.blocks[schedule.blocks.length - 1].time;
+
+  let cycle = await getCycleState(env);
+  if (isFirstBlock || !cycle || cycle.dayOfWeek !== dayOfWeek) {
+    const yearState = await getYearState(env);
+    const nextDay = (yearState.current_day || 0) + 1;
+
+    const work = simulationConfig.WORK_DAY;
+    const multiplier = sim.inspection_mode ? work.inspection_mode_multiplier : 1;
+    const dailyCount = Math.round(50 * multiplier);
+
+    const cases = isOffDay
+      ? []
+      : generateAssignedDailyBatch(dayOfWeek, { count: dailyCount, weekNumber: yearState.current_week || 1 });
+    if (cases.length) await persistCrmCases(env, cases);
+
+    cycle = {
+      day: nextDay,
+      dayOfWeek,
+      inspection: sim.inspection_mode,
+      cases,
+      batches: partitionCasesByShare(cases, schedule.blocks).map((b) => ({ ...b, done: false })),
+      agentStats: {},
+      lowQualityLog: [],
+      results: { toolTask: null, aiExperience: null, standup: null, spareTime: [], weeklySummary: null, versionBumps: [] },
+    };
+  }
+
+  const agentStats = new Map(Object.entries(cycle.agentStats).map(([k, v]) => [Number(k), v]));
+  const agentInstances = new Map();
+
+  const ensureAgentInstances = async () => {
+    for (const id of agentStats.keys()) {
+      if (!agentInstances.has(id)) {
+        const agent = instantiateAgent(id, env);
+        await agent.loadState();
+        agentInstances.set(id, agent);
+      }
+    }
+  };
+
+  for (const block of dueBlocks) {
+    try {
+      if (block.type === 'case_batch') {
+        const batch = cycle.batches.find((b) => b.block.time === block.time && b.block.label === block.label);
+        if (batch && !batch.done) {
+          await processCaseBatch(env, batch.cases, agentInstances, agentStats, cycle.lowQualityLog);
+          batch.done = true;
+        }
+      } else if (block.type === 'tool_task_window') {
+        cycle.results.toolTask = await maybeOpenAssetTask(env, dayOfWeek, cycle.day);
+      } else if (block.type === 'report') {
+        await ensureAgentInstances();
+        cycle.results.aiExperience = await runDailyAiExperienceReports(env, agentInstances, cycle.lowQualityLog);
+      } else if (block.type === 'meeting' && block.meeting_type === 'daily_standup') {
+        cycle.results.standup = await runMeeting('daily_standup', env);
+      } else if (block.type === 'spare_time') {
+        await ensureAgentInstances();
+        for (const [, agent] of agentInstances) {
+          cycle.results.spareTime.push(await runSpareTimeForAgent(env, agent, { forceIdle: !!block.force_idle }));
+        }
+      } else if (block.type === 'weekly_summary') {
+        const yearState = await getYearState(env);
+        cycle.results.weeklySummary = await generateWeeklySummary(env, yearState, yearState.current_week || 1);
+        cycle.results.versionBumps = await checkProductVersionBumps(env, yearState, cycle.day);
+      }
+    } catch (err) {
+      await logScheduledError(env, { israelTime, dayOfWeek, blockType: block.type, error: err });
+    }
+  }
+
+  cycle.agentStats = Object.fromEntries(agentStats);
+
+  if (!isLastBlock) {
+    await setCycleState(env, cycle);
+    return { ok: true, day: cycle.day, dayOfWeek, israelTime, blocks: dueBlocks.map((b) => b.type) };
+  }
+
+  let finalize;
+  try {
+    finalize = await finalizeScheduledDay(env, cycle, schedule, isOffDay);
+  } catch (err) {
+    await logScheduledError(env, { israelTime, dayOfWeek, blockType: 'finalize', error: err });
+    finalize = { error: err.message };
+  }
+  await clearCycleState(env);
+  return { ok: true, day: cycle.day, dayOfWeek, israelTime, blocks: dueBlocks.map((b) => b.type), finalize };
+}
+
+/**
+ * Day-end tail for the scheduled (per-block) path: builds the agents
+ * summary from the day-in-progress `cycle`, advances side plots/year stats,
+ * runs the day-365 promotion meeting if due, and writes the daily summary
+ * report. Mirrors the tail of `runWorkDayCycle()`, but reads cases/batches/
+ * agentStats/block results from `cycle` (accumulated tick by tick by
+ * `runScheduledBlock`) instead of computing everything in one pass.
+ */
+async function finalizeScheduledDay(env, cycle, schedule, isOffDay) {
+  const yearState = await getYearState(env);
+  const nextDay = cycle.day;
+  const dayOfWeek = cycle.dayOfWeek;
+
+  const agentInstances = new Map();
+  const summary = { day: nextDay, dayOfWeek, inspection: cycle.inspection, agents: [] };
+
+  for (const [agentIdStr, stats] of Object.entries(cycle.agentStats)) {
+    const agentId = Number(agentIdStr);
+    const agent = instantiateAgent(agentId, env);
+    await agent.loadState();
+    agentInstances.set(agentId, agent);
+
+    if (!agent.isAngry) {
+      const adj = await getModelUsageAdjustment(env, agentId);
+      if (adj.delta !== 0 && typeof agent.config.model_usage_rate === 'number') {
+        const next = Math.min(1, Math.max(0, agent.config.model_usage_rate + adj.delta));
+        await applyConfigOverride(env, agentId, { model_usage_rate: next });
+      }
+    }
+
+    summary.agents.push({
+      agentId,
+      caseCount: stats.caseCount,
+      handled: stats.handled,
+      escalations: stats.escalations,
+      comparisons: stats.comparisons,
+      advancedCases: stats.advancedCases,
+      mood: agent.mood,
+      irritation: agent.irritation,
+      isHappy: agent.isHappy,
+      isAngry: agent.isAngry,
+      isPanic: agent.isPanic,
+    });
+  }
+
+  const { standup, toolTask, aiExperience, spareTime, weeklySummary, versionBumps } = cycle.results;
+
+  const sidePlotStarted = await maybeStartSidePlots(env, { day: nextDay, summary, cases: cycle.cases, standup });
+  const sidePlotUpdates = await advanceSidePlots(env, nextDay);
+
+  const milestoneKey = `day_${nextDay}`;
+  const milestone = yearTrackerSeed.milestones[milestoneKey] || null;
+  let milestoneMeeting = null;
+  if (milestone && MILESTONE_MEETINGS[milestoneKey] && !isOffDay) {
+    try {
+      milestoneMeeting = await runMeeting(MILESTONE_MEETINGS[milestoneKey], env);
+    } catch (err) {
+      milestoneMeeting = { error: err.message };
+    }
+  }
+
+  const newStats = updateYearStats(yearState.stats, { summary, standup, sidePlotStarted, sidePlotUpdates });
+  const isYearEnd = nextDay >= yearTrackerSeed.total_days;
+
+  const newState = {
+    simulation_start: yearState.simulation_start || new Date().toISOString(),
+    current_day: isYearEnd ? 0 : nextDay,
+    current_week: isYearEnd ? 0 : Math.ceil(nextDay / 7),
+    current_month: isYearEnd ? 0 : Math.ceil(nextDay / 30),
+    current_quarter: isYearEnd ? 0 : Math.ceil(nextDay / 91),
+    stats: isYearEnd ? { ...newStats, year_number: (newStats.year_number || 1) + 1 } : newStats,
+  };
+  await persistYearState(env, newState);
+
+  if (milestoneKey === 'day_365' && milestoneMeeting && !milestoneMeeting.error) {
+    const yearNumber = newStats.year_number || 1;
+    const promoMarkdown = renderPromotionResults(yearNumber, milestoneMeeting);
+    await commitFileToRepo(
+      env, REPO_NAME, `agents/reports/promotion-results-year-${yearNumber}.md`, promoMarkdown,
+      `chore(agents): year ${yearNumber} promotion results [skip ci]`
+    );
+  }
+
+  const displayYearState = {
+    ...yearState,
+    current_day: nextDay,
+    current_week: Math.ceil(nextDay / 7),
+    current_month: Math.ceil(nextDay / 30),
+    current_quarter: Math.ceil(nextDay / 91),
+    stats: newStats,
+  };
+  const scheduleInfo = { schedule, dayOfWeek, batches: cycle.batches, toolTask, aiExperience, spareTime, weeklySummary, versionBumps };
+  const markdown = renderDailySummary(displayYearState, summary, standup, sidePlotStarted, sidePlotUpdates, milestone, scheduleInfo);
+  const report = await commitFileToRepo(
+    env, REPO_NAME, `agents/reports/daily/day-${pad(nextDay, 3)}-summary.md`, markdown,
+    `chore(agents): day ${nextDay} summary [skip ci]`
+  );
+
+  return {
+    ...summary, year: newState, standup, sidePlotsStarted: sidePlotStarted, sidePlotUpdates, milestone, milestoneMeeting, report,
+    schedule: { dayOfWeek, toolTask, aiExperience, spareTime, weeklySummary, versionBumps },
+  };
+}
+
 /* ─────────────────────────── Weekly reset cycle ─────────────────────────── */
 
 async function getWeeklyCasesHandled(env, agentId) {
@@ -1363,16 +1635,16 @@ export async function runWeeklyResetCycle(env) {
 
 export default {
   /**
-   * Cron Triggers (configure in this Worker's wrangler.toml):
-   *   "0 *\/1 * * *" -> runWorkDayCycle()    (every hour = 1 simulated work day)
-   *   "0 0 * * *"    -> runWeeklyResetCycle() (every 24h = 1 simulated work week)
+   * Cron Trigger (configured in this Worker's wrangler.toml):
+   *   "*\/30 5-13 * * *" -> every 30 min, 05:00-13:30 UTC = 08:00-16:30 IDT.
+   * Each tick converts event.scheduledTime to Israel local time and calls
+   * runScheduledBlock(), which is a no-op unless daily-schedule.json has a
+   * block at that exact time for that day-of-week. See "Daily Automation"
+   * in CLAUDE.md.
    */
   async scheduled(event, env, ctx) {
-    if (event.cron === '0 */1 * * *') {
-      ctx.waitUntil(runWorkDayCycle(env));
-    } else if (event.cron === '0 0 * * *') {
-      ctx.waitUntil(runWeeklyResetCycle(env));
-    }
+    const { time, dayOfWeek } = israelTimeParts(new Date(event.scheduledTime));
+    ctx.waitUntil(runScheduledBlock(env, time, dayOfWeek));
   },
 
   async fetch(request, env) {
