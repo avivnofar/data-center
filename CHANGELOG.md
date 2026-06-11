@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-11 — c36fd77] (master)
+
+- docs: sync strategy - one Gemini engine plays all 11 personas, UI-first ([c36fd77](https://github.com/avivnofar/data-center/commit/c36fd77c67f8ef0280e2fbea01925fb19bbe180b))
+
+
 ## [2026-06-11 — 1547079] (master)
 
 - feat(worker): support CLI Mode in AI chat system prompt ([1547079](https://github.com/avivnofar/data-center/commit/1547079eac549a1394a571462677eacd5789234c))
