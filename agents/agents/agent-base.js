@@ -245,6 +245,16 @@ export class AgentBase {
   }
 
   /**
+   * Model-education case study: filed when interactWithApp() returned a
+   * quality score below the daily-schedule.json model_education_case_study
+   * threshold. Queued in `reports` (type='model_education') for batch-filing
+   * as a claude-action/model-education GitHub Issue.
+   */
+  async fileModelEducationCaseStudy(content) {
+    return this._fileReport('model_education', `Model education case study — ${this.name}`, content, 'info');
+  }
+
+  /**
    * @param {string} content
    * @param {boolean} [isRoot] - escalate to "root" permission_level regardless of clearance
    */

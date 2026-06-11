@@ -34,6 +34,8 @@ import agentsConfig from '../config/agents-config.json';
 import simulationConfig from '../config/simulation-config.json';
 import sidePlotsConfig from '../config/side-plots.json';
 import yearTrackerSeed from '../config/year-tracker.json';
+import dailyScheduleConfig from '../config/daily-schedule.json';
+import aiToolsConfig from '../config/ai-tools.json';
 
 import { PerfectionistAgent } from '../agents/agent-1-perfectionist.js';
 import { ProductiveAgent } from '../agents/agent-2-productive.js';
@@ -331,17 +333,85 @@ function updateYearStats(prevStats, { summary, standup, sidePlotStarted, sidePlo
 async function commitFileToRepo(env, repoName, path, content, message) {
   if (!env.GITHUB_TOKEN) return { committed: false, reason: 'GITHUB_TOKEN not configured' };
 
+  const headers = {
+    Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+    'User-Agent': 'data-center-agent-sim',
+    Accept: 'application/vnd.github+json',
+  };
   const url = `https://api.github.com/repos/${REPO_OWNER}/${repoName}/contents/${path}`;
+
+  // Updating an existing file requires its current blob sha.
+  let sha;
+  const existing = await fetch(url, { headers }).catch(() => null);
+  if (existing?.ok) {
+    const data = await existing.json().catch(() => null);
+    sha = data?.sha;
+  }
+
   const res = await fetch(url, {
     method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), ...(sha ? { sha } : {}) }),
+  });
+  return { committed: res.ok, status: res.status, path };
+}
+
+/** Generic GitHub Issue creation. No-ops without env.GITHUB_TOKEN. */
+async function fileGitHubIssue(env, repoName, { title, body, labels }) {
+  if (!env.GITHUB_TOKEN) return { created: false, reason: 'GITHUB_TOKEN not configured' };
+
+  const url = `https://api.github.com/repos/${REPO_OWNER}/${repoName}/issues`;
+  const res = await fetch(url, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${env.GITHUB_TOKEN}`,
       'User-Agent': 'data-center-agent-sim',
       Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))) }),
+    body: JSON.stringify({ title, body, labels }),
   });
-  return { committed: res.ok, status: res.status, path };
+  return { created: res.ok, status: res.status };
+}
+
+/** Reads agents/reports/asset-pipeline/board.json from the repo (read-only, public). Returns { items: [] } on any failure. */
+async function fetchAssetBoard(env) {
+  const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/master/agents/reports/asset-pipeline/board.json`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { items: [] };
+    return await res.json();
+  } catch {
+    return { items: [] };
+  }
+}
+
+/**
+ * Files a 'claude-action' + 'model-education' Issue for a case the model
+ * (data-center-api / Claude) did not handle flawlessly. No-ops without
+ * env.GITHUB_TOKEN — the underlying `reports` row (type='model_education')
+ * stays queued either way for batch-filing.
+ */
+async function fileModelEducationIssue(env, agent, entry, content) {
+  return fileGitHubIssue(env, REPO_NAME, {
+    title: `[Model Education] Case ${entry.caseId} — quality ${entry.quality.toFixed(2)}`,
+    body: `Filed by Agent ${agent.id} (${agent.name}) via the daily model-education program.\n\n${content}`,
+    labels: ['claude-action', 'model-education'],
+  });
+}
+
+/**
+ * Opens an asset-task for a queued asset-pipeline board item: files a
+ * GitHub Issue (labels: asset-task, AGENT-N) describing the spec, and marks
+ * the board item so it isn't re-filed. No-ops without env.GITHUB_TOKEN.
+ */
+async function fileAssetTaskIssue(env, item, ownerAgentIds) {
+  const labels = ['asset-task', ...ownerAgentIds.map((id) => `AGENT-${id}`)];
+  return fileGitHubIssue(env, REPO_NAME, {
+    title: `[Asset Task] ${item.title}`,
+    body: `Board item: \`${item.id}\`\nSpec: ${item.spec_file}\n\nSee the spec file for the full goal, schema, and acceptance criteria. Update agents/reports/asset-pipeline/board.json's \`${item.id}\` entry as the work progresses.`,
+    labels,
+  });
 }
 
 /* ─────────────────────────── Config overrides ──────────────────────────── */
@@ -530,7 +600,7 @@ async function maybeStartSidePlots(env, { day, summary, cases, standup }) {
 
 /* ─────────────────────────────── Reporting ─────────────────────────────── */
 
-function renderDailySummary(yearState, summary, standup, sidePlotStarted, sidePlotUpdates, milestone) {
+function renderDailySummary(yearState, summary, standup, sidePlotStarted, sidePlotUpdates, milestone, scheduleInfo) {
   const agentLines = summary.agents
     .map((a) => `- Agent ${a.agentId}: ${a.handled}/${a.caseCount} cases, mood ${a.mood}, irritation ${a.irritation}${a.isAngry ? ' (ANGRY)' : ''}${a.isPanic ? ' (PANIC)' : ''}`)
     .join('\n') || '_No agents processed cases today._';
@@ -538,6 +608,8 @@ function renderDailySummary(yearState, summary, standup, sidePlotStarted, sidePl
   const startedLines = sidePlotStarted.map((p) => `- Started: ${p.type} (agents ${p.agents.join(', ')})`).join('\n');
   const updateLines = sidePlotUpdates.map((u) => `- ${u.type}: ${u.stage} (${u.status})`).join('\n');
   const sidePlotLines = [startedLines, updateLines].filter(Boolean).join('\n') || '_None._';
+
+  const scheduleSection = scheduleInfo ? renderScheduleSection(scheduleInfo) : '';
 
   return `# Day ${yearState.current_day} Summary — ${new Date().toISOString()}
 
@@ -554,6 +626,71 @@ ${standup?.transcript ? standup.transcript : standup?.error ? `_Standup error: $
 ## Side Plot Activity
 
 ${sidePlotLines}
+${scheduleSection}`;
+}
+
+/** Renders the tactical-schedule section (case batches, tool-task window, AI-experience reports, spare time, weekly summary). */
+function renderScheduleSection(scheduleInfo) {
+  const { schedule, batches, toolTask, aiExperience, spareTime, weeklySummary, versionBumps } = scheduleInfo;
+
+  const batchLines = batches
+    .map((b) => `- ${b.block.time || '—'} ${b.block.label}: ${b.cases.length} case(s)`)
+    .join('\n') || '_No case batches (off day)._';
+
+  const toolTaskLine = toolTask
+    ? toolTask.opened
+      ? `Opened asset-task for \`${toolTask.item}\` (tool: ${toolTask.tool}, agents ${toolTask.agents?.join(', ')}).`
+      : `No new asset-task opened (${toolTask.reason || 'n/a'}).`
+    : '_Not a tool-task day (Fri/Sat)._';
+
+  const statusReportLines = (aiExperience?.statusReports || [])
+    .map((r) => `- Agent ${r.agentId}: "${r.note}"`).join('\n') || '_None filed today._';
+  const caseStudyLines = (aiExperience?.caseStudies || [])
+    .map((c) => `- Agent ${c.agentId}, case ${c.caseId} -> reports row \`${c.reportId}\`${c.issue?.created ? ' (GitHub Issue filed)' : ' (queued — no GITHUB_TOKEN)'}`).join('\n') || '_None — no interactions below the model-education quality threshold today._';
+
+  const spareTimeLines = spareTime
+    .map((s) => s.mode === 'idle' ? `- Agent ${s.agentId}: idle (token-saving)` : `- Agent ${s.agentId}: chatted with agent ${s.partner}`)
+    .join('\n') || '_No agents reached spare time today._';
+
+  let weeklySection = '';
+  if (weeklySummary) {
+    const bumpLines = versionBumps.length
+      ? versionBumps.map((b) => `- \`${b.id}\` -> v${b.version.toFixed(2)}`).join('\n')
+      : '_No products reached "implemented" this week._';
+    weeklySection = `
+
+## Weekly Executive Summary (Friday)
+
+Generated \`agents/reports/weekly/week-${pad(weeklySummary.weekNumber, 2)}-{summary.md,data.csv,public-summary.md}\`.
+
+**Product version bumps:**
+${bumpLines}`;
+  }
+
+  return `
+## Daily Schedule
+
+**Day type:** ${schedule === dailyScheduleConfig.saturday_schedule ? 'Saturday (off)' : schedule === dailyScheduleConfig.friday_schedule ? 'Friday (short)' : 'Sun-Thu (full)'}
+
+### Case Batches
+
+${batchLines}
+
+### AI-Tool Task Window
+
+${toolTaskLine}
+
+### Daily AI-Experience Reports
+
+${statusReportLines}
+
+### Model-Education Case Studies
+
+${caseStudyLines}
+
+### Spare Time
+
+${spareTimeLines}${weeklySection}
 `;
 }
 
@@ -618,62 +755,72 @@ async function handleTraineePanic(env, event) {
   return { helperAgentId: event.selectedAgent, guideCommit };
 }
 
+/* ─────────────────────────── Daily schedule (Phase 2) ──────────────────── */
+
+/** Returns the day-type schedule block for a 1-7 dayOfWeek (1=Sun..7=Sat), per daily-schedule.json week_mapping. */
+function getDaySchedule(dayOfWeek) {
+  if (dailyScheduleConfig.friday_schedule.applies_to_day_of_week.includes(dayOfWeek)) return dailyScheduleConfig.friday_schedule;
+  if (dailyScheduleConfig.saturday_schedule.applies_to_day_of_week.includes(dayOfWeek)) return dailyScheduleConfig.saturday_schedule;
+  return dailyScheduleConfig.full_day_schedule;
+}
+
+/** Splits `cases` (in original order) across the schedule's `case_batch` blocks per their case_share; the last batch absorbs any rounding remainder. */
+function partitionCasesByShare(cases, blocks) {
+  const batchBlocks = blocks.filter((b) => b.type === 'case_batch');
+  if (!batchBlocks.length) return [{ block: { label: 'All cases', time: null }, cases }];
+
+  const total = cases.length;
+  const counts = batchBlocks.map((b) => Math.round(total * (b.case_share || 0)));
+  const sum = counts.reduce((a, b) => a + b, 0);
+  counts[counts.length - 1] += total - sum;
+
+  const out = [];
+  let idx = 0;
+  for (let i = 0; i < batchBlocks.length; i++) {
+    const n = Math.max(0, counts[i]);
+    out.push({ block: batchBlocks[i], cases: cases.slice(idx, idx + n) });
+    idx += n;
+  }
+  return out;
+}
+
 /**
- * One simulated work day:
- *  1. CRM case generation + assignment + persistence (crm-engine.js)
- *  2. per-agent case-handling loop — mood/escalation handling, "compare
- *     alternatives" sampling, rolling model_usage_rate adjustment
- *  3. daily standup (meeting-engine.js)
- *  4. side plot lifecycle — start new / advance / resolve
- *  5. year-tracker update + milestone-triggered meeting (+ promotion
- *     results report on day 365)
- *  6. GitHub-committed daily summary
+ * Processes one scheduled case batch: groups by assigned agent, instantiates
+ * (and caches across batches) each agent, runs handleCase() per case, and
+ * accumulates per-agent stats + the model-education low-quality log.
  */
-export async function runWorkDayCycle(env) {
-  const sim = await getSimulationState(env);
-  if (sim.paused) return { skipped: true, reason: 'paused' };
-
-  const yearState = await getYearState(env);
-  const nextDay = (yearState.current_day || 0) + 1;
-  const dayOfWeek = ((nextDay - 1) % 7) + 1;
-
-  const work = simulationConfig.WORK_DAY;
-  const multiplier = sim.inspection_mode ? work.inspection_mode_multiplier : 1;
-  const dailyCount = Math.round(50 * multiplier);
-
-  const cases = generateAssignedDailyBatch(dayOfWeek, { count: dailyCount, weekNumber: yearState.current_week || 1 });
-  await persistCrmCases(env, cases);
-
+async function processCaseBatch(env, batchCases, agentInstances, agentStats, lowQualityLog) {
   const byAgent = new Map();
-  for (const c of cases) {
+  for (const c of batchCases) {
     if (!byAgent.has(c.assigned_to)) byAgent.set(c.assigned_to, []);
     byAgent.get(c.assigned_to).push(c);
   }
 
-  const summary = { day: nextDay, dayOfWeek, inspection: sim.inspection_mode, agents: [] };
-
   for (const [agentId, agentCases] of byAgent) {
-    const agent = instantiateAgent(agentId, env);
-    await agent.loadState();
-
-    if (agent.isAngry) {
-      summary.agents.push({
-        agentId, caseCount: agentCases.length, handled: 0, escalations: 0, comparisons: 0, advancedCases: 0,
-        mood: agent.mood, irritation: agent.irritation, isHappy: false, isAngry: true, isPanic: agent.isPanic,
-      });
-      continue;
+    let agent = agentInstances.get(agentId);
+    if (!agent) {
+      agent = instantiateAgent(agentId, env);
+      await agent.loadState();
+      agentInstances.set(agentId, agent);
     }
 
-    let handled = 0, escalations = 0, comparisons = 0, advancedCases = 0;
+    if (!agentStats.has(agentId)) {
+      agentStats.set(agentId, { agentId, caseCount: 0, handled: 0, escalations: 0, comparisons: 0, advancedCases: 0 });
+    }
+    const stats = agentStats.get(agentId);
+    stats.caseCount += agentCases.length;
+
+    if (agent.isAngry) continue;
+
     for (const c of agentCases) {
       const raw = await agent.handleCase(c, { archiveGuides: [] });
       const outcome = extractOutcome(raw);
-      handled += 1;
-      if (c.difficulty === 'advanced') advancedCases += 1;
+      stats.handled += 1;
+      if (c.difficulty === 'advanced') stats.advancedCases += 1;
 
       if (outcome.escalation?.type === 'TRAINEE_PANIC') {
         await handleTraineePanic(env, outcome.escalation);
-        escalations += 1;
+        stats.escalations += 1;
       }
 
       // Lightweight "compare alternatives" sampling: when an interaction
@@ -690,25 +837,342 @@ export async function runWorkDayCycle(env) {
             ? `${agent.name} found Claude's answer held up against an external source for case ${c.id}.`
             : `${agent.name} found an external source resolved case ${c.id} faster than Claude.`,
         });
-        comparisons += 1;
+        stats.comparisons += 1;
+      }
+
+      // Model education: the model didn't handle this case flawlessly.
+      const meThreshold = dailyScheduleConfig.model_education_program.model_education_case_study.quality_threshold;
+      if (outcome.quality !== undefined && outcome.quality < meThreshold) {
+        lowQualityLog.push({
+          agentId,
+          caseId: c.id,
+          quality: outcome.quality,
+          caseSummary: c.title || c.category || c.id,
+        });
       }
 
       if (agent.isAngry) break;
     }
+  }
+}
 
-    const adj = await getModelUsageAdjustment(env, agentId);
-    if (adj.delta !== 0 && typeof agent.config.model_usage_rate === 'number') {
-      const next = Math.min(1, Math.max(0, agent.config.model_usage_rate + adj.delta));
-      await applyConfigOverride(env, agentId, { model_usage_rate: next });
+/**
+ * Friday/full-day 'report' block: every agent who handled >=1 case today
+ * files a casual AI-experience status report, and the worst-quality
+ * interactions (up to model_education_case_study.max_per_day) become
+ * model-education case studies queued for the Gemini-Claude bridge.
+ */
+async function runDailyAiExperienceReports(env, agentInstances, lowQualityLog) {
+  const program = dailyScheduleConfig.model_education_program;
+  const statusReports = [];
+  const caseStudies = [];
+
+  for (const [agentId, agent] of agentInstances) {
+    if (!agent.session || !agent.session.cases_handled) continue;
+    let note;
+    try {
+      note = await agent.queryGemini(
+        "In 1-2 short, casual sentences (in character), describe today's experience using the AI Search assistant for your cases — what worked, what didn't."
+      );
+    } catch (err) {
+      note = `(AI-experience report unavailable: ${err.message})`;
+    }
+    await agent.fileStatusReport(note);
+    statusReports.push({ agentId, note });
+  }
+
+  const worst = [...lowQualityLog]
+    .sort((a, b) => a.quality - b.quality)
+    .slice(0, program.model_education_case_study.max_per_day);
+
+  for (const entry of worst) {
+    const agent = agentInstances.get(entry.agentId);
+    if (!agent) continue;
+    const content = `Case ${entry.caseId} (quality ${entry.quality.toFixed(2)}/1.0): ${entry.caseSummary}. The AI Search response did not fully resolve this case — flagged for model-education review.`;
+    const reportId = await agent.fileModelEducationCaseStudy(content);
+    const issue = await fileModelEducationIssue(env, agent, entry, content);
+    caseStudies.push({ agentId: entry.agentId, caseId: entry.caseId, reportId, issue });
+  }
+
+  return { statusReports, caseStudies };
+}
+
+/**
+ * Spare-time block for one agent: 20% chance of a short logged coworker-chat
+ * (1 Gemini call), 80% chance (always on force_idle days) of going idle with
+ * ZERO Gemini/Claude calls — the primary token-discipline lever.
+ */
+async function runSpareTimeForAgent(env, agent, { forceIdle }) {
+  const program = dailyScheduleConfig.spare_time_program;
+  const doInteract = !forceIdle && Math.random() < program.coworker_interaction_chance;
+
+  if (!doInteract) {
+    await agent.logInteraction({
+      type: 'idle',
+      query: '',
+      response_summary: 'Spare time: agent went idle to preserve tokens (no API calls made).',
+      mood_before: agent.mood,
+      mood_after: agent.mood,
+      irritation_change: 0,
+      state_change: null,
+    });
+    return { agentId: agent.id, mode: 'idle' };
+  }
+
+  const others = agentsConfig.agents.filter((a) => a.id !== agent.id);
+  const partner = others[Math.floor(Math.random() * others.length)];
+  let text;
+  try {
+    text = await agent.queryGemini(
+      `Write one short, in-character line of casual chat you'd say to your coworker ${partner.name} during a quiet moment at the office. Keep it to 1-2 sentences.`
+    );
+  } catch (err) {
+    text = `(coworker chat unavailable: ${err.message})`;
+  }
+
+  await agent.logInteraction({
+    type: 'coworker_chat',
+    query: `chat with ${partner.name}`,
+    response_summary: String(text).slice(0, 500),
+    mood_before: agent.mood,
+    mood_after: agent.mood,
+    irritation_change: 0,
+    state_change: null,
+  });
+  return { agentId: agent.id, mode: 'coworker_chat', partner: partner.id, text };
+}
+
+/**
+ * Sun-Thu 'tool_task_window' block: per ai-tools.json's weekly_rotation,
+ * checks whether today's assigned standing-project board item is queued and
+ * not yet filed, and if so opens its asset-task GitHub Issue (human picks it
+ * up in the real tool — no programmatic tool calls).
+ */
+async function maybeOpenAssetTask(env, dayOfWeek, nextDay) {
+  const rotation = aiToolsConfig.weekly_rotation[String(dayOfWeek)];
+  if (!rotation) return { opened: false, reason: 'no_rotation_for_day' };
+
+  const board = await fetchAssetBoard(env);
+  const item = (board.items || []).find((i) => i.id === rotation.standing_project_ref);
+  if (!item) return { opened: false, reason: 'board_item_not_found', ref: rotation.standing_project_ref };
+
+  if (item.stage !== 'queued' || item.asset_task_issue_filed) {
+    return { opened: false, reason: 'not_eligible', item: item.id, stage: item.stage, tool: rotation.tool };
+  }
+
+  const issue = await fileAssetTaskIssue(env, item, rotation.agents);
+  if (issue.created) {
+    item.asset_task_issue_filed = true;
+    item.history = [...(item.history || []), { day: nextDay, stage: item.stage, note: 'asset-task issue filed (auto, tool_task_window)' }];
+    await commitFileToRepo(
+      env, REPO_NAME, 'agents/reports/asset-pipeline/board.json', JSON.stringify(board, null, 2) + '\n',
+      `chore(agents): file asset-task issue for ${item.id} [skip ci]`
+    );
+  }
+
+  return { opened: issue.created, tool: rotation.tool, agents: rotation.agents, item: item.id, issue };
+}
+
+/**
+ * Friday 'weekly_summary' block: generates the 10-section executive markdown
+ * ("PDF" — print-ready, see CLAUDE.md PDF Export convention), a per-agent CSV
+ * ("Excel"), and a short public excerpt, all under agents/reports/weekly/.
+ * Also runs the existing 'weekly' meeting type.
+ */
+async function generateWeeklySummary(env, yearState, weekNumber) {
+  const board = await fetchAssetBoard(env);
+
+  const agentRows = [];
+  for (const config of agentsConfig.agents) {
+    const agent = instantiateAgent(config.id, env);
+    await agent.loadState();
+    const weeklyCases = await getWeeklyCasesHandled(env, config.id);
+    agentRows.push({ agentId: config.id, name: agent.name, weeklyCases, mood: agent.mood, irritation: agent.irritation });
+  }
+
+  const csv = ['agent_id,name,weekly_cases,mood,irritation']
+    .concat(agentRows.map((r) => `${r.agentId},${r.name},${r.weeklyCases},${r.mood},${r.irritation}`))
+    .join('\n') + '\n';
+
+  const pipelineLines = (board.items || [])
+    .map((i) => `- **${i.title}** (\`${i.id}\`): stage=${i.stage}${typeof i.version === 'number' ? `, v${i.version.toFixed(2)}` : ''}`)
+    .join('\n') || '_No pipeline items._';
+
+  const md = `# Weekly Executive Summary — Week ${weekNumber}
+
+*Permission: private/special (AI staff + owner). See agents/reports/weekly/week-${pad(weekNumber, 2)}-public-summary.md for the public excerpt.*
+
+## Executive Summary
+
+Week ${weekNumber} of the data-center office simulation, ${agentRows.length} agents on roster.
+
+## Case Volume & Categories
+
+${agentRows.map((r) => `- Agent ${r.agentId} (${r.name}): ${r.weeklyCases} cases this week`).join('\n')}
+
+## Agent Performance & Mood
+
+${agentRows.map((r) => `- Agent ${r.agentId} (${r.name}): mood ${r.mood}, irritation ${r.irritation}/5`).join('\n')}
+
+## Model (Claude) Performance & Education Findings
+
+See \`reports\` rows of type \`model_education\` filed this week (and any resulting \`claude-action\`/\`model-education\` GitHub Issues).
+
+## Incidents & Escalations
+
+See \`reports\` rows of type \`incident\` filed this week.
+
+## Side Plots & Narrative Highlights
+
+See \`side_plots\` rows active or resolved during week ${weekNumber}.
+
+## Asset Pipeline Status
+
+${pipelineLines}
+
+## Suggestions Queue (by permission tier)
+
+See \`suggestions\` rows, grouped by \`permission_level\`.
+
+## Cost & Token Usage Estimate
+
+Gemini (gemini-2.5-flash-lite, office simulation): tracking toward the
+~$2-3/quarter target. Claude (claude-sonnet-4-6, data-center-api): tracking
+toward the $5-15/mo ceiling. See CLAUDE.md "Launch Decisions" cost model.
+
+## Action Items for Next Week
+
+- [ ] Review this week's model-education case studies.
+- [ ] Advance any 'returned' asset-pipeline items toward 'tested'/'optimized'/'implemented'.
+- [ ] Re-check any agent at irritation >= 4/5 or mood <= 20.
+`;
+
+  const publicMd = `# Weekly Summary — Week ${weekNumber} (Public)
+
+This week, the simulated IT support office continued operating across
+${agentRows.length} staff roles, handling support cases with AI-assisted
+diagnostics. No customer-facing issues to report.
+`;
+
+  const base = 'agents/reports/weekly';
+  const files = {
+    summary: await commitFileToRepo(env, REPO_NAME, `${base}/week-${pad(weekNumber, 2)}-summary.md`, md, `chore(agents): week ${weekNumber} executive summary [skip ci]`),
+    csv: await commitFileToRepo(env, REPO_NAME, `${base}/week-${pad(weekNumber, 2)}-data.csv`, csv, `chore(agents): week ${weekNumber} data export [skip ci]`),
+    public: await commitFileToRepo(env, REPO_NAME, `${base}/week-${pad(weekNumber, 2)}-public-summary.md`, publicMd, `chore(agents): week ${weekNumber} public summary [skip ci]`),
+  };
+
+  let weeklyMeeting = null;
+  try {
+    weeklyMeeting = await runMeeting('weekly', env);
+  } catch (err) {
+    weeklyMeeting = { error: err.message };
+  }
+
+  return { weekNumber, files, agentRows, weeklyMeeting };
+}
+
+/**
+ * On the weekly_summary block, bumps +0.01 the version of any asset-pipeline
+ * board item that reached 'implemented' THIS day (per product_versioning in
+ * daily-schedule.json), recording the new version in both board.json and
+ * year_stats.stats.product_versions.
+ */
+async function checkProductVersionBumps(env, yearState, nextDay) {
+  const versioning = dailyScheduleConfig.product_versioning;
+  const board = await fetchAssetBoard(env);
+  const bumps = [];
+
+  for (const item of board.items || []) {
+    if (item.stage !== 'implemented') continue;
+    const last = item.history?.[item.history.length - 1];
+    if (last?.day !== nextDay || last?.stage !== 'implemented' || last?.version_bumped) continue;
+
+    const current = yearState.stats.product_versions?.[item.id] ?? (versioning.starting_version - versioning.increment);
+    const next = Math.round((current + versioning.increment) * 100) / 100;
+
+    yearState.stats.product_versions = { ...(yearState.stats.product_versions || {}), [item.id]: next };
+    item.version = next;
+    last.version_bumped = true;
+    bumps.push({ id: item.id, version: next });
+  }
+
+  if (bumps.length) {
+    await commitFileToRepo(
+      env, REPO_NAME, 'agents/reports/asset-pipeline/board.json', JSON.stringify(board, null, 2) + '\n',
+      `chore(agents): version bump for ${bumps.map((b) => b.id).join(', ')} [skip ci]`
+    );
+  }
+
+  return bumps;
+}
+
+/**
+ * One simulated work day:
+ *  1. CRM case generation + assignment + persistence (crm-engine.js)
+ *  2. per-agent case-handling loop — mood/escalation handling, "compare
+ *     alternatives" sampling, rolling model_usage_rate adjustment
+ *  3. daily standup (meeting-engine.js)
+ *  4. side plot lifecycle — start new / advance / resolve
+ *  5. year-tracker update + milestone-triggered meeting (+ promotion
+ *     results report on day 365)
+ *  6. GitHub-committed daily summary
+ *
+ * As of the Phase-2 daily-automation build, steps 1-2 are driven by
+ * agents/config/daily-schedule.json (case batches spread across the day,
+ * Sun-Thu/Fri/Sat day types), and the schedule's tool_task_window, report,
+ * spare_time, and weekly_summary blocks are processed alongside it (see
+ * agents/config/ai-tools.json for the tool-access matrix). No cron is wired
+ * to per-block times yet — see daily-schedule.json _meta.cron_status.
+ */
+export async function runWorkDayCycle(env) {
+  const sim = await getSimulationState(env);
+  if (sim.paused) return { skipped: true, reason: 'paused' };
+
+  const yearState = await getYearState(env);
+  const nextDay = (yearState.current_day || 0) + 1;
+  const dayOfWeek = ((nextDay - 1) % 7) + 1;
+  const schedule = getDaySchedule(dayOfWeek);
+  const isOffDay = schedule === dailyScheduleConfig.saturday_schedule;
+
+  const work = simulationConfig.WORK_DAY;
+  const multiplier = sim.inspection_mode ? work.inspection_mode_multiplier : 1;
+  const dailyCount = Math.round(50 * multiplier);
+
+  const cases = isOffDay
+    ? []
+    : generateAssignedDailyBatch(dayOfWeek, { count: dailyCount, weekNumber: yearState.current_week || 1 });
+  if (cases.length) await persistCrmCases(env, cases);
+
+  // ── Case batches, spread across the day per daily-schedule.json ──
+  const batches = partitionCasesByShare(cases, schedule.blocks);
+  const agentInstances = new Map();
+  const agentStats = new Map();
+  const lowQualityLog = [];
+
+  for (const batch of batches) {
+    await processCaseBatch(env, batch.cases, agentInstances, agentStats, lowQualityLog);
+  }
+
+  const summary = { day: nextDay, dayOfWeek, inspection: sim.inspection_mode, agents: [] };
+
+  for (const [agentId, agent] of agentInstances) {
+    const stats = agentStats.get(agentId) || { agentId, caseCount: 0, handled: 0, escalations: 0, comparisons: 0, advancedCases: 0 };
+
+    if (!agent.isAngry) {
+      const adj = await getModelUsageAdjustment(env, agentId);
+      if (adj.delta !== 0 && typeof agent.config.model_usage_rate === 'number') {
+        const next = Math.min(1, Math.max(0, agent.config.model_usage_rate + adj.delta));
+        await applyConfigOverride(env, agentId, { model_usage_rate: next });
+      }
     }
 
     summary.agents.push({
       agentId,
-      caseCount: agentCases.length,
-      handled,
-      escalations,
-      comparisons,
-      advancedCases,
+      caseCount: stats.caseCount,
+      handled: stats.handled,
+      escalations: stats.escalations,
+      comparisons: stats.comparisons,
+      advancedCases: stats.advancedCases,
       mood: agent.mood,
       irritation: agent.irritation,
       isHappy: agent.isHappy,
@@ -717,11 +1181,37 @@ export async function runWorkDayCycle(env) {
     });
   }
 
+  // ── Remaining tactical blocks: tool-task window, AI-experience reports,
+  // spare time, and (Friday) the weekly summary ──
+  let toolTask = null;
+  let aiExperience = null;
+  const spareTime = [];
+  let weeklySummary = null;
+  let versionBumps = [];
+
+  for (const block of schedule.blocks) {
+    if (block.type === 'tool_task_window') {
+      toolTask = await maybeOpenAssetTask(env, dayOfWeek, nextDay);
+    } else if (block.type === 'report') {
+      aiExperience = await runDailyAiExperienceReports(env, agentInstances, lowQualityLog);
+    } else if (block.type === 'spare_time') {
+      for (const [, agent] of agentInstances) {
+        spareTime.push(await runSpareTimeForAgent(env, agent, { forceIdle: !!block.force_idle }));
+      }
+    } else if (block.type === 'weekly_summary') {
+      weeklySummary = await generateWeeklySummary(env, yearState, yearState.current_week || 1);
+      versionBumps = await checkProductVersionBumps(env, yearState, nextDay);
+    }
+  }
+
+  // Daily standup only runs on days the schedule defines it (not the Saturday off day).
   let standup = null;
-  try {
-    standup = await runMeeting('daily_standup', env);
-  } catch (err) {
-    standup = { error: err.message };
+  if (schedule.blocks.some((b) => b.type === 'meeting' && b.meeting_type === 'daily_standup')) {
+    try {
+      standup = await runMeeting('daily_standup', env);
+    } catch (err) {
+      standup = { error: err.message };
+    }
   }
 
   const sidePlotStarted = await maybeStartSidePlots(env, { day: nextDay, summary, cases, standup });
@@ -730,7 +1220,7 @@ export async function runWorkDayCycle(env) {
   const milestoneKey = `day_${nextDay}`;
   const milestone = yearTrackerSeed.milestones[milestoneKey] || null;
   let milestoneMeeting = null;
-  if (milestone && MILESTONE_MEETINGS[milestoneKey]) {
+  if (milestone && MILESTONE_MEETINGS[milestoneKey] && !isOffDay) {
     try {
       milestoneMeeting = await runMeeting(MILESTONE_MEETINGS[milestoneKey], env);
     } catch (err) {
@@ -768,13 +1258,17 @@ export async function runWorkDayCycle(env) {
     current_quarter: Math.ceil(nextDay / 91),
     stats: newStats,
   };
-  const markdown = renderDailySummary(displayYearState, summary, standup, sidePlotStarted, sidePlotUpdates, milestone);
+  const scheduleInfo = { schedule, dayOfWeek, batches, toolTask, aiExperience, spareTime, weeklySummary, versionBumps };
+  const markdown = renderDailySummary(displayYearState, summary, standup, sidePlotStarted, sidePlotUpdates, milestone, scheduleInfo);
   const report = await commitFileToRepo(
     env, REPO_NAME, `agents/reports/daily/day-${pad(nextDay, 3)}-summary.md`, markdown,
     `chore(agents): day ${nextDay} summary [skip ci]`
   );
 
-  return { ...summary, year: newState, standup, sidePlotsStarted: sidePlotStarted, sidePlotUpdates, milestone, milestoneMeeting, report };
+  return {
+    ...summary, year: newState, standup, sidePlotsStarted: sidePlotStarted, sidePlotUpdates, milestone, milestoneMeeting, report,
+    schedule: { dayOfWeek, toolTask, aiExperience, spareTime, weeklySummary, versionBumps },
+  };
 }
 
 /* ─────────────────────────── Weekly reset cycle ─────────────────────────── */
