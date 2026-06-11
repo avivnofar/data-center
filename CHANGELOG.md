@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-06-11 — b9c467b] (master)
+
+- docs: document daily automation, AI-tool coordination, and CLI stub plans ([b9c467b](https://github.com/avivnofar/data-center/commit/b9c467b0927f1cc1cd54244ed1f0ebf0a175d3a6))
+- feat(agents): wire daily schedule + AI-tool config into runWorkDayCycle ([46ecc9e](https://github.com/avivnofar/data-center/commit/46ecc9e6951fa623eb9e58d149c52499d9f2a4f2))
+- feat(agents): seed daily schedule, AI-tool coordination, and asset pipeline config ([53b258d](https://github.com/avivnofar/data-center/commit/53b258dcfd23af09c7985ac36c493b27f65b6ab9))
+- docs(agents): stop month-1 simulation after day 1, add week-1 report ([a9984a5](https://github.com/avivnofar/data-center/commit/a9984a58c6b979805431ca575e9ed3ccb9bfc004))
+- chore(agents): log month-1 day-1 launch attempt — blocked on Gemini quota ([18c7be2](https://github.com/avivnofar/data-center/commit/18c7be275a4d1acec68d1c23ceed5f38b497e793))
+
+
 ## [2026-06-11 — 027bbae] (master)
 
 - chore(ui): drop dead AGENTS_SCHEDULER_BASE config; log readiness audit ([027bbae](https://github.com/avivnofar/data-center/commit/027bbae382c445b3170d1f0a37ad955d38db2b88))
