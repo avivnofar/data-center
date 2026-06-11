@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026-06-11 — 1547079] (master)
+
+- feat(worker): support CLI Mode in AI chat system prompt ([1547079](https://github.com/avivnofar/data-center/commit/1547079eac549a1394a571462677eacd5789234c))
+- feat(ui): v2.1 — terminal palette, AI Search first, 3-mode selector, Office lock ([43b341a](https://github.com/avivnofar/data-center/commit/43b341a920ae10c53f56ea907b4da1920dbbfefd))
+
+
 ## [2026-06-11 — 8c3a9f4] (master)
 
 - fix(agents): wire admin dashboard to live trigger endpoints ([8c3a9f4](https://github.com/avivnofar/data-center/commit/8c3a9f45b4725fb176c88fe645c1085f993af85a))
