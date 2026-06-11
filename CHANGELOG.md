@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-06-11 — 7bf3b1b] (master)
+
+- docs(agents): document live per-block cron + DST caveat ([7bf3b1b](https://github.com/avivnofar/data-center/commit/7bf3b1b21eb36aa88a0f52c188076cf95a69882f))
+- feat(agents): wire per-block cron dispatcher for office simulation ([f9a7166](https://github.com/avivnofar/data-center/commit/f9a71669534261e5a443c4f8f46500ad4de845d7))
+- chore(agents): log second blocked day-launch attempt (Gemini quota) ([c80b557](https://github.com/avivnofar/data-center/commit/c80b5572374373019a6592055761f61a6656c047))
+
+
 ## [2026-06-11 — b9c467b] (master)
 
 - docs: document daily automation, AI-tool coordination, and CLI stub plans ([b9c467b](https://github.com/avivnofar/data-center/commit/b9c467b0927f1cc1cd54244ed1f0ebf0a175d3a6))
