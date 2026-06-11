@@ -13,6 +13,36 @@
 
 ---
 
+## Current Strategy (authoritative)
+
+This section reflects the project owner's current direction and supersedes
+any conflicting framing elsewhere in this file or in `agents/README.md` /
+`agents/AGENTS.md`. Nothing described here requires deleting existing work.
+
+- **One Gemini engine, not eleven Workers.** The AI Agent Simulation's end
+  goal — a full 1-year office simulation with all 11 agent personalities
+  (per the project's spec document) — remains the goal. The infrastructure
+  choice is a single Gemini-backed Cloudflare Worker (`agent-runner.js` /
+  `data-center-agents`) that role-plays all 11 personas by reading
+  `agents/config/agents-config.json`, rather than 11 independent
+  Workers/Durable Objects running in parallel.
+- **Existing simulation work is the data layer, not dead code.** The
+  simulation runtime, `agents-config.json`, `simulation-config.json`, the
+  year-tracker config, side-plot narrative config, and promotion/PIP track
+  config all stay as-is — they are the spec the single engine reads from
+  and acts on.
+- **UI polish is the immediate priority.** Before running the full-year
+  simulation, focus on making `index.html` excellent and scalable for heavy
+  use: a working Claude AI Search end-to-end, fast, mobile-ready,
+  Hebrew/English. See `TOKEN-BUDGET.md` for the session queue.
+- **Findings flow back via GitHub Issues.** Once the UI is solid, the
+  single Gemini agent exercises the live app like a real user and reports
+  findings via Issues (the Gemini-Claude bridge, `claude-action` label) to
+  improve the app and database.
+- See `agents/STRATEGY.md` for the agents/-folder-specific version of this.
+
+---
+
 ## Folder Structure
 
 ```
