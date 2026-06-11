@@ -7,9 +7,12 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 
 ## Queue
 
-0. **Month-1 launch run** — STOPPED ON DAY 1 (2026-06-11), see "Launch
-   attempt" section below. Blocked on Gemini API quota/billing — needs user
-   action before retry. Resume here once unblocked.
+0. **Month-1 launch run** — STOPPED by owner request at the end of Day 1
+   (2026-06-11). See "Launch attempt" section below and
+   `agents/reports/week-01-report.md` for the Week 1 report covering the
+   partial Day 1 data. `SIM_KV.paused = true` was set as the explicit stop
+   signal. Blocked on Gemini API quota/billing — needs user action before
+   retry. Resume here once unblocked.
 
 1. **UI polish + verify AI Search end-to-end** — DONE.
    Root cause found and fixed: `cloudflare-worker/worker.js` had
@@ -257,6 +260,13 @@ current quota, please check your plan and billing details"`.
 **Per the HARD RULES** ("HALT only if unfixable after retries, or cost cap
 hit"), this halted the run — the quota/billing issue is unfixable from
 within this session. Days 2-20 and month-end were not attempted.
+
+**Owner instruction (same session)**: stop the experiment at the end of
+Day 1 and write a report on the first week/period. Done — set
+`SIM_KV.paused = true` via `POST /api/simulation`, wrote
+`agents/reports/week-01-report.md` (public/private/special tiers covering
+the 47/50-case partial Day 1), and removed the temporary `agents/_day1_*.json`
+scratch files used to gather the report data.
 
 ## Notes
 
