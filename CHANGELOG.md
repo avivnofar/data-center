@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026-06-11 — 8c3a9f4] (master)
+
+- fix(agents): wire admin dashboard to live trigger endpoints ([8c3a9f4](https://github.com/avivnofar/data-center/commit/8c3a9f45b4725fb176c88fe645c1085f993af85a))
+- feat(agents): wire office simulation runtime into agent-runner ([b57fc99](https://github.com/avivnofar/data-center/commit/b57fc99356bc60459ba550fc4649c34c4a490f5e))
+- feat(agents): add year-tracker config ([f85dd05](https://github.com/avivnofar/data-center/commit/f85dd05025ae8772c63cd4f919291ff8b35bb57f))
+- feat(agents): add side-plot narrative config ([790249a](https://github.com/avivnofar/data-center/commit/790249a0ac9ec79c9c424722ec3543ca4846c2e2))
+- feat(agents): add promotion and PIP track config ([1ee2724](https://github.com/avivnofar/data-center/commit/1ee272446546c956edb3aa8ae5372ded39e15cb0))
+- feat(agents): add CRM case generation engine ([b7ad094](https://github.com/avivnofar/data-center/commit/b7ad094e55665bd239542be453ff46160efc949f))
+- feat(agents): add meeting engine for office simulation ([ed8f801](https://github.com/avivnofar/data-center/commit/ed8f801580ae77795cf3d0f6c0fcb426d40a9869))
+- feat(agents): add inter-agent relationships config ([aa6b7aa](https://github.com/avivnofar/data-center/commit/aa6b7aaf1dd5f560139697df1fdd12df89da6445))
+- feat(agents): expand roster to full 11-agent character specs ([b74bdf4](https://github.com/avivnofar/data-center/commit/b74bdf49ece6388995c5e2051ef481bb4777e118))
+- docs(agents): add agent-runner Cloudflare deployment quick-reference ([30c7a1b](https://github.com/avivnofar/data-center/commit/30c7a1b75036f0c1fe7ad3ff6ed3f7f13c49b84c))
+
+
 ## [2026-06-10 — 859dfba] (master)
 
 - docs(agents): add agent simulation README, spec summary, and CLAUDE.md section ([859dfba](https://github.com/avivnofar/data-center/commit/859dfba4eeeb7165a40a6d6156aa5f1d3735530d))
