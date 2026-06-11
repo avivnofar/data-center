@@ -6,22 +6,33 @@
   <title>Data Center — מאגר ידע לאנשי IT</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Hebrew:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+Hebrew:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:          #0f1117;
-      --surface:     #181b24;
-      --surface2:    #1e2233;
-      --border:      #2a2f45;
-      --accent:      #4ade80;
-      --accent2:     #60a5fa;
-      --accent3:     #f59e0b;
-      --danger:      #f87171;
-      --text:        #e2e8f0;
-      --text-muted:  #8892a4;
-      --text-dim:    #4a5568;
+      /* Terminal aesthetic v2.1 */
+      --bg:          #080b0f;
+      --surface:     #0d1117;
+      --surface2:    #161b22;
+      --surface3:    #1c2128;
+      --border:      #21262d;
+      --border2:     #30363d;
+      --accent:      #39d353;
+      --accent-dim:  #2ea043;
+      --accent-glow: rgba(57,211,83,0.15);
+      --accent-soft: rgba(57,211,83,0.07);
+      --accent2:     #58a6ff;
+      --accent2-soft: rgba(88,166,255,0.08);
+      --accent3:     #e3b341;
+      --accent3-soft: rgba(227,179,65,0.08);
+      --danger:      #f85149;
+      --danger-soft: rgba(248,81,73,0.07);
+      --purple:      #bc8cff;
+      --purple-soft: rgba(188,140,255,0.07);
+      --text:        #e6edf3;
+      --text-muted:  #8b949e;
+      --text-dim:    #484f58;
       --card-radius: 10px;
       --mono:        'JetBrains Mono', 'Courier New', monospace;
       --sans:        'Noto Sans Hebrew', 'Segoe UI', system-ui, sans-serif;
@@ -34,6 +45,16 @@
       font-size: 15px;
       line-height: 1.65;
       min-height: 100vh;
+      position: relative;
+    }
+    /* Subtle scanline overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.012) 3px, rgba(0,0,0,0.012) 4px);
     }
 
     /* ── Accessibility helpers ─────────────────────────────────────────────── */
@@ -222,7 +243,46 @@
       cursor: default;
       font-style: italic;
     }
+    .tab-btn.locked { opacity: 0.6; }
+    .tab-btn.locked:hover { opacity: 0.85; border-color: var(--accent3); color: var(--accent3); }
     .tab-btn .tab-icon { margin-left: 4px; }
+
+    /* ── Office lock modal ────────────────────────────────────────────────── */
+    #office-lock-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #office-lock-overlay.visible { display: flex; }
+    .office-lock-modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--card-radius);
+      max-width: 420px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .office-lock-modal .office-lock-icon { font-size: 2.4rem; margin-bottom: 8px; }
+    .office-lock-modal h3 { font-size: 1.05rem; margin-bottom: 10px; }
+    .office-lock-modal p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px; }
+    .office-lock-modal button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .office-lock-modal button:hover { border-color: var(--accent2); color: var(--accent2); }
 
     /* ── Main container ────────────────────────────────────────────────────── */
     #main-content {
@@ -691,19 +751,35 @@
     .sidebar-toggle-btn:hover { border-color: var(--accent2); color: var(--accent2); }
 
     .ai-mode-btn {
+      align-items: center;
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 7px;
       color: var(--text-muted);
       cursor: pointer;
+      display: flex;
       flex: 1;
       font-family: var(--sans);
       font-size: 0.84rem;
+      gap: 7px;
+      justify-content: center;
       padding: 8px 10px;
       transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
-    .ai-mode-btn:hover { background: #232840; color: var(--text); }
-    .ai-mode-btn.active { background: #16203a; border-color: var(--accent2); color: var(--text); font-weight: 600; }
+    .ai-mode-btn::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      background: var(--surface);
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .ai-mode-btn:hover { background: var(--surface3); color: var(--text); }
+    .ai-mode-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+    .ai-mode-btn.active::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent-soft); }
 
     #ai-chat-messages {
       display: flex;
@@ -1052,7 +1128,7 @@
       background: var(--accent);
       border: none;
       border-radius: 24px;
-      bottom: 20px;
+      bottom: 38px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
       color: #06240f;
       cursor: pointer;
@@ -1068,13 +1144,52 @@
     #pdf-fab.visible { display: block; }
     #pdf-fab:hover { background: #86efac; }
 
+    /* ── Status bar ────────────────────────────────────────────────────────── */
+    body { padding-bottom: 28px; }
+    #status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 28px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      z-index: 90;
+      direction: ltr;
+    }
+    #status-bar .status-side {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    #status-bar a { color: var(--text-dim); text-decoration: none; }
+    #status-bar a:hover { color: var(--accent2); }
+    #status-bar .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 4px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
     /* ── Print styles ──────────────────────────────────────────────────────── */
     @media print {
       body * { visibility: hidden; }
       .print-target, .print-target * { visibility: visible; }
       .print-target { background: #fff; color: #000; inset: 0; padding: 24px; position: absolute; }
       .print-target pre, .print-target code { background: #f4f4f4 !important; color: #000 !important; direction: ltr; unicode-bidi: isolate; }
-      #pdf-fab, #topbar, #tab-nav, #search-section, #ai-banner, .workflow-list, #workflow-detail-back { display: none !important; }
+      #pdf-fab, #topbar, #tab-nav, #search-section, #ai-banner, #status-bar, .workflow-list, #workflow-detail-back { display: none !important; }
     }
 
     /* ── Mobile (≤768px) ───────────────────────────────────────────────────── */
@@ -1121,6 +1236,8 @@
 
       #logo .logo-text { display: none; }
       #logo::after { content: "DC"; }
+
+      #status-bar .status-side.status-right { display: none; }
     }
 
     /* ── Admin (Agent Simulation) ────────────────────────────────────────────── */
@@ -1249,10 +1366,39 @@
 
 <div id="tooltip" role="tooltip"></div>
 <div id="ai-sidebar-overlay" onclick="toggleAiSidebar()"></div>
+
+<div id="office-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="office-lock-title" onclick="if (event.target === this) closeOfficeLockModal()">
+  <div class="office-lock-modal">
+    <div class="office-lock-icon" aria-hidden="true">🔒</div>
+    <h3 id="office-lock-title">
+      <span class="he">המשרד עדיין לא נפתח</span>
+      <span class="en" style="display:none">The Office hasn't opened yet</span>
+    </h3>
+    <p>
+      <span class="he">סימולציית סוכני ה-AI שלנו עדיין לא התחילה את שנת העבודה הראשונה שלה. כשהיא תתחיל, תוכלו לעקוב כאן אחרי הצוות שלהם בזמן אמת.</span>
+      <span class="en" style="display:none">Our AI agent simulation hasn't started its first work year yet. Once it does, you'll be able to follow their team here in real time.</span>
+    </p>
+    <button onclick="closeOfficeLockModal()">
+      <span class="he">הבנתי</span>
+      <span class="en" style="display:none">Got it</span>
+    </button>
+  </div>
+</div>
 <button id="pdf-fab" onclick="generatePdf()">
   <span class="he">📄 צור PDF</span>
   <span class="en" style="display:none">📄 Generate PDF</span>
 </button>
+
+<div id="status-bar" role="status" aria-live="off">
+  <div class="status-side status-left">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span id="status-entries"></span>
+  </div>
+  <div class="status-side status-right">
+    <a href="https://github.com/avivnofar/data-center" target="_blank" rel="noopener">github.com/avivnofar/data-center</a>
+    <span id="status-version"></span>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -1263,7 +1409,10 @@ const CONFIG = {
   DEFAULT_LANGUAGE: 'en',
   MAX_HISTORY_SESSIONS: 50,
   STREAM_TYPING_SPEED: 1,
-  VERSION: '2.0.0',
+  VERSION: '2.1.0',
+  // Gate for the Office (agent simulation) tab — flip to true once the
+  // simulation's first work year actually kicks off.
+  OFFICE_YEAR_STARTED: false,
   // Agent simulation admin API (agents/workers/agent-runner.js).
   // No admin secret lives here — the dashboard prompts for a token and
   // sends it as X-Admin-Token; agent-runner.js checks it against its own
@@ -1276,6 +1425,7 @@ const DB = { linux: [], cmd: [], network: [], troubleshoot: [], modules: [] };
 let LANG = localStorage.getItem('dc-lang') || 'he';
 let activeTab = null;
 let tooltipTimer = null;
+let statusBarStats = { total: 0, modules: 0 };
 
 const FAQ_PILLS = {
   he: ['Port תפוס', 'דיסק מלא', 'גישה נדחתה', 'חיבור SSH נכשל', 'CPU גבוה', 'DNS לא עובד', 'Service קרס'],
@@ -1358,13 +1508,16 @@ function applyLang() {
       return;
     }
     if (id === 'admin') {
-      btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'ניהול' : 'Admin';
+      btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'משרד' : 'Office';
+      btn.querySelector('.tab-icon').textContent = CONFIG.OFFICE_YEAR_STARTED ? '🔐' : '🔒';
+      btn.title = CONFIG.OFFICE_YEAR_STARTED ? '' : (LANG === 'he' ? 'המשרד עדיין לא נפתח' : 'Office not open yet');
       return;
     }
     const mod = DB.modules.find(m => m.id === id);
     if (mod) btn.querySelector('.tab-label').textContent = (LANG === 'he' ? mod.label_he : mod.label_en) || mod.id;
   });
   updateAiPanelLang();
+  updateStatusBar();
 }
 
 function updateSearchPlaceholder() {
@@ -1405,9 +1558,21 @@ async function init() {
 
   const total = active.reduce((s, m) => s + (DB[m.id] || []).length, 0);
   document.getElementById('entry-count').textContent = `${total} entries · ${active.length} modules`;
+  updateStatusBar(total, active.length);
 
-  const first = DB.modules.find(m => m.status === 'active');
-  if (first) switchTab(first.id);
+  switchTab('ai');
+}
+
+function updateStatusBar(total, moduleCount) {
+  if (typeof total === 'number') statusBarStats = { total, modules: moduleCount };
+  const entriesEl = document.getElementById('status-entries');
+  const versionEl = document.getElementById('status-version');
+  if (entriesEl) {
+    entriesEl.textContent = LANG === 'he'
+      ? `${statusBarStats.total} פקודות · ${statusBarStats.modules} מודולים`
+      : `${statusBarStats.total} commands · ${statusBarStats.modules} modules`;
+  }
+  if (versionEl) versionEl.textContent = `v${CONFIG.VERSION}`;
 }
 
 function buildTabNav() {
@@ -1416,21 +1581,14 @@ function buildTabNav() {
   nav.innerHTML = '';
   contents.innerHTML = '';
 
-  let aiInserted = false;
+  // Order: AI Search (first/default) → active modules → Workflows → Office
+  // → any remaining "coming-soon" placeholder modules.
+  nav.appendChild(buildAiTabBtn());
+  contents.appendChild(buildAiPanelShell());
 
-  DB.modules.forEach(mod => {
+  const buildModuleTab = (mod) => {
     const label = (LANG === 'he' ? mod.label_he : mod.label_en) || mod.id;
     const isCS = mod.status === 'coming-soon';
-
-    if (isCS && !aiInserted) {
-      nav.appendChild(buildAiTabBtn());
-      contents.appendChild(buildAiPanelShell());
-      nav.appendChild(buildWorkflowsTabBtn());
-      contents.appendChild(buildWorkflowsPanelShell());
-      nav.appendChild(buildAdminTabBtn());
-      contents.appendChild(buildAdminPanelShell());
-      aiInserted = true;
-    }
 
     const btn = document.createElement('button');
     btn.className = 'tab-btn' + (isCS ? ' coming-soon' : '');
@@ -1455,30 +1613,38 @@ function buildTabNav() {
     panel.setAttribute('aria-labelledby', `tab-${mod.id}`);
     panel.setAttribute('tabindex', '0');
     contents.appendChild(panel);
-  });
+  };
 
-  if (!aiInserted) {
-    nav.appendChild(buildAiTabBtn());
-    contents.appendChild(buildAiPanelShell());
-    nav.appendChild(buildWorkflowsTabBtn());
-    contents.appendChild(buildWorkflowsPanelShell());
-    nav.appendChild(buildAdminTabBtn());
-    contents.appendChild(buildAdminPanelShell());
-  }
+  DB.modules.filter(m => m.status === 'active').forEach(buildModuleTab);
+
+  nav.appendChild(buildWorkflowsTabBtn());
+  contents.appendChild(buildWorkflowsPanelShell());
+
+  nav.appendChild(buildAdminTabBtn());
+  contents.appendChild(buildAdminPanelShell());
+
+  DB.modules.filter(m => m.status !== 'active').forEach(buildModuleTab);
 }
 
 function buildAdminTabBtn() {
   const btn = document.createElement('button');
-  btn.className = 'tab-btn';
+  const locked = !CONFIG.OFFICE_YEAR_STARTED;
+  btn.className = 'tab-btn' + (locked ? ' locked' : '');
   btn.dataset.moduleId = 'admin';
   btn.id = 'tab-admin';
   btn.setAttribute('role', 'tab');
   btn.setAttribute('aria-controls', 'panel-admin');
   btn.setAttribute('aria-selected', 'false');
   btn.setAttribute('tabindex', '-1');
-  const label = LANG === 'he' ? 'ניהול' : 'Admin';
-  btn.innerHTML = `<span class="tab-icon" aria-hidden="true">🔐</span><span class="tab-label">${escHtml(label)}</span>`;
-  btn.onclick = () => switchTab('admin');
+  const label = LANG === 'he' ? 'משרד' : 'Office';
+  const icon = locked ? '🔒' : '🔐';
+  btn.innerHTML = `<span class="tab-icon" aria-hidden="true">${icon}</span><span class="tab-label">${escHtml(label)}</span>`;
+  if (locked) {
+    btn.title = LANG === 'he' ? 'המשרד עדיין לא נפתח' : 'Office not open yet';
+    btn.onclick = () => showOfficeLockModal();
+  } else {
+    btn.onclick = () => switchTab('admin');
+  }
   return btn;
 }
 
@@ -1993,11 +2159,39 @@ function handleCmdNameClick(event, el) {
    ============================================================ */
 
 let AI_LANG = localStorage.getItem('dc-ai-language') || CONFIG.DEFAULT_LANGUAGE;
-let AI_MODE = localStorage.getItem('dc-mode') || 'search';
+let AI_MODES = loadAiModes();
 let AI_STREAMING = false;
 
 function aiIsConfigured() {
   return CONFIG.AI_ENABLED && CONFIG.WORKER_URL.indexOf('YOUR-SUBDOMAIN') === -1;
+}
+
+/* ── AI mode selector (multi-select: search / diagnose / cli) ───────────── */
+function loadAiModes() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('dc-modes') || 'null');
+    if (Array.isArray(stored) && stored.length) return stored;
+  } catch (_) { /* ignore */ }
+  // Migrate from the old single-select 'dc-mode' key.
+  const legacy = localStorage.getItem('dc-mode');
+  return legacy === 'diagnose' ? ['diagnose'] : ['search'];
+}
+
+function saveAiModes() {
+  localStorage.setItem('dc-modes', JSON.stringify(AI_MODES));
+}
+
+function isAiModeActive(mode) {
+  return AI_MODES.includes(mode);
+}
+
+// The Worker only knows 'search'/'diagnose' — 'diagnose' wins if both are active.
+function getAiBackendMode() {
+  return AI_MODES.includes('diagnose') ? 'diagnose' : 'search';
+}
+
+function isCliModeActive() {
+  return AI_MODES.includes('cli');
 }
 
 /* ── Session storage ─────────────────────────────────────────────────────── */
@@ -2020,7 +2214,7 @@ function createNewSession() {
   const sessions = loadAiSessions();
   const session = {
     id: Date.now(),
-    mode: AI_MODE,
+    modes: AI_MODES.slice(),
     language: AI_LANG,
     messages: [],
     summary: AI_LANG === 'he' ? 'שיחה חדשה' : 'New session',
@@ -2038,7 +2232,7 @@ function addMessageToSession(role, content) {
   if (idx === -1) return;
 
   sessions[idx].messages.push({ role, content, timestamp: Date.now() });
-  sessions[idx].mode = AI_MODE;
+  sessions[idx].modes = AI_MODES.slice();
   sessions[idx].language = AI_LANG;
 
   if (role === 'user' && sessions[idx].messages.filter(m => m.role === 'user').length === 1) {
@@ -2057,10 +2251,10 @@ function recordAnalytics(session) {
       entry = { sessionId: session.id, timestamp: session.id };
       analytics.push(entry);
     }
-    entry.mode = session.mode;
+    entry.modes = session.modes || (session.mode ? [session.mode] : ['search']);
     entry.language = session.language;
     entry.messageCount = session.messages.length;
-    if (session.mode === 'diagnose') {
+    if (entry.modes.includes('diagnose')) {
       const lastAssistant = [...session.messages].reverse().find(m => m.role === 'assistant');
       if (lastAssistant) {
         const steps = (lastAssistant.content.match(/^\d+\.\s/gm) || []).length;
@@ -2296,8 +2490,9 @@ function buildAiPanelHtml() {
   <div id="ai-main">
     <div id="ai-mode-selector">
       <button class="sidebar-toggle-btn" onclick="toggleAiSidebar()" title="Toggle sidebar">☰</button>
-      <button id="mode-search-btn" class="ai-mode-btn" onclick="setAiMode('search')"></button>
-      <button id="mode-diagnose-btn" class="ai-mode-btn" onclick="setAiMode('diagnose')"></button>
+      <button id="mode-search-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('search')"></button>
+      <button id="mode-diagnose-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('diagnose')"></button>
+      <button id="mode-cli-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('cli')"></button>
     </div>
     <div id="ai-chat-messages">
       <div id="ai-setup-banner" class="${configured ? '' : 'visible'}">
@@ -2337,7 +2532,7 @@ function loadAiIntoPanel() {
   }
 
   updateAiPanelLang();
-  updateAiModeButtons();
+  updateAiModeCheckboxes();
   updateAiLangToggle();
   renderSessionList();
 }
@@ -2349,6 +2544,7 @@ const AI_STRINGS = {
   exportLog:      { en: '⬇ Export Case Log',       he: '⬇ ייצוא יומן תקלות' },
   modeSearch:     { en: '🔍 Free Search',          he: '🔍 חיפוש חופשי' },
   modeDiagnose:   { en: '🔧 Solve a Case',         he: '🔧 פתרון תקלה' },
+  modeCli:        { en: '💻 CLI Mode',             he: '💻 מצב CLI' },
   setupTitle:     { en: '🤖 AI Search — Setup Required', he: '🤖 חיפוש AI — נדרשת הגדרה' },
   setupDesc:      { en: 'To activate Claude AI, deploy the Cloudflare Worker and update CONFIG.WORKER_URL in index.html.', he: 'כדי להפעיל את Claude AI, פרוס את ה-Cloudflare Worker ועדכן את CONFIG.WORKER_URL ב-index.html.' },
   setupGuide:     { en: 'Open Setup Guide', he: 'פתח מדריך הגדרה' },
@@ -2361,6 +2557,7 @@ const AI_STRINGS = {
   placeholderDiagnose: { en: "Describe the issue you're seeing...", he: 'תאר את הבעיה שאתה רואה...' },
   hintSearch:     { en: 'Claude will answer + show related commands from the database', he: 'Claude יענה + יציג פקודות קשורות מהמסד' },
   hintDiagnose:   { en: 'Claude will ask you questions to diagnose the issue step by step', he: 'Claude ישאל אותך שאלות לאבחון השלב אחרי שלב' },
+  hintCli:        { en: 'CLI Mode: answers favor exact commands and flags, minimal prose', he: 'מצב CLI: תשובות מתמקדות בפקודות ודגלים מדויקים, מינימום טקסט' },
   connectionError: { en: 'Connection error — check Worker URL', he: 'שגיאת חיבור — בדוק את כתובת ה-Worker' },
 };
 
@@ -2373,6 +2570,7 @@ function updateAiPanelLang() {
   $('export-cases-btn').textContent = AI_STRINGS.exportLog[LANG];
   $('mode-search-btn').textContent = AI_STRINGS.modeSearch[LANG];
   $('mode-diagnose-btn').textContent = AI_STRINGS.modeDiagnose[LANG];
+  $('mode-cli-btn').textContent = AI_STRINGS.modeCli[LANG];
   $('setup-title').textContent = AI_STRINGS.setupTitle[LANG];
   $('setup-desc').textContent = AI_STRINGS.setupDesc[LANG];
   $('setup-guide-link').textContent = AI_STRINGS.setupGuide[LANG];
@@ -2382,33 +2580,42 @@ function updateAiPanelLang() {
 
   const input = $('ai-input');
   if (input) {
-    input.placeholder = AI_MODE === 'search' ? AI_STRINGS.placeholderSearch[AI_LANG] : AI_STRINGS.placeholderDiagnose[AI_LANG];
+    input.placeholder = isAiModeActive('diagnose') ? AI_STRINGS.placeholderDiagnose[AI_LANG] : AI_STRINGS.placeholderSearch[AI_LANG];
     input.dir = AI_LANG === 'he' ? 'rtl' : 'ltr';
   }
 
+  updateAiModeCheckboxes();
   updateAiInputHint();
   renderSessionList();
 }
 
-function updateAiModeButtons() {
+function updateAiModeCheckboxes() {
   const searchBtn = document.getElementById('mode-search-btn');
   const diagnoseBtn = document.getElementById('mode-diagnose-btn');
-  if (!searchBtn || !diagnoseBtn) return;
-  searchBtn.classList.toggle('active', AI_MODE === 'search');
-  diagnoseBtn.classList.toggle('active', AI_MODE === 'diagnose');
+  const cliBtn = document.getElementById('mode-cli-btn');
+  if (!searchBtn || !diagnoseBtn || !cliBtn) return;
+  searchBtn.classList.toggle('active', isAiModeActive('search'));
+  diagnoseBtn.classList.toggle('active', isAiModeActive('diagnose'));
+  cliBtn.classList.toggle('active', isAiModeActive('cli'));
+  searchBtn.setAttribute('aria-checked', String(isAiModeActive('search')));
+  diagnoseBtn.setAttribute('aria-checked', String(isAiModeActive('diagnose')));
+  cliBtn.setAttribute('aria-checked', String(isAiModeActive('cli')));
 }
 
 function updateAiInputHint() {
   const hint = document.getElementById('ai-input-hint');
   if (!hint) return;
-  let text = AI_MODE === 'search' ? AI_STRINGS.hintSearch[LANG] : AI_STRINGS.hintDiagnose[LANG];
-  if (AI_MODE === 'diagnose') {
+  let text = isAiModeActive('diagnose') ? AI_STRINGS.hintDiagnose[LANG] : AI_STRINGS.hintSearch[LANG];
+  if (isAiModeActive('diagnose')) {
     const session = getCurrentSession();
     const userMsgCount = session ? session.messages.filter(m => m.role === 'user').length : 0;
     if (userMsgCount > 0) {
       const step = Math.min(userMsgCount + 1, 5);
       text += LANG === 'he' ? ` · שלב ${step} מתוך ~5` : ` · Step ${step} of ~5`;
     }
+  }
+  if (isAiModeActive('cli')) {
+    text += ' · ' + AI_STRINGS.hintCli[LANG];
   }
   hint.textContent = text;
 }
@@ -2432,20 +2639,22 @@ function toggleAiSidebar() {
   }
 }
 
-function setAiMode(mode) {
-  AI_MODE = mode;
-  localStorage.setItem('dc-mode', mode);
+function toggleAiMode(mode) {
+  if (AI_MODES.includes(mode)) {
+    // Always leave at least one mode active.
+    if (AI_MODES.length > 1) AI_MODES = AI_MODES.filter(m => m !== mode);
+  } else {
+    AI_MODES = [...AI_MODES, mode];
+  }
+  saveAiModes();
 
-  const input = document.getElementById('ai-input');
-  if (input) input.value = '';
-
-  updateAiModeButtons();
+  updateAiModeCheckboxes();
   updateAiPanelLang();
 
   const sessions = loadAiSessions();
   const currentId = Number(localStorage.getItem('dc-current-session'));
   const idx = sessions.findIndex(s => s.id === currentId);
-  if (idx !== -1) { sessions[idx].mode = mode; saveAiSessions(sessions); renderSessionList(); }
+  if (idx !== -1) { sessions[idx].modes = AI_MODES.slice(); saveAiSessions(sessions); renderSessionList(); }
 }
 
 function toggleAiLang() {
@@ -2479,15 +2688,15 @@ function switchSession(sessionId) {
   const sessions = loadAiSessions();
   const session = sessions.find(s => s.id === sessionId);
   if (session) {
-    AI_MODE = session.mode || AI_MODE;
+    AI_MODES = session.modes || (session.mode ? [session.mode] : AI_MODES);
     AI_LANG = session.language || AI_LANG;
-    localStorage.setItem('dc-mode', AI_MODE);
+    saveAiModes();
     localStorage.setItem('dc-ai-language', AI_LANG);
     session.messages.forEach(msg => appendMessageBubble(msg.role, msg.content));
     scrollChatToBottom();
   }
 
-  updateAiModeButtons();
+  updateAiModeCheckboxes();
   updateAiLangToggle();
   updateAiPanelLang();
   renderSessionList();
@@ -2514,7 +2723,9 @@ function renderSessionList() {
 
   list.innerHTML = sessions.map(s => {
     const isActive = s.id === currentId;
-    const icon = s.mode === 'diagnose' ? '🔧' : '🔍';
+    const modes = s.modes || (s.mode ? [s.mode] : ['search']);
+    let icon = modes.includes('diagnose') ? '🔧' : '🔍';
+    if (modes.includes('cli')) icon += '💻';
     const date = formatSessionDate(s.id);
     const summary = escHtml(s.summary || (LANG === 'he' ? 'שיחה' : 'Session'));
     return `<div class="session-item${isActive ? ' active' : ''}" onclick="switchSession(${s.id})">
@@ -2565,7 +2776,7 @@ async function sendAiMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = AI_STRINGS.sending[LANG]; }
 
   try {
-    await streamFromWorker(messages, AI_MODE, AI_LANG, dbContext);
+    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, isCliModeActive());
   } catch (e) {
     showAiThinking(false);
     const isConnectionError = e instanceof TypeError;
@@ -2576,11 +2787,11 @@ async function sendAiMessage() {
   }
 }
 
-async function streamFromWorker(messages, mode, language, dbContext) {
+async function streamFromWorker(messages, mode, language, dbContext, cliMode) {
   const response = await fetch(CONFIG.WORKER_URL + '/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, mode, language, db_context: dbContext }),
+    body: JSON.stringify({ messages, mode, language, db_context: dbContext, cli_mode: !!cliMode }),
   });
 
   if (!response.ok) {
@@ -2862,7 +3073,19 @@ async function getAgentsConfig() {
   return agentsConfigCache;
 }
 
+function showOfficeLockModal() {
+  document.getElementById('office-lock-overlay').classList.add('visible');
+}
+
+function closeOfficeLockModal() {
+  document.getElementById('office-lock-overlay').classList.remove('visible');
+}
+
 function renderAdminPanel(panel) {
+  if (!CONFIG.OFFICE_YEAR_STARTED) {
+    showOfficeLockModal();
+    return;
+  }
   if (!getAdminToken()) {
     renderAdminLogin(panel);
     return;
@@ -3081,7 +3304,7 @@ async function adminShowReportTab(type, btn) {
         <div class="admin-report-card">
           <h4>${escHtml(r.title)} ${meta}${perm}</h4>
           <div class="admin-sub">${new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 19)}</div>
-          <pre>${escHtml((r.content || '').slice(0, 800))}</pre>
+          <pre dir="ltr">${escHtml((r.content || '').slice(0, 800))}</pre>
           ${ack}
         </div>`;
     }).join('');
