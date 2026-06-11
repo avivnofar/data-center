@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-11 — 027bbae] (master)
+
+- chore(ui): drop dead AGENTS_SCHEDULER_BASE config; log readiness audit ([027bbae](https://github.com/avivnofar/data-center/commit/027bbae382c445b3170d1f0a37ad955d38db2b88))
+
+
 ## [2026-06-11 — 2409877] (master)
 
 - fix(agents): use service binding for agent-runner -> data-center-api calls ([2409877](https://github.com/avivnofar/data-center/commit/2409877fc058c13ad9c8724168328d8f8f2efadd))
