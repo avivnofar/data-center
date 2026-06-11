@@ -17,7 +17,7 @@ const ALLOWED_ORIGINS = [
 const RATE_LIMIT_MAX = 20; // requests per window per IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 1024;
 
 // In-memory rate limiter. Resets whenever the worker isolate restarts —
