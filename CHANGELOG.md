@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-06-11 — 13a0844] (master)
+
+- docs: confirm AI Search Worker redeploy resolved ([13a0844](https://github.com/avivnofar/data-center/commit/13a0844485c690e5b759d58ecb46e61fddade7f4))
+- docs: update session queue — mobile pass and agent runtime consolidation done ([ffac48c](https://github.com/avivnofar/data-center/commit/ffac48c3a51905a889f1d3ded0abfda335a60183))
+- fix(ui): enforce 44px minimum touch targets on mobile nav controls ([b03dc2b](https://github.com/avivnofar/data-center/commit/b03dc2bd7b20f3c5f5396b3d24bf475ff4845db6))
+
+
 ## [2026-06-11 — 13decd2] (master)
 
 - fix(ui): prevent iOS auto-zoom on input focus; update queue status ([13decd2](https://github.com/avivnofar/data-center/commit/13decd273ba26300275a4f8a9479c7dc6b345d4f))
