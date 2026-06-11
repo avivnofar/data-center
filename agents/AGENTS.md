@@ -117,38 +117,42 @@ Triggered when `panicLevel >= 80`:
 
 ---
 
-## Phase 2 stub agents (5-11)
+## Admin-tier agents (5-11)
 
-All use `agent-stub.js`, which extends `AgentBase` with no behavioral
-overrides — they exist so the `agents` table, permission tiers, and
-dashboard grid are complete, and so `instantiateAgent()` never throws for an
-unknown id.
+All `status: "specified"` in `config/agents-config.json` (v0.2.0) — full
+`character`, `purpose`, `case_focus`, and `states` blocks exist for each, but
+they currently run via the generic `agent-stub.js` (extends `AgentBase` with
+no behavioral overrides), not a dedicated `agent-N-*.js` class. All seven
+have `can_generate_assets: true` (see `config/asset-platforms.json` and
+`year-tracker.json`'s `asset_pipeline`).
 
-| # | Name | Tier | Clearance |
-|---|------|------|-----------|
-| 5 | The Specialist (Network & Security) | worker | standard |
-| 6 | The Senior Sysadmin | lead | sudo |
-| 7 | The Security Auditor | lead | sudo |
-| 8 | The DevOps Engineer | lead | sudo |
-| 9 | The Helpdesk Coordinator | worker | standard |
-| 10 | The IT Director | management | root |
-| 11 | The CTO | management | root |
+| # | Name | Role | Clearance | Purpose |
+|---|------|------|-----------|---------|
+| 5 | The IT Chief | Senior IT Admin | sudo | Hard cases — network optimization, firewall, application-layer issues, client escalations. Raises `quarterly_demand`. |
+| 6 | The QA | Quality Assurance | sudo | Agent audits and model optimization (`audits_per_week: 1_per_agent_under_rank`). |
+| 7 | The Team Lead | Agent Coach & Team Manager | sudo | Agent productivity/development; PIP authority over agents 1-4; organizes the mandatory weekly meeting. |
+| 8 | The Lead QA | Chief Quality Officer | sudo | Project-wide audits (agents, models, workflows, technologies); `mood_sensitivity: 0.5` (slow-moving mood). |
+| 9 | The Designer | UI/UX Specialist | specialist | Design audits of the repo + Claude app; 2 reports/week; 4 `quarterly_updates` (first due day 30). |
+| 10 | The Architect | Project Mastermind | root | Root-level changes, hard escalations, versioned release packages; rivalry with agent 8. |
+| 11 | The CEO | Founder & Chief Executive | root | Leads every meeting (`vote_weight: 2`, `veto_rights`); final decision authority. |
 
-When the full spec is finalized, give each a `states`, `behavioral_rules`,
-and `system_prompt_additions` block following the Phase 1 agents' shape, add
-a dedicated `agent-N-*.js` class, and register it in
+When a dedicated state machine is built for one of these agents, follow the
+Phase 1 agents' shape (`states`, behavioral triggers,
+`system_prompt_additions`) and register the new class in
 `agent-runner.js`'s `AGENT_CLASSES`.
 
 ---
 
 ## Permission tiers (`fileSuggestion()` routing)
 
-From `config/simulation-config.json`'s `PERMISSIONS` block:
+From each agent's `clearance` field in `config/agents-config.json` (mirrored
+in `config/simulation-config.json`'s `PERMISSIONS` block):
 
 - **root**: agents 10, 11 — `fileSuggestion(content, true)` always routes to
   `root` regardless of caller.
-- **sudo**: agents 6, 7, 8.
-- **standard**: agents 1, 2, 3, 4, 5, 9.
+- **sudo**: agents 5, 6, 7, 8.
+- **specialist**: agent 9.
+- **standard**: agents 1, 2, 3, 4.
 
 `suggestions.permission_level` defaults to the filing agent's `clearance`
 unless `isRoot=true` is passed (used for escalated/strategic suggestions).
@@ -157,10 +161,11 @@ unless `isRoot=true` is passed (used for escalated/strategic suggestions).
 
 ## Open questions for the next spec revision
 
-- Exact behavioral rules, state machines, and `system_prompt_additions` for
-  agents 5-11.
+- Exact behavioral state machines (`states` triggers/effects already exist
+  in `agents-config.json` for 5-11, but no `agent-N-*.js` class implements
+  them yet).
 - Formula for `weekly_analytics.irritation_count` / `happy_count` /
   `overtime_days` / `suggestions_filed` (currently not computed —
   `agents/README.md` "Known gaps").
-- Whether `evaluateResponseQuality()` should call Gemini-as-judge in Phase 2,
-  and what prompt/rubric to use.
+- Whether `evaluateResponseQuality()` should call Gemini-as-judge, and what
+  prompt/rubric to use.
