@@ -61,9 +61,10 @@ function isRateLimited(ip) {
 
 /**
  * Build the system prompt based on mode (search/diagnose), language (en/he),
- * and the local DB context string injected by the frontend.
+ * the local DB context string injected by the frontend, and whether CLI Mode
+ * is active (compact, command-first answers).
  */
-function systemPrompt(mode, language, dbContext) {
+function systemPrompt(mode, language, dbContext, cliMode) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
   let prompt = `You are an expert IT support assistant embedded in the Data Center knowledge base.
@@ -89,6 +90,14 @@ Format diagnosis steps as numbered list. Each step must include the exact comman
 The user is doing a free search. Answer their question directly and completely.
 After your answer, on a new line write: RELATED_COMMANDS: [comma-separated command names]
 so the frontend can highlight relevant database entries.`;
+  }
+
+  if (cliMode) {
+    prompt += `
+
+CLI Mode is active. Prioritize exact commands and flags over prose.
+Lead with the command(s) in a code block, then at most 1-2 short lines of
+explanation. Avoid background theory unless the user explicitly asks for it.`;
   }
 
   if (dbContext && dbContext.trim()) {
@@ -176,13 +185,13 @@ export default {
       return jsonResponse({ error: 'general', message: 'Invalid JSON body' }, 400, origin);
     }
 
-    const { messages, mode, language, db_context } = body;
+    const { messages, mode, language, db_context, cli_mode } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'general', message: '"messages" must be a non-empty array' }, 400, origin);
     }
 
-    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '');
+    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode);
 
     let anthropicResponse;
     try {
