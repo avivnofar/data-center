@@ -43,6 +43,50 @@ any conflicting framing elsewhere in this file or in `agents/README.md` /
 
 ---
 
+## Launch Decisions (authoritative)
+
+Decisions from the 2026-06-11 launch-planning session for the AI Agent
+Office Simulation. These supersede any conflicting framing in
+`agents/README.md`, `agents/AGENTS.md`, or `TOKEN-BUDGET.md`.
+
+- **Cost model**: `gemini-2.5-flash-lite` (paid) runs the entire office
+  simulation (~$2-3/quarter at target volume). The Anthropic/Claude API
+  (`data-center-api`) is reserved for the app's AI Search bar, senior-agent
+  "hard case" escalations, and Architect/sudo-tier fixes only. Monthly
+  ceiling: $5-15 total — most months should land near $0.
+- **Simulation parameters**: 5-day simulated work weeks, ~30 cases/day per
+  active agent, and 1 simulated month of flexible holiday per agent per
+  simulated year (scheduled to fit simulation needs — can be 1+
+  non-contiguous days). The first run is **one quarter**, not the full
+  year — see `TOKEN-BUDGET.md`.
+- **Checkpoints**: save full simulation state (D1 export/snapshot) before
+  any major model, UI, or agent-behavior change, plus quarterly backups.
+  Not monthly.
+- **Report permission tiering**: private reports (internal agent
+  discussion, mood/irritation detail) are staff(agents)+owner only. Public
+  reports are business-facing external-comms framing, scrubbed of internal
+  detail. Special reports (sensitive strategy/architecture) are AI staff +
+  owner only — never public. Trade secrets (prompts, internal scoring,
+  cost data) stay staff/owner-only.
+- **Stop logic**: on error, auto-fix first (try a minimal fix, then a
+  fallback, then a second fallback); only halt the simulation if truly
+  unfixable or a cost cap is hit. Narrative "story events" (an agent
+  quitting, a rivalry escalating, etc.) are logged as normal output and
+  never halt the run.
+- **Models**: `gemini-2.5-flash-lite` for the office simulation
+  (`gemini-2.0-flash` is deprecated — do not reintroduce it),
+  `claude-sonnet-4-6` for `data-center-api`.
+- **Architecture (3 Workers)**: `data-center-api` (Claude proxy — AI
+  Search/Diagnose/CLI + escalations), `data-center-agents` (Gemini office
+  simulation, ONE Worker, all 11 personas via `agents-config.json`),
+  `data-center-db` (shared D1 storage).
+- **Token discipline**: batch config/data updates, prefer releasing changes
+  at simulated-month boundaries, lean on Gemini (not Claude Code sessions)
+  for heavy/bulk content generation, and stop sessions at convenient round
+  moments (commit + `TOKEN-BUDGET.md` update).
+
+---
+
 ## Folder Structure
 
 ```
@@ -331,16 +375,72 @@ tracks specific **URLs**, not domains, and is not a duplicate of those rules.
 
 ---
 
+## Source Validation (very high)
+
+Source-validation strictness is **very high** for all AI-suggested sources —
+from the app's AI Search, the self-education flow (see "AI Capabilities"
+below), or agent suggestions:
+
+- **Approved-domain allowlist (Rules 7-8) is necessary but not sufficient.**
+  A URL on an approved domain from a publisher/path the system hasn't cited
+  before goes into `flagged/pending-review.md` with `status:
+  pending-verification` — it is never added to a `data/*.json`
+  `source_url` until a human (or a Claude Code session acting on the
+  human's behalf) reviews it.
+- **Untrusted publishers require verification before trust.** Anything not
+  already listed in `flagged/approved-sources.md` — even on an approved
+  domain — must be cross-checked against at least one other approved source
+  or official docs before being cited as authoritative in chat or proposed
+  for `data/*.json`.
+- **Recently-added sources are double-checked.** A source added to
+  `flagged/approved-sources.md` in the last 30 days is re-verified (still
+  live, content still matches what was cited) before being reused as the
+  basis for a new knowledge-base entry.
+- **Quarantine, never auto-trust.** Anything failing the above stays in
+  `flagged/pending-review.md` indefinitely until reviewed — no automated
+  process promotes it to `approved-sources.md`.
+
+---
+
+## AI Capabilities — Self-Extension & Self-Education (`data-center-api`)
+
+`cloudflare-worker/worker.js`'s system prompt grants the app's Claude two
+additional capabilities. Both are **read/suggest only** — the live Worker
+never gets GitHub write access; everything routes through the
+Gemini-Claude bridge (GitHub Issues, `claude-action` label) for
+human/Claude-Code review.
+
+- **Self-extending capability**: when a user request needs something the
+  knowledge base doesn't support yet (a new module, a new file-type
+  handler, a schema extension), Claude answers the user normally and may
+  append a structured `<!-- CAPABILITY_SUGGESTION: {...} -->` block (JSON
+  fields: `type`, `summary`, `proposed_change`, `affected_files`). The app
+  detects this block and offers to file it as a `claude-action` GitHub
+  Issue.
+- **Internet search + self-education**: the worker's Claude API call
+  includes the `web_search` tool so chat answers can search and cite live
+  sources. When a searched source proves directly useful for a query
+  matching an existing `data/*.json` category, Claude may append a
+  `<!-- LEARNED_SOURCE: {...} -->` block (JSON fields: `url`,
+  `proposed_field` e.g. `linux.json:netstat.source_url`, `reason`). The app
+  offers to file this as a `claude-action` Issue too — it is never written
+  directly to `data/*.json`, and must pass "Source Validation (very high)"
+  above before merge.
+
+---
+
 ## AI Agent Simulation (`agents/`)
 
 `agents/` scaffolds a simulated "AI agent team" that uses the live app
 (via `data-center-api`'s `/api/chat`) like real sysadmins, role-played by
-Gemini 2.0 Flash. **Status: DRAFT (Phase 1 foundation)** — agents 1-4
+Gemini 2.5 Flash-Lite. **Status: DRAFT (Phase 1 foundation)** — agents 1-4
 ("The Perfectionist", "The Productive", "The Standard Agent", "The Trainee")
-have full mood/irritation/panic state machines; agents 5-11 are placeholder
-stubs (`agent-stub.js`) pending a finalized spec. See `agents/README.md`
-(architecture, setup, env vars) and `agents/AGENTS.md` (per-agent behavior
-summary).
+have full mood/irritation/panic state machines; agents 5-11 have full
+character specs in `agents-config.json` (status: `specified`) but run via
+the generic `agent-stub.js` (no dedicated state machine yet). See
+`agents/README.md` (architecture, setup, env vars) and `agents/AGENTS.md`
+(per-agent behavior summary) — both still describe an older two-Worker
+design and are due a rewrite (see `TOKEN-BUDGET.md`).
 
 - **Workers**: `agent-runner.js` (admin HTTP API + agent execution) and
   `scheduler.js` (cron-driven hourly "work day" / daily "work week" cycles)
@@ -453,6 +553,11 @@ Hosting: GitHub Pages — $0/month forever
 `data-center-archive`: plain GitHub repo (workflow docs + PDFs) — $0/month,
 no Pages/Actions billing impact
 
-AI: Anthropic API — pay per use (~$3-8/mo estimated at personal use volume)
+AI: Anthropic API (`data-center-api` — AI Search/Diagnose/CLI + escalations)
+— pay per use (~$3-8/mo estimated at personal use volume)
 
-Total: $0-8/month depending on API usage
+AI: Gemini 2.5 Flash-Lite (`data-center-agents` — office simulation) —
+pay per use, ~$2-3/quarter at target volume (~$1/mo)
+
+Total: $0-15/month, see "Launch Decisions" cost-model ceiling — most months
+should land near the low end
