@@ -148,6 +148,23 @@
     }
     #lang-toggle:hover { border-color: var(--accent2); color: var(--accent2); }
 
+    #commandflow-link {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #commandflow-link:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 640px) { #commandflow-link .link-label { display: none; } }
+
     /* ── File:// warning ───────────────────────────────────────────────────── */
     #file-warning {
       display: none;
@@ -1040,6 +1057,19 @@
     .diagnose-action-btn:hover { border-color: var(--accent); color: var(--accent); }
     #diagnose-start-btn { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
     #diagnose-escalate-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── CLI Mode platform controls ──────────────────────────────────────── */
+    #cli-controls {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      padding: 10px 14px 0;
+    }
+    #cli-controls.hidden-area { display: none; }
+    #ai-tab-container.cli-active #cli-controls { background: #060a06; border-color: #1f3a1f; }
+    #ai-tab-container.cli-active #cli-controls .diagnose-chip-label { color: #2f5a2f; }
+    #ai-tab-container.cli-active .cli-chip { font-family: var(--mono); }
+    #ai-tab-container.cli-active .cli-chip.active { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
     #ai-input-row { align-items: flex-end; display: flex; gap: 8px; }
     #ai-lang-toggle {
       background: var(--surface2);
@@ -1435,6 +1465,11 @@
 <div id="topbar">
   <div id="logo"><span aria-hidden="true">⚙</span> <span class="logo-text">data-center</span></div>
   <div id="topbar-right">
+    <a id="commandflow-link" href="tools/commandflow/index.html" target="_blank" rel="noopener">
+      <span aria-hidden="true">⌨️</span>
+      <span class="link-label he">Terminal Academy</span>
+      <span class="link-label en" style="display:none">Terminal Academy</span>
+    </a>
     <button id="lang-toggle" onclick="toggleLang()" aria-label="Toggle language">EN / עב</button>
   </div>
 </div>
@@ -1504,6 +1539,7 @@
   </div>
 </div>
 
+<script src="tools/commandflow/commandflow-core.js"></script>
 <script>
 "use strict";
 
@@ -2636,6 +2672,18 @@ function buildAiPanelHtml() {
         <button class="diagnose-action-btn" id="diagnose-guide-btn" onclick="diagnoseAction('guide')"></button>
       </div>
     </div>
+    <div id="cli-controls" class="hidden-area">
+      <div class="diagnose-chip-row">
+        <span class="diagnose-chip-label" id="cli-platform-label"></span>
+        <button class="diagnose-chip cli-chip" data-platform="bash" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="powershell" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="cisco" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="cloud" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="networking" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="security" onclick="selectCliPlatform(this)"></button>
+        <button class="diagnose-chip cli-chip" data-platform="databases" onclick="selectCliPlatform(this)"></button>
+      </div>
+    </div>
     <div id="ai-input-area" class="${configured ? '' : 'hidden-area'}">
       <div id="ai-input-row">
         <button id="ai-lang-toggle" onclick="toggleAiLang()"></button>
@@ -2683,7 +2731,15 @@ const AI_STRINGS = {
   placeholderDiagnose: { en: "Describe the issue you're seeing...", he: 'תאר את הבעיה שאתה רואה...' },
   hintSearch:     { en: 'Claude will answer + show related commands from the database', he: 'Claude יענה + יציג פקודות קשורות מהמסד' },
   hintDiagnose:   { en: 'Claude will ask you questions to diagnose the issue step by step', he: 'Claude ישאל אותך שאלות לאבחון השלב אחרי שלב' },
-  hintCli:        { en: 'CLI Mode: answers favor exact commands and flags, minimal prose', he: 'מצב CLI: תשובות מתמקדות בפקודות ודגלים מדויקים, מינימום טקסט' },
+  hintCli:        { en: 'CLI Mode: known commands run instantly in the simulator; anything else goes to Claude', he: 'מצב CLI: פקודות מוכרות רצות מיידית בסימולטור; כל השאר מועבר ל-Claude' },
+  cliPlatformLabel: { en: 'Platform:', he: 'פלטפורמה:' },
+  cliPlatformBash:       { en: 'Bash', he: 'Bash' },
+  cliPlatformPowershell: { en: 'PowerShell', he: 'PowerShell' },
+  cliPlatformCisco:      { en: 'Cisco', he: 'Cisco' },
+  cliPlatformCloud:      { en: 'Cloud (AWS)', he: 'Cloud (AWS)' },
+  cliPlatformNetworking: { en: 'Networking', he: 'רשת' },
+  cliPlatformSecurity:   { en: 'Security', he: 'אבטחה' },
+  cliPlatformDatabases:  { en: 'Databases', he: 'מסדי נתונים' },
   connectionError: { en: 'Connection error — check Worker URL', he: 'שגיאת חיבור — בדוק את כתובת ה-Worker' },
   diagnosePlatformLabel: { en: 'Platform:', he: 'פלטפורמה:' },
   diagnoseSeverityLabel: { en: 'Severity:', he: 'חומרה:' },
@@ -2743,6 +2799,17 @@ function updateAiPanelLang() {
     $('diagnose-guide-btn').textContent = AI_STRINGS.actionGuide[LANG];
   }
 
+  if ($('cli-platform-label')) {
+    $('cli-platform-label').textContent = AI_STRINGS.cliPlatformLabel[LANG];
+    document.querySelector('.cli-chip[data-platform="bash"]').textContent = AI_STRINGS.cliPlatformBash[LANG];
+    document.querySelector('.cli-chip[data-platform="powershell"]').textContent = AI_STRINGS.cliPlatformPowershell[LANG];
+    document.querySelector('.cli-chip[data-platform="cisco"]').textContent = AI_STRINGS.cliPlatformCisco[LANG];
+    document.querySelector('.cli-chip[data-platform="cloud"]').textContent = AI_STRINGS.cliPlatformCloud[LANG];
+    document.querySelector('.cli-chip[data-platform="networking"]').textContent = AI_STRINGS.cliPlatformNetworking[LANG];
+    document.querySelector('.cli-chip[data-platform="security"]').textContent = AI_STRINGS.cliPlatformSecurity[LANG];
+    document.querySelector('.cli-chip[data-platform="databases"]').textContent = AI_STRINGS.cliPlatformDatabases[LANG];
+  }
+
   updateAiModeCheckboxes();
   updateAiInputHint();
   renderSessionList();
@@ -2765,6 +2832,15 @@ function updateAiModeCheckboxes() {
 
   const diagnoseControls = document.getElementById('diagnose-controls');
   if (diagnoseControls) diagnoseControls.classList.toggle('hidden-area', !isAiModeActive('diagnose'));
+
+  const cliControls = document.getElementById('cli-controls');
+  if (cliControls) {
+    cliControls.classList.toggle('hidden-area', !isCliModeActive());
+    const activePlatform = getCliPlatform();
+    cliControls.querySelectorAll('.cli-chip').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.platform === activePlatform);
+    });
+  }
 }
 
 function updateAiInputHint() {
@@ -2964,6 +3040,45 @@ function diagnoseAction(action) {
   sendAiMessage();
 }
 
+/* ── CLI Mode: CommandFlow simulator integration ─────────────────────────── */
+// Shared with tools/commandflow/ — same command database + engine, different skin.
+const CLI_COMMANDS_URL = 'tools/commandflow/commands.json';
+
+function getCliPlatform() {
+  return localStorage.getItem('dc-cli-platform') || 'bash';
+}
+
+function selectCliPlatform(btn) {
+  localStorage.setItem('dc-cli-platform', btn.dataset.platform);
+  btn.parentElement.querySelectorAll('.cli-chip').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+function clearCliScreen() {
+  const chatArea = document.getElementById('ai-chat-messages');
+  if (chatArea) chatArea.querySelectorAll('.ai-message').forEach(el => el.remove());
+}
+
+// Returns { isClear: true } | { matched: true, outputMd } | null (no local match — fall through to Claude)
+async function tryRunCliCommand(text) {
+  if (typeof CommandFlow === 'undefined') return null;
+  try {
+    const db = await CommandFlow.loadDb(CLI_COMMANDS_URL);
+    const platformDb = db[getCliPlatform()];
+    if (!platformDb) return null;
+
+    const result = CommandFlow.run(platformDb, text);
+    if (result.isClear) return { isClear: true };
+    if (!result.matched) return null;
+
+    const body = (result.output && result.output.trim())
+      ? result.output
+      : (LANG === 'he' ? '(אין פלט — הפקודה הסתיימה בהצלחה)' : '(no output — command completed successfully)');
+    return { matched: true, outputMd: '```\n' + body + '\n```' };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function sendAiMessage() {
   if (AI_STREAMING || !aiIsConfigured()) return;
 
@@ -2973,6 +3088,24 @@ async function sendAiMessage() {
 
   input.value = '';
   autoResizeAiInput(input);
+
+  if (isCliModeActive()) {
+    const cliResult = await tryRunCliCommand(text);
+    if (cliResult && cliResult.isClear) {
+      clearCliScreen();
+      return;
+    }
+    if (cliResult && cliResult.matched) {
+      appendMessageBubble('user', text);
+      addMessageToSession('user', text);
+      appendMessageBubble('assistant', cliResult.outputMd);
+      addMessageToSession('assistant', cliResult.outputMd);
+      renderSessionList();
+      updateAiInputHint();
+      scrollChatToBottom();
+      return;
+    }
+  }
 
   appendMessageBubble('user', text);
   addMessageToSession('user', text);
