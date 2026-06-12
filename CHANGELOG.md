@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-12 — 1bfe002] (master)
+
+- docs: document CommandFlow as the asset-pipeline reference import + CLI Mode ([1bfe002](https://github.com/avivnofar/data-center/commit/1bfe002aa3d1f039f9588db4a549a5a348c403f2))
+- chore(agents): queue CommandFlow for design/architecture/QA review ([8309bb8](https://github.com/avivnofar/data-center/commit/8309bb878dce9a741ed4ca196613782a66524a5b))
+- feat(cli-mode): integrate CommandFlow simulator into AI Search CLI Mode ([ca599f7](https://github.com/avivnofar/data-center/commit/ca599f7acfe695097e70092ebde192a35917bb08))
+- feat(tools): add CommandFlow / Terminal Academy standalone terminal simulator ([16ad410](https://github.com/avivnofar/data-center/commit/16ad4103b27af005342d528a5b55b47695c37403))
+
+
 ## [2026-06-11 — 7bf3b1b] (master)
 
 - docs(agents): document live per-block cron + DST caveat ([7bf3b1b](https://github.com/avivnofar/data-center/commit/7bf3b1b21eb36aa88a0f52c188076cf95a69882f))
