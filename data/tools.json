@@ -1,0 +1,13 @@
+[
+  {
+    "id": "commandflow",
+    "label_he": "Terminal Academy (CommandFlow)",
+    "label_en": "Terminal Academy (CommandFlow)",
+    "desc_he": "סימולטור טרמינל אינטראקטיבי לתרגול פקודות Bash, PowerShell, Cisco, Cloud, רשת, אבטחה ומסדי נתונים — באופן בטוח, ללא מערכת אמיתית.",
+    "desc_en": "Interactive multi-platform terminal simulator for practicing Bash, PowerShell, Cisco, Cloud, Networking, Security, and Database commands safely — no real system involved.",
+    "path": "tools/commandflow/index.html",
+    "icon": "⌨️",
+    "status": "active",
+    "origin": "Stitch + Base44 export, owned standalone product (see tools/commandflow/README.md)"
+  }
+]

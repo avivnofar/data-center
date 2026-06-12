@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terminal Academy — CommandFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* ── Terminal Interface System (DESIGN.md tokens) ─────────────────────── */
+  :root {
+    --surface: #131315;
+    --surface-container-lowest: #0e0e10;
+    --surface-container-low: #1b1b1d;
+    --surface-container: #1f1f21;
+    --surface-container-high: #2a2a2b;
+    --surface-container-highest: #353436;
+    --on-surface: #e4e2e4;
+    --on-surface-variant: #c6c6cd;
+    --outline: #909097;
+    --outline-variant: #45464d;
+    --primary: #bec6e0;
+    --primary-container: #0f172a;
+    --secondary: #4edea3;
+    --on-secondary: #003824;
+    --tertiary: #dec29a;
+    --error: #ffb4ab;
+    --base: 4px;
+    --xs: 8px;
+    --sm: 16px;
+    --md: 24px;
+    --lg: 40px;
+    --xl: 64px;
+    --sans: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--surface);
+    color: var(--on-surface);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+  }
+  code, pre, .cf-mono, input, textarea, button { font-family: var(--mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 10px; }
+
+  /* ── Glassmorphism panel ───────────────────────────────────────────────── */
+  .glass-panel {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.5rem;
+  }
+
+  /* ── Sidebar ───────────────────────────────────────────────────────────── */
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-container);
+    border-right: 1px solid var(--outline-variant);
+    padding: var(--lg) 0 var(--md);
+    z-index: 40;
+  }
+  #sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sm);
+    padding: 0 var(--md);
+    margin-bottom: var(--xl);
+  }
+  #sidebar-header .logo-box {
+    width: 40px; height: 40px;
+    border-radius: 0.5rem;
+    background: rgba(78,222,163,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    color: var(--secondary);
+    flex-shrink: 0;
+  }
+  #sidebar-header h1 { font-size: 1.05rem; font-weight: 600; color: var(--secondary); }
+  #sidebar-header p { font-size: 0.72rem; color: var(--on-surface-variant); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  #sidebar-nav { flex: 1; padding: 0 var(--sm); display: flex; flex-direction: column; gap: var(--base); overflow-y: auto; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sm);
+    padding: 10px var(--md);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    color: var(--on-surface-variant);
+    border: 1px solid transparent;
+    background: none;
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    text-align: left;
+    width: 100%;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .nav-item:hover { background: var(--surface-container-high); color: var(--on-surface); }
+  .nav-item.active {
+    background: rgba(78,222,163,0.1);
+    color: var(--secondary);
+    border-color: rgba(78,222,163,0.3);
+    font-weight: 600;
+  }
+  .nav-item .nav-icon { font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0; }
+  .nav-item .nav-count { margin-inline-start: auto; font-size: 0.7rem; color: var(--on-surface-variant); font-family: var(--mono); }
+  .nav-item.active .nav-count { color: var(--secondary); }
+
+  #sidebar-footer { padding: var(--sm) var(--md) 0; border-top: 1px solid var(--outline-variant); margin-top: var(--md); }
+  #sidebar-footer a {
+    display: flex; align-items: center; justify-content: center; gap: var(--xs);
+    width: 100%; padding: 8px;
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  #sidebar-footer a:hover { background: var(--surface-container-high); }
+  #sidebar-footer .origin-note { font-size: 0.68rem; color: var(--on-surface-variant); margin-top: var(--sm); line-height: 1.5; }
+
+  /* ── Main / topbar ─────────────────────────────────────────────────────── */
+  #main { margin-left: 280px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
+  #topbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--md);
+    padding: var(--base) var(--md);
+    background: rgba(19,19,21,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--outline-variant);
+  }
+  #topbar h2 { font-size: 1.05rem; font-weight: 600; color: var(--secondary); }
+  #topbar h2 .sub { color: var(--on-surface-variant); font-weight: 400; font-size: 0.78rem; margin-left: 10px; }
+  #cf-search {
+    background: var(--primary-container);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.75rem;
+    color: var(--on-surface);
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    width: 220px;
+    outline: none;
+  }
+  #cf-search:focus { border-color: var(--secondary); }
+  #cf-search::placeholder { color: var(--on-surface-variant); }
+
+  #content { padding: var(--md); max-width: 1200px; width: 100%; margin: 0 auto; flex: 1; }
+
+  /* ── Dashboard ─────────────────────────────────────────────────────────── */
+  .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--md); margin-bottom: var(--md); }
+  .bento-card { padding: var(--md); position: relative; overflow: hidden; }
+  .bento-card .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--on-surface-variant); margin-bottom: var(--base); }
+  .bento-card .value { font-size: 2rem; font-weight: 700; color: var(--secondary); font-family: var(--mono); }
+  .bento-card .bar { margin-top: var(--sm); height: 4px; border-radius: 4px; background: var(--surface-container-highest); overflow: hidden; }
+  .bento-card .bar > div { height: 100%; background: var(--secondary); }
+
+  .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--lg); }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sm);
+    padding: 10px var(--md);
+    background: var(--surface-container-high);
+    border-bottom: 1px solid var(--outline-variant);
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  .panel-head .dots { display: flex; gap: 6px; }
+  .panel-head .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .panel-head .filename { font-size: 0.8rem; color: var(--on-surface-variant); font-family: var(--mono); }
+
+  .milestone-list { padding: var(--md); display: flex; flex-direction: column; gap: var(--md); }
+  .milestone {
+    display: flex; gap: var(--sm); align-items: flex-start;
+    padding: var(--sm);
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .milestone:hover { background: var(--surface-container-high); border-color: var(--outline-variant); }
+  .milestone .icon-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--secondary);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 1rem; color: var(--on-secondary);
+  }
+  .milestone h3 { font-size: 0.92rem; font-weight: 600; margin-bottom: 2px; }
+  .milestone p { font-size: 0.78rem; color: var(--on-surface-variant); }
+  .milestone .open-link { font-size: 0.7rem; color: var(--secondary); font-weight: 600; margin-top: 6px; }
+
+  .side-cards { display: flex; flex-direction: column; gap: var(--md); }
+  .cta-card { padding: var(--md); }
+  .cta-card h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--on-surface-variant); margin-bottom: var(--xs); }
+  .cta-card p { font-size: 0.82rem; margin-bottom: var(--sm); }
+  .cta-card a.btn, .cta-card button.btn {
+    display: flex; align-items: center; justify-content: center; gap: var(--xs);
+    width: 100%; padding: 11px; border-radius: 0.5rem;
+    font-weight: 700; font-size: 0.82rem; cursor: pointer;
+    text-decoration: none; margin-bottom: var(--xs);
+    transition: filter 0.15s;
+  }
+  .cta-card a.btn:hover, .cta-card button.btn:hover { filter: brightness(1.1); }
+  .btn-primary { background: var(--secondary); color: var(--on-secondary); border: none; }
+  .btn-outline { background: transparent; color: var(--on-surface); border: 1px solid var(--outline-variant); }
+
+  .log-panel { font-family: var(--mono); font-size: 0.74rem; padding: var(--sm) var(--md); background: rgba(0,0,0,0.35); border-radius: 0 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 4px; }
+  .log-line { display: flex; gap: var(--sm); }
+  .log-line .ts { color: var(--on-surface-variant); }
+  .log-line .lvl-info { color: var(--secondary); }
+  .log-line .lvl-warn { color: var(--tertiary); }
+
+  /* ── Terminal view ─────────────────────────────────────────────────────── */
+  .term-grid { display: grid; grid-template-columns: 2.2fr 1fr; gap: var(--lg); align-items: start; }
+  .term-window { display: flex; flex-direction: column; height: 60vh; min-height: 420px; }
+  #cf-output {
+    flex: 1; overflow-y: auto; padding: var(--md);
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+    background: rgba(0,0,0,0.35);
+  }
+  #cf-output .cf-line { margin-bottom: 2px; }
+  #cf-output .cf-prompt-line { color: var(--secondary); }
+  #cf-output .cf-prompt-line .cf-typed { color: var(--on-surface); }
+  #cf-output .cf-out { color: var(--on-surface-variant); }
+  #cf-output .cf-err { color: var(--error); }
+  #cf-output .cf-welcome { color: var(--primary); margin-bottom: var(--sm); }
+
+  #cf-input-row {
+    display: flex; align-items: center; gap: var(--xs);
+    padding: var(--sm) var(--md);
+    background: var(--surface-container-high);
+    border-top: 1px solid var(--outline-variant);
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+  #cf-prompt-prefix { color: var(--secondary); font-family: var(--mono); font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+  #cf-input {
+    flex: 1; background: var(--primary-container); border: 1px solid var(--outline-variant);
+    border-radius: 0.25rem; color: var(--secondary); padding: 9px 12px;
+    font-family: var(--mono); font-size: 0.85rem; outline: none;
+  }
+  #cf-input:focus { border-color: var(--secondary); }
+  #cf-run-btn {
+    background: var(--secondary); color: var(--on-secondary); border: none;
+    border-radius: 0.25rem; padding: 9px 16px; font-weight: 700; font-size: 0.8rem;
+    cursor: pointer; font-family: var(--sans);
+  }
+  #cf-run-btn:hover { filter: brightness(1.1); }
+
+  .ref-panel { padding: var(--md); }
+  .ref-panel h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--on-surface-variant); margin-bottom: var(--sm); }
+  .chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cmd-chip {
+    background: var(--surface-container-highest);
+    color: var(--secondary);
+    border: none;
+    border-radius: 0.25rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cmd-chip:hover { background: var(--surface-container-high); }
+  .cmd-chip.hidden { display: none; }
+
+  /* ── Footer ────────────────────────────────────────────────────────────── */
+  #cf-footer {
+    margin-top: var(--lg);
+    padding: var(--md);
+    border-top: 1px solid var(--outline-variant);
+    font-size: 0.72rem;
+    color: var(--on-surface-variant);
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    #sidebar { width: 220px; }
+    #main { margin-left: 220px; }
+    .bento { grid-template-columns: 1fr; }
+    .dash-grid, .term-grid { grid-template-columns: 1fr; }
+    #cf-search { width: 140px; }
+  }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo-box">&gt;_</div>
+    <div>
+      <h1>Terminal Academy</h1>
+      <p>CommandFlow · Standalone</p>
+    </div>
+  </div>
+  <nav id="sidebar-nav"></nav>
+  <div id="sidebar-footer">
+    <a href="../../index.html">&larr; Back to Data Center</a>
+    <p class="origin-note">CommandFlow originated as a Stitch + Base44 design export and is now an owned, standalone tool — part of the Data Center asset pipeline.</p>
+  </div>
+</aside>
+
+<main id="main">
+  <header id="topbar">
+    <h2 id="cf-title">Terminal Academy <span class="sub">Practice multi-platform CLI syntax safely</span></h2>
+    <input id="cf-search" type="text" placeholder="Filter commands…" oninput="onSearchInput(this.value)" />
+  </header>
+  <div id="content"></div>
+  <div id="cf-footer">
+    CommandFlow / Terminal Academy — a standalone learning tool from the
+    <a href="../../index.html" style="color:var(--secondary)">Data Center</a> project.
+    All terminal output is simulated for safe practice.
+  </div>
+</main>
+
+<script src="commandflow-core.js"></script>
+<script>
+const DB_URL = './commands.json';
+let DB = null;
+let currentPlatform = 'dashboard';
+let cfHistory = [];
+
+const PLATFORM_ICONS = {
+  bash: '💲', powershell: '🪟', cisco: '🌐', cloud: '☁️',
+  networking: '🔌', security: '🔐', databases: '🗄️'
+};
+
+async function init() {
+  DB = await CommandFlow.loadDb(DB_URL);
+  renderSidebar();
+  renderDashboard();
+}
+
+function renderSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  const platforms = CommandFlow.platforms(DB);
+  const items = [`<button class="nav-item${currentPlatform === 'dashboard' ? ' active' : ''}" onclick="selectPlatform('dashboard')">
+    <span class="nav-icon">📊</span><span>Dashboard</span>
+  </button>`];
+
+  platforms.forEach(p => {
+    const pdb = DB[p];
+    const count = CommandFlow.commandList(pdb).length;
+    items.push(`<button class="nav-item${currentPlatform === p ? ' active' : ''}" onclick="selectPlatform('${p}')">
+      <span class="nav-icon">${PLATFORM_ICONS[p] || '🖥️'}</span><span>${pdb.label_en}</span><span class="nav-count">${count}</span>
+    </button>`);
+  });
+  nav.innerHTML = items.join('');
+}
+
+function selectPlatform(p) {
+  currentPlatform = p;
+  renderSidebar();
+  document.getElementById('cf-search').value = '';
+  if (p === 'dashboard') renderDashboard();
+  else renderTerminal(p);
+}
+
+function renderDashboard() {
+  const platforms = CommandFlow.platforms(DB);
+  const totalCommands = platforms.reduce((sum, p) => sum + CommandFlow.commandList(DB[p]).length, 0);
+
+  document.getElementById('cf-title').innerHTML = 'Terminal Academy <span class="sub">Practice multi-platform CLI syntax safely</span>';
+
+  const milestones = platforms.map(p => {
+    const pdb = DB[p];
+    const count = CommandFlow.commandList(pdb).length;
+    return `<div class="milestone" onclick="selectPlatform('${p}')">
+      <div class="icon-circle">${PLATFORM_ICONS[p] || '🖥️'}</div>
+      <div>
+        <h3>${pdb.label_en}</h3>
+        <p>${count} simulated commands · prompt: <code>${escHtml(pdb.prompt)}</code></p>
+        <div class="open-link">Open terminal →</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="bento">
+      <div class="glass-panel bento-card">
+        <div class="label">Platforms</div>
+        <div class="value">${platforms.length}</div>
+        <div class="bar"><div style="width:100%"></div></div>
+      </div>
+      <div class="glass-panel bento-card">
+        <div class="label">Simulated Commands</div>
+        <div class="value">${totalCommands}</div>
+        <div class="bar"><div style="width:100%"></div></div>
+      </div>
+      <div class="glass-panel bento-card">
+        <div class="label">Practice Mode</div>
+        <div class="value">SAFE</div>
+        <div class="bar"><div style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="dash-grid">
+      <div class="glass-panel" style="overflow:hidden;">
+        <div class="panel-head">
+          <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+          <span class="filename">platforms.sh</span>
+        </div>
+        <div class="milestone-list">${milestones}</div>
+      </div>
+      <div class="side-cards">
+        <div class="glass-panel cta-card">
+          <h3>About CommandFlow</h3>
+          <p>An interactive terminal simulator for IT pros to practice CLI syntax and network admin commands without touching a real system. Pick a platform on the left, type a command, and see realistic (simulated) output.</p>
+          <a class="btn btn-outline" href="README.md" target="_blank" rel="noopener">📄 README</a>
+          <a class="btn btn-outline" href="../../index.html">⌨️ Open in Data Center CLI Mode</a>
+        </div>
+        <div class="glass-panel" style="overflow:hidden;">
+          <div class="panel-head">
+            <span class="filename">system_log --tail</span>
+            <span style="font-size:0.68rem;color:var(--on-surface-variant);text-transform:uppercase;letter-spacing:0.06em;">Telemetry</span>
+          </div>
+          <div class="log-panel">
+            <div class="log-line"><span class="ts">[BOOT]</span><span class="lvl-info">INFO:</span><span>Terminal Academy ready — 7 platforms loaded.</span></div>
+            <div class="log-line"><span class="ts">[BOOT]</span><span class="lvl-info">INFO:</span><span>${totalCommands} simulated commands indexed.</span></div>
+            <div class="log-line"><span class="ts">[BOOT]</span><span class="lvl-warn">WARN:</span><span>All output is simulated — no live systems are touched.</span></div>
+            <div class="log-line"><span class="ts">[BOOT]</span><span class="lvl-info">SUCCESS:</span><span>Type 'help' in any terminal to list available commands.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTerminal(p) {
+  const pdb = DB[p];
+  cfHistory = [];
+
+  document.getElementById('cf-title').innerHTML = `${pdb.label_en} <span class="sub">${escHtml(pdb.prompt)}</span>`;
+
+  const chips = CommandFlow.commandList(pdb).map(c =>
+    `<button class="cmd-chip" data-cmd="${escHtml(c)}" onclick="useChip(this)">${escHtml(c)}</button>`
+  ).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="term-grid">
+      <div class="glass-panel term-window">
+        <div class="panel-head">
+          <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+          <span class="filename">${escHtml(p)}@terminal-academy:~</span>
+        </div>
+        <div id="cf-output"><div class="cf-line cf-welcome"># ${escHtml(pdb.label_en)} simulator ready. Type <strong>help</strong> for available commands, <strong>clear</strong> to clear the screen.</div></div>
+        <div id="cf-input-row">
+          <span id="cf-prompt-prefix">${escHtml(pdb.prompt)}</span>
+          <input id="cf-input" type="text" autocomplete="off" spellcheck="false" onkeydown="onInputKeydown(event)" />
+          <button id="cf-run-btn" onclick="runCurrentCommand()">Run</button>
+        </div>
+      </div>
+      <div class="glass-panel ref-panel">
+        <h3>Command Reference</h3>
+        <div class="chip-list" id="cf-chip-list">${chips}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('cf-input').focus();
+}
+
+function onInputKeydown(e) {
+  if (e.key === 'Enter') runCurrentCommand();
+}
+
+function useChip(btn) {
+  const input = document.getElementById('cf-input');
+  input.value = btn.dataset.cmd;
+  input.focus();
+}
+
+function runCurrentCommand() {
+  const input = document.getElementById('cf-input');
+  const line = input.value;
+  if (!line.trim()) return;
+  input.value = '';
+
+  const pdb = DB[currentPlatform];
+  const output = document.getElementById('cf-output');
+
+  const promptLine = document.createElement('div');
+  promptLine.className = 'cf-line cf-prompt-line';
+  promptLine.innerHTML = `${escHtml(pdb.prompt)} <span class="cf-typed">${escHtml(line)}</span>`;
+  output.appendChild(promptLine);
+
+  const result = CommandFlow.run(pdb, line);
+  cfHistory.push(line);
+
+  if (result.isClear) {
+    output.innerHTML = '';
+  } else if (result.output) {
+    const outLine = document.createElement('div');
+    outLine.className = 'cf-line ' + (result.matched ? 'cf-out' : 'cf-err');
+    outLine.textContent = result.output;
+    output.appendChild(outLine);
+  }
+
+  output.scrollTop = output.scrollHeight;
+}
+
+function onSearchInput(query) {
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll('#cf-chip-list .cmd-chip').forEach(chip => {
+    const match = !q || chip.dataset.cmd.toLowerCase().includes(q);
+    chip.classList.toggle('hidden', !match);
+  });
+}
+
+function escHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+init();
+</script>
+</body>
+</html>

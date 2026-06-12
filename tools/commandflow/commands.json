@@ -1,0 +1,746 @@
+{
+  "_meta": {
+    "version": "0.1.0",
+    "description": "CommandFlow / Terminal Academy command-simulation database. Shared by tools/commandflow/index.html (standalone) and index.html CLI mode (in-app). Add new platforms or commands here — no code changes needed for new entries.",
+    "note": "All output is simulated/static for safe practice. Commands are matched by full-line first, then by first token. 'help' and 'clear' are handled generically by commandflow-core.js for every platform."
+  },
+  "bash": {
+    "label_he": "Bash",
+    "label_en": "Bash",
+    "icon": "terminal",
+    "prompt": "user@terminal-academy:~$",
+    "unknown": "bash: {cmd}: command not found",
+    "commands": {
+      "ls": { "output": ["Desktop  Documents  Downloads  Pictures  Projects  README.md"] },
+      "ls -la": {
+        "output": [
+          "total 32",
+          "drwxr-xr-x  6 user user 4096 Jun 12 09:14 .",
+          "drwxr-xr-x  3 root root 4096 Jan  2  2025 ..",
+          "-rw-r--r--  1 user user  220 Jan  2  2025 .bash_logout",
+          "drwxr-xr-x  2 user user 4096 Jun 10 18:02 Desktop",
+          "drwxr-xr-x  3 user user 4096 Jun 11 11:45 Projects",
+          "-rw-r--r--  1 user user 1340 Jun 12 09:14 README.md"
+        ]
+      },
+      "pwd": { "output": ["/home/user"] },
+      "whoami": { "output": ["user"] },
+      "uname -a": { "output": ["Linux terminal-academy 6.8.0-45-generic #45-Ubuntu SMP x86_64 GNU/Linux"] },
+      "cat /etc/os-release": {
+        "output": [
+          "NAME=\"Ubuntu\"",
+          "VERSION_ID=\"24.04\"",
+          "VERSION=\"24.04 LTS (Noble Numbat)\"",
+          "ID=ubuntu",
+          "ID_LIKE=debian"
+        ]
+      },
+      "ps aux": {
+        "output": [
+          "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND",
+          "root         1  0.0  0.1 168432 11200 ?        Ss   08:00   0:02 /sbin/init",
+          "user      1042  0.3  0.6 812340 48820 ?        Sl   09:10   0:08 node server.js",
+          "user      2310  0.0  0.1  21568  5120 pts/0    R+   09:41   0:00 ps aux"
+        ]
+      },
+      "df -h": {
+        "output": [
+          "Filesystem      Size  Used Avail Use% Mounted on",
+          "/dev/sda1        40G   18G   21G  47% /",
+          "tmpfs           1.9G     0  1.9G   0% /dev/shm"
+        ]
+      },
+      "free -h": {
+        "output": [
+          "               total        used        free      shared  buff/cache   available",
+          "Mem:           7.6Gi       2.1Gi       3.2Gi       180Mi       2.3Gi       5.2Gi",
+          "Swap:          2.0Gi          0B       2.0Gi"
+        ]
+      },
+      "systemctl status sshd": {
+        "output": [
+          "● ssh.service - OpenBSD Secure Shell server",
+          "     Loaded: loaded (/usr/lib/systemd/system/ssh.service; enabled)",
+          "     Active: active (running) since Thu 2026-06-12 08:00:14 IDT; 1h 41min ago",
+          "   Main PID: 891 (sshd)",
+          "      Tasks: 1 (limit: 4663)"
+        ]
+      },
+      "ifconfig": {
+        "output": [
+          "eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500",
+          "        inet 10.0.0.42  netmask 255.255.255.0  broadcast 10.0.0.255",
+          "        ether 02:42:ac:11:00:2a  txqueuelen 0  (Ethernet)",
+          "        RX packets 18234  bytes 9821023 (9.8 MB)",
+          "        TX packets 12044  bytes 1733201 (1.7 MB)"
+        ]
+      },
+      "ping -c 4 8.8.8.8": {
+        "output": [
+          "PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.",
+          "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=11.2 ms",
+          "64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=10.8 ms",
+          "64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=11.5 ms",
+          "64 bytes from 8.8.8.8: icmp_seq=4 ttl=115 time=10.9 ms",
+          "",
+          "--- 8.8.8.8 ping statistics ---",
+          "4 packets transmitted, 4 received, 0% packet loss, time 3004ms",
+          "rtt min/avg/max/mdev = 10.8/11.1/11.5/0.3 ms"
+        ]
+      },
+      "netstat -tulpn": {
+        "output": [
+          "Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name",
+          "tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      891/sshd",
+          "tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1042/node",
+          "tcp6       0      0 :::443                  :::*                    LISTEN      1042/node"
+        ]
+      },
+      "chmod +x deploy.sh": { "output": [] },
+      "history": {
+        "output": [
+          "  501  cd Projects",
+          "  502  git pull origin main",
+          "  503  npm install",
+          "  504  ls -la",
+          "  505  history"
+        ]
+      },
+      "grep -r \"ERROR\" /var/log/syslog": {
+        "output": [
+          "/var/log/syslog:Jun 12 09:02:11 terminal-academy kernel: ERROR: usb 1-1: device descriptor read error",
+          "/var/log/syslog:Jun 12 09:14:55 terminal-academy app[1042]: ERROR: connection to db timed out, retrying"
+        ]
+      },
+      "top": {
+        "output": [
+          "top - 09:45:02 up 1:45,  1 user,  load average: 0.12, 0.18, 0.20",
+          "Tasks:  98 total,   1 running,  97 sleeping,   0 stopped,   0 zombie",
+          "%Cpu(s):  3.2 us,  1.1 sy,  0.0 ni, 95.4 id,  0.3 wa",
+          "MiB Mem :   7820.4 total,   3276.0 free,   2150.2 used,   2394.2 buff/cache",
+          "",
+          "  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND",
+          " 1042 user      20   0  812340  48820  31200 S   2.3   0.6   0:08.41 node"
+        ]
+      }
+    }
+  },
+  "powershell": {
+    "label_he": "PowerShell",
+    "label_en": "PowerShell",
+    "icon": "keyboard_command_key",
+    "prompt": "PS C:\\Users\\Admin>",
+    "unknown": "{cmd} : The term '{cmd}' is not recognized as the name of a cmdlet, function, script file, or operable program.",
+    "commands": {
+      "Get-ChildItem": {
+        "output": [
+          "    Directory: C:\\Users\\Admin",
+          "",
+          "Mode                 LastWriteTime         Length Name",
+          "----                 -------------         ------ ----",
+          "d-----         6/10/2026   6:02 PM                Desktop",
+          "d-----         6/11/2026  11:45 AM                Projects",
+          "-a----         6/12/2026   9:14 AM           1340 README.md"
+        ]
+      },
+      "Get-Location": { "output": ["Path", "----", "C:\\Users\\Admin"] },
+      "Get-Process": {
+        "output": [
+          " NPM(K)    PM(M)      WS(K)     CPU(s)     Id  ProcessName",
+          " -------  ------     -----     ------     --  -----------",
+          "     34    62.10      71240       3.21   1042  node",
+          "     22    18.40      32100       1.05   2208  explorer",
+          "     18     9.80      18560       0.42   3144  pwsh"
+        ]
+      },
+      "Get-Service": {
+        "output": [
+          "Status   Name               DisplayName",
+          "------   ----               -----------",
+          "Running  W32Time            Windows Time",
+          "Running  Dnscache           DNS Client",
+          "Stopped  WSearch            Windows Search"
+        ]
+      },
+      "Get-NetIPAddress": {
+        "output": [
+          "IPAddress         InterfaceAlias      AddressFamily",
+          "---------         --------------      -------------",
+          "10.0.0.42         Ethernet            IPv4",
+          "fe80::4a2:bd1      Ethernet            IPv6",
+          "127.0.0.1         Loopback Pseudo...   IPv4"
+        ]
+      },
+      "Test-NetConnection google.com": {
+        "output": [
+          "ComputerName     : google.com",
+          "RemoteAddress    : 142.250.74.78",
+          "PingSucceeded    : True",
+          "PingReplyDetails : RoundtripTime = 12 ms"
+        ]
+      },
+      "Get-EventLog -LogName System -Newest 5": {
+        "output": [
+          "   Index Time          EntryType   Source                 Message",
+          "   ----- ----          ---------   ------                 -------",
+          "    9123 09:40:02      Information Service Control Manager  W32Time service entered running.",
+          "    9122 09:39:58      Information Service Control Manager  Dnscache service entered running.",
+          "    9121 09:14:01      Warning     Disk                     The IO operation has been retried."
+        ]
+      },
+      "whoami": { "output": ["terminal-academy\\admin"] },
+      "Get-ExecutionPolicy": { "output": ["Restricted"] },
+      "ipconfig /all": {
+        "output": [
+          "Windows IP Configuration",
+          "",
+          "Ethernet adapter Ethernet:",
+          "   Connection-specific DNS Suffix  . : terminal-academy.local",
+          "   IPv4 Address. . . . . . . . . . . : 10.0.0.42",
+          "   Subnet Mask . . . . . . . . . . . : 255.255.255.0",
+          "   Default Gateway . . . . . . . . . : 10.0.0.1"
+        ]
+      },
+      "Get-Disk": {
+        "output": [
+          "Number Friendly Name        OperationalStatus   Total Size Partition Style",
+          "------ ------------        -----------------   ---------- ---------------",
+          "0      Virtual Disk        Online                  127 GB GPT"
+        ]
+      },
+      "Restart-Service -Name W32Time": { "output": [] }
+    }
+  },
+  "cisco": {
+    "label_he": "Cisco",
+    "label_en": "Cisco",
+    "icon": "router",
+    "prompt": "Router>",
+    "unknown": "% Invalid input detected at '^' marker.",
+    "commands": {
+      "show ip interface brief": {
+        "output": [
+          "Interface              IP-Address      OK? Method Status                Protocol",
+          "GigabitEthernet0/0     10.0.0.1        YES manual up                    up",
+          "GigabitEthernet0/1     192.168.1.1     YES manual up                    up",
+          "Vlan1                  unassigned      YES unset  administratively down down"
+        ]
+      },
+      "show version": {
+        "output": [
+          "Cisco IOS Software, IOSv Software, Version 15.8(3)M2",
+          "Router uptime is 1 hour, 45 minutes",
+          "System image file is \"flash0:/vios-adventerprisek9-m\""
+        ]
+      },
+      "show running-config": {
+        "output": [
+          "Building configuration...",
+          "!",
+          "hostname Router",
+          "!",
+          "interface GigabitEthernet0/0",
+          " ip address 10.0.0.1 255.255.255.0",
+          "!",
+          "interface GigabitEthernet0/1",
+          " ip address 192.168.1.1 255.255.255.0",
+          "!",
+          "end"
+        ]
+      },
+      "show ip route": {
+        "output": [
+          "Codes: C - connected, S - static, O - OSPF, * - candidate default",
+          "",
+          "C    10.0.0.0/24 is directly connected, GigabitEthernet0/0",
+          "C    192.168.1.0/24 is directly connected, GigabitEthernet0/1",
+          "S*   0.0.0.0/0 [1/0] via 10.0.0.254"
+        ]
+      },
+      "ping 192.168.1.1": {
+        "output": [
+          "Type escape sequence to abort.",
+          "Sending 5, 100-byte ICMP Echos to 192.168.1.1, timeout is 2 seconds:",
+          "!!!!!",
+          "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms"
+        ]
+      },
+      "show vlan brief": {
+        "output": [
+          "VLAN Name                             Status    Ports",
+          "---- -------------------------------- --------- -------------------------------",
+          "1    default                          active    Gi0/2, Gi0/3",
+          "10   MGMT                             active    Gi0/1",
+          "20   USERS                            active    Gi0/4, Gi0/5"
+        ]
+      },
+      "show interfaces": {
+        "output": [
+          "GigabitEthernet0/0 is up, line protocol is up",
+          "  Hardware is GigE, address is 0050.79aa.0001",
+          "  MTU 1500 bytes, BW 1000000 Kbit/sec, reliability 255/255",
+          "  5 minute input rate 1200 bits/sec, 2 packets/sec",
+          "  5 minute output rate 980 bits/sec, 1 packets/sec"
+        ]
+      },
+      "show cdp neighbors": {
+        "output": [
+          "Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID",
+          "SW1               Gig 0/1            156        S I        WS-C2960  Gig 0/24",
+          "RTR-EDGE          Gig 0/0            178        R           ISR4321   Gig 0/0"
+        ]
+      },
+      "configure terminal": {
+        "output": ["Enter configuration commands, one per line.  End with CNTL/Z."]
+      },
+      "enable": { "output": [] },
+      "show mac address-table": {
+        "output": [
+          "Vlan    Mac Address       Type        Ports",
+          "----    -----------       --------    -----",
+          "   1    0050.79aa.0011    DYNAMIC     Gi0/2",
+          "  10    0050.79aa.00ab    DYNAMIC     Gi0/1"
+        ]
+      },
+      "copy running-config startup-config": {
+        "output": ["Building configuration...", "[OK]"]
+      }
+    }
+  },
+  "cloud": {
+    "label_he": "AWS CLI",
+    "label_en": "AWS CLI",
+    "icon": "cloud",
+    "prompt": "$",
+    "unknown": "\nUsage: aws [options] <command> <subcommand> [parameters]\naws: error: argument command: Invalid choice for '{cmd}'",
+    "commands": {
+      "aws ec2 describe-instances": {
+        "output": [
+          "{",
+          "    \"Reservations\": [",
+          "        {",
+          "            \"Instances\": [",
+          "                {",
+          "                    \"InstanceId\": \"i-0abcd1234ef567890\",",
+          "                    \"InstanceType\": \"t3.micro\",",
+          "                    \"State\": { \"Name\": \"running\" },",
+          "                    \"PrivateIpAddress\": \"10.0.1.23\"",
+          "                }",
+          "            ]",
+          "        }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws s3 ls": {
+        "output": [
+          "2026-04-02 10:14:02 data-center-backups",
+          "2026-05-18 08:02:55 dc-static-assets",
+          "2026-06-01 09:30:11 dc-terraform-state"
+        ]
+      },
+      "aws iam list-users": {
+        "output": [
+          "{",
+          "    \"Users\": [",
+          "        { \"UserName\": \"deploy-bot\", \"UserId\": \"AIDAEXAMPLE1\" },",
+          "        { \"UserName\": \"avivnofar\", \"UserId\": \"AIDAEXAMPLE2\" }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws ec2 describe-security-groups": {
+        "output": [
+          "{",
+          "    \"SecurityGroups\": [",
+          "        {",
+          "            \"GroupName\": \"default\",",
+          "            \"IpPermissions\": [",
+          "                { \"FromPort\": 22, \"ToPort\": 22, \"IpProtocol\": \"tcp\" }",
+          "            ]",
+          "        }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws sts get-caller-identity": {
+        "output": [
+          "{",
+          "    \"UserId\": \"AIDAEXAMPLE1\",",
+          "    \"Account\": \"123456789012\",",
+          "    \"Arn\": \"arn:aws:iam::123456789012:user/deploy-bot\"",
+          "}"
+        ]
+      },
+      "aws configure list": {
+        "output": [
+          "      Name                    Value             Type    Location",
+          "      ----                    -----             ----    --------",
+          "   profile                <not set>             None    None",
+          "access_key     ****************ABCD shared-credentials-file",
+          "region                eu-central-1      config-file    ~/.aws/config"
+        ]
+      },
+      "aws lambda list-functions": {
+        "output": [
+          "{",
+          "    \"Functions\": [",
+          "        { \"FunctionName\": \"agent-cases-generator\", \"Runtime\": \"nodejs20.x\" },",
+          "        { \"FunctionName\": \"link-checker\", \"Runtime\": \"nodejs20.x\" }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws cloudwatch describe-alarms": {
+        "output": [
+          "{",
+          "    \"MetricAlarms\": [",
+          "        { \"AlarmName\": \"HighCPU-api\", \"StateValue\": \"OK\" },",
+          "        { \"AlarmName\": \"5xxRate-worker\", \"StateValue\": \"OK\" }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws ec2 describe-vpcs": {
+        "output": [
+          "{",
+          "    \"Vpcs\": [",
+          "        { \"VpcId\": \"vpc-0a1b2c3d\", \"CidrBlock\": \"10.0.0.0/16\", \"IsDefault\": true }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws s3api list-buckets": {
+        "output": [
+          "{",
+          "    \"Buckets\": [",
+          "        { \"Name\": \"data-center-backups\", \"CreationDate\": \"2026-04-02T10:14:02Z\" },",
+          "        { \"Name\": \"dc-static-assets\", \"CreationDate\": \"2026-05-18T08:02:55Z\" }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws ec2 start-instances --instance-ids i-0abcd1234": {
+        "output": [
+          "{",
+          "    \"StartingInstances\": [",
+          "        { \"InstanceId\": \"i-0abcd1234\", \"CurrentState\": { \"Name\": \"pending\" }, \"PreviousState\": { \"Name\": \"stopped\" } }",
+          "    ]",
+          "}"
+        ]
+      },
+      "aws --version": { "output": ["aws-cli/2.17.0 Python/3.12.3 Linux/6.8.0 exe/x86_64.terminal-academy"] }
+    }
+  },
+  "networking": {
+    "label_he": "רשת",
+    "label_en": "Networking",
+    "icon": "lan",
+    "prompt": "net>",
+    "unknown": "{cmd}: command not found",
+    "commands": {
+      "ping 8.8.8.8": {
+        "output": [
+          "PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.",
+          "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=11.2 ms",
+          "64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=10.9 ms",
+          "",
+          "--- 8.8.8.8 ping statistics ---",
+          "2 packets transmitted, 2 received, 0% packet loss"
+        ]
+      },
+      "traceroute google.com": {
+        "output": [
+          "traceroute to google.com (142.250.74.78), 30 hops max",
+          " 1  10.0.0.1 (10.0.0.1)  1.102 ms",
+          " 2  10.10.0.1 (10.10.0.1)  4.881 ms",
+          " 3  142.250.74.78 (142.250.74.78)  11.204 ms"
+        ]
+      },
+      "tracert google.com": {
+        "output": [
+          "Tracing route to google.com [142.250.74.78]",
+          "  1     1 ms     1 ms     1 ms  10.0.0.1",
+          "  2     5 ms     4 ms     5 ms  10.10.0.1",
+          "  3    11 ms    11 ms    11 ms  142.250.74.78",
+          "Trace complete."
+        ]
+      },
+      "nslookup example.com": {
+        "output": [
+          "Server:  10.0.0.1",
+          "Address: 10.0.0.1#53",
+          "",
+          "Non-authoritative answer:",
+          "Name:    example.com",
+          "Address: 93.184.215.14"
+        ]
+      },
+      "dig example.com": {
+        "output": [
+          ";; QUESTION SECTION:",
+          ";example.com.                  IN      A",
+          "",
+          ";; ANSWER SECTION:",
+          "example.com.            86400   IN      A       93.184.215.14",
+          "",
+          ";; Query time: 14 msec"
+        ]
+      },
+      "netstat -an": {
+        "output": [
+          "Proto Local Address          Foreign Address        State",
+          "tcp   0.0.0.0:22             0.0.0.0:*              LISTEN",
+          "tcp   10.0.0.42:443          203.0.113.5:51422      ESTABLISHED",
+          "udp   0.0.0.0:68             *:*"
+        ]
+      },
+      "ss -tulpn": {
+        "output": [
+          "Netid  State   Recv-Q Send-Q Local Address:Port   Peer Address:Port  Process",
+          "tcp    LISTEN  0      128    0.0.0.0:22          0.0.0.0:*          sshd",
+          "tcp    LISTEN  0      511    0.0.0.0:443         0.0.0.0:*          nginx"
+        ]
+      },
+      "curl -I https://example.com": {
+        "output": [
+          "HTTP/2 200",
+          "content-type: text/html; charset=UTF-8",
+          "cache-control: max-age=604800",
+          "date: Fri, 12 Jun 2026 09:45:02 GMT"
+        ]
+      },
+      "nmap -sV 192.168.1.1": {
+        "output": [
+          "Starting Nmap 7.94 ( https://nmap.org ) at 2026-06-12 09:45 IDT",
+          "Nmap scan report for 192.168.1.1",
+          "PORT    STATE SERVICE VERSION",
+          "22/tcp  open  ssh     OpenSSH 9.6",
+          "80/tcp  open  http    nginx 1.26.0",
+          "443/tcp open  https   nginx 1.26.0",
+          "Nmap done: 1 IP address (1 host up) scanned in 2.41 seconds"
+        ]
+      },
+      "arp -a": {
+        "output": [
+          "Address          HWtype  HWaddress           Iface",
+          "10.0.0.1         ether   aa:bb:cc:dd:ee:01   eth0",
+          "10.0.0.254       ether   aa:bb:cc:dd:ee:fe   eth0"
+        ]
+      },
+      "ip route": {
+        "output": [
+          "default via 10.0.0.1 dev eth0 proto dhcp metric 100",
+          "10.0.0.0/24 dev eth0 proto kernel scope link src 10.0.0.42"
+        ]
+      },
+      "ip addr": {
+        "output": [
+          "2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500",
+          "    inet 10.0.0.42/24 brd 10.0.0.255 scope global eth0",
+          "    inet6 fe80::42:acff:fe11:2a/64 scope link"
+        ]
+      }
+    }
+  },
+  "security": {
+    "label_he": "אבטחה",
+    "label_en": "Security",
+    "icon": "security",
+    "prompt": "sec>",
+    "unknown": "{cmd}: command not found",
+    "commands": {
+      "nmap -sS 192.168.1.0/24": {
+        "output": [
+          "Starting Nmap 7.94 at 2026-06-12 09:45 IDT",
+          "Nmap scan report for 192.168.1.1   Status: up",
+          "Nmap scan report for 192.168.1.10  Status: up",
+          "Nmap scan report for 192.168.1.20  Status: up",
+          "Nmap done: 256 IP addresses (3 hosts up) scanned in 4.12 seconds"
+        ]
+      },
+      "openssl version": { "output": ["OpenSSL 3.2.1 30 Jan 2024"] },
+      "openssl s_client -connect example.com:443": {
+        "output": [
+          "CONNECTED(00000003)",
+          "depth=2 C = US, O = DigiCert Inc, CN = DigiCert Global Root CA",
+          "verify return:1",
+          "subject=CN = example.com",
+          "issuer=CN = DigiCert TLS RSA SHA256 2020 CA1",
+          "Verify return code: 0 (ok)"
+        ]
+      },
+      "ssh-keygen -t ed25519": {
+        "output": [
+          "Generating public/private ed25519 key pair.",
+          "Enter file in which to save the key (/home/user/.ssh/id_ed25519):",
+          "Your identification has been saved in /home/user/.ssh/id_ed25519",
+          "Your public key has been saved in /home/user/.ssh/id_ed25519.pub",
+          "The key fingerprint is: SHA256:7QbK...d9Lm user@terminal-academy"
+        ]
+      },
+      "iptables -L": {
+        "output": [
+          "Chain INPUT (policy DROP)",
+          "target     prot opt source               destination",
+          "ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh",
+          "ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https",
+          "",
+          "Chain FORWARD (policy DROP)",
+          "Chain OUTPUT (policy ACCEPT)"
+        ]
+      },
+      "fail2ban-client status": {
+        "output": [
+          "Status",
+          "|- Number of jail:      2",
+          "`- Jail list:   sshd, nginx-http-auth"
+        ]
+      },
+      "sudo -l": {
+        "output": [
+          "User user may run the following commands on terminal-academy:",
+          "    (ALL : ALL) ALL"
+        ]
+      },
+      "gpg --list-keys": {
+        "output": [
+          "/home/user/.gnupg/pubring.kbx",
+          "------------------------------",
+          "pub   ed25519 2026-01-02 [SC]",
+          "      ABCD1234EF567890ABCD1234EF567890ABCD1234",
+          "uid           [ultimate] Aviv Nofar <aviv@example.com>"
+        ]
+      },
+      "chmod 600 id_rsa": { "output": [] },
+      "last -a": {
+        "output": [
+          "user     pts/0        Thu Jun 12 08:02   still logged in   10.0.0.5",
+          "user     pts/1        Wed Jun 11 17:40 - 18:55  (01:15)   10.0.0.8",
+          "reboot   system boot  Wed Jun 11 07:55                    "
+        ]
+      },
+      "ufw status": {
+        "output": [
+          "Status: active",
+          "",
+          "To                         Action      From",
+          "--                         ------      ----",
+          "22/tcp                     ALLOW       Anywhere",
+          "443/tcp                    ALLOW       Anywhere"
+        ]
+      }
+    }
+  },
+  "databases": {
+    "label_he": "מסדי נתונים",
+    "label_en": "Databases",
+    "icon": "database",
+    "prompt": "sql>",
+    "unknown": "ERROR: syntax error near \"{cmd}\"",
+    "commands": {
+      "SHOW DATABASES;": {
+        "output": [
+          "+--------------------+",
+          "| Database           |",
+          "+--------------------+",
+          "| information_schema |",
+          "| data_center        |",
+          "| agents_sim         |",
+          "+--------------------+"
+        ]
+      },
+      "SHOW TABLES;": {
+        "output": [
+          "+----------------------+",
+          "| Tables_in_data_center|",
+          "+----------------------+",
+          "| users                |",
+          "| sessions             |",
+          "| cases                |",
+          "+----------------------+"
+        ]
+      },
+      "SELECT * FROM users LIMIT 5;": {
+        "output": [
+          "+----+----------+---------------------+",
+          "| id | username | created_at          |",
+          "+----+----------+---------------------+",
+          "|  1 | aviv     | 2026-01-02 09:00:00 |",
+          "|  2 | agent_6  | 2026-02-14 12:30:00 |",
+          "+----+----------+---------------------+"
+        ]
+      },
+      "DESCRIBE users;": {
+        "output": [
+          "+------------+--------------+------+-----+---------+----------------+",
+          "| Field      | Type         | Null | Key | Default | Extra          |",
+          "+------------+--------------+------+-----+---------+----------------+",
+          "| id         | int          | NO   | PRI | NULL    | auto_increment |",
+          "| username   | varchar(64)  | NO   | UNI | NULL    |                |",
+          "| created_at | datetime     | NO   |     | NULL    |                |",
+          "+------------+--------------+------+-----+---------+----------------+"
+        ]
+      },
+      "SELECT VERSION();": {
+        "output": ["+-------------------------+", "| VERSION()               |", "+-------------------------+", "| 8.0.37-cloud             |", "+-------------------------+"]
+      },
+      "\\l": {
+        "output": [
+          "                                  List of databases",
+          "    Name     |  Owner   | Encoding |",
+          "-------------+----------+----------+",
+          " data_center | postgres | UTF8     |",
+          " agents_sim  | postgres | UTF8     |"
+        ]
+      },
+      "\\dt": {
+        "output": [
+          "          List of relations",
+          " Schema |   Name   | Type  |  Owner",
+          "--------+----------+-------+----------",
+          " public | users    | table | postgres",
+          " public | sessions | table | postgres"
+        ]
+      },
+      "\\du": {
+        "output": [
+          "                             List of roles",
+          " Role name |                   Attributes",
+          "-----------+------------------------------------------------",
+          " postgres  | Superuser, Create role, Create DB, Replication",
+          " readonly  | Cannot login"
+        ]
+      },
+      ".tables": { "output": ["cases       sessions    users"] },
+      ".schema users": {
+        "output": [
+          "CREATE TABLE users (",
+          "  id INTEGER PRIMARY KEY AUTOINCREMENT,",
+          "  username TEXT NOT NULL UNIQUE,",
+          "  created_at TEXT NOT NULL",
+          ");"
+        ]
+      },
+      "SHOW PROCESSLIST;": {
+        "output": [
+          "+----+------+-----------+--------------+---------+",
+          "| Id | User | Host      | db           | Command |",
+          "+----+------+-----------+--------------+---------+",
+          "|  4 | app  | 10.0.0.42 | data_center  | Query   |",
+          "|  9 | repl | 10.0.0.50 | NULL         | Binlog Dump |",
+          "+----+------+-----------+--------------+---------+"
+        ]
+      },
+      "EXPLAIN SELECT * FROM users;": {
+        "output": [
+          "+----+-------------+-------+------+---------------+",
+          "| id | select_type | table | type | key           |",
+          "+----+-------------+-------+------+---------------+",
+          "|  1 | SIMPLE      | users | ALL  | NULL          |",
+          "+----+-------------+-------+------+---------------+"
+        ]
+      }
+    }
+  }
+}
