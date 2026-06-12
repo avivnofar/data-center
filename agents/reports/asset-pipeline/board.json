@@ -66,6 +66,31 @@
       ]
     },
     {
+      "id": "commandflow",
+      "title": "CommandFlow / Terminal Academy (Stitch + Base44 import)",
+      "owner_agents": [9, 10, 6],
+      "tool": "stitch_base44",
+      "stage": "returned",
+      "version": 1.00,
+      "spec_file": "agents/reports/asset-pipeline/issues/commandflow.md",
+      "description": "First real imported asset from the human-in-the-loop pipeline: an interactive multi-platform terminal simulator (Bash, PowerShell, Cisco, Cloud, Networking, Security, Databases). Owner-built standalone product now lives at tools/commandflow/ (full Stitch 'Terminal Academy' design) and its shared engine/data (commandflow-core.js + commands.json) now also powers CLI Mode in the main app's AI Search tab (data-center styling). Reference pattern for future tool imports — see CLAUDE.md asset pipeline section.",
+      "origin": {
+        "source": "Stitch + Base44 export",
+        "incoming_path": "agents/assets/incoming/commandflow/ (code.html, DESIGN.md, screen.png)",
+        "built_by": "owner (avivnofar) + Claude Code session",
+        "date": "2026-06-12"
+      },
+      "created_day": 1,
+      "updated_day": 1,
+      "history": [
+        {
+          "day": 1,
+          "stage": "returned",
+          "note": "Owner-built standalone product (tools/commandflow/) + CLI Mode integration committed to repo. Queued for AGENT-9 (design review), AGENT-10 (architecture review), AGENT-6 (QA testing) per agents/reports/asset-pipeline/issues/commandflow.md."
+        }
+      ]
+    },
+    {
       "id": "crm-placeholder",
       "title": "CRM (placeholder — flagged for future serious development)",
       "owner_agents": [],
