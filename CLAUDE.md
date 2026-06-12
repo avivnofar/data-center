@@ -551,6 +551,34 @@ Studio, Agent 9 — free design-tool products), `architect-org-products`
 important ones), and `crm-placeholder` (flagged for future development, not
 scheduled, no owner agent).
 
+**First completed import — `commandflow`** (stage `returned`, 2026-06-12):
+CommandFlow / Terminal Academy is the **first asset to complete the
+human-in-the-loop pipeline** and is the **reference pattern** for future tool
+imports. It started as a Stitch + Base44 export
+(`agents/assets/incoming/commandflow/code.html` + `DESIGN.md` + `screen.png`
+— a static dashboard mockup with no working terminal logic) and was rebuilt
+by the owner + Claude Code as:
+
+- `tools/commandflow/` — a standalone, zero-build, vanilla HTML/CSS/JS
+  "Terminal Academy" product preserving the Stitch design system
+  (glassmorphism, traffic-light terminal headers, Inter + JetBrains Mono),
+  registered in `data/tools.json` and linked from the main app's topbar
+  (`#commandflow-link`).
+- `tools/commandflow/commandflow-core.js` + `tools/commandflow/commands.json`
+  — a shared, dependency-free simulation engine + command database (7
+  platforms: Bash, PowerShell, Cisco, Cloud, Networking, Security, Databases)
+  also loaded by the main app's **CLI Mode** (see "Future Assimilation: CLI
+  Tools" below) — **same engine/data, different skin** per platform.
+
+Pattern for future imports: human builds in Stitch/Base44 ->
+owner/Claude Code produces an owned, zero-build standalone product under
+`tools/<name>/` (+ in-app integration if relevant) -> register in
+`data/tools.json` -> board item `returned` with a spec file under
+`agents/reports/asset-pipeline/issues/<name>.md` -> agents take it through
+`tested -> optimized -> implemented`. See
+`agents/reports/asset-pipeline/issues/commandflow.md` for the full review
+spec (Designer/Architect/QA sub-tasks) queued for AGENT-9/10/6.
+
 ### Weekly Friday executive summary
 
 The Friday `weekly_summary` block (`generateWeeklySummary()`) generates
@@ -611,14 +639,34 @@ before doing so).
 
 ## Future Assimilation: CLI Tools
 
+**CLI Mode now has a real simulator (2026-06-12).** The AI Search tab's CLI
+Mode (`isCliModeActive()`, `#cli-controls` platform chips) is backed by
+**CommandFlow** (`tools/commandflow/commandflow-core.js` +
+`tools/commandflow/commands.json` — see "Human-in-the-loop asset pipeline"
+above for origin). When CLI Mode is active, `sendAiMessage()` calls
+`tryRunCliCommand(text)`: recognized commands for the selected platform
+(`getCliPlatform()` — Bash, PowerShell, Cisco, Cloud, Networking, Security,
+Databases) render instantly as a code block in the chat, **zero
+`data-center-api` cost**; `clear`/`cls` clears the chat's message area
+(`clearCliScreen()`); anything unmatched falls through to the existing Claude
+streaming path unchanged. In-app styling stays the existing
+green-on-black/`C:\>` Data Center terminal aesthetic — the standalone
+`tools/commandflow/` page keeps the full Stitch "Terminal Academy" look.
+Same engine + data, different skin.
+
+**Adding platforms/commands is data-only**: edit
+`tools/commandflow/commands.json` (add a platform object or commands under an
+existing one) — both the standalone page and in-app CLI Mode pick it up via
+the shared `CommandFlow.loadDb()`/`run()` engine, no code changes needed. See
+`tools/commandflow/README.md`.
+
 A `cli` module stub (`status: "coming-soon"`, `data_file: "data/cli.json"`)
-has been added to `data/modules.json` so the app is ready to absorb a future
-CLI-tools knowledge module (e.g. cross-platform CLI utilities, scripting
-snippets) without further schema changes. **Not built this session** — per
-Launch Decisions Part 3, CLI tooling is intentionally deferred. When it is
-picked up, follow the same bilingual schema as `data/linux.json`/`cmd.json`
-(Rules 1-9 above) and flip `status` to `"active"` once `data/cli.json` exists
-with real entries.
+remains in `data/modules.json` for a future **command-card knowledge module**
+(bilingual reference cards for CLI tools, distinct from CommandFlow's
+interactive simulator). When picked up, follow the same bilingual schema as
+`data/linux.json`/`cmd.json` (Rules 1-9 above) and flip `status` to
+`"active"` once `data/cli.json` exists with real entries — this is unrelated
+to, and does not block, CommandFlow.
 
 ---
 

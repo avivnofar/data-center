@@ -430,6 +430,72 @@ at risk on day 1; or (b) reorder/shrink the 08:00 block's `case_share`
 temporarily for the first live day. Decide with the owner before flipping
 `paused: false`.
 
+## CommandFlow / Terminal Academy import (2026-06-12)
+
+Per the owner's "autonomous architect" prompt: imported the externally-built
+(Stitch + Base44) "Terminal Academy" export
+(`agents/assets/incoming/commandflow/code.html` + `DESIGN.md` + `screen.png`
+— moved here from a misplaced `agents/agents/assets/...` path) as the
+**first completed human-in-the-loop asset-pipeline product**, end to end.
+No Gemini/Claude API calls made this session (build-only, per the cost-guard
+note in the prompt).
+
+- **Standalone product** — new `tools/commandflow/`: `index.html` (full
+  Stitch "Terminal Academy" design — glassmorphism, traffic-light terminal
+  headers, Inter + JetBrains Mono, sidebar platform nav), shared
+  `commandflow-core.js` engine (`CommandFlow.loadDb/run/...`, dependency-free,
+  smoke-tested via node), `commands.json` (7 platforms: Bash, PowerShell,
+  Cisco, Cloud, Networking, Security, Databases; ~10-17 commands each,
+  generic `help`/`clear`/`cls`), and `README.md`. Registered in new
+  `data/tools.json` (outside `validate-json.js`'s scope — confirmed safe) and
+  linked from the main app's topbar (`#commandflow-link`).
+- **CLI Mode integration** — `index.html`: `#cli-controls` platform-chip row
+  (7 chips, bilingual via new `AI_STRINGS.cliPlatform*` keys), loads
+  `tools/commandflow/commandflow-core.js` via a new `<script src>` tag.
+  `sendAiMessage()` now calls `tryRunCliCommand(text)` when
+  `isCliModeActive()`: recognized commands render as a code block in chat
+  (zero `data-center-api` cost), `clear`/`cls` clears the chat via
+  `clearCliScreen()`, anything unmatched falls through to the existing Claude
+  streaming path unchanged. In-app styling stays the existing
+  green-on-black/`C:\>` aesthetic — standalone keeps the full Stitch look
+  (same engine/data, different skin, per owner decision). Verified
+  `node -e "new Function(...)"` on the extracted `<script>` block — no syntax
+  errors. **Not verified in a real browser this session** (no
+  Playwright/devtools tool available) — do a quick `python -m http.server
+  8080` smoke check (AI Search tab -> CLI Mode -> try `ls`, `help`, `clear`,
+  an unknown command) before/after pushing if possible.
+- **Asset pipeline** — `agents/reports/asset-pipeline/board.json`: new
+  `commandflow` item, stage `returned`, owners `[9, 10, 6]`
+  (Designer/Architect/QA), with `origin` recording the Stitch+Base44 source
+  and `agents/assets/incoming/commandflow/` path. New spec file
+  `agents/reports/asset-pipeline/issues/commandflow.md` with full
+  Designer/Architect/QA review tasks + acceptance criteria (design review of
+  in-app CLI styling, architecture/optimization assessment, cross-platform QA
+  + NotebookLM-shared-source recommendation).
+- **CLAUDE.md** — "Human-in-the-loop asset pipeline" section gained a
+  "First completed import — `commandflow`" subsection documenting it as the
+  **reference pattern** for future tool imports. "Future Assimilation: CLI
+  Tools" section rewritten: CLI Mode now describes the live CommandFlow
+  integration; the `data/cli.json` "coming-soon" module stub is now
+  explicitly scoped as a *separate*, unrelated future bilingual command-card
+  module (doesn't block or relate to CommandFlow).
+- **GitHub Issues not filed** — `gh` CLI is unavailable in this environment
+  (`GITHUB_TOKEN`-based filing is the simulation's job, not this session's).
+  The board item (stage `returned`) + `commandflow.md` spec file are the
+  queue; a future session (with `gh` or once the simulation runs a
+  `tool_task_window`) should file the 3 `asset-task` + `claude-action` +
+  `AGENT-9`/`AGENT-10`/`AGENT-6` issues from `commandflow.md`.
+
+**Commits**: separate commits for `tools/commandflow/` + `data/tools.json`,
+`index.html` (CLI Mode integration + topbar link), `agents/reports/asset-pipeline/`
+(board.json + commandflow.md), and `CLAUDE.md` + this file. **Paused before
+push** per the Autonomous Brain Rules — awaiting owner review.
+
+**Next session**: resume queue item 0/5 — continue the office simulation
+(quota-reset retry / unpause decision per "Per-block cron wired" above), and
+optionally pick up the CommandFlow review tasks in `commandflow.md` once
+agents are running again.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work
