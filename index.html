@@ -176,46 +176,16 @@
       text-align: center;
     }
 
-    /* ── AI banner ─────────────────────────────────────────────────────────── */
-    #ai-banner {
-      background: linear-gradient(135deg, #1e1b4b 0%, #1a1f35 100%);
-      border-bottom: 1px solid #4338ca44;
-      padding: 10px 20px;
-      text-align: center;
-      font-size: 0.82rem;
-      color: #a5b4fc;
-    }
-    #ai-banner span { opacity: 0.6; }
-
-    /* ── Search ────────────────────────────────────────────────────────────── */
-    #search-section {
-      padding: 24px 20px 0;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    #search-input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 0.95rem;
-      padding: 10px 16px;
-      outline: none;
-      transition: border-color 0.2s;
-      direction: inherit;
-    }
-    #search-input:focus { border-color: var(--accent2); }
-    #search-input:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
-    #search-input::placeholder { color: var(--text-dim); }
-
+    /* ── FAQ pills (AI Search input area) ─────────────────────────────────── */
     #faq-pills {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 12px;
+      padding: 10px 14px;
     }
+    #faq-pills:empty { display: none; }
     .faq-pill {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -587,19 +557,6 @@
     }
     .step-note { color: var(--text-dim); font-size: 0.8rem; margin-top: 4px; }
 
-    /* ── Search results ─────────────────────────────────────────────────────── */
-    #search-results { display: none; }
-    #search-results.visible { display: block; }
-    .search-section-title {
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      margin: 20px 0 8px;
-      text-transform: uppercase;
-    }
-    .no-results { color: var(--text-muted); padding: 40px 0; text-align: center; }
-
     /* ── Hover tooltip ──────────────────────────────────────────────────────── */
     #tooltip {
       background: #1a1f35;
@@ -657,8 +614,8 @@
     #panel-ai { padding: 0; }
     #ai-tab-container {
       display: flex;
-      height: calc(100vh - 160px);
-      min-height: 560px;
+      height: 75vh;
+      min-height: 620px;
       direction: ltr;
       border: 1px solid var(--border);
       border-radius: var(--card-radius);
@@ -1312,7 +1269,7 @@
       .print-target, .print-target * { visibility: visible; }
       .print-target { background: #fff; color: #000; inset: 0; padding: 24px; position: absolute; }
       .print-target pre, .print-target code { background: #f4f4f4 !important; color: #000 !important; direction: ltr; unicode-bidi: isolate; }
-      #pdf-fab, #topbar, #tab-nav, #search-section, #ai-banner, #status-bar, .workflow-list, #workflow-detail-back { display: none !important; }
+      #pdf-fab, #topbar, #tab-nav, #status-bar, .workflow-list, #workflow-detail-back { display: none !important; }
     }
 
     /* ── Mobile (≤768px) ───────────────────────────────────────────────────── */
@@ -1335,7 +1292,7 @@
 
       body { font-size: 14px; }
 
-      #ai-tab-container { height: calc(100vh - 130px); min-height: 480px; margin: 12px 0; }
+      #ai-tab-container { height: 70vh; min-height: 480px; margin: 12px 0; }
 
       #ai-sidebar {
         height: 100%;
@@ -1357,7 +1314,7 @@
       #tooltip { max-width: min(280px, 80vw); }
 
       /* Prevent iOS Safari auto-zoom on focus (inputs <16px trigger it) */
-      #search-input, #ai-input, #admin-token-input { font-size: 16px; }
+      #ai-input, #admin-token-input { font-size: 16px; }
     }
 
     /* ── Small mobile (≤480px) ─────────────────────────────────────────────── */
@@ -1365,8 +1322,6 @@
       #ai-mode-selector { flex-wrap: wrap; }
       .ai-mode-btn { flex-basis: 100%; }
       .diagnose-action-btn { flex-basis: calc(50% - 3px); }
-
-      #ai-banner .banner-status { display: none; }
 
       #logo .logo-text { display: none; }
       #logo::after { content: "DC"; }
@@ -1474,32 +1429,9 @@
   </div>
 </div>
 
-<div id="ai-banner">
-  <span class="he"><span aria-hidden="true">🤖</span> חיפוש חכם מבוסס Claude AI בלשונית "חיפוש AI" &nbsp;|&nbsp; </span>
-  <span class="en" style="display:none"><span aria-hidden="true">🤖</span> Claude AI-powered search in the "AI Search" tab &nbsp;|&nbsp; </span>
-  <span id="entry-count" class="banner-status">56 entries · 4 modules</span>
-</div>
-
-<div id="search-section">
-  <label for="search-input" class="sr-only">
-    <span class="he">חפש פקודה, שגיאה או תרחיש</span>
-    <span class="en" style="display:none">Search commands, errors or scenarios</span>
-  </label>
-  <input
-    id="search-input"
-    type="text"
-    placeholder="חפש פקודה, שגיאה, תרחיש..."
-    autocomplete="off"
-    spellcheck="false"
-    oninput="handleSearch(this.value)"
-  />
-  <div id="faq-pills"></div>
-</div>
-
 <div id="tab-nav" role="tablist" aria-label="Modules"></div>
 
 <main id="main-content" tabindex="-1">
-  <div id="search-results" aria-live="polite"></div>
   <div id="tab-contents"></div>
 </main>
 
@@ -1625,10 +1557,6 @@ function toggleLang() {
   localStorage.setItem('dc-lang', LANG);
   applyLang();
   renderActiveTab();
-  updateSearchPlaceholder();
-  renderFaqPills();
-  const q = document.getElementById('search-input').value.trim();
-  if (q) handleSearch(q);
 }
 
 function applyLang() {
@@ -1659,12 +1587,6 @@ function applyLang() {
   updateStatusBar();
 }
 
-function updateSearchPlaceholder() {
-  document.getElementById('search-input').placeholder = LANG === 'he'
-    ? 'חפש פקודה, שגיאה, תרחיש...'
-    : 'Search commands, errors, scenarios...';
-}
-
 async function init() {
   if (location.protocol === 'file:') {
     document.getElementById('file-warning').style.display = 'block';
@@ -1681,9 +1603,7 @@ async function init() {
 
   buildTabNav();
   document.getElementById('tab-nav').addEventListener('keydown', handleTabNavKeydown);
-  renderFaqPills();
   applyLang();
-  updateSearchPlaceholder();
 
   const active = DB.modules.filter(m => m.status === 'active');
   await Promise.all(active.map(async mod => {
@@ -1696,7 +1616,6 @@ async function init() {
   }));
 
   const total = active.reduce((s, m) => s + (DB[m.id] || []).length, 0);
-  document.getElementById('entry-count').textContent = `${total} entries · ${active.length} modules`;
   updateStatusBar(total, active.length);
 
   switchTab('ai');
@@ -1862,9 +1781,6 @@ function switchTab(id) {
     panel.style.display = 'block';
     renderPanel(id, panel);
   }
-
-  document.getElementById('search-results').classList.remove('visible');
-  document.getElementById('tab-contents').style.display = '';
 }
 
 function handleTabNavKeydown(e) {
@@ -2153,80 +2069,21 @@ function toggleTs(id) {
   if (header) header.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 }
 
-function handleSearch(query) {
-  const q = query.trim().toLowerCase();
-  const searchSection = document.getElementById('search-results');
-  const tabContents = document.getElementById('tab-contents');
-  if (!q) {
-    searchSection.classList.remove('visible');
-    tabContents.style.display = '';
-    return;
-  }
-  tabContents.style.display = 'none';
-  searchSection.classList.add('visible');
-  searchSection.innerHTML = renderSearchResults(q);
-}
-
-function matches(text, q) { return text && text.toLowerCase().includes(q); }
-
-function renderSearchResults(q) {
-  const results = { linux: [], cmd: [], network: [], troubleshoot: [] };
-
-  ['linux', 'cmd', 'network'].forEach(key => {
-    (DB[key] || []).forEach(entry => {
-      const fields = [
-        entry.name, entry.desc_he, entry.desc_en, entry.tags,
-        ...(entry.scenarios_he||[]), ...(entry.scenarios_en||[]),
-        ...(entry.mistakes||[]).flatMap(m=>[m.x_he,m.x_en,m.fix_he,m.fix_en]),
-        ...(entry.usage||[]).flatMap(u=>[u.cmd,u.cmt_he,u.cmt_en]),
-      ].filter(Boolean).join(' ');
-      if (matches(fields, q)) results[key].push(entry);
-    });
-  });
-
-  (DB.troubleshoot || []).forEach(entry => {
-    const fields = [
-      entry.title_he, entry.title_en, entry.desc_he, entry.desc_en, entry.plat,
-      ...(entry.steps||[]).flatMap(s=>[s.text_he,s.text_en,s.cmd,s.note_he,s.note_en]),
-    ].filter(Boolean).join(' ');
-    if (matches(fields, q)) results.troubleshoot.push(entry);
-  });
-
-  const total = Object.values(results).reduce((s,a)=>s+a.length,0);
-  if (total === 0)
-    return `<div class="no-results">${LANG==='he'?'לא נמצאו תוצאות עבור':'No results for'} "<strong>${escHtml(q)}</strong>"</div>`;
-
-  const sectionLabels = {
-    linux:        { he:'🐧 Linux',            en:'🐧 Linux' },
-    cmd:          { he:'⊞ CMD / Windows',     en:'⊞ CMD / Windows' },
-    network:      { he:'🌐 רשת',              en:'🌐 Network' },
-    troubleshoot: { he:'🔧 פתרון תקלות',       en:'🔧 Troubleshoot' },
-  };
-
-  let html = `<div class="results-count">${total} ${LANG==='he'?'תוצאות':'results'}</div>`;
-  ['linux','cmd','network'].forEach(key => {
-    if (!results[key].length) return;
-    html += `<div class="search-section-title">${sectionLabels[key][LANG]}</div>`;
-    html += results[key].map(e=>renderCard(e)).join('');
-  });
-  if (results.troubleshoot.length) {
-    html += `<div class="search-section-title">${sectionLabels.troubleshoot[LANG]}</div>`;
-    html += results.troubleshoot.map(e=>renderTsCard(e)).join('');
-  }
-  return html;
-}
-
 function renderFaqPills() {
+  const el = document.getElementById('faq-pills');
+  if (!el) return;
   const pills = FAQ_PILLS[LANG] || FAQ_PILLS.he;
-  document.getElementById('faq-pills').innerHTML = pills.map(p =>
-    `<button class="faq-pill" onclick="setSearch('${escHtml(p)}')">${escHtml(p)}</button>`
+  el.innerHTML = pills.map(p =>
+    `<button class="faq-pill" onclick="useFaqPill('${escHtml(p)}')">${escHtml(p)}</button>`
   ).join('');
 }
 
-function setSearch(query) {
-  const input = document.getElementById('search-input');
+function useFaqPill(query) {
+  const input = document.getElementById('ai-input');
+  if (!input) return;
   input.value = query;
-  handleSearch(query);
+  autoResizeAiInput(input);
+  sendAiMessage();
 }
 
 function showTooltip(event, el) {
@@ -2684,6 +2541,7 @@ function buildAiPanelHtml() {
         <button class="diagnose-chip cli-chip" data-platform="databases" onclick="selectCliPlatform(this)"></button>
       </div>
     </div>
+    <div id="faq-pills"></div>
     <div id="ai-input-area" class="${configured ? '' : 'hidden-area'}">
       <div id="ai-input-row">
         <button id="ai-lang-toggle" onclick="toggleAiLang()"></button>
@@ -2813,6 +2671,7 @@ function updateAiPanelLang() {
   updateAiModeCheckboxes();
   updateAiInputHint();
   renderSessionList();
+  renderFaqPills();
 }
 
 function updateAiModeCheckboxes() {
