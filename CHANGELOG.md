@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-13 — 6e28310] (master)
+
+- chore: update token budget ([6e28310](https://github.com/avivnofar/data-center/commit/6e283108bb68ca356fd1080741933e548ed5c728))
+- docs(agents): record day-2 simulation skip — admin token unavailable ([2fb9638](https://github.com/avivnofar/data-center/commit/2fb963875b6f711c3085285aeead52a119c121c4))
+- fix: optimize Claude system prompt ([2c1e7c6](https://github.com/avivnofar/data-center/commit/2c1e7c66e0e84c3ee9a082555d1ecd4d6137769f))
+- feat: expand database — linux/cmd/network/troubleshoot ([f094c12](https://github.com/avivnofar/data-center/commit/f094c125f1172d8a495ac298fb670fdf20e25ac6))
+
+
 ## [2026-06-12 — 1bfe002] (master)
 
 - docs: document CommandFlow as the asset-pipeline reference import + CLI Mode ([1bfe002](https://github.com/avivnofar/data-center/commit/1bfe002aa3d1f039f9588db4a549a5a348c403f2))
