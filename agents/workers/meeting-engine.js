@@ -619,12 +619,11 @@ export async function runMeeting(meetingType, env, opts = {}) {
     maxTokens: Math.max(simConfig.max_tokens ?? 1024, 2048),
     prompt,
     systemPrompt,
-    cfAccountId: env.CLOUDFLARE_ACCOUNT_ID,
-    cfApiToken: env.CLOUDFLARE_API_TOKEN,
+    ai: env.AI,
   });
 
   if (geminiResult.source === 'cloudflare-fallback') {
-    console.warn('[meeting-engine] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct)');
+    console.warn('[meeting-engine] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)');
   }
 
   const responseText = geminiResult.text;

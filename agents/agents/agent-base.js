@@ -194,7 +194,7 @@ export class AgentBase {
    * Calls Gemini 2.0 Flash with the agent's personality + current state +
    * behavioral rules + (placeholder) DB context prepended to systemPrompt.
    */
-  async queryGemini(prompt, systemPrompt) {
+  async queryGemini(prompt, systemPrompt, opts = {}) {
     const simConfig = this.env.SIM_CONFIG?.GEMINI || {};
     const dbContext = await this.getDbContext(prompt);
 
@@ -219,12 +219,14 @@ export class AgentBase {
       maxTokens: simConfig.max_tokens ?? 1024,
       prompt,
       systemPrompt: fullSystemPrompt,
-      cfAccountId: this.env.CLOUDFLARE_ACCOUNT_ID,
-      cfApiToken: this.env.CLOUDFLARE_API_TOKEN,
+      ai: this.env.AI,
+      forceFallback: !!opts.forceFallback,
     });
 
+    this.lastGeminiSource = result.source;
+
     if (result.source === 'cloudflare-fallback') {
-      console.warn(`[agent-${this.id}] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct)`);
+      console.warn(`[agent-${this.id}] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
     }
 
     return result.text;

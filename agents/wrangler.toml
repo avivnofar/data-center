@@ -33,6 +33,12 @@ new_sqlite_classes = ["AgentStateDO"]
 binding = "APP_API"
 service = "data-center-api"
 
+# Workers AI — used as the fallback when Gemini returns 429 (quota
+# exhausted). Account-scoped binding, no extra credentials needed. See
+# agents/workers/gemini-client.js queryCloudflareFallback().
+[ai]
+binding = "AI"
+
 # Secrets (set via `wrangler secret put <NAME>`, not here):
 #   GEMINI_API_KEY - required, Gemini role-play calls
 #   ADMIN_TOKEN    - required, validates X-Admin-Token on /api/agents/*

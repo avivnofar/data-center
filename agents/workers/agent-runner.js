@@ -130,6 +130,18 @@ export async function runAgentSession(agentId, caseData, env, opts = {}) {
   };
 }
 
+/**
+ * Direct queryGemini() smoke test for an agent — bypasses handleCase()'s
+ * probabilistic app-usage logic so Gemini / the Cloudflare fallback can be
+ * exercised deterministically. See POST /api/agents/test-gemini.
+ */
+export async function runGeminiTest(agentId, prompt, env, opts = {}) {
+  const agent = instantiateAgent(agentId, env);
+  await agent.loadState();
+  const text = await agent.queryGemini(prompt, undefined, { forceFallback: !!opts.forceFallback });
+  return { agentId, prompt, text, source: agent.lastGeminiSource };
+}
+
 function corsHeaders(origin) {
   const headers = { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token' };
   if (ALLOWED_ORIGINS.includes(origin)) {
@@ -1690,6 +1702,12 @@ export default {
         // Manual single-case trigger for local testing: { agentId, caseData, opts }
         const body = await request.json();
         const result = await runAgentSession(body.agentId, body.caseData, env, body.opts || {});
+        return json(result, 200, origin);
+      }
+      if (request.method === 'POST' && url.pathname === '/api/agents/test-gemini') {
+        // Direct queryGemini() smoke test: { agentId, prompt, opts: { forceFallback } }
+        const body = await request.json();
+        const result = await runGeminiTest(body.agentId, body.prompt, env, body.opts || {});
         return json(result, 200, origin);
       }
       if (request.method === 'POST' && url.pathname === '/api/agents/trigger') {
