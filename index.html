@@ -710,6 +710,11 @@
       gap: 8px;
       padding: 10px 12px;
     }
+    #ai-mode-radiogroup {
+      display: flex;
+      flex: 1;
+      gap: 8px;
+    }
     .sidebar-toggle-btn {
       background: transparent;
       border: 1px solid var(--border);
@@ -747,7 +752,7 @@
       height: 12px;
       flex-shrink: 0;
       border: 1px solid var(--border2);
-      border-radius: 3px;
+      border-radius: 50%;
       background: var(--surface);
       transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
@@ -1319,7 +1324,7 @@
 
     /* ── Small mobile (≤480px) ─────────────────────────────────────────────── */
     @media (max-width: 480px) {
-      #ai-mode-selector { flex-wrap: wrap; }
+      #ai-mode-radiogroup { flex-wrap: wrap; }
       .ai-mode-btn { flex-basis: 100%; }
       .diagnose-action-btn { flex-basis: calc(50% - 3px); }
 
@@ -2162,15 +2167,16 @@ function aiIsConfigured() {
   return CONFIG.AI_ENABLED && CONFIG.WORKER_URL.indexOf('YOUR-SUBDOMAIN') === -1;
 }
 
-/* ── AI mode selector (multi-select: search / diagnose / cli) ───────────── */
+/* ── AI mode selector (radio: exactly one of search / diagnose / cli) ───── */
+const AI_MODE_VALUES = ['search', 'diagnose', 'cli'];
+
 function loadAiModes() {
   try {
     const stored = JSON.parse(localStorage.getItem('dc-modes') || 'null');
-    if (Array.isArray(stored) && stored.length) return stored;
+    if (Array.isArray(stored) && AI_MODE_VALUES.includes(stored[0])) return [stored[0]];
   } catch (_) { /* ignore */ }
-  // Migrate from the old single-select 'dc-mode' key.
-  const legacy = localStorage.getItem('dc-mode');
-  return legacy === 'diagnose' ? ['diagnose'] : ['search'];
+  // Default on load: Free Search.
+  return ['search'];
 }
 
 function saveAiModes() {
@@ -2486,9 +2492,11 @@ function buildAiPanelHtml() {
   <div id="ai-main">
     <div id="ai-mode-selector">
       <button class="sidebar-toggle-btn" onclick="toggleAiSidebar()" title="Toggle sidebar">☰</button>
-      <button id="mode-search-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('search')"></button>
-      <button id="mode-diagnose-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('diagnose')"></button>
-      <button id="mode-cli-btn" class="ai-mode-btn" role="checkbox" onclick="toggleAiMode('cli')"></button>
+      <div id="ai-mode-radiogroup" role="radiogroup">
+        <button id="mode-search-btn" class="ai-mode-btn" role="radio" onclick="setAiMode('search')"></button>
+        <button id="mode-diagnose-btn" class="ai-mode-btn" role="radio" onclick="setAiMode('diagnose')"></button>
+        <button id="mode-cli-btn" class="ai-mode-btn" role="radio" onclick="setAiMode('cli')"></button>
+      </div>
     </div>
     <div id="ai-chat-messages">
       <div id="ai-setup-banner" class="${configured ? '' : 'visible'}">
@@ -2739,13 +2747,10 @@ function toggleAiSidebar() {
   }
 }
 
-function toggleAiMode(mode) {
-  if (AI_MODES.includes(mode)) {
-    // Always leave at least one mode active.
-    if (AI_MODES.length > 1) AI_MODES = AI_MODES.filter(m => m !== mode);
-  } else {
-    AI_MODES = [...AI_MODES, mode];
-  }
+function setAiMode(mode) {
+  // Radio behavior: clicking the already-active mode does nothing.
+  if (AI_MODES[0] === mode) return;
+  AI_MODES = [mode];
   saveAiModes();
 
   updateAiModeCheckboxes();
@@ -2788,7 +2793,8 @@ function switchSession(sessionId) {
   const sessions = loadAiSessions();
   const session = sessions.find(s => s.id === sessionId);
   if (session) {
-    AI_MODES = session.modes || (session.mode ? [session.mode] : AI_MODES);
+    const restoredMode = (Array.isArray(session.modes) && session.modes[0]) || session.mode;
+    AI_MODES = AI_MODE_VALUES.includes(restoredMode) ? [restoredMode] : AI_MODES;
     AI_LANG = session.language || AI_LANG;
     saveAiModes();
     localStorage.setItem('dc-ai-language', AI_LANG);
