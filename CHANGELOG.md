@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026-06-13 — 7686eea] (master)
+
+- feat: Claude AI as primary UI — remove redundant search bar, expand chat panel ([7686eea](https://github.com/avivnofar/data-center/commit/7686eea7007d5a402720c9faeb4e0c592f45a56c))
+- feat(agents): add Cloudflare Workers AI fallback for Gemini 429s ([5cd6da0](https://github.com/avivnofar/data-center/commit/5cd6da07c525eaf41b5f45a33cc951390fd42a07))
+
+
 ## [2026-06-13 — 6e28310] (master)
 
 - chore: update token budget ([6e28310](https://github.com/avivnofar/data-center/commit/6e283108bb68ca356fd1080741933e548ed5c728))
