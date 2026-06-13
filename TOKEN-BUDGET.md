@@ -496,6 +496,57 @@ push** per the Autonomous Brain Rules — awaiting owner review.
 optionally pick up the CommandFlow review tasks in `commandflow.md` once
 agents are running again.
 
+## AI Search hardening session (2026-06-13)
+
+Autonomous session focused on making the AI Search bar reliable before the
+owner starts a new job. Six-part plan, Parts 1-3 + 5-6 completed, Part 4
+cleanly skipped.
+
+- **Part 1 (app health check)** — sent the 10 required IT-troubleshooting
+  queries directly to `data-center-api` (mode=search, en, no db_context).
+  **All 10 scored 5/5** — `claude-sonnet-4-6` streaming correctly,
+  `CONFIG.WORKER_URL` confirmed correct. No `data/*.json` fixes were
+  triggered (no score <4).
+- **Part 2 (database expansion)** — added 38 new bilingual entries:
+  `linux.json` +15 (42 total: nice-renice, pgrep-pstree, vmstat, awk, sed,
+  tail, dmesg, fail2ban, auditd-ausearch, who-w, lsblk, fdisk, smartctl,
+  ncdu, iotop), `cmd.json` +10 (25 total: nbtstat, net-start-stop, fsutil,
+  auditpol, pathping, systeminfo, driverquery, gpresult, whoami,
+  test-netconnection), `network.json` +8 (20 total: tshark, ufw,
+  windows-firewall, telnet, ethtool, getent, nmcli, host), `troubleshoot.json`
+  +5 (15 total: ts-vpn-internal, ts-web-unreachable, ts-high-memory,
+  ts-ad-login, ts-ssl-cert). `validate-json.js` and `health-check.js` both
+  pass clean (102 total entries across the 4 files).
+- **Part 3 (system prompt optimization)** — `cloudflare-worker/worker.js`
+  `systemPrompt()`: added a "LOCAL DATABASE QUICK REFERENCE" block so Claude
+  cites DB commands even with empty `db_context`; SEARCH mode now always
+  ends with "Relevant commands to check:" + `RELATED_COMMANDS:`; DIAGNOSE
+  mode is now "one question + one command + what output did you get?" per
+  turn; Hebrew mode gets an explicit 2-4-paragraph conciseness instruction.
+  Also bumped `MAX_TOKENS` 1024 → 1536 and added a "compact chat UI, avoid
+  heavy markdown" instruction — at 1024 the new "Relevant commands to
+  check:" closing line was frequently truncated mid-sentence on verbose
+  answers. Redeployed via `npx wrangler deploy worker.js --name
+  data-center-api --compatibility-date 2024-01-01` (no `wrangler.toml` in
+  `cloudflare-worker/` — deploy with an explicit entry file + compat date).
+  Re-tested the SSH query post-deploy: compact answer, correctly ends with
+  `Relevant commands to check: journalctl, systemctl, ss` +
+  `RELATED_COMMANDS: journalctl, systemctl, ss`.
+- **Part 4 (office day-2 simulation) — SKIPPED.** `wrangler secret list
+  --name data-center-agents` confirms `ADMIN_TOKEN`/`GEMINI_API_KEY` are
+  configured, but this session has no way to read the `ADMIN_TOKEN` value
+  (by design — see CLAUDE.md "Admin auth"), so it cannot call
+  `/api/agents/run`/`/api/agents/trigger` even to test Gemini quota. Zero
+  Gemini/Claude-simulation calls made, cost $0. See
+  `agents/reports/model-training/day-02-2026-06-13.md`. Simulation remains
+  paused (`SIM_KV.paused = true`, unchanged from 2026-06-12).
+
+**Next session**: (1) if the owner wants the office simulation resumed,
+provide the current `dc-admin-token` so a session can check
+`/api/agents/status` and quota health before unpausing; (2) otherwise,
+continue UI/AI-quality polish — current AI Search quality is high (10/10 on
+the test set) so this is now lower priority than before.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work
