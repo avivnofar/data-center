@@ -611,7 +611,7 @@ export async function runMeeting(meetingType, env, opts = {}) {
   const { systemPrompt, prompt } = buildMeetingPrompt(meetingType, attendeeSnapshots, data, opts);
 
   const simConfig = env.SIM_CONFIG?.GEMINI || {};
-  const responseText = await queryGemini({
+  const geminiResult = await queryGemini({
     apiKey: env.GEMINI_API_KEY,
     model: simConfig.model || 'gemini-2.5-flash-lite',
     endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
@@ -619,7 +619,15 @@ export async function runMeeting(meetingType, env, opts = {}) {
     maxTokens: Math.max(simConfig.max_tokens ?? 1024, 2048),
     prompt,
     systemPrompt,
+    cfAccountId: env.CLOUDFLARE_ACCOUNT_ID,
+    cfApiToken: env.CLOUDFLARE_API_TOKEN,
   });
+
+  if (geminiResult.source === 'cloudflare-fallback') {
+    console.warn('[meeting-engine] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct)');
+  }
+
+  const responseText = geminiResult.text;
 
   const { transcript, decisions } = parseMeetingResponse(responseText);
 

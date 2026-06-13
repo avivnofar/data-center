@@ -211,7 +211,7 @@ export class AgentBase {
       dbContext ? `Relevant Data Center entries:\n${dbContext}` : '',
     ].filter(Boolean).join('\n\n');
 
-    return queryGemini({
+    const result = await queryGemini({
       apiKey: this.env.GEMINI_API_KEY,
       model: simConfig.model || 'gemini-2.5-flash-lite',
       endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
@@ -219,7 +219,15 @@ export class AgentBase {
       maxTokens: simConfig.max_tokens ?? 1024,
       prompt,
       systemPrompt: fullSystemPrompt,
+      cfAccountId: this.env.CLOUDFLARE_ACCOUNT_ID,
+      cfApiToken: this.env.CLOUDFLARE_API_TOKEN,
     });
+
+    if (result.source === 'cloudflare-fallback') {
+      console.warn(`[agent-${this.id}] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct)`);
+    }
+
+    return result.text;
   }
 
   /**

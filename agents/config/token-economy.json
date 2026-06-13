@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "version": "0.1.0",
+    "status": "specified",
+    "description": "Model-usage/cost-tier config for the AI-agent office simulation. gemini-2.5-flash-lite (agents/workers/gemini-client.js) is the primary model for all in-character role-play; cloudflare_fallback is a same-session, automatic fallback used only when Gemini returns HTTP 429 (quota exhausted), so a simulated day can continue instead of halting. See TOKEN-BUDGET.md for the recurring Gemini free-tier 429 history that motivated this fallback."
+  },
+
+  "primary": {
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-lite",
+    "use_when": "default"
+  },
+
+  "cloudflare_fallback": {
+    "model": "llama-3.1-8b-instruct",
+    "daily_limit": 10000,
+    "resets_utc": "00:00",
+    "use_when": "gemini_429"
+  }
+}
