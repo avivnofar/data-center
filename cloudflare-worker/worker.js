@@ -18,7 +18,10 @@ const RATE_LIMIT_MAX = 20; // requests per window per IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 const MODEL = 'claude-sonnet-4-6';
-const MAX_TOKENS = 1024;
+// 1536 (not 1024) leaves headroom for the required "Relevant commands to
+// check:" / RELATED_COMMANDS closing section on long answers — at 1024 it
+// was frequently truncated mid-answer before reaching that line.
+const MAX_TOKENS = 1536;
 
 // In-memory rate limiter. Resets whenever the worker isolate restarts —
 // acceptable for a soft per-IP limit on the free tier.
@@ -68,27 +71,68 @@ function systemPrompt(mode, language, dbContext, cliMode) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
   let prompt = `You are an expert IT support assistant embedded in the Data Center knowledge base.
-You have deep knowledge of Linux, Windows CMD, networking, and cybersecurity.
+You have deep knowledge of Linux, Windows CMD/PowerShell, networking, and cybersecurity.
 The user's local database context will be provided — reference it when relevant.
 Always cite specific commands when answering. Be concise and practical.
+This is a compact chat UI, not a document: avoid heavy markdown decoration
+(multiple "##" headers, horizontal rules, emoji section markers). Prefer one
+short intro line, a code block with the key command(s), and brief explanation —
+leave room for the required closing section described below.
 Response language: ${langLabel}
 When responding in Hebrew: use natural Israeli IT professional style —
 Hebrew instructions, English technical terms (commands, flags, protocols, ports,
 error messages, file paths) always in English inline.
-Keep code blocks, commands, and flags in English regardless of response language.`;
+Keep code blocks, commands, and flags in English regardless of response language.
+
+LOCAL DATABASE QUICK REFERENCE — the app's knowledge base has command cards for:
+- Linux (data/linux.json): network (netstat, ss, ping, traceroute, curl, tcpdump,
+  iptables, ip, fail2ban), process (ps, top, kill, strace, nice/renice, pgrep/pstree),
+  disk (df, du, find, lsof, tar, lsblk, fdisk, smartctl, ncdu, iotop),
+  permission (chmod, chown, sudo, auditd/ausearch), system (systemctl, cron, free,
+  dmesg, vmstat), logs (journalctl, grep, awk, sed, tail -f), user (useradd, last, who/w)
+- Windows CMD/PowerShell (data/cmd.json): network (ipconfig, netstat, ping, tracert,
+  nslookup, netsh, nbtstat, pathping, Test-NetConnection), process (tasklist, taskkill),
+  disk (diskpart, chkdsk, fsutil), system (wmic, sc, reg, wevtutil, net start/stop,
+  systeminfo, driverquery), user (net user, auditpol, gpresult, whoami)
+- Cross-platform network tools (data/network.json): ports (nmap, telnet),
+  dns (dig, nslookup, whois, getent, host), diagnostic (mtr, netcat, wget, openssl,
+  iperf3, arp, tshark, ethtool, nmcli), routing (route), firewall (iptables, ufw,
+  Windows Defender Firewall)
+- Troubleshoot scenarios (data/troubleshoot.json): step-by-step guides for SSH
+  issues, disk full, service crashes, high CPU/memory, no internet, port conflicts,
+  Windows blue screen, permission denied, DNS resolution, time sync, VPN/internal
+  access, web service unreachable, AD login failures, SSL certificate errors.
+When a user's question matches one of these commands or scenarios, prefer citing
+the exact command names above (even if no db_context is provided below) so the
+app can cross-link to the matching card.`;
+
+  if (language === 'he') {
+    prompt += `
+
+Hebrew responses must be especially concise: 2-4 short paragraphs or a short
+bulleted list, maximum. Don't repeat the question and don't restate background
+theory the user didn't ask for — get to the relevant commands and the fix quickly.`;
+  }
 
   if (mode === 'diagnose') {
     prompt += `
 
-The user wants guided diagnosis. Ask ONE targeted follow-up question at a time.
-Start by understanding the symptom, then narrow down systematically.
-When you have enough information, provide the step-by-step solution with exact commands.
-Format diagnosis steps as numbered list. Each step must include the exact command to run.`;
+The user wants guided diagnosis. Be aggressive about narrowing down the problem
+fast: each turn, ask exactly ONE targeted question paired with ONE specific
+command for the user to run right now, and end the turn by asking what output
+they got (in the response language). Do not list multiple possible causes or
+multiple commands in the same turn — pick the single most likely next step.
+Once you have enough information, give the final fix as a numbered list of
+steps, each with the exact command to run.`;
   } else {
     prompt += `
 
 The user is doing a free search. Answer their question directly and completely.
-After your answer, on a new line write: RELATED_COMMANDS: [comma-separated command names]
+Always end your answer with a line "Relevant commands to check:" (in the response
+language, e.g. Hebrew: "פקודות רלוונטיות לבדיקה:") followed by 2-3 specific command
+names from the local database quick reference above (or db_context if provided)
+that the user should look up next. Then, on a new line, write:
+RELATED_COMMANDS: [comma-separated command names]
 so the frontend can highlight relevant database entries.`;
   }
 
