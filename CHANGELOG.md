@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-06-13 — fef988e] (master)
+
+- chore(agents): Day 3/4 office rules + session log ([fef988e](https://github.com/avivnofar/data-center/commit/fef988e7b1636d040a03743f0b7f99e4b7b5ffdd))
+- feat(agents): distributed AI architecture — Groq for cases, Gemini for reports ([9e7282c](https://github.com/avivnofar/data-center/commit/9e7282c029c384cd1b4ca2f10fd67445dc22b0e6))
+- feat(ci): add scheduled Claude automation workflow ([a779cdd](https://github.com/avivnofar/data-center/commit/a779cdd9d51bf12f00af6ecf90693a8624c878ff))
+- fix(ui): radio-style AI mode selector, default to Free Search ([882248e](https://github.com/avivnofar/data-center/commit/882248ebc9178df7c4e2a8d821592b00d6cbe676))
+- fix(agents): Cloudflare Workers AI native binding fallback for Gemini 429 ([b98faaa](https://github.com/avivnofar/data-center/commit/b98faaa7af058f6a5c1bbb9bf5197b299508dff4))
+
+
 ## [2026-06-13 — 7686eea] (master)
 
 - feat: Claude AI as primary UI — remove redundant search bar, expand chat panel ([7686eea](https://github.com/avivnofar/data-center/commit/7686eea7007d5a402720c9faeb4e0c592f45a56c))
