@@ -547,6 +547,91 @@ provide the current `dc-admin-token` so a session can check
 continue UI/AI-quality polish — current AI Search quality is high (10/10 on
 the test set) so this is now lower priority than before.
 
+## Distributed AI architecture + automation session (2026-06-13)
+
+Autonomous architect session. RTL/Hebrew audit found nothing actionable
+(existing convention is consistent project-wide). Committed two pending
+changes (`46a9923` radio-style AI mode selector + the prior CF Workers AI
+fallback commit `9a9d3b7`), then implemented the distributed-AI fix for the
+recurring Gemini 429 problem and wired up scheduled automation.
+
+- **Distributed AI architecture** (`agents/config/token-economy.json` v0.2.0)
+  — routine per-case agent work (agents 1-4, 5-9, 11) now runs on **Groq**
+  (`llama3-8b-8192`, `agents/workers/groq-client.js` `callGroq()`, free tier
+  ~14,400 req/day) instead of Gemini. **Cloudflare Workers AI**
+  (`@cf/meta/llama-3.1-8b-instruct-fp8`, account-scoped `AI` binding) does
+  lightweight case routing/classification (`callCFRouter()`, called once per
+  case in `processCaseBatch()`) and is the same-session fallback when Groq is
+  unavailable or **Gemini 2.5 Flash-Lite** returns 429. Gemini stays reserved
+  for monthly/quarterly/semi_yearly/yearly report synthesis
+  (`meeting-engine.js` `runMeeting()`, routed via
+  `report_models_by_meeting_type`) — all other meeting types (daily standup,
+  weekly, emergency huddle, audits, coaching, PIP) now use Groq too. The
+  app's AI Search bar is unaffected (`data-center-api`, `claude-sonnet-4-6`).
+  **Agent 10 (The Architect)** never calls an AI model for routine cases
+  (`architect_model: "human+claude-code"`) — `processArchitectCaseBatch()`
+  logs sessions for mood/state bookkeeping only and files each batch of
+  root-level escalations as a single `claude-action` + `architect-task`
+  GitHub Issue for human/Claude-Code review.
+  - **Note on `token-economy.json` `report_model`**: set to
+    `"google/gemini-2.5-flash-lite"`, not the originally-specified
+    `"google/gemini-1.5-flash"` — CLAUDE.md's "Launch Decisions" pins
+    `gemini-2.5-flash-lite` project-wide and `gemini-1.5-flash` does not
+    appear anywhere else in the codebase.
+  - `agents/database/schema.sql`: `interactions` table gained an additive
+    `model_source TEXT` column (`agent-base.js` `logInteraction()` now
+    records `groq` / `gemini` / `cloudflare-fallback` / `cloudflare-router` /
+    `claude` per interaction). **Existing D1 databases need this column
+    added** (`ALTER TABLE interactions ADD COLUMN model_source TEXT;`) before
+    the new code paths run against them — schema.sql alone does not migrate
+    a live D1 instance.
+  - `agents/wrangler.toml` secrets comment block updated: `GROQ_API_KEY`
+    (required) and `GOOGLE_AI_API_KEY` (optional, reserved for report
+    tooling) added alongside `GEMINI_API_KEY`/`ADMIN_TOKEN`/`GITHUB_TOKEN`.
+- **GitHub Actions automation** — new `.github/workflows/scheduled-claude.yml`
+  runs on 3 UTC schedules (23:30, 04:30, 18:30, Sun-Thu only) plus
+  `workflow_dispatch`, calling the Anthropic API directly (`claude-sonnet-4-6`,
+  not the Claude Code CLI) with `ANTHROPIC_API_KEY`/`GROQ_API_KEY`/
+  `GOOGLE_AI_API_KEY` from repo secrets, parses a JSON `{files, commit_message,
+  summary}` response, writes the files, commits, `git pull --rebase` +
+  `git push origin master`, and appends a one-line session log to this file.
+  One fix vs. the original spec: added explicit `SESSION_TYPE`/`TASK` env
+  vars to the "Run Claude task" step (sourced from the "Determine session
+  type and task" step's outputs) — without them `process.env.TASK` would
+  always be undefined and every run would fall back to the default prompt.
+  **⚠️ This workflow auto-pushes to `master` 3x/day once the three secrets
+  exist in GitHub Actions** — the in-prompt "$5 Claude API cap" is an
+  instruction to the model, not an enforced limit. Recommend the owner set a
+  real Anthropic usage cap/alert before (or shortly after) adding
+  `ANTHROPIC_API_KEY` to repo secrets.
+- **Day 3/4 office rules** (`agents/config/simulation-config.json`) — added
+  `day_3_rules` (max case resolution via app usage emphasis,
+  `collaboration_agents_case_share: 0.20` for agents 6/7/8, Architect/Designer
+  planning-only after cases complete, `new_features: "BLOCKED"`) and
+  `day_4_rules` (same pattern). Simulation itself remains paused
+  (`SIM_KV.paused = true`) — these rules take effect once unpaused.
+- **Next automated session times** (once `scheduled-claude.yml` secrets are
+  configured): 23:30 UTC (office Day 3 night session), 04:30 UTC (office Day
+  3/4 morning continuation), 18:30 UTC (daily maintenance — next
+  `TOKEN-BUDGET.md` queue item).
+
+**Commits**: separate commits for (1) the workflow file, (2) the
+distributed-AI files (`agents/workers/groq-client.js`,
+`agents/workers/gemini-client.js`, `agents/workers/meeting-engine.js`,
+`agents/workers/agent-runner.js`, `agents/agents/agent-base.js`,
+`agents/config/token-economy.json`, `agents/database/schema.sql`,
+`agents/wrangler.toml`), and (3) `agents/config/simulation-config.json` +
+this file. **Paused before push** per the Autonomous Brain Rules — awaiting
+owner review, especially of the recurring-billing implications of Task 2.
+
+**Next session**: (1) confirm `GROQ_API_KEY`/`GOOGLE_AI_API_KEY` Worker
+secrets were set on `data-center-agents` (Task 4, this session) and rotate
+both keys (they were pasted into chat); (2) if/when `master` is pushed, run
+`ALTER TABLE interactions ADD COLUMN model_source TEXT;` against the live D1
+`data-center-db`; (3) decide whether to add the three secrets to GitHub
+Actions to activate `scheduled-claude.yml`, with a real Anthropic spend cap
+in place first.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work

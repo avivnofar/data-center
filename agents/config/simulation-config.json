@@ -28,5 +28,22 @@
     "sudo": [5, 6, 7, 8],
     "specialist": [9],
     "standard": [1, 2, 3, 4]
+  },
+  "day_3_rules": {
+    "description": "Max case resolution day — app usage emphasis",
+    "agent_focus": "solve_cases_via_app",
+    "collaboration_agents_case_share": 0.20,
+    "collaboration_agents": [6, 7, 8],
+    "architect_designer_rule": "planning_only_after_cases_complete",
+    "architect_designer_max_tokens": 200,
+    "new_features": "BLOCKED — optimization and training only",
+    "app_usage_emphasis": true,
+    "model_training_priority": "high"
+  },
+  "day_4_rules": {
+    "description": "Same pattern as Day 3",
+    "agent_focus": "solve_cases_via_app",
+    "collaboration_agents_case_share": 0.20,
+    "new_features": "BLOCKED"
   }
 }
