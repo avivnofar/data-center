@@ -1333,5 +1333,719 @@
       }
     ],
     "tags": "archive compress gzip backup extract tarball ארכיון גיבוי דחיסה"
+  },
+  {
+    "id": "nice-renice",
+    "name": "nice / renice",
+    "cat": "process",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "קובעת או משנה את עדיפות התזמון (<span class=\"ltr-term\">scheduling priority</span>) של תהליך — <b>nice</b> בעת ההפעלה, <b>renice</b> על תהליך שכבר רץ.",
+    "desc_en": "Set or change a process's CPU scheduling priority — nice when launching a new process, renice on an already-running PID.",
+    "source_url": "https://man7.org/linux/man-pages/man1/nice.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "nice -n 10 ./backup.sh", "cmt_he": "הפעל script עם עדיפות נמוכה יותר (ערך גבוה יותר = נחמד יותר ל-CPU)", "cmt_en": "Run a script with lower priority (higher value = nicer to other processes)"},
+      {"cmd": "renice -n 5 -p 1234", "cmt_he": "שנה עדיפות של תהליך רץ לפי PID", "cmt_en": "Change priority of an already-running process by PID"},
+      {"cmd": "nice -n -5 ./critical-job.sh", "cmt_he": "עדיפות גבוהה יותר — דורש root (ערכים שליליים)", "cmt_en": "Higher priority — requires root for negative values"},
+      {"cmd": "ps -el | awk '{print $4, $NF}' | sort -n", "cmt_he": "הצג את ה-nice value של כל תהליך, ממוין", "cmt_en": "Show the nice value of every process, sorted"}
+    ],
+    "quick_flags": [
+      {"flag": "-n N", "desc_he": "ערך nice בין -20 (הכי דחוף) ל-19 (הכי נחמד)", "desc_en": "Nice value from -20 (highest priority) to 19 (lowest)"},
+      {"flag": "-p PID", "desc_he": "פעל על תהליך רץ לפי PID (renice)", "desc_en": "Target a running process by PID (renice)"}
+    ],
+    "scenarios_he": [
+      "הרצת גיבוי או compile כבד ברקע בלי להשפיע על שירותים חשובים",
+      "תהליך batch תקוע גוזל CPU — הורד לו עדיפות בלי להרוג אותו",
+      "תן ל-database עדיפות גבוהה יותר על חשבון job ניתוח לוגים שרץ באותו זמן"
+    ],
+    "scenarios_en": [
+      "Running a heavy backup or compile job in the background without starving real services",
+      "A stuck batch job is hogging CPU — lower its priority without killing it",
+      "Give a database higher priority over a concurrently-running log analysis job"
+    ],
+    "mistakes": [
+      {
+        "x_he": "ניסיון לתת עדיפות גבוהה (ערך שלילי) ללא הרשאות root",
+        "x_en": "Trying to set a higher priority (negative value) without root privileges",
+        "fix_he": "ערכים שליליים דורשים <span class=\"ltr-term\">sudo</span>; משתמשים רגילים יכולים רק להעלות את ה-nice value (להוריד עדיפות)",
+        "fix_en": "Negative values require <span class=\"ltr-term\">sudo</span>; regular users can only increase nice value (lower priority)"
+      },
+      {
+        "x_he": "ציפייה ש-nice יפתור בעיית I/O bottleneck",
+        "x_en": "Expecting nice to fix an I/O bottleneck",
+        "fix_he": "<span class=\"ltr-term\">nice</span>/<span class=\"ltr-term\">renice</span> משפיעים רק על תזמון CPU — לבעיות דיסק השתמש ב-<code>ionice</code>",
+        "fix_en": "<span class=\"ltr-term\">nice</span>/<span class=\"ltr-term\">renice</span> only affect CPU scheduling — for disk contention use <code>ionice</code> instead"
+      }
+    ],
+    "tags": "priority scheduling cpu nice renice background process עדיפות תזמון"
+  },
+  {
+    "id": "pgrep-pstree",
+    "name": "pgrep / pstree",
+    "cat": "process",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מאתרת PIDs לפי שם או תבנית עם <b>pgrep</b>, ומציגה את עץ ההורות בין תהליכים עם <b>pstree</b>.",
+    "desc_en": "Find PIDs by name pattern with pgrep, and visualize the parent-child process hierarchy with pstree.",
+    "source_url": "https://man7.org/linux/man-pages/man1/pgrep.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "pgrep -l nginx", "cmt_he": "הצג PID ושם לכל תהליך nginx", "cmt_en": "Show PID and name for every nginx process"},
+      {"cmd": "pgrep -u www-data -f php-fpm", "cmt_he": "סנן לפי משתמש ולפי שורת command מלאה", "cmt_en": "Filter by user and full command line"},
+      {"cmd": "pstree -p 1234", "cmt_he": "הצג את עץ ה-children של תהליך ספציפי עם PIDs", "cmt_en": "Show the child-process tree of a specific PID with PIDs"},
+      {"cmd": "pstree -ahu | less", "cmt_he": "עץ תהליכים מלא עם שורות command ובעלי תהליכים", "cmt_en": "Full process tree with command lines and process owners"}
+    ],
+    "quick_flags": [
+      {"flag": "-l", "desc_he": "הצג גם את שם התהליך (לא רק PID)", "desc_en": "Also show the process name (not just PID)"},
+      {"flag": "-f", "desc_he": "התאם תבנית מול שורת ה-command המלאה", "desc_en": "Match pattern against the full command line"},
+      {"flag": "-u USER", "desc_he": "סנן לפי בעל התהליך", "desc_en": "Filter by process owner"},
+      {"flag": "-p", "desc_he": "הצג PIDs בתוך עץ ה-pstree", "desc_en": "Show PIDs inside the pstree output"}
+    ],
+    "scenarios_he": [
+      "מציאת כל ה-PIDs של service לפני kill מבלי לכלול את ה-grep עצמו",
+      "תהליך child לא יוצא לאחר שה-parent מת — מצא את ה-orphan עם pstree",
+      "הבנת מי הפעיל תהליך מסוים (parent chain) לפני חקירת אירוע"
+    ],
+    "scenarios_en": [
+      "Finding all PIDs of a service before killing them, without matching the grep itself",
+      "A child process won't exit after its parent died — locate the orphan with pstree",
+      "Understanding which parent launched a process (lineage) before an investigation"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש ב-<span class=\"ltr-term\">ps aux | grep name</span> כשתבנית קצרה תופסת תהליכים נוספים",
+        "x_en": "Using <span class=\"ltr-term\">ps aux | grep name</span> when a short pattern matches unrelated processes",
+        "fix_he": "<span class=\"ltr-term\">pgrep</span> לא מתעד את עצמו ב-process list ומדויק יותר מ-grep על ps",
+        "fix_en": "<span class=\"ltr-term\">pgrep</span> never matches itself and is more precise than grepping ps output"
+      },
+      {
+        "x_he": "שימוש ב--f בלי לבדוק מה הוא תופס בפועל",
+        "x_en": "Using -f without checking what it actually matches",
+        "fix_he": "הרץ קודם <span class=\"ltr-term\">pgrep -fl pattern</span> לראות אילו command lines יתאימו לפני <code>pkill -f</code>",
+        "fix_en": "Run <span class=\"ltr-term\">pgrep -fl pattern</span> first to preview matching command lines before <code>pkill -f</code>"
+      }
+    ],
+    "tags": "pgrep pstree process tree pid find parent child תהליך עץ חיפוש"
+  },
+  {
+    "id": "vmstat",
+    "name": "vmstat",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציגה תמונת מצב כוללת של זיכרון, <span class=\"ltr-term\">processes</span>, CPU ו-I/O — הצעד הראשון לאבחון אם הבעיה היא CPU, זיכרון או דיסק.",
+    "desc_en": "Reports a system-wide snapshot of memory, process queue, CPU, and I/O activity — the first triage step for deciding whether a slowdown is CPU, memory, or disk-bound.",
+    "source_url": "https://man7.org/linux/man-pages/man8/vmstat.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "vmstat 1", "cmt_he": "עדכון כל שנייה — לעקוב אחרי מגמות בזמן אמת", "cmt_en": "Update every second — watch trends live"},
+      {"cmd": "vmstat 1 5", "cmt_he": "5 דגימות בהפרש שנייה ואז עצור", "cmt_en": "Take 5 samples one second apart, then stop"},
+      {"cmd": "vmstat -s", "cmt_he": "סיכום סטטיסטיקות זיכרון מאז ה-boot", "cmt_en": "Summary of memory statistics since boot"},
+      {"cmd": "vmstat -d", "cmt_he": "סטטיסטיקות I/O לפי דיסק", "cmt_en": "Per-disk I/O statistics"}
+    ],
+    "quick_flags": [
+      {"flag": "delay [count]", "desc_he": "דגום כל delay שניות, count פעמים", "desc_en": "Sample every delay seconds, count times"},
+      {"flag": "-s", "desc_he": "סיכום זיכרון מאז ה-boot, ללא חזרה", "desc_en": "One-shot memory summary since boot"},
+      {"flag": "-d", "desc_he": "סטטיסטיקות I/O לכל device", "desc_en": "Per-device I/O statistics"}
+    ],
+    "scenarios_he": [
+      "שרת איטי ולא ברור אם הבעיה ב-CPU, זיכרון או דיסק — vmstat 1 נותן תשובה מהירה",
+      "עמודת <b>r</b> (runnable) גבוהה מתמיד = CPU bottleneck; עמודת <b>b</b> (blocked) גבוהה = ממתינים ל-I/O",
+      "עמודות <b>si/so</b> (swap in/out) שאינן אפס = לחץ זיכרון אמיתי"
+    ],
+    "scenarios_en": [
+      "Server feels slow and it's unclear if CPU, memory, or disk is the bottleneck — vmstat 1 answers fast",
+      "Consistently high <b>r</b> (runnable) column = CPU bottleneck; high <b>b</b> (blocked) = waiting on I/O",
+      "Non-zero <b>si/so</b> (swap in/out) columns indicate real memory pressure"
+    ],
+    "mistakes": [
+      {
+        "x_he": "פרשנות השורה הראשונה של vmstat כמייצגת את המצב הנוכחי",
+        "x_en": "Interpreting vmstat's first output line as the current state",
+        "fix_he": "השורה הראשונה היא ממוצע מאז ה-boot — התעלם ממנה והתבסס על השורות הבאות",
+        "fix_en": "The first line is an average since boot — ignore it and rely on subsequent lines"
+      },
+      {
+        "x_he": "התעלמות מעמודת <b>wa</b> (CPU מחכה ל-I/O)",
+        "x_en": "Ignoring the <b>wa</b> column (CPU time waiting on I/O)",
+        "fix_he": "אחוז <span class=\"ltr-term\">wa</span> גבוה מצביע על דיסק איטי כגורם להאטה, לא על CPU עמוס",
+        "fix_en": "A high <span class=\"ltr-term\">wa</span> percentage points to slow disk as the cause, not CPU saturation"
+      }
+    ],
+    "tags": "memory cpu io performance triage swap bottleneck ביצועים זיכרון"
+  },
+  {
+    "id": "awk",
+    "name": "awk",
+    "cat": "logs",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "שפת עיבוד טקסט מבוססת עמודות — מצוינת לחילוץ שדות ספציפיים (כתובות IP, status codes) מקבצי לוג.",
+    "desc_en": "A column-based text-processing language — ideal for extracting specific fields (IPs, status codes) from log files.",
+    "source_url": "https://man7.org/linux/man-pages/man1/awk.1p.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "awk '{print $1}' access.log | sort | uniq -c | sort -rn | head", "cmt_he": "ספור כתובות IP נפוצות בלוג גישה", "cmt_en": "Count the most frequent source IPs in an access log"},
+      {"cmd": "awk '$9 == 500' access.log", "cmt_he": "הצג שורות שעמודה 9 (status code) שווה ל-500", "cmt_en": "Show lines where column 9 (status code) equals 500"},
+      {"cmd": "awk -F: '{print $1, $3}' /etc/passwd", "cmt_he": "השתמש ב-: כמפריד עמודות והצג שדות 1 ו-3", "cmt_en": "Use : as the field separator and print fields 1 and 3"},
+      {"cmd": "awk '{sum += $10} END {print sum}' access.log", "cmt_he": "סכום עמודת bytes שנשלחה — סה\"כ throughput", "cmt_en": "Sum the bytes-sent column — total throughput"}
+    ],
+    "quick_flags": [
+      {"flag": "-F SEP", "desc_he": "קבע תו מפריד שדות (ברירת מחדל: רווח)", "desc_en": "Set the field separator (default: whitespace)"},
+      {"flag": "$N", "desc_he": "התייחסות לעמודה N בשורה הנוכחית", "desc_en": "Reference column N of the current line"},
+      {"flag": "BEGIN/END", "desc_he": "בלוקים שרצים לפני/אחרי עיבוד כל הקלט", "desc_en": "Blocks that run before/after processing all input"}
+    ],
+    "scenarios_he": [
+      "חילוץ כתובות IP או status codes מ-access.log לזיהוי תוקפים או שגיאות",
+      "סיכום מספרי מתוך עמודות לוג (סכימה, ממוצע, ספירה)",
+      "המרת לוג רחב לעמודות ממוקדות לפני שליחה ל-grep או sort"
+    ],
+    "scenarios_en": [
+      "Extracting IPs or status codes from access.log to spot attackers or errors",
+      "Aggregating numeric log columns (sum, average, count)",
+      "Reshaping a wide log into focused columns before piping to grep or sort"
+    ],
+    "mistakes": [
+      {
+        "x_he": "ניסיון לכתוב logic מורכבת ב-one-liner ארוך מדי",
+        "x_en": "Trying to cram complex logic into an overly long one-liner",
+        "fix_he": "לתסריטים מורכבים, כתוב את לוגיקת ה-<span class=\"ltr-term\">awk</span> לקובץ <code>.awk</code> והרץ עם <code>awk -f script.awk</code>",
+        "fix_en": "For complex logic, write the <span class=\"ltr-term\">awk</span> program to a <code>.awk</code> file and run with <code>awk -f script.awk</code>"
+      },
+      {
+        "x_he": "שכחת -F כשהקובץ מופרד בתו שאינו רווח",
+        "x_en": "Forgetting -F when the file isn't whitespace-delimited",
+        "fix_he": "קבצים כמו <code>/etc/passwd</code> מופרדים ב-<span class=\"ltr-term\">:</span> — חובה <code>awk -F:</code>",
+        "fix_en": "Files like <code>/etc/passwd</code> are colon-delimited — use <code>awk -F:</code>"
+      }
+    ],
+    "tags": "awk text processing columns fields log parse extract לוג עמודות חילוץ"
+  },
+  {
+    "id": "sed",
+    "name": "sed",
+    "cat": "logs",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "<span class=\"ltr-term\">Stream editor</span> לסינון ושינוי טקסט תוך כדי תנועה — שימושי לעריכת קבצי קונפיגורציה ולחיתוך לוגים לפי תבנית.",
+    "desc_en": "A stream editor for filtering and transforming text on the fly — useful for editing config files in place and slicing logs by pattern.",
+    "source_url": "https://man7.org/linux/man-pages/man1/sed.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "sed -n '100,200p' app.log", "cmt_he": "הדפס רק שורות 100 עד 200", "cmt_en": "Print only lines 100 through 200"},
+      {"cmd": "sed 's/ERROR/CRITICAL/g' app.log", "cmt_he": "החלף כל מופע של ERROR ב-CRITICAL בפלט", "cmt_en": "Replace every occurrence of ERROR with CRITICAL in the output"},
+      {"cmd": "sed -i.bak 's/Listen 80/Listen 8080/' /etc/httpd/conf/httpd.conf", "cmt_he": "עריכה in-place עם גיבוי לקובץ .bak", "cmt_en": "In-place edit with a .bak backup copy"},
+      {"cmd": "sed '/^#/d; /^$/d' config.conf", "cmt_he": "מחק שורות הערה ושורות ריקות לתצוגה נקייה", "cmt_en": "Strip comment lines and blank lines for a clean view"}
+    ],
+    "quick_flags": [
+      {"flag": "-n", "desc_he": "דכא הדפסה אוטומטית — הדפס רק מה ש-p מבקש", "desc_en": "Suppress automatic printing — print only what p requests"},
+      {"flag": "-i[.ext]", "desc_he": "ערוך קובץ in-place, אופציונלית עם סיומת גיבוי", "desc_en": "Edit the file in place, optionally with a backup extension"},
+      {"flag": "s/old/new/g", "desc_he": "החלף את כל המופעים (g) של old ב-new", "desc_en": "Substitute all (g) occurrences of old with new"},
+      {"flag": "/pattern/d", "desc_he": "מחק שורות שמתאימות לתבנית", "desc_en": "Delete lines matching the pattern"}
+    ],
+    "scenarios_he": [
+      "חיתוך טווח שורות ספציפי מלוג גדול לפני ניתוח נוסף",
+      "עריכת ערך בקובץ קונפיגורציה דרך script באופן אוטומטי וחזרתי",
+      "ניקוי לוג מהערות ושורות ריקות לפני עיבוד ב-awk או grep"
+    ],
+    "scenarios_en": [
+      "Slicing a specific line range from a large log before further analysis",
+      "Updating a config value automatically and repeatably via script",
+      "Cleaning comments and blank lines from a log before piping to awk or grep"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">sed -i</span> על קובץ קונפיגורציה בלי גיבוי",
+        "x_en": "Running <span class=\"ltr-term\">sed -i</span> on a config file without a backup",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">sed -i.bak</span> כדי לשמור עותק מקורי לפני עריכה in-place",
+        "fix_en": "Use <span class=\"ltr-term\">sed -i.bak</span> to keep an original copy before editing in place"
+      },
+      {
+        "x_he": "שכחת ה-g flag ב-s/// — מוחלפת רק התרחשות אחת בכל שורה",
+        "x_en": "Forgetting the g flag on s/// — only the first occurrence per line is replaced",
+        "fix_he": "הוסף <span class=\"ltr-term\">g</span> בסוף הביטוי: <code>s/old/new/g</code> להחליף את כל המופעים בשורה",
+        "fix_en": "Append <span class=\"ltr-term\">g</span> at the end: <code>s/old/new/g</code> to replace every occurrence per line"
+      }
+    ],
+    "secnote_he": "<span class=\"ltr-term\">sed -i</span> משנה קבצים באופן בלתי הפיך ללא גיבוי. על קבצי הרשאות או אבטחה רגישים (כגון <code>/etc/sudoers</code>), בדוק את הפלט קודם ללא -i ואז גבה לפני ביצוע.",
+    "secnote_en": "<span class=\"ltr-term\">sed -i</span> modifies files irreversibly without a backup. On sensitive permission/security files (e.g. <code>/etc/sudoers</code>), preview without -i first and back up before applying.",
+    "tags": "sed stream editor text replace filter log config edit עריכה טקסט"
+  },
+  {
+    "id": "tail",
+    "name": "tail -f",
+    "cat": "logs",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציגה את סוף הקובץ ועוקבת אחרי תוספות חדשות בזמן אמת — שיטת המעקב הקלאסית אחרי קבצי לוג.",
+    "desc_en": "Show the end of a file and follow new lines as they're written in real time — the classic way to watch a log file live.",
+    "source_url": "https://man7.org/linux/man-pages/man1/tail.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "tail -f /var/log/nginx/error.log", "cmt_he": "עקוב אחרי לוג שגיאות nginx בזמן אמת", "cmt_en": "Follow the nginx error log live"},
+      {"cmd": "tail -f app.log | grep -i error", "cmt_he": "עקוב ובמקביל סנן רק שורות שמכילות error", "cmt_en": "Follow the log while filtering for lines containing error"},
+      {"cmd": "tail -n 100 /var/log/syslog", "cmt_he": "הצג 100 השורות האחרונות ללא מעקב", "cmt_en": "Show the last 100 lines without following"},
+      {"cmd": "tail -F /var/log/app/current.log", "cmt_he": "המשך לעקוב גם אם הקובץ מתחלף (log rotation)", "cmt_en": "Keep following even if the file is rotated/recreated"}
+    ],
+    "quick_flags": [
+      {"flag": "-f", "desc_he": "עקוב אחרי תוספות חדשות לקובץ", "desc_en": "Follow new data appended to the file"},
+      {"flag": "-F", "desc_he": "כמו -f אך גם מתמודד עם log rotation (פותח קובץ חדש לפי שם)", "desc_en": "Like -f but also follows log rotation (reopens by name)"},
+      {"flag": "-n N", "desc_he": "הצג N השורות האחרונות (ברירת מחדל 10)", "desc_en": "Show the last N lines (default 10)"}
+    ],
+    "scenarios_he": [
+      "מעקב חי אחרי לוג שגיאות בזמן פריסת קוד או שינוי תצורה",
+      "שילוב עם grep לראיית רק שגיאות חדשות בזמן אמת",
+      "אבחון בעיה שקורית 'רק כשמנסים' — תפוס אותה ברגע ההתרחשות"
+    ],
+    "scenarios_en": [
+      "Watching an error log live during a deploy or config change",
+      "Combining with grep to see only new errors as they happen",
+      "Catching an intermittent issue at the exact moment it occurs"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש ב--f על לוג שעובר log rotation — המעקב נתקע על הקובץ הישן",
+        "x_en": "Using -f on a log that gets rotated — following gets stuck on the old file",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-F</span> שמזהה ופותח מחדש את הקובץ לפי שם אחרי rotation",
+        "fix_en": "Use <span class=\"ltr-term\">-F</span> which detects rotation and reopens the file by name"
+      },
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">tail -f</span> ושכיחה אותו רץ ברקע על שרת production",
+        "x_en": "Running <span class=\"ltr-term\">tail -f</span> and forgetting it's still running in the background on a production server",
+        "fix_he": "פתח עם <span class=\"ltr-term\">tmux</span>/<span class=\"ltr-term\">screen</span> וצא בעצירה מסודרת (Ctrl+C) כשמסתיים",
+        "fix_en": "Open in <span class=\"ltr-term\">tmux</span>/<span class=\"ltr-term\">screen</span> and stop cleanly (Ctrl+C) when done"
+      }
+    ],
+    "tags": "tail follow log live monitor error rotation tail-f לוג מעקב"
+  },
+  {
+    "id": "dmesg",
+    "name": "dmesg",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציגה את ה-<span class=\"ltr-term\">kernel ring buffer</span> — הודעות חומרה, דרייברים, ואירועי OOM killer שלא מופיעים בלוגים רגילים.",
+    "desc_en": "Display the kernel ring buffer — hardware, driver, and OOM-killer messages that don't appear in regular application logs.",
+    "source_url": "https://man7.org/linux/man-pages/man1/dmesg.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "dmesg -T | tail -50", "cmt_he": "50 ההודעות האחרונות עם timestamps אנושיים", "cmt_en": "Last 50 messages with human-readable timestamps"},
+      {"cmd": "dmesg -T | grep -i 'out of memory'", "cmt_he": "חפש אירועי OOM killer", "cmt_en": "Search for OOM-killer events"},
+      {"cmd": "dmesg --level=err,warn -T", "cmt_he": "הצג רק הודעות בחומרת שגיאה/אזהרה", "cmt_en": "Show only error/warning-level messages"},
+      {"cmd": "dmesg -T | grep -iE 'sda|nvme|i/o error'", "cmt_he": "חפש שגיאות חומרה בדיסקים", "cmt_en": "Search for disk hardware errors"}
+    ],
+    "quick_flags": [
+      {"flag": "-T", "desc_he": "המר timestamps גולמיים לתאריך/שעה קריאים", "desc_en": "Convert raw timestamps to human-readable date/time"},
+      {"flag": "-w", "desc_he": "מצב follow — הצג הודעות חדשות בזמן אמת", "desc_en": "Follow mode — show new messages in real time"},
+      {"flag": "--level=LEVELS", "desc_he": "סנן לפי חומרה: emerg, alert, crit, err, warn, ...", "desc_en": "Filter by severity: emerg, alert, crit, err, warn, ..."},
+      {"flag": "-c", "desc_he": "הצג ואז נקה את ה-buffer", "desc_en": "Display then clear the buffer"}
+    ],
+    "scenarios_he": [
+      "תהליך נהרג בפתאומיות — בדוק אם OOM killer פעל ב-dmesg",
+      "דיסק מתנהג מוזר — חפש שגיאות I/O או SMART בחומרה",
+      "כרטיס רשת או device לא מזוהה אחרי הוספת חומרה — בדוק הודעות driver"
+    ],
+    "scenarios_en": [
+      "A process died unexpectedly — check if the OOM killer fired in dmesg",
+      "Disk behaving oddly — search for I/O or hardware-level errors",
+      "Network card or device not detected after adding hardware — check driver messages"
+    ],
+    "mistakes": [
+      {
+        "x_he": "קריאת timestamps גולמיים (שניות מאז boot) כתאריכי שעון",
+        "x_en": "Reading raw timestamps (seconds since boot) as wall-clock times",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">dmesg -T</span> להצגת timestamps בפורמט תאריך/שעה רגיל",
+        "fix_en": "Use <span class=\"ltr-term\">dmesg -T</span> to display timestamps as normal date/time"
+      },
+      {
+        "x_he": "התעלמות מ-dmesg כשבודקים קריסות אפליקציה",
+        "x_en": "Ignoring dmesg when investigating application crashes",
+        "fix_he": "OOM killer וכשלי חומרה לא מתועדים ב-application logs — תמיד בדוק <span class=\"ltr-term\">dmesg</span> גם",
+        "fix_en": "OOM kills and hardware faults don't show in application logs — always check <span class=\"ltr-term\">dmesg</span> too"
+      }
+    ],
+    "tags": "kernel dmesg hardware oom driver disk error boot לוג חומרה kernel"
+  },
+  {
+    "id": "fail2ban",
+    "name": "fail2ban",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "שירות שמנטר לוגים (כגון SSH) ואוסר אוטומטית כתובות IP שמבצעות ניסיונות התחברות כושלים חזרתיים, באמצעות אינטגרציה עם <span class=\"ltr-term\">iptables</span>/<span class=\"ltr-term\">ufw</span>.",
+    "desc_en": "A service that watches logs (e.g. SSH) and automatically bans IP addresses showing repeated failed-login patterns, by integrating with iptables/ufw.",
+    "source_url": "https://linux.die.net/man/1/fail2ban-client",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "fail2ban-client status sshd", "cmt_he": "הצג IPs חסומים כרגע לפי jail ה-sshd", "cmt_en": "Show currently banned IPs for the sshd jail"},
+      {"cmd": "fail2ban-client set sshd unbanip 203.0.113.5", "cmt_he": "הסר חסימה מ-IP ספציפי", "cmt_en": "Unban a specific IP address"},
+      {"cmd": "fail2ban-client status", "cmt_he": "הצג את כל ה-jails הפעילים", "cmt_en": "List all active jails"},
+      {"cmd": "tail -f /var/log/fail2ban.log", "cmt_he": "עקוב אחרי חסימות בזמן אמת", "cmt_en": "Watch bans happen live"}
+    ],
+    "quick_flags": [
+      {"flag": "status [jail]", "desc_he": "מצב כללי או מצב jail ספציפי", "desc_en": "Overall status or a specific jail's status"},
+      {"flag": "set <jail> banip IP", "desc_he": "חסום IP מיידית ב-jail מסוים", "desc_en": "Immediately ban an IP in a given jail"},
+      {"flag": "set <jail> unbanip IP", "desc_he": "הסר חסימה של IP", "desc_en": "Unban an IP address"},
+      {"flag": "reload", "desc_he": "טען מחדש קונפיגורציה ללא הפסקת שירות", "desc_en": "Reload configuration without restarting the service"}
+    ],
+    "scenarios_he": [
+      "הגנה אוטומטית על SSH מפני התקפות brute force",
+      "משתמש לגיטימי ננעל בגלל סיסמה שגויה חזרתית — בדוק ושחרר עם unbanip",
+      "הוספת jail מותאם ללוג אפליקציה (למשל ניסיונות login כושלים ב-web app)"
+    ],
+    "scenarios_en": [
+      "Automatically protecting SSH from brute-force attacks",
+      "A legitimate user got banned after repeated wrong passwords — check and unban",
+      "Adding a custom jail for an application log (e.g. failed web app logins)"
+    ],
+    "mistakes": [
+      {
+        "x_he": "קונפיגורציה אגרסיבית מדי (maxretry נמוך, bantime ארוך) חוסמת משתמשים לגיטימיים",
+        "x_en": "An overly aggressive config (low maxretry, long bantime) locks out legitimate users",
+        "fix_he": "כוון <span class=\"ltr-term\">maxretry</span> ו-<span class=\"ltr-term\">bantime</span> בהתאם לסביבה, והוסף את ה-IP שלך ל-<code>ignoreip</code> ב-<code>jail.local</code>",
+        "fix_en": "Tune <span class=\"ltr-term\">maxretry</span> and <span class=\"ltr-term\">bantime</span> for your environment, and add your own IP to <code>ignoreip</code> in <code>jail.local</code>"
+      },
+      {
+        "x_he": "עריכת <span class=\"ltr-term\">jail.conf</span> ישירות במקום <span class=\"ltr-term\">jail.local</span>",
+        "x_en": "Editing <span class=\"ltr-term\">jail.conf</span> directly instead of <span class=\"ltr-term\">jail.local</span>",
+        "fix_he": "<span class=\"ltr-term\">jail.conf</span> נדרס בעדכוני חבילה — שמור שינויים מותאמים ב-<code>jail.local</code>",
+        "fix_en": "<span class=\"ltr-term\">jail.conf</span> gets overwritten on package updates — keep customizations in <code>jail.local</code>"
+      }
+    ],
+    "secnote_he": "fail2ban הוא בקרת אבטחה ב-defense-in-depth מפני brute force, אך תצורה שגויה יכולה לחסום משתמשים תקינים או אפילו את עצמך — תמיד הוסף את ה-IP שלך ל-<b>ignoreip</b> לפני הפעלה בסביבת production.",
+    "secnote_en": "fail2ban is a defense-in-depth control against brute force, but misconfiguration can lock out legitimate users — even yourself. Always add your own IP to <b>ignoreip</b> before enabling in production.",
+    "tags": "fail2ban ssh brute force ban iptables ufw security jail אבטחה חסימה"
+  },
+  {
+    "id": "auditd-ausearch",
+    "name": "auditd / ausearch",
+    "cat": "permission",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "<span class=\"ltr-term\">auditd</span> הוא ה-framework של ביקורת אבטחה ב-Linux לרישום גישה לקבצים, שינויי הרשאות ושימוש ב-sudo; <span class=\"ltr-term\">ausearch</span> מחפש באירועים שנרשמו.",
+    "desc_en": "auditd is the Linux kernel-level audit framework that logs file-access, permission changes, and sudo usage; ausearch queries the recorded events.",
+    "source_url": "https://man7.org/linux/man-pages/man8/auditd.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "ausearch -m USER_AUTH -ts today", "cmt_he": "חפש אירועי אימות משתמש מהיום", "cmt_en": "Search user-authentication events from today"},
+      {"cmd": "ausearch -ua 1000", "cmt_he": "חפש פעולות לפי UID — שימושי בזמן IR", "cmt_en": "Search actions by UID — useful during incident response"},
+      {"cmd": "auditctl -w /etc/passwd -p wa -k passwd_changes", "cmt_he": "הוסף watch על /etc/passwd לשינויי כתיבה/הרשאות", "cmt_en": "Add a watch on /etc/passwd for write/attribute changes"},
+      {"cmd": "ausearch -k passwd_changes", "cmt_he": "חפש אירועים שתואמים את ה-key שהוגדר ב-watch", "cmt_en": "Search events matching the configured watch key"}
+    ],
+    "quick_flags": [
+      {"flag": "-m TYPE", "desc_he": "סנן לפי סוג הודעת audit (USER_AUTH, SYSCALL, ...)", "desc_en": "Filter by audit message type (USER_AUTH, SYSCALL, ...)"},
+      {"flag": "-ua UID", "desc_he": "סנן לפי UID של המשתמש שביצע", "desc_en": "Filter by acting user's UID"},
+      {"flag": "-ts TIME", "desc_he": "סנן מנקודת זמן (today, recent, או timestamp)", "desc_en": "Filter from a time point (today, recent, or a timestamp)"},
+      {"flag": "-k KEY", "desc_he": "סנן לפי key שהוגדר ב-auditctl -w", "desc_en": "Filter by the key set via auditctl -w"}
+    ],
+    "scenarios_he": [
+      "חקירת מי שינה קובץ הרשאות רגיש (sudoers, passwd) ומתי",
+      "מעקב אחרי כל פעולות ה-sudo של משתמש חשוד ב-incident response",
+      "ביקורת compliance — הוכחה שגישה לקבצים מסוימים מתועדת"
+    ],
+    "scenarios_en": [
+      "Investigating who modified a sensitive permission file (sudoers, passwd) and when",
+      "Tracking all sudo actions of a suspect user during incident response",
+      "Compliance auditing — proving access to specific files is logged"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על auditd בלי לאמת שהשירות פעיל ושיש לו watch rules מוגדרים",
+        "x_en": "Relying on auditd without verifying the service is running and has watch rules configured",
+        "fix_he": "בדוק <span class=\"ltr-term\">systemctl status auditd</span> ו-<code>auditctl -l</code> לראות אילו rules פעילים בפועל",
+        "fix_en": "Check <span class=\"ltr-term\">systemctl status auditd</span> and <code>auditctl -l</code> to confirm which rules are actually active"
+      },
+      {
+        "x_he": "חיפוש בלוגים גולמיים של <code>/var/log/audit/audit.log</code> ידנית",
+        "x_en": "Manually grepping the raw <code>/var/log/audit/audit.log</code>",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">ausearch</span> שמפענח ומסנן את הפורמט הגולמי בהרבה יותר קלות",
+        "fix_en": "Use <span class=\"ltr-term\">ausearch</span> which decodes and filters the raw format far more reliably"
+      }
+    ],
+    "secnote_he": "auditd הוא תשתית הליבה לביקורת אבטחה ב-Linux. <b>auditctl -w path -p wa -k key</b> מוסיף watch על קובץ; <b>ausearch -k key</b> שולף את ההיסטוריה. חיוני לחקירות compliance ו-IR.",
+    "secnote_en": "auditd is the core Linux security-audit infrastructure. <b>auditctl -w path -p wa -k key</b> adds a file watch; <b>ausearch -k key</b> retrieves its history. Essential for compliance and IR investigations.",
+    "tags": "audit auditd ausearch security compliance permission tracking הרשאות ביקורת אבטחה"
+  },
+  {
+    "id": "who-w",
+    "name": "who / w",
+    "cat": "user",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציגות מי מחובר כרגע למערכת ומה הם עושים — <b>w</b> מוסיפה גם <span class=\"ltr-term\">load average</span> וזמן חוסר פעילות.",
+    "desc_en": "Show who is currently logged in and what they're doing — w additionally includes load average and idle time per session.",
+    "source_url": "https://man7.org/linux/man-pages/man1/w.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "who", "cmt_he": "רשימה בסיסית של משתמשים מחוברים, terminal ושעת כניסה", "cmt_en": "Basic list of logged-in users, terminal, and login time"},
+      {"cmd": "w", "cmt_he": "מי מחובר, מאיפה, ומה הם מריצים כעת, כולל load average", "cmt_en": "Who is logged in, from where, what they're running, plus load average"},
+      {"cmd": "who -u", "cmt_he": "הוסף זמן idle ו-PID לכל session", "cmt_en": "Add idle time and PID for each session"},
+      {"cmd": "w username", "cmt_he": "הצג מידע רק על משתמש ספציפי", "cmt_en": "Show info for only a specific user"}
+    ],
+    "quick_flags": [
+      {"flag": "-u", "desc_he": "כלול PID וזמן idle (who)", "desc_en": "Include PID and idle time (who)"},
+      {"flag": "-h", "desc_he": "השמט שורת כותרת (w)", "desc_en": "Omit the header line (w)"}
+    ],
+    "scenarios_he": [
+      "בדיקה אם משתמש מסוים מחובר כרגע לפני restart או maintenance",
+      "אבחון עומס פתאומי — w מציג load average ישירות",
+      "אימות session חשודה במהלך חקירת אבטחה"
+    ],
+    "scenarios_en": [
+      "Checking if a specific user is currently logged in before a restart or maintenance window",
+      "Diagnosing a sudden load spike — w shows load average directly",
+      "Confirming a suspicious session during a security investigation"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בלבול בין <span class=\"ltr-term\">who</span> (רשימת sessions) לבין <span class=\"ltr-term\">last</span> (היסטוריית כניסות)",
+        "x_en": "Confusing <span class=\"ltr-term\">who</span> (current sessions) with <span class=\"ltr-term\">last</span> (login history)",
+        "fix_he": "<span class=\"ltr-term\">who</span>/<span class=\"ltr-term\">w</span> מציגים מי מחובר <b>עכשיו</b>; <code>last</code> מציג היסטוריה",
+        "fix_en": "<span class=\"ltr-term\">who</span>/<span class=\"ltr-term\">w</span> show who is logged in <b>right now</b>; use <code>last</code> for history"
+      },
+      {
+        "x_he": "התעלמות מעמודת WHAT ב-w שמראה מה המשתמש מריץ כעת",
+        "x_en": "Ignoring the WHAT column in w which shows what the user is currently running",
+        "fix_he": "עמודת <span class=\"ltr-term\">WHAT</span> חשובה לפני restart — מראה אם למשתמש יש עבודה פעילה לא נשמרת",
+        "fix_en": "The <span class=\"ltr-term\">WHAT</span> column matters before a restart — it shows if the user has active unsaved work"
+      }
+    ],
+    "tags": "who w login session user logged in load average משתמש כניסה"
+  },
+  {
+    "id": "lsblk",
+    "name": "lsblk",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מציגה את כל ה-<span class=\"ltr-term\">block devices</span> וה-partitions שלהם בתצוגת עץ, כולל גודל, סוג, ונקודת mount.",
+    "desc_en": "List all block devices and their partitions in a tree view, including size, type, and mount point.",
+    "source_url": "https://man7.org/linux/man-pages/man8/lsblk.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "lsblk", "cmt_he": "תצוגת עץ של כל הדיסקים ו-partitions עם נקודות mount", "cmt_en": "Tree view of all disks and partitions with mount points"},
+      {"cmd": "lsblk -f", "cmt_he": "הצג גם סוג filesystem ו-UUID לכל partition", "cmt_en": "Also show filesystem type and UUID for each partition"},
+      {"cmd": "lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT,LABEL", "cmt_he": "בחר עמודות פלט ספציפיות", "cmt_en": "Choose specific output columns"},
+      {"cmd": "lsblk /dev/sdb", "cmt_he": "הצג רק את הדיסק והpartitions של device ספציפי", "cmt_en": "Show only a specific device's disk and partitions"}
+    ],
+    "quick_flags": [
+      {"flag": "-f", "desc_he": "הצג מידע filesystem (סוג, UUID, label)", "desc_en": "Show filesystem info (type, UUID, label)"},
+      {"flag": "-o COLS", "desc_he": "פלט מותאם אישית עם עמודות נבחרות", "desc_en": "Custom output with selected columns"},
+      {"flag": "-p", "desc_he": "הצג נתיב device מלא (/dev/sda1)", "desc_en": "Show full device path (/dev/sda1)"}
+    ],
+    "scenarios_he": [
+      "דיסק חדש לא מופיע — בדוק אם המערכת רואה אותו עם lsblk לפני partitioning",
+      "אימות אילו partitions מחוברים לאיזה mount point לפני mount/umount",
+      "מציאת UUID של partition עבור /etc/fstab"
+    ],
+    "scenarios_en": [
+      "New disk not showing up — check if the system sees it with lsblk before partitioning",
+      "Verifying which partitions are mounted where before mount/umount",
+      "Finding a partition's UUID for /etc/fstab"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בלבול בין <span class=\"ltr-term\">lsblk</span> (block devices) לבין <span class=\"ltr-term\">df</span> (filesystems מחוברים)",
+        "x_en": "Confusing <span class=\"ltr-term\">lsblk</span> (block devices) with <span class=\"ltr-term\">df</span> (mounted filesystems)",
+        "fix_he": "<span class=\"ltr-term\">lsblk</span> מציג גם partitions שלא mounted; <code>df</code> מציג רק מה שכן",
+        "fix_en": "<span class=\"ltr-term\">lsblk</span> shows even unmounted partitions; <code>df</code> shows only mounted ones"
+      },
+      {
+        "x_he": "ניחוש שם ה-device החדש בלי לבדוק",
+        "x_en": "Guessing the new device's name without checking",
+        "fix_he": "הרץ <span class=\"ltr-term\">lsblk</span> לפני ואחרי חיבור דיסק חדש כדי לזהות בוודאות איזה device התווסף",
+        "fix_en": "Run <span class=\"ltr-term\">lsblk</span> before and after attaching a new disk to identify exactly which device appeared"
+      }
+    ],
+    "tags": "lsblk block device partition disk mount filesystem uuid דיסק partition"
+  },
+  {
+    "id": "fdisk",
+    "name": "fdisk -l",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציגה (או עורכת) טבלאות partition של דיסקים. שימוש עם <b>-l</b> מציג רשימה לקריאה בלבד וללא סיכון.",
+    "desc_en": "Display (or edit) disk partition tables. Used with -l it lists tables read-only with no risk of modifying anything.",
+    "source_url": "https://man7.org/linux/man-pages/man8/fdisk.8.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "fdisk -l", "cmt_he": "הצג את כל טבלאות ה-partition של כל הדיסקים (read-only)", "cmt_en": "List all partition tables on all disks (read-only)"},
+      {"cmd": "fdisk -l /dev/sdb", "cmt_he": "הצג partitions של דיסק ספציפי בלבד", "cmt_en": "Show partitions for a specific disk only"},
+      {"cmd": "sudo fdisk /dev/sdb", "cmt_he": "פתח מצב אינטראקטיבי לעריכת partitions — דורש root וזהירות", "cmt_en": "Open interactive mode to edit partitions — requires root and care"}
+    ],
+    "quick_flags": [
+      {"flag": "-l", "desc_he": "רשימה בלבד (read-only) — לא משנה כלום", "desc_en": "List only (read-only) — makes no changes"},
+      {"flag": "-l DEVICE", "desc_he": "הגבל את הרשימה ל-device מסוים", "desc_en": "Limit the listing to a specific device"}
+    ],
+    "scenarios_he": [
+      "בדיקה מהירה של גודל partitions וסוג filesystem לפני תכנון שינוי",
+      "אימות שדיסק חדש מוכר ע\"י המערכת ומה ה-partition table הקיים שלו (MBR/GPT)",
+      "תיעוד מצב partitions לפני עבודת תחזוקה"
+    ],
+    "scenarios_en": [
+      "Quickly checking partition sizes and filesystem types before planning a change",
+      "Verifying a new disk is recognized and what partition table it has (MBR/GPT)",
+      "Documenting current partition layout before maintenance work"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">fdisk /dev/sdX</span> (ללא -l) בטעות ומחיקת/שינוי partition production",
+        "x_en": "Accidentally running <span class=\"ltr-term\">fdisk /dev/sdX</span> (without -l) and modifying or deleting a production partition",
+        "fix_he": "ל-<b>צפייה בלבד</b> השתמש תמיד ב-<span class=\"ltr-term\">-l</span>; מצב אינטראקטיבי ללא -l יכול לשנות/למחוק partitions עם <code>w</code> (write)",
+        "fix_en": "For <b>read-only viewing</b> always use <span class=\"ltr-term\">-l</span>; interactive mode without -l can alter or delete partitions when you type <code>w</code> (write)"
+      },
+      {
+        "x_he": "בלבול בין fdisk לבין דיסק שגוי כשיש כמה דיסקים מחוברים",
+        "x_en": "Targeting the wrong disk when multiple disks are attached",
+        "fix_he": "הרץ <span class=\"ltr-term\">lsblk</span> או <code>fdisk -l</code> (כל הדיסקים) קודם לזיהוי בטוח של ה-device הנכון",
+        "fix_en": "Run <span class=\"ltr-term\">lsblk</span> or <code>fdisk -l</code> (all disks) first to confirm the correct device"
+      }
+    ],
+    "tags": "fdisk partition table disk mbr gpt list read-only דיסק partition"
+  },
+  {
+    "id": "smartctl",
+    "name": "smartctl",
+    "cat": "disk",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "קוראת ומריצה בדיקות <span class=\"ltr-term\">S.M.A.R.T.</span> על דיסקים — מאפשרת לחזות כשל קרוב של דיסק לפני שהוא קורה.",
+    "desc_en": "Read and run S.M.A.R.T. diagnostics on disks — used to predict impending drive failure before it happens.",
+    "source_url": "https://linux.die.net/man/8/smartctl",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "smartctl -a /dev/sda", "cmt_he": "הצג את כל מידות ה-SMART, סטטוס בריאות והיסטוריית שגיאות", "cmt_en": "Show all SMART attributes, health status, and error history"},
+      {"cmd": "smartctl -H /dev/sda", "cmt_he": "סטטוס בריאות כללי בשורה אחת (PASSED/FAILED)", "cmt_en": "Overall health status in one line (PASSED/FAILED)"},
+      {"cmd": "smartctl -t short /dev/sda", "cmt_he": "הפעל בדיקת self-test קצרה (כ-2 דקות)", "cmt_en": "Run a short self-test (about 2 minutes)"},
+      {"cmd": "smartctl -l selftest /dev/sda", "cmt_he": "הצג תוצאות בדיקות self-test שהורצו בעבר", "cmt_en": "Show results of previously-run self-tests"}
+    ],
+    "quick_flags": [
+      {"flag": "-a", "desc_he": "כל המידע — health, attributes, log שגיאות", "desc_en": "All information — health, attributes, error log"},
+      {"flag": "-H", "desc_he": "בדיקת health בלבד — PASSED/FAILED", "desc_en": "Health check only — PASSED/FAILED"},
+      {"flag": "-t TYPE", "desc_he": "הרץ self-test: short או long", "desc_en": "Run a self-test: short or long"},
+      {"flag": "-l TYPE", "desc_he": "הצג log מסוג מסוים (selftest, error)", "desc_en": "Show a specific log type (selftest, error)"}
+    ],
+    "scenarios_he": [
+      "שרת מדווח על שגיאות I/O מדי פעם — בדוק SMART לפני שהדיסק נכשל לגמרי",
+      "תחזוקה תקופתית מתוכננת — הרצת short self-test על כל הדיסקים",
+      "החלפת חומרה מתוכננת — אימות שדיסק חדש תקין מיום ההתקנה"
+    ],
+    "scenarios_en": [
+      "Server reports occasional I/O errors — check SMART before the disk fails completely",
+      "Scheduled periodic maintenance — running a short self-test across all disks",
+      "Planned hardware replacement — verifying a new disk is healthy from day one"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות רק על <span class=\"ltr-term\">PASSED</span> overall health מבלי לבדוק attributes ספציפיים",
+        "x_en": "Relying only on the overall <span class=\"ltr-term\">PASSED</span> health status without checking specific attributes",
+        "fix_he": "בדוק שדות כמו <span class=\"ltr-term\">Reallocated_Sector_Ct</span> ו-<span class=\"ltr-term\">Current_Pending_Sector</span> ב-<code>-a</code> — ערכים גדלים מעידים על בעיה מתקרבת גם כש-health מדווח PASSED",
+        "fix_en": "Check fields like <span class=\"ltr-term\">Reallocated_Sector_Ct</span> and <span class=\"ltr-term\">Current_Pending_Sector</span> in <code>-a</code> — rising values signal trouble even when overall health reports PASSED"
+      },
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">long self-test</span> על דיסק production בשעות עומס",
+        "x_en": "Running a <span class=\"ltr-term\">long self-test</span> on a production disk during peak hours",
+        "fix_he": "self-test ארוך יכול לקחת שעות ולהשפיע על ביצועי I/O — תזמן ל-<b>שעות שקטות</b> או השתמש ב-<code>short</code>",
+        "fix_en": "A long self-test can take hours and impact I/O performance — schedule it for <b>off-peak hours</b> or use <code>short</code>"
+      }
+    ],
+    "tags": "smart disk health diagnostics failure prediction hardware smartctl דיסק בריאות"
+  },
+  {
+    "id": "ncdu",
+    "name": "ncdu",
+    "cat": "disk",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "כלי <span class=\"ltr-term\">ncurses</span> אינטראקטיבי לניתוח שימוש בדיסק — חלופה ויזואלית ל-<code>du</code> שמאפשרת לנווט בתיקיות ולמחוק קבצים ישירות.",
+    "desc_en": "An interactive ncurses-based disk-usage analyzer — a visual alternative to du that lets you browse directories and delete files directly.",
+    "source_url": "https://linux.die.net/man/1/ncdu",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "ncdu /var", "cmt_he": "נתח שימוש בדיסק תחת /var באופן אינטראקטיבי", "cmt_en": "Interactively analyze disk usage under /var"},
+      {"cmd": "ncdu -x /", "cmt_he": "נתח את ה-root filesystem בלי לחצות ל-filesystems אחרים (mounted)", "cmt_en": "Analyze the root filesystem without crossing into other mounted filesystems"},
+      {"cmd": "ncdu -o scan.json /home", "cmt_he": "שמור תוצאות סקירה לקובץ לצפייה מאוחרת", "cmt_en": "Save scan results to a file for later viewing"},
+      {"cmd": "ncdu -f scan.json", "cmt_he": "טען וצפה בתוצאות סקירה שמורות", "cmt_en": "Load and browse a saved scan"}
+    ],
+    "quick_flags": [
+      {"flag": "-x", "desc_he": "אל תחצה ל-filesystems אחרים (one filesystem)", "desc_en": "Don't cross into other mounted filesystems"},
+      {"flag": "-o FILE", "desc_he": "ייצוא תוצאות הסקירה לקובץ JSON", "desc_en": "Export scan results to a JSON file"},
+      {"flag": "-f FILE", "desc_he": "טען תוצאות סקירה שנשמרו מקובץ", "desc_en": "Load a previously-exported scan from a file"}
+    ],
+    "scenarios_he": [
+      "דיסק מתמלא ויש צורך לנווט בעץ תיקיות ולזהות מה תופס מקום בלי הרבה פקודות du נפרדות",
+      "מחיקה מהירה ובטוחה של תיקיות גדולות ישירות מתוך הממשק (מקש d)",
+      "סקירת שרת remote ושמירת התוצאה לקובץ לניתוח מקומי במחשב אחר"
+    ],
+    "scenarios_en": [
+      "Disk filling up and you need to browse the directory tree to find what's eating space without many separate du commands",
+      "Quickly and safely deleting large directories directly from the interface (d key)",
+      "Scanning a remote server and saving the result to a file for offline analysis elsewhere"
+    ],
+    "mistakes": [
+      {
+        "x_he": "מחיקת קבצים בתוך ncdu (מקש d) בלי לבדוק שזה הקובץ הנכון",
+        "x_en": "Deleting files inside ncdu (the d key) without verifying it's the right item",
+        "fix_he": "מחיקה ב-<span class=\"ltr-term\">ncdu</span> היא <b>קבועה</b> ומיידית — בדוק תמיד את הנתיב המלא לפני לחיצה על <code>d</code>",
+        "fix_en": "Deletion in <span class=\"ltr-term\">ncdu</span> is <b>permanent</b> and immediate — always confirm the full path before pressing <code>d</code>"
+      },
+      {
+        "x_he": "סקירת / ללא -x גורמת לסריקה גם של network mounts איטיים",
+        "x_en": "Scanning / without -x causes it to also scan slow network mounts",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-x</span> כדי להישאר ב-filesystem אחד ולמנוע סריקת mounts מרוחקים",
+        "fix_en": "Use <span class=\"ltr-term\">-x</span> to stay on one filesystem and avoid scanning remote mounts"
+      }
+    ],
+    "tags": "ncdu disk usage interactive ncurses cleanup directory size דיסק שימוש ניתוח"
+  },
+  {
+    "id": "iotop",
+    "name": "iotop",
+    "cat": "disk",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מוניטור בזמן אמת המציג אילו תהליכים צורכים הכי הרבה <span class=\"ltr-term\">disk I/O</span> — כמו <code>top</code> אך לדיסק.",
+    "desc_en": "A real-time monitor showing which processes are consuming the most disk I/O — like top, but for disk activity.",
+    "source_url": "https://linux.die.net/man/8/iotop",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "sudo iotop", "cmt_he": "תצוגה אינטראקטיבית של כל תהליכי ה-I/O, ממוינים לפי צריכה", "cmt_en": "Interactive view of all I/O-active processes, sorted by usage"},
+      {"cmd": "sudo iotop -o", "cmt_he": "הצג רק תהליכים שמייצרים I/O בפועל כרגע", "cmt_en": "Show only processes actually doing I/O right now"},
+      {"cmd": "sudo iotop -b -n 5 -d 2", "cmt_he": "מצב batch — 5 דגימות בהפרש 2 שניות, ל-scripts/logs", "cmt_en": "Batch mode — 5 samples 2 seconds apart, for scripts/logs"},
+      {"cmd": "sudo iotop -p 1234", "cmt_he": "עקוב אחרי I/O של PID ספציפי בלבד", "cmt_en": "Monitor I/O of a specific PID only"}
+    ],
+    "quick_flags": [
+      {"flag": "-o", "desc_he": "הצג only תהליכים פעילים ב-I/O (מסנן רעש)", "desc_en": "Show only processes currently doing I/O (cuts noise)"},
+      {"flag": "-b", "desc_he": "מצב batch — לא אינטראקטיבי, מתאים ל-logging", "desc_en": "Batch mode — non-interactive, suitable for logging"},
+      {"flag": "-n N", "desc_he": "מספר איטרציות במצב batch", "desc_en": "Number of iterations in batch mode"},
+      {"flag": "-d N", "desc_he": "השהייה בשניות בין עדכונים", "desc_en": "Delay in seconds between updates"}
+    ],
+    "scenarios_he": [
+      "השרת מגיב לאט ו-CPU תקין — בדוק אם תהליך מסוים גורם ל-disk I/O גבוה",
+      "job של גיבוי או indexing משפיע על שירותים אחרים — זהה אותו עם iotop",
+      "ניטור ממושך ב-batch mode לצורך לוג ובדיקה מאוחרת"
+    ],
+    "scenarios_en": [
+      "Server feels slow but CPU looks fine — check if a process is causing heavy disk I/O",
+      "A backup or indexing job is impacting other services — identify it with iotop",
+      "Long-running batch-mode monitoring for later log review"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">iotop</span> ללא <code>sudo</code> — לא מציג נתונים בגלל הרשאות",
+        "x_en": "Running <span class=\"ltr-term\">iotop</span> without <code>sudo</code> — shows no data due to permission restrictions",
+        "fix_he": "iotop דורש גישת <span class=\"ltr-term\">root</span> לקריאת נתוני I/O מה-kernel — הרץ עם <code>sudo</code>",
+        "fix_en": "iotop needs <span class=\"ltr-term\">root</span> access to read I/O accounting from the kernel — run with <code>sudo</code>"
+      },
+      {
+        "x_he": "השארת iotop פעיל באופן אינטראקטיבי על שרת remote ל-debugging ממושך",
+        "x_en": "Leaving interactive iotop running on a remote server for long-term debugging",
+        "fix_he": "לניטור ממושך השתמש ב-<span class=\"ltr-term\">-b -n N -d SEC</span> (batch mode) וכתוב לקובץ log",
+        "fix_en": "For long-term monitoring use <span class=\"ltr-term\">-b -n N -d SEC</span> (batch mode) and write to a log file"
+      }
+    ],
+    "tags": "iotop disk io monitor process performance read write דיסק ניטור ביצועים"
   }
 ]

@@ -736,5 +736,491 @@
       }
     ],
     "tags": "disk check filesystem repair bad sectors corruption windows דיסק תיקון"
+  },
+  {
+    "id": "nbtstat",
+    "name": "nbtstat",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "מציגה ומאפסת את מצב <span class=\"ltr-term\">NetBIOS over TCP/IP</span> — שמות מקומיים, cache ושמות מרוחקים שנפתרו.",
+    "desc_en": "Display and reset NetBIOS over TCP/IP statistics, including the local name table and cached remote name resolutions.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/nbtstat",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "nbtstat -n", "cmt_he": "הצג את טבלת שמות ה-NetBIOS המקומית", "cmt_en": "Show the local NetBIOS name table"},
+      {"cmd": "nbtstat -c", "cmt_he": "הצג את ה-NetBIOS name cache — שמות שנפתרו מרחוק", "cmt_en": "Show the NetBIOS name cache — remotely resolved names"},
+      {"cmd": "nbtstat -a hostname", "cmt_he": "הצג טבלת שמות NetBIOS של מחשב מרוחק", "cmt_en": "Show the NetBIOS name table of a remote machine"},
+      {"cmd": "nbtstat -R", "cmt_he": "נקה ורענן את ה-NetBIOS name cache", "cmt_en": "Purge and reload the NetBIOS name cache"}
+    ],
+    "quick_flags": [
+      {"flag": "-n", "desc_he": "טבלת שמות מקומית", "desc_en": "Local name table"},
+      {"flag": "-c", "desc_he": "תוכן ה-name cache", "desc_en": "Name cache contents"},
+      {"flag": "-a NAME", "desc_he": "טבלת שמות של מחשב מרוחק לפי שם", "desc_en": "Remote machine's name table by name"},
+      {"flag": "-R", "desc_he": "נקה ורענן את ה-cache", "desc_en": "Purge and reload the cache"}
+    ],
+    "scenarios_he": [
+      "מחשבים ישנים לא מוצאים שרת ברשת מקומית — בדוק שמות NetBIOS",
+      "שיתוף קבצים דרך <span class=\"ltr-term\">\\\\computername</span> לא עובד אבל IP עובד",
+      "חשד ל-cache שם NetBIOS לא תקין לאחר שינוי שם מחשב"
+    ],
+    "scenarios_en": [
+      "Legacy machines can't find a server on the local network — check NetBIOS names",
+      "File sharing via <span class=\"ltr-term\">\\\\computername</span> fails but IP-based access works",
+      "Suspected stale NetBIOS name cache after a computer rename"
+    ],
+    "mistakes": [
+      {
+        "x_he": "ציפייה שnbtstat יעבוד מעבר ל-routers ברשתות מודרניות",
+        "x_en": "Expecting nbtstat to work across routers on modern networks",
+        "fix_he": "NetBIOS לרוב חסום/disabled ברשתות מבוססות <span class=\"ltr-term\">DNS</span> — השתמש ב-<span class=\"ltr-term\">nslookup</span> כתחליף",
+        "fix_en": "NetBIOS is often blocked/disabled on modern DNS-based networks — use <span class=\"ltr-term\">nslookup</span> instead"
+      },
+      {
+        "x_he": "שינוי שם מחשב מבלי לנקות את ה-NetBIOS cache במחשבים אחרים",
+        "x_en": "Renaming a computer without clearing the NetBIOS cache on other machines",
+        "fix_he": "הרץ <span class=\"ltr-term\">nbtstat -R</span> במחשבים שמתחברים אליו כדי לרענן את ה-cache",
+        "fix_en": "Run <span class=\"ltr-term\">nbtstat -R</span> on connecting machines to refresh their cache"
+      }
+    ],
+    "secnote_he": "<b>nbtstat -A</b> על מחשב מרוחק חושף שמות משאבים פנימיים (שרתים, דומיין) — שימוש קלאסי בשלב <span class=\"ltr-term\">reconnaissance</span> של תקיפה.",
+    "secnote_en": "<b>nbtstat -A</b> against a remote host can expose internal resource names (servers, domain) — a classic reconnaissance technique in attacks.",
+    "tags": "netbios nbtstat name cache resolve windows רשת שמות"
+  },
+  {
+    "id": "net-start-stop",
+    "name": "net start / net stop",
+    "cat": "system",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מפעילה ומכבה <span class=\"ltr-term\">Windows services</span> משורת הפקודה, ומציגה רשימת services שרצים כרגע.",
+    "desc_en": "Start and stop Windows services from the command line, and list services that are currently running.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/net-start",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "net start", "cmt_he": "הצג את כל ה-services הפעילים כעת", "cmt_en": "List all services that are currently running"},
+      {"cmd": "net start \"Print Spooler\"", "cmt_he": "הפעל service לפי שם — מרכאות נדרשות לשם עם רווחים", "cmt_en": "Start a service by name — quotes required for names with spaces"},
+      {"cmd": "net stop \"Print Spooler\"", "cmt_he": "עצור service פעיל", "cmt_en": "Stop a running service"},
+      {"cmd": "net stop \"Print Spooler\" /y", "cmt_he": "עצור service ואשר עצירה אוטומטית של dependencies", "cmt_en": "Stop a service and auto-confirm stopping dependent services"}
+    ],
+    "quick_flags": [
+      {"flag": "net start", "desc_he": "ללא ארגומנט — הצג services פעילים", "desc_en": "No argument — list running services"},
+      {"flag": "net start NAME", "desc_he": "הפעל service לפי שם", "desc_en": "Start a service by name"},
+      {"flag": "net stop NAME", "desc_he": "עצור service לפי שם", "desc_en": "Stop a service by name"},
+      {"flag": "/y", "desc_he": "אשר אוטומטית עצירת dependencies", "desc_en": "Auto-confirm stopping dependent services"}
+    ],
+    "scenarios_he": [
+      "service קריטי קרס — נסה <span class=\"ltr-term\">net stop</span> ואז <span class=\"ltr-term\">net start</span> מהיר",
+      "אימות ש-service עלה בהצלחה אחרי שינוי תצורה",
+      "עצירת service תקוע לפני הסרת התקנה"
+    ],
+    "scenarios_en": [
+      "A critical service crashed — quick net stop then net start cycle",
+      "Verifying a service came up successfully after a config change",
+      "Stopping a stuck service before uninstalling software"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">net start servicename</span> עם שם שגוי — מציג רשימת שמות אפשריים אבל לא מפעיל",
+        "x_en": "Running <span class=\"ltr-term\">net start servicename</span> with a wrong name — lists possible names but starts nothing",
+        "fix_he": "בדוק את השם המדויק עם <span class=\"ltr-term\">sc query</span> או <span class=\"ltr-term\">net start</span> ללא ארגומנט",
+        "fix_en": "Verify the exact name with <span class=\"ltr-term\">sc query</span> or <span class=\"ltr-term\">net start</span> with no argument"
+      },
+      {
+        "x_he": "<span class=\"ltr-term\">net stop</span> על service עם dependencies — נכשל ללא אזהרה ברורה",
+        "x_en": "<span class=\"ltr-term\">net stop</span> on a service with dependencies — fails without a clear warning",
+        "fix_he": "הוסף <span class=\"ltr-term\">/y</span> לאשר עצירת dependencies, או בדוק עם <span class=\"ltr-term\">sc enumdepend</span> קודם",
+        "fix_en": "Add <span class=\"ltr-term\">/y</span> to confirm stopping dependencies, or check first with <span class=\"ltr-term\">sc enumdepend</span>"
+      }
+    ],
+    "secnote_he": "כיבוי לא צפוי של services ביטחוניים (Defender, Firewall) דרך <span class=\"ltr-term\">net stop</span> הוא דגל אדום ב-IR.",
+    "secnote_en": "Unexpected shutdown of security services (Defender, Firewall) via <span class=\"ltr-term\">net stop</span> is a red flag during IR.",
+    "tags": "net start stop service services windows שירות הפעלה כיבוי"
+  },
+  {
+    "id": "fsutil",
+    "name": "fsutil",
+    "cat": "disk",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "כלי ניהול מתקדם של מערכת הקבצים — בדיקת מידע על volumes, בדיקת <span class=\"ltr-term\">dirty bitmap</span>, וניהול <span class=\"ltr-term\">quotas</span> ו-<span class=\"ltr-term\">reparse points</span>.",
+    "desc_en": "Advanced file system management tool for querying volume information, checking the dirty bit, and managing disk quotas and reparse points.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "fsutil fsinfo volumeinfo C:", "cmt_he": "הצג מידע מפורט על ה-volume: file system, אורך שם, תכונות", "cmt_en": "Show detailed volume info: file system type, name length, supported features"},
+      {"cmd": "fsutil dirty query C:", "cmt_he": "בדוק אם ה-dirty bit מסומן — מעיד שchkdsk יידרש באתחול הבא", "cmt_en": "Check if the dirty bit is set — indicates chkdsk will run at next boot"},
+      {"cmd": "fsutil quota query C:", "cmt_he": "הצג הגדרות quota דיסק עבור משתמשים", "cmt_en": "Display disk quota settings for users"},
+      {"cmd": "fsutil reparsepoint query C:\\path\\to\\link", "cmt_he": "בדוק פרטי symbolic link או junction", "cmt_en": "Query details of a symbolic link or junction point"}
+    ],
+    "quick_flags": [
+      {"flag": "fsinfo volumeinfo", "desc_he": "מידע כללי על ה-volume", "desc_en": "General volume information"},
+      {"flag": "dirty query", "desc_he": "בדיקת dirty bit — chkdsk מתוזמן?", "desc_en": "Check dirty bit — is chkdsk scheduled?"},
+      {"flag": "quota query", "desc_he": "הצג quotas של משתמשים", "desc_en": "Show user disk quotas"},
+      {"flag": "reparsepoint query", "desc_he": "פרטי symbolic link / junction", "desc_en": "Symbolic link / junction details"}
+    ],
+    "scenarios_he": [
+      "בדיקה אם <span class=\"ltr-term\">chkdsk</span> מתוזמן לאתחול הבא לפני reboot מתוכנן",
+      "אימות תכונות file system (תמיכה ב-quotas, hard links) לפני deployment",
+      "חקירת symbolic links/junctions חשודים שנוצרו על ידי תוכנה"
+    ],
+    "scenarios_en": [
+      "Checking whether chkdsk is scheduled for next boot before a planned reboot",
+      "Verifying file system features (quota support, hard links) before deployment",
+      "Investigating suspicious symbolic links/junctions created by software"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת פקודות <span class=\"ltr-term\">fsutil</span> משנות מצב (כמו <span class=\"ltr-term\">dirty set</span>) ללא הבנת ההשפעה",
+        "x_en": "Running state-changing fsutil commands (like dirty set) without understanding the impact",
+        "fix_he": "השתמש בפקודות <span class=\"ltr-term\">query</span> בלבד לאבחון; פקודות שינוי דורשות הבנה מלאה ו-admin",
+        "fix_en": "Use query subcommands for diagnostics only; state-changing commands require full understanding and admin rights"
+      },
+      {
+        "x_he": "ניסיון להריץ <span class=\"ltr-term\">fsutil</span> ללא הרשאות admin",
+        "x_en": "Trying to run fsutil without admin privileges",
+        "fix_he": "<span class=\"ltr-term\">fsutil</span> דורש <span class=\"ltr-term\">Command Prompt</span> מוגבר (Run as Administrator)",
+        "fix_en": "fsutil requires an elevated Command Prompt (Run as Administrator)"
+      }
+    ],
+    "tags": "fsutil filesystem volume dirty bit quota reparse point junction disk windows דיסק"
+  },
+  {
+    "id": "auditpol",
+    "name": "auditpol",
+    "cat": "user",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "מציגה ומגדירה את <span class=\"ltr-term\">מדיניות ה-audit</span> האבטחתית של Windows — לדוגמה auditing של אירועי <span class=\"ltr-term\">logon</span> — חשובה לאבחון נעילות והתחברויות כושלות.",
+    "desc_en": "Query and configure Windows security audit policy categories — e.g. logon event auditing — essential when diagnosing account lockouts and failed sign-ins.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/auditpol",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "auditpol /get /category:*", "cmt_he": "הצג את מדיניות ה-audit הנוכחית לכל הקטגוריות", "cmt_en": "Show the current audit policy for all categories"},
+      {"cmd": "auditpol /get /subcategory:\"Logon\"", "cmt_he": "בדוק אם auditing של אירועי logon מופעל", "cmt_en": "Check whether logon event auditing is enabled"},
+      {"cmd": "auditpol /set /subcategory:\"Logon\" /success:enable /failure:enable", "cmt_he": "הפעל auditing להתחברויות מוצלחות וכושלות", "cmt_en": "Enable auditing for both successful and failed logons"},
+      {"cmd": "auditpol /set /subcategory:\"Account Lockout\" /failure:enable", "cmt_he": "הפעל auditing לאירועי נעילת חשבון", "cmt_en": "Enable auditing for account lockout events"}
+    ],
+    "quick_flags": [
+      {"flag": "/get /category:*", "desc_he": "הצג מדיניות לכל הקטגוריות", "desc_en": "Show policy for all categories"},
+      {"flag": "/get /subcategory:NAME", "desc_he": "הצג מדיניות לתת-קטגוריה ספציפית", "desc_en": "Show policy for a specific subcategory"},
+      {"flag": "/set /success:enable", "desc_he": "הפעל audit לאירועים מוצלחים", "desc_en": "Enable auditing for success events"},
+      {"flag": "/set /failure:enable", "desc_he": "הפעל audit לאירועים כושלים", "desc_en": "Enable auditing for failure events"}
+    ],
+    "scenarios_he": [
+      "משתמשים מתלוננים על נעילות חשבון חוזרות אך אין רישום ב-Event Log — בדוק שauditing מופעל",
+      "הכנת שרת לחקירת אבטחה — אימות הגדרות audit policy מראש",
+      "אכיפת מדיניות הקשחה (hardening) הדורשת רישום ניסיונות logon כושלים"
+    ],
+    "scenarios_en": [
+      "Users report repeated account lockouts but nothing appears in Event Log — verify auditing is enabled",
+      "Preparing a server for a security investigation — confirm audit policy settings ahead of time",
+      "Enforcing a hardening policy that requires logging failed logon attempts"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הנחה ש-auditing מופעל כברירת מחדל על כל subcategory",
+        "x_en": "Assuming auditing is enabled by default for every subcategory",
+        "fix_he": "בדוק תמיד עם <span class=\"ltr-term\">auditpol /get /category:*</span> — רוב התת-קטגוריות כבויות כברירת מחדל",
+        "fix_en": "Always check with <span class=\"ltr-term\">auditpol /get /category:*</span> — most subcategories are disabled by default"
+      },
+      {
+        "x_he": "שינוי audit policy עם <span class=\"ltr-term\">auditpol /set</span> בעוד <span class=\"ltr-term\">Group Policy</span> מגדיר את אותה הגדרה",
+        "x_en": "Changing audit policy with auditpol /set while a Group Policy also controls the same setting",
+        "fix_he": "Group Policy שמוחל מאוחר יותר יחזיר את ההגדרה — עדכן את ה-GPO ולא רק את ה-policy המקומי",
+        "fix_en": "A Group Policy applied later will overwrite the change — update the GPO, not just the local policy"
+      }
+    ],
+    "secnote_he": "<b>auditpol /set ... /success:disable /failure:disable</b> על קטגוריות כמו <span class=\"ltr-term\">Logon</span> או <span class=\"ltr-term\">Account Lockout</span> מטמטם forensic logging — שינוי כזה לפני אירוע חשוד הוא דגל אדום ב-IR.",
+    "secnote_en": "<b>auditpol /set ... /success:disable /failure:disable</b> on categories like Logon or Account Lockout blinds forensic logging — such a change before a suspicious event is a red flag during IR.",
+    "tags": "auditpol audit policy logon lockout security event windows הרשאות אבטחה"
+  },
+  {
+    "id": "pathping",
+    "name": "pathping",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "משלבת <span class=\"ltr-term\">ping</span> ו-<span class=\"ltr-term\">tracert</span> ומציגה אחוזי <span class=\"ltr-term\">packet loss</span> לכל hop בנתיב — שימושית לאיתור חיבוריות לסירוגין.",
+    "desc_en": "Combines ping and tracert functionality, reporting per-hop packet loss statistics over time — useful for diagnosing intermittent connectivity and latency along a route.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pathping",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "pathping 8.8.8.8", "cmt_he": "בדיקה סטנדרטית — דוגם כל hop במשך כ-25 שניות", "cmt_en": "Standard test — samples each hop for about 25 seconds"},
+      {"cmd": "pathping -n 8.8.8.8", "cmt_he": "ללא DNS resolution — תוצאות מהירות יותר", "cmt_en": "No DNS resolution — faster results"},
+      {"cmd": "pathping -q 50 -h 15 8.8.8.8", "cmt_he": "50 בדיקות לכל hop, עד 15 hops מקסימום", "cmt_en": "50 queries per hop, up to a maximum of 15 hops"},
+      {"cmd": "pathping -p 1000 8.8.8.8", "cmt_he": "הגדל את ה-period בין pings ל-1000ms", "cmt_en": "Increase the period between pings to 1000ms"}
+    ],
+    "quick_flags": [
+      {"flag": "-n", "desc_he": "ללא DNS reverse lookup", "desc_en": "Skip DNS reverse lookup"},
+      {"flag": "-h N", "desc_he": "מספר hops מקסימלי", "desc_en": "Maximum number of hops"},
+      {"flag": "-q N", "desc_he": "מספר queries לכל hop (ברירת מחדל 100)", "desc_en": "Number of queries per hop (default 100)"},
+      {"flag": "-p N", "desc_he": "המתנה ב-ms בין pings", "desc_en": "Wait time in ms between pings"}
+    ],
+    "scenarios_he": [
+      "משתמשים מדווחים על קישוריות 'לסירוגין' שregular ping לא תופס",
+      "איתור hop ספציפי שגורם ל-packet loss עקבי בנתיב VPN",
+      "השוואת latency ו-loss בין שני נתיבי ניתוב חלופיים"
+    ],
+    "scenarios_en": [
+      "Users report 'intermittent' connectivity that a regular ping doesn't catch",
+      "Locating the specific hop causing consistent packet loss on a VPN route",
+      "Comparing latency and loss between two alternate routing paths"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפרעה ל-<span class=\"ltr-term\">pathping</span> לפני שהושלם — הוא לוקח זמן רב מ-<span class=\"ltr-term\">tracert</span>",
+        "x_en": "Cancelling pathping before it completes — it takes much longer than tracert",
+        "fix_he": "תן לפקודה לרוץ עד הסוף (כ-25 שניות ל-hop כברירת מחדל) כדי לקבל סטטיסטיקת loss אמינה",
+        "fix_en": "Let the command run to completion (about 25 seconds per hop by default) to get reliable loss statistics"
+      },
+      {
+        "x_he": "פרשנות packet loss ב-hop ביניים כתקלה בפועל",
+        "x_en": "Interpreting packet loss at an intermediate hop as an actual fault",
+        "fix_he": "routers רבים מגבילים <span class=\"ltr-term\">ICMP</span> ל-hop עצמו (rate-limiting) — חפש loss שמופיע גם בכל ה-hops הבאים",
+        "fix_en": "Many routers rate-limit ICMP responses for themselves only — look for loss that also appears at all subsequent hops"
+      }
+    ],
+    "tags": "pathping ping tracert packet loss latency hop route windows רשת ניתוב"
+  },
+  {
+    "id": "systeminfo",
+    "name": "systeminfo",
+    "cat": "system",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "מדפיסה דוח תצורה מלא של המחשב — גרסת <span class=\"ltr-term\">OS</span>, עדכונים מותקנים, זיכרון, ושעת אתחול אחרונה — נקודת התחלה טובה לכל triage.",
+    "desc_en": "Prints a full configuration dump of the machine — OS version, installed hotfixes, memory, and last boot time — a good first command for any general triage.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/systeminfo",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "systeminfo", "cmt_he": "דוח מלא על המחשב — OS, hardware, hotfixes, ועוד", "cmt_en": "Full report on the machine — OS, hardware, hotfixes, and more"},
+      {"cmd": "systeminfo | findstr /B /C:\"OS Name\" /C:\"OS Version\"", "cmt_he": "סנן רק את שורות גרסת ה-OS", "cmt_en": "Filter to just the OS name/version lines"},
+      {"cmd": "systeminfo /FO CSV > sysinfo.csv", "cmt_he": "ייצוא לפורמט CSV לעיבוד או archiving", "cmt_en": "Export to CSV format for processing or archiving"},
+      {"cmd": "systeminfo /S remotehost", "cmt_he": "הרץ מרחוק על מחשב אחר (דורש הרשאות)", "cmt_en": "Run against a remote computer (requires permissions)"}
+    ],
+    "quick_flags": [
+      {"flag": "/FO CSV", "desc_he": "פלט CSV — לscripting ו-Excel", "desc_en": "CSV output — for scripting and Excel"},
+      {"flag": "/S remotehost", "desc_he": "הרץ מרחוק על מחשב אחר", "desc_en": "Run against a remote computer"},
+      {"flag": "/U user /P pass", "desc_he": "פרטי הזדהות לחיבור מרוחק", "desc_en": "Credentials for the remote connection"}
+    ],
+    "scenarios_he": [
+      "צעד ראשון בכל פניית תמיכה — תפוס תמונת מצב מלאה של המחשב",
+      "אימות שעדכון אבטחה ספציפי (hotfix) הותקן בהצלחה",
+      "בדיקת שעת אתחול אחרונה לאחר חשד ל-reboot לא מתוכנן"
+    ],
+    "scenarios_en": [
+      "First step in any support ticket — capture a full snapshot of the machine",
+      "Verifying a specific security hotfix was successfully installed",
+      "Checking the last boot time after a suspected unplanned reboot"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">systeminfo</span> חוזרת על מחשבים רבים — איטית מאוד",
+        "x_en": "Running systeminfo repeatedly against many machines — very slow",
+        "fix_he": "ל-inventory רחב היקף שלב לכלי כמו <span class=\"ltr-term\">wmic</span> או <span class=\"ltr-term\">PowerShell</span> remoting במקום systeminfo בודד לכל מחשב",
+        "fix_en": "For large-scale inventory, prefer tools like wmic or PowerShell remoting over running systeminfo on each machine individually"
+      },
+      {
+        "x_he": "התעלמות משדה <span class=\"ltr-term\">'System Boot Time'</span> בעת חקירת קריסה",
+        "x_en": "Ignoring the 'System Boot Time' field when investigating a crash",
+        "fix_he": "השווה <span class=\"ltr-term\">System Boot Time</span> לזמן הדיווח על התקלה כדי לאשר/לשלול reboot",
+        "fix_en": "Compare System Boot Time to the time the issue was reported to confirm or rule out a reboot"
+      }
+    ],
+    "tags": "systeminfo system info os version hotfix memory boot time windows מערכת מידע"
+  },
+  {
+    "id": "driverquery",
+    "name": "driverquery",
+    "cat": "system",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מדפיסה רשימה של כל <span class=\"ltr-term\">device drivers</span> המותקנים והגרסאות שלהם — שימושית באבחון תקלות חומרה ו-drivers.",
+    "desc_en": "Lists all installed device drivers along with their versions — useful for troubleshooting hardware and driver-related issues.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/driverquery",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "driverquery", "cmt_he": "רשימה בסיסית של כל ה-drivers המותקנים", "cmt_en": "Basic list of all installed drivers"},
+      {"cmd": "driverquery /v", "cmt_he": "פלט מפורט — כולל נתיב, תאריך התקנה ומצב", "cmt_en": "Verbose output — including path, install date and state"},
+      {"cmd": "driverquery /FO CSV /v > drivers.csv", "cmt_he": "ייצוא רשימה מלאה ל-CSV לתיעוד או השוואה", "cmt_en": "Export the full list to CSV for documentation or comparison"},
+      {"cmd": "driverquery /SI", "cmt_he": "הצג מידע חתימה דיגיטלית (signed/unsigned) לכל driver", "cmt_en": "Show digital signature info (signed/unsigned) for each driver"}
+    ],
+    "quick_flags": [
+      {"flag": "/v", "desc_he": "פלט מפורט עם נתיב ותאריך", "desc_en": "Verbose output with path and date"},
+      {"flag": "/SI", "desc_he": "הצג סטטוס חתימה דיגיטלית", "desc_en": "Show digital signature status"},
+      {"flag": "/FO CSV", "desc_he": "פלט CSV לעיבוד", "desc_en": "CSV output for processing"}
+    ],
+    "scenarios_he": [
+      "אחרי upgrade של Windows, חיפוש driver לא תואם שלא עלה",
+      "חקירת BSOD — בדיקת תאריך driver חשוד לעומת תאריך ה-crash",
+      "אימות שכל ה-drivers חתומים דיגיטלית במערכת מוקשחת"
+    ],
+    "scenarios_en": [
+      "After a Windows upgrade, finding an incompatible driver that failed to load",
+      "Investigating a BSOD — comparing a suspect driver's date against the crash time",
+      "Verifying all drivers are digitally signed on a hardened system"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">driverquery</span> בלי <span class=\"ltr-term\">/v</span> כשצריך תאריך התקנה",
+        "x_en": "Running driverquery without /v when an install date is needed",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">driverquery /v</span> לקבלת עמודות תאריך ונתיב",
+        "fix_en": "Use driverquery /v to get the date and path columns"
+      },
+      {
+        "x_he": "בלבול בין שם <span class=\"ltr-term\">Module Name</span> (קצר) לבין שם ה-driver המלא",
+        "x_en": "Confusing the short Module Name with the full driver name",
+        "fix_he": "שם ה-<span class=\"ltr-term\">Module Name</span> מתאים לקובץ ה-.sys ב-<span class=\"ltr-term\">System32\\drivers</span> — חפש לפיו",
+        "fix_en": "The Module Name corresponds to the .sys file under System32\\drivers — search using that name"
+      }
+    ],
+    "tags": "driverquery driver drivers version hardware bsod signed windows התקנים מנהל התקן"
+  },
+  {
+    "id": "gpresult",
+    "name": "gpresult",
+    "cat": "user",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציגה את ה-<span class=\"ltr-term\">Group Policy</span> האפקטיבי שמוחל בפועל על משתמש או מחשב — קריטית לאבחון תקלות הרשאה והתחברות הנובעות ממדיניות.",
+    "desc_en": "Displays the resultant set of Group Policy settings actually applied to a user or computer — critical for diagnosing policy-driven login and permission issues.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/gpresult",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "gpresult /r", "cmt_he": "סיכום קצר של GPOs שהוחלו על המשתמש והמחשב הנוכחיים", "cmt_en": "Brief summary of GPOs applied to the current user and computer"},
+      {"cmd": "gpresult /h report.html", "cmt_he": "ייצוא דוח מפורט ל-HTML שניתן לפתוח בדפדפן", "cmt_en": "Export a detailed report to HTML viewable in a browser"},
+      {"cmd": "gpresult /scope computer /v", "cmt_he": "פרטים מלאים על מדיניות שהוחלה ברמת המחשב בלבד", "cmt_en": "Full details on policy applied at the computer scope only"},
+      {"cmd": "gpupdate /force", "cmt_he": "כפה רענון מדיניות לפני בדיקה חוזרת עם gpresult", "cmt_en": "Force a policy refresh before re-checking with gpresult"}
+    ],
+    "quick_flags": [
+      {"flag": "/r", "desc_he": "סיכום RSOP — GPOs שהוחלו", "desc_en": "RSOP summary — applied GPOs"},
+      {"flag": "/v", "desc_he": "פלט מפורט (verbose)", "desc_en": "Verbose output"},
+      {"flag": "/h FILE.html", "desc_he": "ייצוא דוח HTML", "desc_en": "Export an HTML report"},
+      {"flag": "/scope user|computer", "desc_he": "הגבל לתחום משתמש או מחשב", "desc_en": "Limit to user or computer scope"}
+    ],
+    "scenarios_he": [
+      "משתמש מקבל הודעת 'Access Denied' שלא הייתה קודם — בדוק אם GPO חדש חסם הרשאה",
+      "מדיניות סיסמה לא מתעדכנת כצפוי — אמת אילו GPOs בכלל הוחלו",
+      "השוואת מדיניות מוחלת בין מחשב תקין למחשב עם תקלה"
+    ],
+    "scenarios_en": [
+      "User suddenly gets 'Access Denied' — check whether a new GPO blocked the permission",
+      "Password policy isn't updating as expected — verify which GPOs are actually applied",
+      "Comparing applied policy between a working machine and a problematic one"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">gpresult</span> מיד אחרי שינוי GPO ב-domain controller",
+        "x_en": "Running gpresult immediately after changing a GPO on the domain controller",
+        "fix_he": "הרץ <span class=\"ltr-term\">gpupdate /force</span> במחשב הלקוח ולעיתים יש להמתין ל-AD replication לפני שgpresult ישקף את השינוי",
+        "fix_en": "Run gpupdate /force on the client machine, and allow time for AD replication before gpresult reflects the change"
+      },
+      {
+        "x_he": "התמקדות רק ב-<span class=\"ltr-term\">/scope user</span> כשהבעיה נובעת ממדיניות ברמת מחשב",
+        "x_en": "Focusing only on /scope user when the issue stems from computer-level policy",
+        "fix_he": "בדוק את שני ה-scopes — <span class=\"ltr-term\">gpresult /r</span> ללא <span class=\"ltr-term\">/scope</span> מציג את שניהם",
+        "fix_en": "Check both scopes — gpresult /r without /scope shows both"
+      }
+    ],
+    "tags": "gpresult group policy gpo rsop permissions login windows הרשאות מדיניות"
+  },
+  {
+    "id": "whoami",
+    "name": "whoami",
+    "cat": "user",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מציגה את זהות המשתמש הנוכחי, הקבוצות שהוא חבר בהן וה-<span class=\"ltr-term\">privileges</span> שהוקצו לו — נקודת מפתח לאבחון 'permission denied'.",
+    "desc_en": "Shows the current user's identity, group memberships, and assigned privileges — a key first command when diagnosing permission-denied issues.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/whoami",
+    "source_name": "Microsoft Docs — Windows Commands",
+    "usage": [
+      {"cmd": "whoami", "cmt_he": "הצג את שם המשתמש הנוכחי (domain\\user)", "cmt_en": "Show the current username (domain\\user)"},
+      {"cmd": "whoami /groups", "cmt_he": "הצג את כל הקבוצות שהמשתמש חבר בהן", "cmt_en": "Show all groups the user belongs to"},
+      {"cmd": "whoami /priv", "cmt_he": "הצג את כל ה-privileges המוקצים והאם הם מאופשרים", "cmt_en": "Show all assigned privileges and whether they're enabled"},
+      {"cmd": "whoami /all", "cmt_he": "הצג הכל — משתמש, SID, קבוצות ו-privileges בבת אחת", "cmt_en": "Show everything — user, SID, groups and privileges at once"}
+    ],
+    "quick_flags": [
+      {"flag": "/groups", "desc_he": "קבוצות וה-SIDs שלהן", "desc_en": "Groups and their SIDs"},
+      {"flag": "/priv", "desc_he": "privileges מוקצים וסטטוס", "desc_en": "Assigned privileges and status"},
+      {"flag": "/all", "desc_he": "כל המידע — משתמש, קבוצות, privileges", "desc_en": "All information — user, groups, privileges"},
+      {"flag": "/upn", "desc_he": "הצג בפורמט User Principal Name", "desc_en": "Show in User Principal Name format"}
+    ],
+    "scenarios_he": [
+      "משתמש לא מצליח לגשת לתיקייה — אמת לאיזו קבוצות הוא משתייך בפועל",
+      "סקריפט נכשל ב-'access denied' — בדוק אם המשתמש המריץ הוא admin עם <span class=\"ltr-term\">/priv</span>",
+      "אימות זהות לאחר <span class=\"ltr-term\">runas</span> או הרצה תחת service account"
+    ],
+    "scenarios_en": [
+      "User can't access a folder — verify which groups they actually belong to",
+      "A script fails with 'access denied' — check if the running user is admin via /priv",
+      "Confirming identity after runas or when running under a service account"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הנחה שחברות בקבוצת <span class=\"ltr-term\">Administrators</span> פירושה ש-privilege מסוים מאופשר",
+        "x_en": "Assuming membership in the Administrators group means a given privilege is enabled",
+        "fix_he": "בדוק את העמודה <span class=\"ltr-term\">State</span> ב-<span class=\"ltr-term\">whoami /priv</span> — privileges מסוימים מושבתים כברירת מחדל גם ל-admins (UAC)",
+        "fix_en": "Check the State column in whoami /priv — some privileges are disabled by default even for admins (UAC)"
+      },
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">whoami</span> בתוך session מועלה (elevated) ומסקנה שהמשתמש 'הרגיל' זהה",
+        "x_en": "Running whoami inside an elevated session and assuming the 'regular' user is the same",
+        "fix_he": "פתח <span class=\"ltr-term\">CMD</span> לא מועלה בנפרד כדי לבדוק את ההקשר הלא-elevated",
+        "fix_en": "Open a separate non-elevated CMD to check the non-elevated context"
+      }
+    ],
+    "secnote_he": "<b>whoami /priv</b> חושף אילו privileges רגישים (כמו <span class=\"ltr-term\">SeDebugPrivilege</span> או <span class=\"ltr-term\">SeImpersonatePrivilege</span>) זמינים — בדיקה נפוצה ב-post-exploitation לפני privilege escalation.",
+    "secnote_en": "<b>whoami /priv</b> reveals which sensitive privileges (like SeDebugPrivilege or SeImpersonatePrivilege) are available — a common post-exploitation check before privilege escalation.",
+    "tags": "whoami user identity groups privileges permission windows הרשאות משתמש"
+  },
+  {
+    "id": "test-netconnection",
+    "name": "Test-NetConnection",
+    "cat": "network",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "פקודת <span class=\"ltr-term\">PowerShell</span> (לא <span class=\"ltr-term\">cmd.exe</span>) המשלבת ping, בדיקת port ו-traceroute לתוך כלי אחד — התחליף המודרני לשילוב telnet/ping/tracert.",
+    "desc_en": "A PowerShell cmdlet (not a cmd.exe command) that combines ping-style connectivity testing, TCP port checks, and traceroute into a single tool — the modern replacement for chaining telnet, ping and tracert.",
+    "source_url": "https://learn.microsoft.com/en-us/powershell/module/nettcpip/test-netconnection",
+    "source_name": "Microsoft Docs — PowerShell",
+    "usage": [
+      {"cmd": "Test-NetConnection google.com", "cmt_he": "בדיקת קישוריות בסיסית — ping ו-ping success", "cmt_en": "Basic connectivity test — ping and ping success"},
+      {"cmd": "Test-NetConnection -ComputerName google.com -Port 443", "cmt_he": "בדוק אם port TCP מסוים פתוח ונגיש", "cmt_en": "Check whether a specific TCP port is open and reachable"},
+      {"cmd": "Test-NetConnection -ComputerName google.com -TraceRoute", "cmt_he": "הצג את כל ה-hops בנתיב ליעד, כמו tracert", "cmt_en": "Show all hops to the destination, like tracert"},
+      {"cmd": "Test-NetConnection -ComputerName 10.0.0.5 -Port 3389 -InformationLevel Detailed", "cmt_he": "פלט מפורט הכולל ממשק, מסלול ו-ping data", "cmt_en": "Detailed output including interface, route, and ping data"}
+    ],
+    "quick_flags": [
+      {"flag": "-ComputerName", "desc_he": "ה-host או IP לבדיקה", "desc_en": "Target host or IP to test"},
+      {"flag": "-Port N", "desc_he": "בדוק חיבוריות TCP ל-port ספציפי", "desc_en": "Test TCP connectivity to a specific port"},
+      {"flag": "-TraceRoute", "desc_he": "הצג hops בנתיב, כמו tracert", "desc_en": "Show route hops, like tracert"},
+      {"flag": "-InformationLevel Detailed", "desc_he": "פלט מפורט עם כל הנתונים", "desc_en": "Verbose output with all data"}
+    ],
+    "scenarios_he": [
+      "אפליקציה לא מתחברת לשרת ב-port מסוים — בדוק חיבוריות עם <span class=\"ltr-term\">-Port</span> במקום telnet",
+      "אבחון נתיב רשת מ-PowerShell ללא צורך לעבור ל-cmd.exe",
+      "סקריפטים אוטומטיים שצריכים לבדוק זמינות שירות ולקבל ערך <span class=\"ltr-term\">$true/$false</span>"
+    ],
+    "scenarios_en": [
+      "An application can't connect to a server on a given port — test with -Port instead of telnet",
+      "Diagnosing a network path from PowerShell without switching to cmd.exe",
+      "Automation scripts that need to check service availability and get a $true/$false result"
+    ],
+    "mistakes": [
+      {
+        "x_he": "ציפייה שTest-NetConnection בלי <span class=\"ltr-term\">-Port</span> בודק חיבוריות TCP לאפליקציה",
+        "x_en": "Expecting Test-NetConnection without -Port to test TCP connectivity to an application",
+        "fix_he": "ללא <span class=\"ltr-term\">-Port</span> הפקודה מבצעת רק <span class=\"ltr-term\">ICMP ping</span> — הוסף <span class=\"ltr-term\">-Port</span> לבדיקת שירות ספציפי",
+        "fix_en": "Without -Port the cmdlet only performs an ICMP ping — add -Port to test a specific service"
+      },
+      {
+        "x_he": "שימוש ב-<span class=\"ltr-term\">-TraceRoute</span> ו-<span class=\"ltr-term\">-Port</span> יחד וציפייה לראות hops",
+        "x_en": "Using -TraceRoute and -Port together and expecting to see hops",
+        "fix_he": "<span class=\"ltr-term\">-TraceRoute</span> אינו נתמך עם <span class=\"ltr-term\">-Port</span> — הרץ אותם בנפרד",
+        "fix_en": "-TraceRoute is not supported together with -Port — run them separately"
+      }
+    ],
+    "tags": "test-netconnection powershell ping port traceroute connectivity tcp windows רשת"
   }
 ]

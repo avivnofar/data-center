@@ -580,5 +580,340 @@
         "note_en": "If the timezone is wrong, set it with timedatectl set-timezone. On Windows: check with w32tm /query /status and fix with w32tm /resync"
       }
     ]
+  },
+  {
+    "id": "ts-vpn-internal",
+    "title_he": "VPN מחובר אך אין גישה למשאבים פנימיים",
+    "title_en": "VPN Connected But Can't Reach Internal Resources",
+    "plat": "cross-platform",
+    "severity": "high",
+    "desc_he": "ה-VPN client מציג סטטוס 'connected' אך לא ניתן לגשת ל-servers, shares או שירותים ברשת הפנימית — אבחון של ה-tunnel, ה-routing וה-DNS.",
+    "desc_en": "The VPN client shows a 'connected' status, but internal servers, shares, or services are unreachable — diagnosing the tunnel, routing, and DNS.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק שה-virtual adapter של ה-VPN קיבל IP",
+        "text_en": "Verify the VPN virtual adapter actually got an IP",
+        "cmd": "ip addr show",
+        "note_he": "חפש interface בשם tun0/ppp0/wg0 (Linux) עם inet address. ב-Windows הרץ ipconfig /all וחפש 'PPP adapter' או 'TAP-Windows Adapter'",
+        "note_en": "Look for an interface named tun0/ppp0/wg0 (Linux) with an inet address. On Windows run ipconfig /all and look for 'PPP adapter' or 'TAP-Windows Adapter'"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק את routing table לroutes לרשת הפנימית דרך ה-VPN gateway",
+        "text_en": "Check the routing table for routes to the internal subnet via the VPN gateway",
+        "cmd": "ip route",
+        "note_he": "חפש שורה שמכוונת את ה-subnet הפנימי (לדוגמה 10.0.0.0/8) ל-interface של ה-VPN. ב-Windows: route print. אם השורה חסרה — ה-VPN לא push את ה-route הפנימי",
+        "note_en": "Look for a line routing the internal subnet (e.g. 10.0.0.0/8) via the VPN interface. On Windows: route print. If the line is missing — the VPN isn't pushing the internal route"
+      },
+      {
+        "n": 3,
+        "text_he": "ping ל-DNS server הפנימי או ל-gateway הפנימי ישירות",
+        "text_en": "Ping the internal DNS server or gateway IP directly",
+        "cmd": "ping -c 4 10.0.0.1",
+        "note_he": "אם אין תגובה כלל — הבעיה ב-routing/tunnel ולא ב-DNS. אם יש תגובה — ה-tunnel תקין וצריך לבדוק שכבות גבוהות יותר",
+        "note_en": "If there's no response at all — the issue is in routing/tunnel, not DNS. If it responds — the tunnel is fine and the issue is higher up the stack"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק resolution של hostname פנימי",
+        "text_en": "Test DNS resolution of an internal hostname",
+        "cmd": "nslookup internal-host.corp.local",
+        "note_he": "אם ה-IP שמתקבל הוא כתובת ציבורית או 'Non-existent domain' — בעיית split-tunnel DNS: ה-client לא שולח DNS queries דרך ה-VPN",
+        "note_en": "If the returned IP is a public address or 'Non-existent domain' — this is a split-tunnel DNS issue: the client isn't sending DNS queries through the VPN"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק חיבור ל-port ספציפי של שירות פנימי",
+        "text_en": "Test a specific service port",
+        "cmd": "telnet internal-host 445",
+        "note_he": "ב-Windows השתמש ב-Test-NetConnection internal-host -Port 445. אם ה-port נפתח — connectivity תקין ברמת ה-network, הבעיה ב-application/auth",
+        "note_en": "On Windows use Test-NetConnection internal-host -Port 445. If the port opens — connectivity is fine at the network level, the issue is application/auth"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק שה-firewall המקומי לא חוסם את interface ה-VPN",
+        "text_en": "Check the local firewall isn't blocking the VPN interface",
+        "cmd": "sudo ufw status verbose",
+        "note_he": "ודא שאין חוק שחוסם traffic על tun0/ppp0. ב-Windows: בדוק Windows Defender Firewall -> Allowed apps עבור ה-VPN client",
+        "note_en": "Make sure there's no rule blocking traffic on tun0/ppp0. On Windows: check Windows Defender Firewall -> Allowed apps for the VPN client"
+      },
+      {
+        "n": 7,
+        "text_he": "בדוק את logs ה-VPN client לשגיאות split-tunnel/route-push",
+        "text_en": "Check VPN client logs for split-tunnel/route-push errors",
+        "cmd": "journalctl -u openvpn-client@profile --since -15m",
+        "note_he": "חפש שגיאות כמו 'PUSH: Received control message' שלא כולל את ה-route הפנימי, או 'route addition failed'. ב-Windows: Event Viewer -> Applications and Services Logs",
+        "note_en": "Look for errors like 'PUSH: Received control message' missing the internal route, or 'route addition failed'. On Windows: Event Viewer -> Applications and Services Logs"
+      }
+    ]
+  },
+  {
+    "id": "ts-web-unreachable",
+    "title_he": "שרת מגיב ל-ping אך שירות ה-web לא נגיש",
+    "title_en": "Server Responds to Ping But Web Service Unreachable",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "ה-server עונה ל-ICMP ping אך דפדפן או curl מקבלים timeout או connection refused על ה-web service — אבחון שכבה אחר שכבה מ-process ועד firewall.",
+    "desc_en": "The server responds to ICMP ping, but a browser or curl gets a timeout or connection refused on the web service — layer-by-layer diagnosis from process to firewall.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "אשר שה-ICMP עובד",
+        "text_en": "Confirm ICMP works",
+        "cmd": "ping -c 4 host",
+        "note_he": "אם ping עובד, זה מאשר שיש routing וקישוריות בסיסית — ICMP לא מוכיח שום דבר על port ה-web עצמו",
+        "note_en": "If ping works, it confirms routing and basic connectivity exist — ICMP says nothing about the web port itself"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שה-process של שירות ה-web פעיל בכלל על ה-server",
+        "text_en": "Check the web service process is actually running on the server",
+        "cmd": "systemctl status nginx",
+        "note_he": "חפש 'active (running)'. אם 'failed' או 'inactive' — זו הסיבה לבעיה, לא firewall. הרץ journalctl -u nginx -n 50 לפרטים",
+        "note_en": "Look for 'active (running)'. If 'failed' or 'inactive' — that's the root cause, not a firewall. Run journalctl -u nginx -n 50 for details"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק שה-port מאזין (listening)",
+        "text_en": "Check the port is listening",
+        "cmd": "ss -tlnp | grep ':443'",
+        "note_he": "אם אין שורה — ה-service רץ אך לא bound לport הזה, או bound רק ל-127.0.0.1 ולא 0.0.0.0 (כלומר נגיש רק locally)",
+        "note_en": "If there's no line — the service is running but not bound to this port, or bound only to 127.0.0.1 instead of 0.0.0.0 (reachable only locally)"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק locally מה-server עצמו",
+        "text_en": "Test locally on the server",
+        "cmd": "curl -I http://localhost",
+        "note_he": "אם זה עובד locally אך לא מ-client חיצוני — הבעיה ב-firewall/network, לא ב-application. אם נכשל גם locally — בעיה ב-application עצמה",
+        "note_en": "If this works locally but not from an external client — the issue is firewall/network, not the application. If it fails locally too — the application itself is broken"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק חוקי firewall מקומיים על ה-port",
+        "text_en": "Check host firewall rules for the port",
+        "cmd": "iptables -L INPUT -n",
+        "note_he": "ב-Ubuntu/Debian חלופית: ufw status. חפש DROP/REJECT על port 443/80. אם חסום: ufw allow 443/tcp",
+        "note_en": "On Ubuntu/Debian alternatively: ufw status. Look for DROP/REJECT on port 443/80. If blocked: ufw allow 443/tcp"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק חיבור מה-client",
+        "text_en": "Test from the client",
+        "cmd": "telnet host 443",
+        "note_he": "ב-Windows: Test-NetConnection host -Port 443. 'Connection refused' = הגיע ל-server אך port סגור. timeout/no response = נחסם בדרך (firewall/router)",
+        "note_en": "On Windows: Test-NetConnection host -Port 443. 'Connection refused' = reached the server but port is closed. timeout/no response = blocked en route (firewall/router)"
+      },
+      {
+        "n": 7,
+        "text_he": "אם ב-cloud — בדוק security group / network ACL",
+        "text_en": "Check cloud provider security group / network ACL if applicable",
+        "cmd": "aws ec2 describe-security-groups --group-ids sg-xxxxxxxx",
+        "note_he": "וודא שיש inbound rule שמתיר את הport מה-source הרצוי. NACLs ברמת ה-subnet יכולים לחסום גם אם ה-security group מתיר",
+        "note_en": "Make sure there's an inbound rule allowing the port from the desired source. NACLs at the subnet level can block traffic even if the security group allows it"
+      }
+    ]
+  },
+  {
+    "id": "ts-high-memory",
+    "title_he": "עלייה פתאומית בשימוש ב-memory — תהליך אבחון",
+    "title_en": "Sudden High Memory Usage — Diagnosis Flow",
+    "plat": "linux",
+    "severity": "high",
+    "desc_he": "השרת מתחיל לצרוך memory בצורה חריגה, swap מתחיל לפעול וה-performance נפגע — חקירה שיטתית לזיהוי memory leak או תהליך חורג.",
+    "desc_en": "The server starts consuming memory abnormally, swap kicks in, and performance degrades — systematic investigation to identify a memory leak or runaway process.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק שימוש כללי ב-memory ו-swap",
+        "text_en": "Check overall memory/swap usage",
+        "cmd": "free -h",
+        "note_he": "שדה 'available' חשוב יותר מ-'free'. אם 'used' ב-Swap גדל באופן מתמשך — המערכת בתחילת ה-thrashing",
+        "note_en": "The 'available' field matters more than 'free'. If Swap 'used' keeps growing — the system is heading into thrashing"
+      },
+      {
+        "n": 2,
+        "text_he": "זהה את 10 התהליכים הצורכים הכי הרבה memory",
+        "text_en": "Identify top memory-consuming processes",
+        "cmd": "ps aux --sort=-%mem | head -10",
+        "note_he": "עמודות %MEM ו-RSS מציגות את הצריכה האמיתית. תהליך עם %MEM גבוה משמעותית משאר ה-list הוא החשוד הראשי",
+        "note_en": "The %MEM and RSS columns show real usage. A process with %MEM significantly higher than the rest of the list is the prime suspect"
+      },
+      {
+        "n": 3,
+        "text_he": "עקוב אחרי תהליך חשוד שצריכת ה-memory שלו ממשיכה לעלות (memory leak פוטנציאלי)",
+        "text_en": "Watch for a process whose memory keeps growing (potential leak)",
+        "cmd": "watch -n5 'ps -p PID -o %mem,rss,cmd'",
+        "note_he": "החלף PID. אם RSS עולה ללא הפסקה במשך דקות/שעות ללא ירידה — סימן קלאסי ל-memory leak באפליקציה",
+        "note_en": "Replace PID. If RSS keeps climbing over minutes/hours without dropping — a classic sign of an application memory leak"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק פעילות swap בזמן אמת",
+        "text_en": "Check swap activity",
+        "cmd": "vmstat 1 5",
+        "note_he": "עמודות 'si' ו-'so' (swap in/out) שונות מאפס באופן מתמשך מצביעות על swap thrashing — פוגע משמעותית ב-performance",
+        "note_en": "Non-zero 'si' and 'so' (swap in/out) columns persisting indicate swap thrashing — severely hurts performance"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק את kernel log לפעילות OOM killer",
+        "text_en": "Check kernel log for OOM killer activity",
+        "cmd": "journalctl -k | grep -i 'out of memory'",
+        "note_he": "אם ה-OOM killer פעל, הוא יציין 'Killed process PID (name)'. זה מאשר שהמערכת הגיעה ל-memory exhaustion ולא רק היה load גבוה",
+        "note_en": "If the OOM killer fired, it logs 'Killed process PID (name)'. This confirms the system hit memory exhaustion, not just high load"
+      },
+      {
+        "n": 6,
+        "text_he": "בדוק את ה-logs של האפליקציה החשודה לשגיאות או דפוסי leak",
+        "text_en": "Check the suspect application's own logs for errors/leak patterns",
+        "cmd": "journalctl -u servicename --since -1h | grep -iE 'error|leak|oom|allocat'",
+        "note_he": "חפש שגיאות allocation, exceptions חזרתיים, או connections/objects שלא משתחררים — דפוסים נפוצים של memory leak",
+        "note_en": "Look for allocation errors, repeating exceptions, or connections/objects that never get released — common memory leak patterns"
+      },
+      {
+        "n": 7,
+        "text_he": "מיתון מיידי — restart לתהליך והגבלת memory עם systemd",
+        "text_en": "Mitigate — restart the process and consider a memory limit via systemd",
+        "cmd": "systemctl restart servicename && systemctl edit servicename",
+        "note_he": "ב-editor שנפתח הוסף תחת [Service]: MemoryMax=1G. זה מגביל את התהליך ומונע ממנו להפיל את כל ה-server בעתיד",
+        "note_en": "In the editor that opens, add under [Service]: MemoryMax=1G. This caps the process and prevents it from taking down the whole server in the future"
+      }
+    ]
+  },
+  {
+    "id": "ts-ad-login",
+    "title_he": "משתמש Active Directory לא מצליח להתחבר",
+    "title_en": "Active Directory User Can't Log In",
+    "plat": "windows",
+    "severity": "high",
+    "desc_he": "משתמש מקבל שגיאת login נגד domain controller — אבחון systematic של lockout, סנכרון שעון, DNS, וקישוריות ל-AD ports.",
+    "desc_en": "A user gets a login error against the domain controller — systematic diagnosis of lockout, clock sync, DNS, and connectivity to AD ports.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את סטטוס ה-account ב-DC — lockout, disabled, expired",
+        "text_en": "Check account lockout/disabled/expired status on the DC",
+        "cmd": "net user username /domain",
+        "note_he": "חפש 'Account active: Yes', 'Account expires: Never' (או תאריך עתידי), ו-'Password expires'. אם locked: Unlock-ADAccount -Identity username",
+        "note_en": "Look for 'Account active: Yes', 'Account expires: Never' (or a future date), and 'Password expires'. If locked: Unlock-ADAccount -Identity username"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק סנכרון שעון בין ה-client ל-DC — Kerberos נכשל אם הפרש > 5 דקות",
+        "text_en": "Verify time sync between client and DC — Kerberos fails if skew >5min",
+        "cmd": "w32tm /query /status",
+        "note_he": "השדה 'Last Successful Sync Time' צריך להיות קרוב לעכשיו. הפרש שעון גדול מ-5 דקות גורם לשגיאת 'KRB_AP_ERR_SKEW'",
+        "note_en": "The 'Last Successful Sync Time' field should be recent. A clock skew over 5 minutes causes 'KRB_AP_ERR_SKEW'"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק resolution של ה-domain ב-DNS",
+        "text_en": "Check DNS resolution to the domain controller",
+        "cmd": "nslookup domain.local",
+        "note_he": "התוצאה צריכה להחזיר את ה-IP של ה-DC. אם נכשל — ה-client לא יכול למצוא DC ו-login יכשל לפני בדיקת credentials כלל",
+        "note_en": "The result should return the DC's IP. If it fails — the client can't locate a DC and login fails before credentials are even checked"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק קישוריות ל-ports של AD על ה-DC",
+        "text_en": "Test connectivity to AD ports on the DC",
+        "cmd": "Test-NetConnection DC01 -Port 389",
+        "note_he": "בדוק גם -Port 88 (Kerberos) ו--Port 445 (SMB). אם port 389 (LDAP) חסום — אימותים מבוססי LDAP יכשלו",
+        "note_en": "Also check -Port 88 (Kerberos) and -Port 445 (SMB). If port 389 (LDAP) is blocked — LDAP-based authentication will fail"
+      },
+      {
+        "n": 5,
+        "text_he": "חפש ב-Security event log על ה-DC failed logon (Event 4625)",
+        "text_en": "Check the Security event log on the DC for failed logon event ID 4625",
+        "cmd": "wevtutil qe Security /q:\"*[System[(EventID=4625)]]\" /c:5 /rd:true /f:text",
+        "note_he": "השדה 'Failure Reason' מציין את הסיבה המדויקת: bad password, account locked, expired, או workstation restriction",
+        "note_en": "The 'Failure Reason' field shows the exact cause: bad password, account locked, expired, or workstation restriction"
+      },
+      {
+        "n": 6,
+        "text_he": "אמת את ה-secure channel/trust של ה-computer עם ה-domain",
+        "text_en": "Verify the computer's secure channel/trust with the domain",
+        "cmd": "Test-ComputerSecureChannel -Verbose",
+        "note_he": "אם מחזיר False — ה-machine account לא יכול לאמת מול ה-domain. תקן עם: Test-ComputerSecureChannel -Repair (דורש credentials של domain admin)",
+        "note_en": "If it returns False — the machine account can't authenticate against the domain. Fix with: Test-ComputerSecureChannel -Repair (requires domain admin credentials)"
+      },
+      {
+        "n": 7,
+        "text_he": "בדוק שהGroup Policy לא חוסם logon",
+        "text_en": "Check Group Policy isn't blocking logon",
+        "cmd": "gpresult /r",
+        "note_he": "חפש policies תחת 'Security Settings' שמגבילים 'Allow log on locally' או 'Deny log on locally/through Remote Desktop'",
+        "note_en": "Look for policies under 'Security Settings' restricting 'Allow log on locally' or 'Deny log on locally/through Remote Desktop'"
+      }
+    ]
+  },
+  {
+    "id": "ts-ssl-cert",
+    "title_he": "שגיאת SSL Certificate בדפדפן — אבחון",
+    "title_en": "SSL Certificate Error in Browser — Diagnosis",
+    "plat": "cross-platform",
+    "severity": "medium",
+    "desc_he": "דפדפן מציג אזהרת <span class=\"ltr-term\">Your connection is not private</span> או <span class=\"ltr-term\">NET::ERR_CERT</span> — אבחון ה-certificate chain, תוקף, ו-trust store לבירור אם הבעיה ב-server, ב-client או בתעודה עצמה.",
+    "desc_en": "A browser shows 'Your connection is not private' or 'NET::ERR_CERT' — diagnosing the certificate chain, validity, and trust store to determine if the issue is server-side, client-side, or the certificate itself.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את ה-certificate chain והתוקף שלו ישירות",
+        "text_en": "Inspect the certificate chain and expiration directly",
+        "cmd": "openssl s_client -connect host:443 -servername host",
+        "note_he": "הפלט מציג את ה-Certificate chain המלא. -servername חיוני כשה-server משתמש ב-SNI עם מספר certificates",
+        "note_en": "The output shows the full certificate chain. -servername is essential when the server uses SNI with multiple certificates"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק את תאריכי התוקף (notBefore/notAfter) ואת ה-issuer בפלט",
+        "text_en": "Check validity dates (notBefore/notAfter) and issuer in the output",
+        "cmd": "openssl x509 -noout -dates -issuer -in /dev/stdin <<< \"$(openssl s_client -connect host:443 -servername host 2>/dev/null)\"",
+        "note_he": "אם 'notAfter' עבר את התאריך הנוכחי — התעודה פגה. issuer לא מוכר עלול להעיד על self-signed certificate",
+        "note_en": "If 'notAfter' is in the past — the certificate has expired. An unfamiliar issuer may indicate a self-signed certificate"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק שה-Subject Alternative Names מתאימים ל-hostname שאליו מתחברים",
+        "text_en": "Check the certificate's Subject Alternative Names match the hostname being browsed",
+        "cmd": "openssl x509 -noout -ext subjectAltName -in /dev/stdin <<< \"$(openssl s_client -connect host:443 -servername host 2>/dev/null)\"",
+        "note_he": "אם ה-hostname בדפדפן לא נמצא ב-SAN list — תקבל 'NET::ERR_CERT_COMMON_NAME_INVALID' גם אם התעודה תקפה לדומיין אחר",
+        "note_en": "If the hostname in the browser isn't in the SAN list — you'll get 'NET::ERR_CERT_COMMON_NAME_INVALID' even if the certificate is valid for another domain"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק שה-intermediate certificate chain שלם",
+        "text_en": "Check the intermediate certificate chain is complete",
+        "cmd": "openssl s_client -connect host:443 -servername host -showcerts",
+        "note_he": "אם רק התעודה הסופית (leaf) מוצגת בלי intermediates — הדפדפן יציג 'not trusted' למרות ש-root CA תקין. ה-server צריך לשלוח את שרשרת ה-intermediates המלאה",
+        "note_en": "If only the leaf certificate appears without intermediates — the browser will show 'not trusted' even though the root CA is fine. The server needs to send the full intermediate chain"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק שהשעון המקומי נכון — שעון שגוי גורם לשגיאות תוקף שגויות",
+        "text_en": "Check the local system clock is correct — wrong client date causes false expiration errors",
+        "cmd": "date",
+        "note_he": "ב-Windows: Get-Date. אם השעה/תאריך המקומי שגויים בכמה ימים, התעודה תיראה 'not yet valid' או 'expired' גם אם היא תקינה בפועל",
+        "note_en": "On Windows: Get-Date. If the local date/time is off by even a few days, the certificate will appear 'not yet valid' or 'expired' even though it's actually fine"
+      },
+      {
+        "n": 6,
+        "text_he": "קבע אם זו תעודה self-signed או מ-CA פנימי שלא נמצא ב-trust store של ה-client",
+        "text_en": "Determine if it's a self-signed/internal CA cert not in the client's trust store",
+        "cmd": "openssl x509 -noout -subject -issuer -in /dev/stdin <<< \"$(openssl s_client -connect host:443 -servername host 2>/dev/null)\"",
+        "note_he": "אם 'subject' ו-'issuer' זהים — זו תעודה self-signed. אם ה-issuer הוא CA פנימי של הארגון — יש להוסיף את ה-root CA ל-trust store של ה-client",
+        "note_en": "If 'subject' and 'issuer' are identical — it's a self-signed certificate. If the issuer is the organization's internal CA — the root CA needs to be added to the client's trust store"
+      },
+      {
+        "n": 7,
+        "text_he": "בדוק ממכונה/דפדפן אחר לבדל בין client-side ל-server-side",
+        "text_en": "Test from another machine/browser to isolate client-side vs server-side cert issue",
+        "cmd": "curl -vI https://host",
+        "note_he": "אם curl ממכונה אחרת מצליח (או נכשל באותה צורה) — זה מאשר אם הבעיה ב-server (אותה שגיאה לכולם) או ב-trust store/clock של ה-client הספציפי",
+        "note_en": "If curl from another machine succeeds (or fails the same way) — this confirms whether the issue is server-side (same error for everyone) or specific to that client's trust store/clock"
+      }
+    ]
   }
 ]

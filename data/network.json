@@ -590,5 +590,389 @@
       }
     ],
     "tags": "whois domain registration owner registrar dns ip lookup דומיין"
+  },
+  {
+    "id": "tshark",
+    "name": "tshark",
+    "cat": "diagnostic",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "גרסת <span class=\"ltr-term\">command-line</span> של Wireshark — לוכדת ומסננת <span class=\"ltr-term\">packets</span> כשצריך עומק ניתוח שמעבר ל-tcpdump.",
+    "desc_en": "The command-line edition of Wireshark — captures and filters packets for deep protocol analysis when tcpdump's output isn't enough.",
+    "source_url": "https://www.wireshark.org/docs/man-pages/tshark.html",
+    "source_name": "tshark man page (wireshark.org)",
+    "usage": [
+      {"cmd": "tshark -i eth0", "cmt_he": "התחל לכידה חיה על interface eth0", "cmt_en": "Start a live capture on interface eth0"},
+      {"cmd": "tshark -i eth0 -f \"tcp port 443\"", "cmt_he": "capture filter — לכוד רק traffic על port 443", "cmt_en": "Capture filter — capture only traffic on port 443"},
+      {"cmd": "tshark -r capture.pcap -Y \"http.request\"", "cmt_he": "display filter — קרא קובץ pcap והצג רק HTTP requests", "cmt_en": "Display filter — read a pcap file and show only HTTP requests"},
+      {"cmd": "tshark -i eth0 -w out.pcap -c 1000", "cmt_he": "לכוד 1000 packets ושמור לקובץ לניתוח ב-Wireshark", "cmt_en": "Capture 1000 packets and save to a file for analysis in Wireshark"}
+    ],
+    "quick_flags": [
+      {"flag": "-i IFACE", "desc_he": "ה-interface ללכידה", "desc_en": "Interface to capture on"},
+      {"flag": "-f FILTER", "desc_he": "capture filter — תחביר BPF, מסנן לפני הלכידה", "desc_en": "Capture filter — BPF syntax, filters before capture"},
+      {"flag": "-Y FILTER", "desc_he": "display filter — תחביר Wireshark, מסנן פלט שנלכד", "desc_en": "Display filter — Wireshark syntax, filters captured output"},
+      {"flag": "-w FILE", "desc_he": "כתוב את הלכידה לקובץ pcap", "desc_en": "Write the capture to a pcap file"},
+      {"flag": "-r FILE", "desc_he": "קרא לכידה מקובץ pcap קיים", "desc_en": "Read a capture from an existing pcap file"}
+    ],
+    "scenarios_he": [
+      "ניתוח עומק של handshake שנכשל — tcpdump לא מספיק לראות את שדות ה-protocol",
+      "לכידת traffic לקובץ ב-server מרוחק לפתיחה מאוחר יותר ב-Wireshark GUI",
+      "בידוד session HTTP/DNS ספציפי עם display filters מתוך לכידה גדולה"
+    ],
+    "scenarios_en": [
+      "Deep-diving into a failed handshake — tcpdump alone doesn't show the protocol fields",
+      "Capturing traffic to a file on a remote server to open later in the Wireshark GUI",
+      "Isolating a specific HTTP/DNS session with display filters from a large capture"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בלבול בין capture filter (-f) ל-display filter (-Y)",
+        "x_en": "Confusing capture filter (-f) with display filter (-Y)",
+        "fix_he": "<span class=\"ltr-term\">-f</span> משתמש בתחביר BPF (כמו tcpdump) ומסנן לפני הלכידה; <span class=\"ltr-term\">-Y</span> משתמש בתחביר Wireshark ומסנן מה שמוצג בלבד",
+        "fix_en": "<span class=\"ltr-term\">-f</span> uses BPF syntax (like tcpdump) and filters before capture; <span class=\"ltr-term\">-Y</span> uses Wireshark syntax and only filters what's displayed"
+      },
+      {
+        "x_he": "הרצת tshark ללא -c או -w על interface עמוס — קובץ לכידה גדל ללא בקרה",
+        "x_en": "Running tshark without -c or -w on a busy interface — the capture grows uncontrolled",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">-c COUNT</span> להגביל מספר packets, ושמור עם <span class=\"ltr-term\">-w</span> לבדיקה מאוחרת",
+        "fix_en": "Use <span class=\"ltr-term\">-c COUNT</span> to limit the number of packets, and save with <span class=\"ltr-term\">-w</span> for later review"
+      }
+    ],
+    "secnote_he": "לכידת <span class=\"ltr-term\">packets</span> חושפת תוכן תקשורת — כולל סיסמאות בטקסט גלוי בפרוטוקולים לא מוצפנים. הרץ tshark רק על רשתות שבאחריותך ובהתאם למדיניות הארגון.",
+    "secnote_en": "Packet capture exposes communication content — including plaintext credentials on unencrypted protocols. Only run tshark on networks you're authorized to monitor, per organizational policy.",
+    "tags": "tshark wireshark packet capture filter pcap analysis sniffer network"
+  },
+  {
+    "id": "ufw",
+    "name": "ufw",
+    "cat": "firewall",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "מנשק פשוט ל-<span class=\"ltr-term\">iptables</span> ב-Ubuntu/Debian — מאפשר/חוסם <span class=\"ltr-term\">ports</span> ושירותים בפקודות קריאות במקום חוקי iptables מורכבים.",
+    "desc_en": "A friendly front-end for iptables on Ubuntu/Debian — allow or deny ports and services with readable commands instead of raw iptables rules.",
+    "source_url": "https://help.ubuntu.com/community/UFW",
+    "source_name": "Ubuntu Server Guide — Firewall (ufw)",
+    "usage": [
+      {"cmd": "ufw status verbose", "cmt_he": "הצג מצב נוכחי וכל החוקים המוגדרים", "cmt_en": "Show current state and all configured rules"},
+      {"cmd": "ufw allow 22/tcp", "cmt_he": "אפשר תעבורת SSH על port 22", "cmt_en": "Allow SSH traffic on port 22"},
+      {"cmd": "ufw allow from 192.168.1.0/24 to any port 5432", "cmt_he": "אפשר גישה ל-port מ-subnet ספציפי בלבד", "cmt_en": "Allow access to a port only from a specific subnet"},
+      {"cmd": "ufw deny 23", "cmt_he": "חסום port 23 (telnet)", "cmt_en": "Deny port 23 (telnet)"},
+      {"cmd": "ufw enable", "cmt_he": "הפעל את ה-firewall (טען חוקים)", "cmt_en": "Enable the firewall (load rules)"}
+    ],
+    "quick_flags": [
+      {"flag": "status verbose", "desc_he": "הצג חוקים ומדיניות default", "desc_en": "Show rules and default policy"},
+      {"flag": "allow", "desc_he": "הוסף חוק שמתיר תעבורה", "desc_en": "Add an allow rule"},
+      {"flag": "deny", "desc_he": "הוסף חוק שחוסם תעבורה", "desc_en": "Add a deny rule"},
+      {"flag": "delete RULE", "desc_he": "מחק חוק קיים", "desc_en": "Delete an existing rule"}
+    ],
+    "scenarios_he": [
+      "הקמת server חדש — לפתוח רק SSH/HTTP/HTTPS ולחסום את שאר ה-ports",
+      "הגבלת גישה ל-database port לכתובות IP מהימנות בלבד",
+      "בדיקה מהירה אם firewall פעיל ואיזה חוקים קיימים על שרת לא מוכר"
+    ],
+    "scenarios_en": [
+      "Setting up a new server — open only SSH/HTTP/HTTPS and deny everything else",
+      "Restricting access to a database port to trusted IP addresses only",
+      "Quickly checking whether the firewall is active and what rules exist on an unfamiliar server"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפעלת ufw enable לפני שהוספת חוק allow ל-SSH — נעילה מחוץ ל-server מרוחק",
+        "x_en": "Running ufw enable before adding an allow rule for SSH — locking yourself out of a remote server",
+        "fix_he": "תמיד הרץ <span class=\"ltr-term\">ufw allow OpenSSH</span> (או <span class=\"ltr-term\">ufw allow 22/tcp</span>) <b>לפני</b> <span class=\"ltr-term\">ufw enable</span>",
+        "fix_en": "Always run <span class=\"ltr-term\">ufw allow OpenSSH</span> (or <span class=\"ltr-term\">ufw allow 22/tcp</span>) <b>before</b> <span class=\"ltr-term\">ufw enable</span>"
+      },
+      {
+        "x_he": "הוספת חוקי ufw רבים מבלי לבדוק את הסדר — חוק deny מאוחר לא יחפוף allow קודם",
+        "x_en": "Adding many ufw rules without checking order — a later deny won't override an earlier allow",
+        "fix_he": "בדוק את סדר החוקים עם <span class=\"ltr-term\">ufw status numbered</span> והשתמש ב-<span class=\"ltr-term\">ufw insert</span> למיקום מדויק",
+        "fix_en": "Check rule order with <span class=\"ltr-term\">ufw status numbered</span> and use <span class=\"ltr-term\">ufw insert</span> for precise placement"
+      }
+    ],
+    "secnote_he": "ufw הוא שכבת ניהול מעל iptables — שינוי כללי iptables ישירות לצד ufw עלול ליצור התנהגות לא עקבית. נהל חוקים דרך ufw בלבד כשהוא מופעל.",
+    "secnote_en": "ufw is a management layer over iptables — modifying iptables rules directly alongside ufw can cause inconsistent behavior. Manage rules through ufw only once it's enabled.",
+    "tags": "ufw firewall ubuntu debian iptables allow deny port rule חומת אש"
+  },
+  {
+    "id": "windows-firewall",
+    "name": "Windows Defender Firewall (netsh advfirewall)",
+    "cat": "firewall",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "ניהול ובדיקת חוקי <span class=\"ltr-term\">Windows Defender Firewall</span> דרך <span class=\"ltr-term\">netsh advfirewall</span> ו-PowerShell — בדיקה אם <span class=\"ltr-term\">port</span> חסום ע\"י ה-firewall.",
+    "desc_en": "Manage and inspect Windows Defender Firewall rules via netsh advfirewall and PowerShell — useful for confirming whether a port is being blocked locally.",
+    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netsh-advfirewall",
+    "source_name": "Microsoft Learn — netsh advfirewall",
+    "usage": [
+      {"cmd": "netsh advfirewall show allprofiles", "cmt_he": "הצג מצב הפעלה של ה-firewall בכל הפרופילים", "cmt_en": "Show firewall on/off state for all profiles"},
+      {"cmd": "netsh advfirewall firewall show rule name=all | findstr /i \"3389\"", "cmt_he": "חפש חוקים שמתייחסים ל-port 3389 (RDP)", "cmt_en": "Search rules referencing port 3389 (RDP)"},
+      {"cmd": "netsh advfirewall firewall add rule name=\"Allow8080\" dir=in action=allow protocol=TCP localport=8080", "cmt_he": "הוסף חוק שמתיר תעבורה נכנסת ל-port 8080", "cmt_en": "Add a rule allowing inbound traffic on port 8080"},
+      {"cmd": "Get-NetFirewallRule -Direction Inbound -Enabled True | Where-Object {$_.Action -eq 'Block'}", "cmt_he": "PowerShell — הצג את כל חוקי ה-block הפעילים לתעבורה נכנסת", "cmt_en": "PowerShell — list all enabled inbound block rules"}
+    ],
+    "quick_flags": [
+      {"flag": "show allprofiles", "desc_he": "מצב firewall בכל הפרופילים (Domain/Private/Public)", "desc_en": "Firewall state across all profiles (Domain/Private/Public)"},
+      {"flag": "firewall show rule name=all", "desc_he": "הצג את כל חוקי ה-firewall המוגדרים", "desc_en": "Show all configured firewall rules"},
+      {"flag": "dir=in / dir=out", "desc_he": "כיוון החוק — נכנס או יוצא", "desc_en": "Rule direction — inbound or outbound"},
+      {"flag": "action=allow / action=block", "desc_he": "פעולת החוק", "desc_en": "Rule action"}
+    ],
+    "scenarios_he": [
+      "אפליקציה לא נגישה מרשת חיצונית — בדוק אם Windows Firewall חוסם את ה-port",
+      "פתיחת port עבור service חדש בשרת Windows (למשל RDP, SQL Server)",
+      "ביקורת חוקי inbound כדי לאתר חוקי allow רחבים מדי שנוספו בעבר"
+    ],
+    "scenarios_en": [
+      "An application isn't reachable from outside — check whether Windows Firewall is blocking the port",
+      "Opening a port for a new service on a Windows server (e.g. RDP, SQL Server)",
+      "Auditing inbound rules to find overly broad allow rules added in the past"
+    ],
+    "mistakes": [
+      {
+        "x_he": "כיבוי Windows Firewall כליל כ\"פתרון\" לבעיית קישוריות",
+        "x_en": "Disabling Windows Firewall entirely as a 'fix' for a connectivity issue",
+        "fix_he": "הוסף חוק <span class=\"ltr-term\">allow</span> ממוקד ל-port/protocol הספציפי במקום לכבות את ה-firewall — <span class=\"ltr-term\">netsh advfirewall set allprofiles state off</span> חוסף את כל ההגנה",
+        "fix_en": "Add a targeted <span class=\"ltr-term\">allow</span> rule for the specific port/protocol instead of disabling the firewall — <span class=\"ltr-term\">netsh advfirewall set allprofiles state off</span> removes all protection"
+      },
+      {
+        "x_he": "בדיקה רק בפרופיל Domain בזמן שהמחשב מחובר ברשת Public",
+        "x_en": "Checking only the Domain profile while the machine is on the Public network",
+        "fix_he": "ודא איזה פרופיל פעיל עם <span class=\"ltr-term\">netsh advfirewall show currentprofile</span> — כל פרופיל (Domain/Private/Public) יכול להחיל חוקים שונים",
+        "fix_en": "Confirm which profile is active with <span class=\"ltr-term\">netsh advfirewall show currentprofile</span> — Domain/Private/Public profiles can apply different rules"
+      }
+    ],
+    "secnote_he": "כיבוי ה-firewall או הוספת חוקי allow רחבים (כל הכתובות, כל ה-ports) חושף את המחשב להתקפות. הגבל חוקי allow ל-port/protocol/scope מדויק ככל האפשר.",
+    "secnote_en": "Disabling the firewall or adding overly broad allow rules (any address, any port) exposes the machine to attack. Scope allow rules to the exact port/protocol/source as narrowly as possible.",
+    "tags": "windows firewall netsh advfirewall powershell netfirewallrule port rule block allow חומת אש"
+  },
+  {
+    "id": "telnet",
+    "name": "telnet",
+    "cat": "ports",
+    "diff": "beginner",
+    "sec": true,
+    "desc_he": "פרוטוקול ישן לחיבור טקסטואלי מרוחק — כיום משמש בעיקר כ<span class=\"ltr-term\">client</span> פשוט לבדיקה אם <span class=\"ltr-term\">port TCP</span> מסוים פתוח ומאזין.",
+    "desc_en": "A legacy remote terminal protocol — nowadays mainly repurposed as a simple client to test whether a given TCP port is open and listening.",
+    "source_url": "https://linux.die.net/man/1/telnet",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "telnet 10.0.0.1 22", "cmt_he": "נסה להתחבר ל-port 22 על 10.0.0.1 — בדוק אם הוא פתוח", "cmt_en": "Try connecting to port 22 on 10.0.0.1 — check if it's open"},
+      {"cmd": "telnet smtp.example.com 25", "cmt_he": "התחבר ל-mail server על port 25 לבדיקת SMTP ידנית", "cmt_en": "Connect to a mail server on port 25 for manual SMTP testing"},
+      {"cmd": "telnet example.com 80", "cmt_he": "התחבר ל-port 80 ושלח בקשת HTTP ידנית (GET / HTTP/1.0)", "cmt_en": "Connect to port 80 and send a manual HTTP request (GET / HTTP/1.0)"}
+    ],
+    "scenarios_he": [
+      "בדיקה אם port ספציפי על server מרוחק פתוח, חסום ע\"י firewall, או שאין service שמאזין",
+      "הבחנה בין 'connection refused' (אין service מאזין) ל-'timeout' (חסום ע\"י firewall)",
+      "debugging ידני של פרוטוקולי טקסט (SMTP, HTTP) ע\"י שליחת פקודות ישירות"
+    ],
+    "scenarios_en": [
+      "Checking whether a specific port on a remote server is open, blocked by a firewall, or has nothing listening",
+      "Distinguishing 'connection refused' (no service listening) from a timeout (likely firewall-blocked)",
+      "Manually debugging text-based protocols (SMTP, HTTP) by sending commands directly"
+    ],
+    "mistakes": [
+      {
+        "x_he": "פירוש שגוי של 'connection refused' לעומת 'timeout' — שתי הודעות שונות מאוד באבחון",
+        "x_en": "Misreading 'connection refused' vs a timeout — these mean very different things diagnostically",
+        "fix_he": "<b>Connection refused</b> = ה-host הגיב אבל אין service על ה-port (TCP RST). <b>Timeout</b> = הבקשה לא הגיעה כלל — כנראה חסום ע\"י firewall או routing שגוי",
+        "fix_en": "<b>Connection refused</b> = the host responded but nothing is listening on that port (TCP RST). A <b>timeout</b> = the request never arrived — likely firewall-blocked or a routing issue"
+      },
+      {
+        "x_he": "שימוש ב-telnet לחיבור פרודקשן בפועל (לא רק לבדיקת port)",
+        "x_en": "Using telnet for an actual production connection (not just a port test)",
+        "fix_he": "telnet משדר טקסט גלוי ללא הצפנה — לחיבור remote shell אמיתי השתמש ב-<span class=\"ltr-term\">SSH</span>, telnet רק לבדיקות port",
+        "fix_en": "telnet transmits everything in plaintext — for an actual remote shell use <span class=\"ltr-term\">SSH</span>; reserve telnet for port testing only"
+      }
+    ],
+    "secnote_he": "telnet משדר כל תוכן — כולל סיסמאות — בטקסט גלוי וללא הצפנה. אל תשתמש בו לחיבור remote-shell אמיתי; השתמש בו רק לבדיקת קישוריות port.",
+    "secnote_en": "telnet transmits all data — including credentials — unencrypted in plaintext. Never use it for an actual remote shell; reserve it for port-connectivity testing only.",
+    "tags": "telnet port test connect tcp connectivity refused timeout diagnostic"
+  },
+  {
+    "id": "ethtool",
+    "name": "ethtool",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "מציג ומגדיר פרטי <span class=\"ltr-term\">network interface</span> ב-Linux בשכבת ה-hardware — מצב <span class=\"ltr-term\">link</span>, מהירות, <span class=\"ltr-term\">duplex</span> ו-driver.",
+    "desc_en": "Query and configure low-level hardware settings of a Linux network interface — link state, speed, duplex mode, and driver information.",
+    "source_url": "https://linux.die.net/man/8/ethtool",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "ethtool eth0", "cmt_he": "הצג מהירות, duplex ומצב link של eth0", "cmt_en": "Show speed, duplex, and link state for eth0"},
+      {"cmd": "ethtool -i eth0", "cmt_he": "הצג פרטי driver וגרסת firmware", "cmt_en": "Show driver and firmware version details"},
+      {"cmd": "ethtool -S eth0", "cmt_he": "הצג סטטיסטיקות NIC — errors, drops, collisions", "cmt_en": "Show NIC statistics — errors, drops, collisions"},
+      {"cmd": "ethtool -s eth0 speed 1000 duplex full autoneg off", "cmt_he": "קבע ידנית מהירות וduplex (השבת auto-negotiation)", "cmt_en": "Manually set speed and duplex (disable auto-negotiation)"}
+    ],
+    "quick_flags": [
+      {"flag": "-i", "desc_he": "הצג פרטי driver ו-firmware", "desc_en": "Show driver and firmware info"},
+      {"flag": "-S", "desc_he": "הצג סטטיסטיקות NIC מפורטות", "desc_en": "Show detailed NIC statistics"},
+      {"flag": "-s", "desc_he": "שנה הגדרות interface (speed/duplex/autoneg)", "desc_en": "Change interface settings (speed/duplex/autoneg)"},
+      {"flag": "Link detected:", "desc_he": "השדה החשוב ביותר — yes/no מציין אם הכבל מחובר ומקשר", "desc_en": "The most important field — yes/no indicates whether the cable is connected and link is up"}
+    ],
+    "scenarios_he": [
+      "שרת מדווח 'no carrier' או interface down — בדוק אם הקישור הפיזי קיים",
+      "ביצועי רשת איטיים בין שני מכשירים — בדוק אי-התאמת speed/duplex (duplex mismatch)",
+      "מעבר בין כרטיסי רשת — אימות שה-driver והגרסה נכונים לפני debugging נוסף"
+    ],
+    "scenarios_en": [
+      "Server reports 'no carrier' or interface down — check whether physical link is present",
+      "Slow throughput between two devices — check for a speed/duplex mismatch",
+      "Swapping network cards — confirm the correct driver and version before further debugging"
+    ],
+    "mistakes": [
+      {
+        "x_he": "אבחון בעיות רשת רק בשכבת IP בלי לבדוק את מצב ה-link הפיזי",
+        "x_en": "Diagnosing network issues purely at the IP layer without checking physical link state",
+        "fix_he": "הרץ <span class=\"ltr-term\">ethtool IFACE</span> ובדוק את שדה <span class=\"ltr-term\">Link detected</span> לפני שמתעמקים ב-routing/DNS",
+        "fix_en": "Run <span class=\"ltr-term\">ethtool IFACE</span> and check the <span class=\"ltr-term\">Link detected</span> field before digging into routing/DNS"
+      },
+      {
+        "x_he": "קביעת speed/duplex ידנית על שני קצוות הקישור בלי תיאום — יוצרת duplex mismatch",
+        "x_en": "Manually forcing speed/duplex on both ends of a link without coordination — causes a duplex mismatch",
+        "fix_he": "אם משנים <span class=\"ltr-term\">autoneg off</span> בצד אחד, חובה להגדיר את אותם speed/duplex בצד השני — אחרת תיווצרו errors/collisions",
+        "fix_en": "If <span class=\"ltr-term\">autoneg off</span> is set on one end, the other end must match the same speed/duplex — otherwise you get errors/collisions"
+      }
+    ],
+    "tags": "ethtool nic interface link speed duplex driver carrier hardware network"
+  },
+  {
+    "id": "getent",
+    "name": "getent",
+    "cat": "dns",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "שואל את מסדי ה-<span class=\"ltr-term\">NSS</span> (כמו <span class=\"ltr-term\">/etc/hosts</span> ו-DNS) בדיוק כמו שאפליקציות עושות — שימושי כש-<span class=\"ltr-term\">dig</span> עובד אבל אפליקציה עדיין לא מצליחה לפתור hostname.",
+    "desc_en": "Queries the NSS databases (e.g. /etc/hosts and DNS) exactly the way applications do — useful when dig resolves fine but an app still fails to resolve a hostname.",
+    "source_url": "https://man7.org/linux/man-pages/man1/getent.1.html",
+    "source_name": "Linux man page (man7.org)",
+    "usage": [
+      {"cmd": "getent hosts example.com", "cmt_he": "פתור hostname לפי סדר ה-resolution המוגדר ב-nsswitch.conf", "cmt_en": "Resolve a hostname following the order configured in nsswitch.conf"},
+      {"cmd": "getent hosts 127.0.0.1", "cmt_he": "בדוק איך 'localhost' נפתר בפועל לפי /etc/hosts", "cmt_en": "Check how 'localhost' actually resolves per /etc/hosts"},
+      {"cmd": "getent passwd username", "cmt_he": "בדוק אם משתמש קיים — מקומי או דרך LDAP/SSSD", "cmt_en": "Check whether a user exists — local or via LDAP/SSSD"},
+      {"cmd": "getent ahosts example.com", "cmt_he": "הצג את כל הכתובות (IPv4 ו-IPv6) שנפתרות עבור hostname", "cmt_en": "Show all resolved addresses (IPv4 and IPv6) for a hostname"}
+    ],
+    "quick_flags": [
+      {"flag": "hosts NAME", "desc_he": "פתור hostname — מתחשב ב-/etc/hosts וב-nsswitch.conf", "desc_en": "Resolve a hostname — respects /etc/hosts and nsswitch.conf"},
+      {"flag": "ahosts NAME", "desc_he": "הצג את כל הכתובות שנפתרו, כולל IPv6", "desc_en": "Show all resolved addresses, including IPv6"},
+      {"flag": "passwd NAME", "desc_he": "בדוק רשומת משתמש — מקור יכול להיות local/LDAP/SSSD", "desc_en": "Check a user entry — source may be local/LDAP/SSSD"}
+    ],
+    "scenarios_he": [
+      "dig מחזיר IP תקין אבל אפליקציה נכשלת ב-resolution — בדוק אם /etc/hosts או nsswitch.conf חוסמים/עוקפים DNS",
+      "אימות סדר ה-resolution (hosts לפני dns או להפך) כמוגדר ב-/etc/nsswitch.conf",
+      "בדיקה אם משתמש/group מגיע ממקור local או מ-directory מרכזי (LDAP/SSSD) לפני debugging הרשאות"
+    ],
+    "scenarios_en": [
+      "dig returns a valid IP but an application fails to resolve — check whether /etc/hosts or nsswitch.conf overrides DNS",
+      "Verifying the resolution order (hosts before dns or vice versa) as configured in /etc/nsswitch.conf",
+      "Checking whether a user/group comes from local files or a central directory (LDAP/SSSD) before debugging permissions"
+    ],
+    "mistakes": [
+      {
+        "x_he": "השוואת תוצאת dig לבעיית resolution של אפליקציה — dig מתעלם מ-/etc/hosts וnsswitch",
+        "x_en": "Comparing dig's result to an application's resolution problem — dig ignores /etc/hosts and nsswitch",
+        "fix_he": "dig שואל DNS ישירות ומתעלם מ-/etc/hosts. כשאפליקציה נכשלת תוך ש-dig מצליח, הרץ <span class=\"ltr-term\">getent hosts NAME</span> — זה משקף את מה שהאפליקציה רואה בפועל",
+        "fix_en": "dig queries DNS directly and ignores /etc/hosts. When an app fails while dig succeeds, run <span class=\"ltr-term\">getent hosts NAME</span> — it reflects what the application actually sees"
+      },
+      {
+        "x_he": "אי-בדיקת /etc/nsswitch.conf לפני debugging — סדר ה-databases משפיע על התוצאה",
+        "x_en": "Not checking /etc/nsswitch.conf before debugging — the database order affects the result",
+        "fix_he": "בדוק את שורת <span class=\"ltr-term\">hosts:</span> ב-/etc/nsswitch.conf — אם <span class=\"ltr-term\">files</span> מופיע לפני <span class=\"ltr-term\">dns</span>, רשומה ב-/etc/hosts תמיד תנצח",
+        "fix_en": "Check the <span class=\"ltr-term\">hosts:</span> line in /etc/nsswitch.conf — if <span class=\"ltr-term\">files</span> appears before <span class=\"ltr-term\">dns</span>, an /etc/hosts entry always wins"
+      }
+    ],
+    "tags": "getent nss hosts nsswitch resolve dns etc/hosts lookup linux"
+  },
+  {
+    "id": "nmcli",
+    "name": "nmcli",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "כלי <span class=\"ltr-term\">command-line</span> ל-<span class=\"ltr-term\">NetworkManager</span> — מציג מצב <span class=\"ltr-term\">connections</span> ו-devices, ומאפשר reconnect ל-interface שלא מקבל IP תקין.",
+    "desc_en": "The command-line tool for NetworkManager — shows connection and device status and can reconnect an interface that isn't getting a valid IP.",
+    "source_url": "https://linux.die.net/man/1/nmcli",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "nmcli device status", "cmt_he": "הצג את כל ה-devices ומצבם (connected/disconnected)", "cmt_en": "Show all devices and their state (connected/disconnected)"},
+      {"cmd": "nmcli connection show", "cmt_he": "הצג את כל ה-connections המוגדרים", "cmt_en": "Show all configured connections"},
+      {"cmd": "nmcli device show eth0", "cmt_he": "הצג פרטי IP, gateway, DNS ל-interface ספציפי", "cmt_en": "Show IP, gateway, and DNS details for a specific interface"},
+      {"cmd": "nmcli connection up eth0", "cmt_he": "התחבר מחדש (reconnect) ל-connection — שימושי לרכישת IP חדש", "cmt_en": "Reconnect a connection — useful for acquiring a fresh IP"}
+    ],
+    "quick_flags": [
+      {"flag": "device status", "desc_he": "מצב כל devices הרשת", "desc_en": "Status of all network devices"},
+      {"flag": "connection show", "desc_he": "רשימת connections מוגדרים", "desc_en": "List configured connections"},
+      {"flag": "device show IFACE", "desc_he": "פרטים מלאים — IP/gateway/DNS/MAC", "desc_en": "Full details — IP/gateway/DNS/MAC"},
+      {"flag": "connection up/down NAME", "desc_he": "הפעל/כבה connection מחדש", "desc_en": "Bring a connection up/down"}
+    ],
+    "scenarios_he": [
+      "שרת Linux מקבל כתובת 169.254.x.x (link-local) במקום IP תקין מ-DHCP",
+      "interface מוצג כ-'connected' אבל אין routing/DNS תקין — בדוק את פרטי ה-connection",
+      "אחרי שינוי הגדרות רשת — reconnect ל-interface בלי לאתחל את כל השרת"
+    ],
+    "scenarios_en": [
+      "A Linux server has a 169.254.x.x (link-local) address instead of a valid DHCP-assigned IP",
+      "Interface shows 'connected' but routing/DNS isn't working — check the connection details",
+      "After changing network settings — reconnect the interface without rebooting the whole server"
+    ],
+    "mistakes": [
+      {
+        "x_he": "כתובת 169.254.x.x מתפרשת כ'יש IP, הרשת בסדר' — בעצם זו כתובת link-local שמעידה על כשל DHCP",
+        "x_en": "A 169.254.x.x address is read as 'it has an IP, network is fine' — it's actually a link-local address indicating DHCP failure",
+        "fix_he": "169.254.x.x = ה-interface לא הצליח לקבל IP מ-DHCP. הרץ <span class=\"ltr-term\">nmcli connection up IFACE</span> ובדוק קישוריות ל-DHCP server",
+        "fix_en": "169.254.x.x = the interface failed to get a DHCP-assigned IP. Run <span class=\"ltr-term\">nmcli connection up IFACE</span> and check connectivity to the DHCP server"
+      },
+      {
+        "x_he": "ניהול interfaces ישירות עם ip/ifconfig על מערכת ש-NetworkManager שולט בה — השינויים לא persistent",
+        "x_en": "Managing interfaces directly with ip/ifconfig on a system controlled by NetworkManager — changes don't persist",
+        "fix_he": "על מערכות עם NetworkManager פעיל, בצע שינויים דרך <span class=\"ltr-term\">nmcli</span> או profiles שלו, אחרת הם יידרסו ב-reconnect הבא",
+        "fix_en": "On systems where NetworkManager is active, make changes through <span class=\"ltr-term\">nmcli</span> or its profiles — otherwise they'll be overwritten on the next reconnect"
+      }
+    ],
+    "tags": "nmcli networkmanager connection device ip dhcp link-local reconnect linux"
+  },
+  {
+    "id": "host",
+    "name": "host",
+    "cat": "dns",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "כלי <span class=\"ltr-term\">DNS lookup</span> מהיר ופשוט — תחליף קליל ל-dig כש-רוצים פלט קצר ונקי, כולל <span class=\"ltr-term\">reverse lookup</span> ו-record types ספציפיים.",
+    "desc_en": "A quick, minimal DNS lookup utility — a lightweight complement to dig for short, clean output, including reverse lookups and specific record types.",
+    "source_url": "https://linux.die.net/man/1/host",
+    "source_name": "Linux man page (linux.die.net)",
+    "usage": [
+      {"cmd": "host example.com", "cmt_he": "פתרון בסיסי — מציג A ו-AAAA records בפלט קצר", "cmt_en": "Basic resolution — shows A and AAAA records in short output"},
+      {"cmd": "host -t MX example.com", "cmt_he": "בדוק mail exchange records של דומיין", "cmt_en": "Check a domain's mail exchange records"},
+      {"cmd": "host 8.8.8.8", "cmt_he": "reverse lookup — מצא hostname מ-IP", "cmt_en": "Reverse lookup — find hostname from an IP"},
+      {"cmd": "host -a example.com", "cmt_he": "הצג את כל ה-records הזמינים (ANY query, all verbose)", "cmt_en": "Show all available records (ANY query, verbose)"}
+    ],
+    "quick_flags": [
+      {"flag": "-t TYPE", "desc_he": "בדוק record type ספציפי (MX, TXT, NS, SOA...)", "desc_en": "Check a specific record type (MX, TXT, NS, SOA...)"},
+      {"flag": "-a", "desc_he": "פלט verbose מלא — כל ה-records", "desc_en": "Full verbose output — all records"}
+    ],
+    "scenarios_he": [
+      "בדיקה מהירה אם דומיין נפתר ולאן, בלי הפלט המורכב של dig",
+      "reverse lookup ל-IP חשוד — מצא איזה hostname רשום עבורו",
+      "בדיקת TXT/NS records בעת אבחון בעיות SPF/DKIM או delegation"
+    ],
+    "scenarios_en": [
+      "Quick check whether a domain resolves and to where, without dig's verbose output",
+      "Reverse-lookup a suspicious IP — find what hostname is registered for it",
+      "Checking TXT/NS records when diagnosing SPF/DKIM or delegation issues"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הסתמכות על host לבדיקות trace מעמיקות של DNS resolution",
+        "x_en": "Relying on host for deep DNS resolution tracing",
+        "fix_he": "host נותן תשובה קצרה בלבד. למעקב <span class=\"ltr-term\">+trace</span> מ-root servers או בדיקת @SERVER מסוים, השתמש ב-<span class=\"ltr-term\">dig</span>",
+        "fix_en": "host only gives a short answer. For <span class=\"ltr-term\">+trace</span> from root servers or querying a specific @SERVER, use <span class=\"ltr-term\">dig</span>"
+      },
+      {
+        "x_he": "ציפייה ש-reverse lookup (host IP) יחזיר תוצאה עבור כל IP",
+        "x_en": "Expecting a reverse lookup (host IP) to return a result for every IP",
+        "fix_he": "תשובה ריקה ל-<span class=\"ltr-term\">host IP</span> אומרת שאין PTR record מוגדר — זה נפוץ ולא מעיד בהכרח על תקלה",
+        "fix_en": "An empty response to <span class=\"ltr-term\">host IP</span> means no PTR record is configured — this is common and doesn't necessarily indicate a problem"
+      }
+    ],
+    "tags": "host dns lookup resolve mx ptr reverse record dig nslookup"
   }
 ]
