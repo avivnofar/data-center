@@ -33,16 +33,19 @@ new_sqlite_classes = ["AgentStateDO"]
 binding = "APP_API"
 service = "data-center-api"
 
-# Workers AI — used as the fallback when Gemini returns 429 (quota
-# exhausted). Account-scoped binding, no extra credentials needed. See
-# agents/workers/gemini-client.js queryCloudflareFallback().
+# Workers AI — case routing/classification (callCFRouter()) and the
+# fallback when Groq is unavailable or Gemini returns 429 (quota exhausted).
+# Account-scoped binding, no extra credentials needed. See
+# agents/workers/gemini-client.js callCFRouter() / callCloudflareFallback().
 [ai]
 binding = "AI"
 
 # Secrets (set via `wrangler secret put <NAME>`, not here):
-#   GEMINI_API_KEY - required, Gemini role-play calls
-#   ADMIN_TOKEN    - required, validates X-Admin-Token on /api/agents/*
-#   GITHUB_TOKEN   - optional, gates report/guide commits to GitHub
+#   GEMINI_API_KEY    - required, report synthesis (monthly/quarterly/semi_yearly/yearly)
+#   GROQ_API_KEY      - required, routine per-case agent work (callGroq(), agents/config/token-economy.json)
+#   GOOGLE_AI_API_KEY - optional, reserved for Google AI Studio report tooling (see token-economy.json)
+#   ADMIN_TOKEN       - required, validates X-Admin-Token on /api/agents/*
+#   GITHUB_TOKEN      - optional, gates report/guide commits + claude-action issues to GitHub
 
 # Per-block office-simulation cron (2026-06-12 launch). Fires every 30 min,
 # 05:00-13:30 UTC = 08:00-16:30 IDT (Israel Daylight Time, UTC+3). Each tick,

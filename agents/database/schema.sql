@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS interactions (
   mood_after INTEGER,
   irritation_change INTEGER DEFAULT 0,
   state_change TEXT,
+  model_source TEXT,
   FOREIGN KEY (session_id) REFERENCES agent_sessions(id)
 );
 

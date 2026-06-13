@@ -1,20 +1,43 @@
 {
   "_meta": {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "status": "specified",
-    "description": "Model-usage/cost-tier config for the AI-agent office simulation. gemini-2.5-flash-lite (agents/workers/gemini-client.js) is the primary model for all in-character role-play; cloudflare_fallback is a same-session, automatic fallback used only when Gemini returns HTTP 429 (quota exhausted), so a simulated day can continue instead of halting. Runs via the Worker's native Workers AI binding (wrangler.toml [ai] binding = \"AI\") — no extra credentials. See TOKEN-BUDGET.md for the recurring Gemini free-tier 429 history that motivated this fallback."
+    "description": "Distributed-AI model map for the office simulation (replaces the single-Gemini-engine v0.1.0). Routine per-case agent work (agents 1-4, 5-9, 11) runs on Groq's free tier (agents/workers/groq-client.js callGroq(), agent-base.js queryGemini()) — this is the fix for the recurring Gemini 429s documented in TOKEN-BUDGET.md. Cloudflare Workers AI handles lightweight case routing/classification (callCFRouter()) and is the same-session fallback when Groq is unavailable or Gemini returns 429 (callCloudflareFallback()), via the Worker's native AI binding (wrangler.toml [ai] binding = \"AI\") — no extra credentials. Gemini 2.5 Flash-Lite (per CLAUDE.md 'Launch Decisions' — gemini-2.0-flash is deprecated, do not reintroduce it) is reserved for monthly/quarterly/semi-yearly/yearly report synthesis (meeting-engine.js). The app's AI Search bar always uses Claude (data-center-api). Agent 10 (Architect) never calls an AI for routine cases — see agent-runner.js processCaseBatch()'s Agent-10 special case."
   },
 
-  "primary": {
-    "provider": "gemini",
-    "model": "gemini-2.5-flash-lite",
-    "use_when": "default"
+  "primary_case_model": "groq/llama3-8b-8192",
+  "routing_model": "cloudflare/@cf/meta/llama-3.1-8b-instruct-fp8",
+  "report_model": "google/gemini-2.5-flash-lite",
+  "app_search_model": "anthropic/claude-sonnet-4-6",
+  "architect_model": "human+claude-code",
+
+  "daily_limits": {
+    "groq": 14400,
+    "cloudflare_ai": 10000,
+    "gemini": 1500,
+    "claude_api": 50
+  },
+
+  "gemini_reset_israel": "11:00",
+  "groq_reset_utc": "00:00",
+
+  "report_models_by_meeting_type": {
+    "monthly": "gemini",
+    "quarterly": "gemini",
+    "semi_yearly": "gemini",
+    "yearly": "gemini",
+    "daily_standup": "groq",
+    "weekly": "groq",
+    "emergency_huddle": "groq",
+    "audit_session": "groq",
+    "private_coaching": "groq",
+    "pip_session": "groq"
   },
 
   "cloudflare_fallback": {
     "model": "llama-3.1-8b-instruct-fp8",
     "daily_limit": 10000,
     "resets_utc": "00:00",
-    "use_when": "gemini_429"
+    "use_when": "groq_unavailable_or_gemini_429"
   }
 }

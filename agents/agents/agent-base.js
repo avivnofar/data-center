@@ -11,7 +11,8 @@
  * heuristics (e.g. evaluateResponseQuality, getDbContext) are placeholders.
  */
 
-import { queryGemini } from '../workers/gemini-client.js';
+import { callGemini, callCloudflareFallback } from '../workers/gemini-client.js';
+import { callGroq } from '../workers/groq-client.js';
 
 const MOOD_MIN = 0;
 const MOOD_MAX = 100;
@@ -191,11 +192,19 @@ export class AgentBase {
   /* ──────────────────────── 3. Gemini integration ───────────────────── */
 
   /**
-   * Calls Gemini 2.0 Flash with the agent's personality + current state +
+   * Asks this agent's AI brain, with its personality + current state +
    * behavioral rules + (placeholder) DB context prepended to systemPrompt.
+   *
+   * Model routing (agents/config/token-economy.json):
+   *  - opts.reportType === 'monthly_report'|'quarterly_report'|'semi_yearly_report'|'yearly_report':
+   *    Gemini 2.5 Flash-Lite (callGemini) — large-context report synthesis.
+   *  - opts.forceFallback: skip straight to the Cloudflare Workers AI fallback
+   *    (testing only — see /api/agents/test-gemini).
+   *  - otherwise (routine case work — the common path for agents 1-4, 5-9, 11):
+   *    Groq llama3-8b-8192 (callGroq), falling back to Cloudflare Workers AI
+   *    if Groq is unavailable (no key / 429 / error).
    */
   async queryGemini(prompt, systemPrompt, opts = {}) {
-    const simConfig = this.env.SIM_CONFIG?.GEMINI || {};
     const dbContext = await this.getDbContext(prompt);
 
     const stateLine = this.isPanic
@@ -211,25 +220,62 @@ export class AgentBase {
       dbContext ? `Relevant Data Center entries:\n${dbContext}` : '',
     ].filter(Boolean).join('\n\n');
 
-    const result = await queryGemini({
-      apiKey: this.env.GEMINI_API_KEY,
-      model: simConfig.model || 'gemini-2.5-flash-lite',
-      endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
-      temperature: simConfig.temperature ?? 0.8,
-      maxTokens: simConfig.max_tokens ?? 1024,
-      prompt,
-      systemPrompt: fullSystemPrompt,
-      ai: this.env.AI,
-      forceFallback: !!opts.forceFallback,
-    });
-
-    this.lastGeminiSource = result.source;
-
-    if (result.source === 'cloudflare-fallback') {
-      console.warn(`[agent-${this.id}] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
+    if (opts.forceFallback) {
+      const result = await callCloudflareFallback({
+        ai: this.env.AI,
+        prompt,
+        systemPrompt: fullSystemPrompt,
+        temperature: 0.8,
+        maxTokens: 1024,
+      });
+      this.lastModelSource = result.source;
+      return result.text;
     }
 
-    return result.text;
+    const isReportCall = /^(monthly|quarterly|semi_yearly|yearly)_report$/.test(opts.reportType || '');
+    if (isReportCall) {
+      const simConfig = this.env.SIM_CONFIG?.GEMINI || {};
+      const result = await callGemini({
+        apiKey: this.env.GEMINI_API_KEY,
+        model: simConfig.model || 'gemini-2.5-flash-lite',
+        endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
+        temperature: simConfig.temperature ?? 0.8,
+        maxTokens: Math.max(simConfig.max_tokens ?? 1024, 2048),
+        prompt,
+        systemPrompt: fullSystemPrompt,
+        ai: this.env.AI,
+      });
+      this.lastModelSource = result.source;
+      if (result.source === 'cloudflare-fallback') {
+        console.warn(`[agent-${this.id}] Gemini quota exhausted (${opts.reportType}) — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
+      }
+      return result.text;
+    }
+
+    // Routine case work: Groq first, Cloudflare Workers AI fallback.
+    const groqResult = await callGroq({
+      apiKey: this.env.GROQ_API_KEY,
+      prompt,
+      systemPrompt: fullSystemPrompt,
+      temperature: 0.8,
+      maxTokens: 512,
+      agentId: this.id,
+    });
+    if (groqResult) {
+      this.lastModelSource = groqResult.source;
+      return groqResult.text;
+    }
+
+    console.warn(`[agent-${this.id}] Groq unavailable — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
+    const cfResult = await callCloudflareFallback({
+      ai: this.env.AI,
+      prompt,
+      systemPrompt: fullSystemPrompt,
+      temperature: 0.8,
+      maxTokens: 512,
+    });
+    this.lastModelSource = cfResult.source;
+    return cfResult.text;
   }
 
   /**
@@ -360,6 +406,7 @@ export class AgentBase {
       mood_after: this.mood,
       irritation_change: this.session?.irritation_events ? 1 : 0,
       state_change: stateChange,
+      model_source: 'claude',
     });
 
     return { ok, quality, response: responseText };
@@ -374,14 +421,14 @@ export class AgentBase {
     return Math.min(1, responseText.length / 800);
   }
 
-  async logInteraction({ type, query, response_summary, mood_before, mood_after, irritation_change, state_change }) {
+  async logInteraction({ type, query, response_summary, mood_before, mood_after, irritation_change, state_change, model_source }) {
     if (!this.env.DB || !this.session) return null;
 
     const id = crypto.randomUUID();
     await this.env.DB.prepare(
       `INSERT INTO interactions
-         (id, session_id, agent_id, timestamp, type, query, response_summary, mood_before, mood_after, irritation_change, state_change)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (id, session_id, agent_id, timestamp, type, query, response_summary, mood_before, mood_after, irritation_change, state_change, model_source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       id,
       this.session.id,
@@ -393,7 +440,8 @@ export class AgentBase {
       mood_before ?? this.session.mood_start,
       mood_after ?? this.mood,
       irritation_change || 0,
-      state_change || null
+      state_change || null,
+      model_source || this.lastModelSource || null
     ).run();
 
     return id;

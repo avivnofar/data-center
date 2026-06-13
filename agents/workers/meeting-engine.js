@@ -36,7 +36,14 @@
 
 import agentsConfig from '../config/agents-config.json';
 import relationships from '../config/relationships.json';
-import { queryGemini } from './gemini-client.js';
+import { callGemini, callCloudflareFallback } from './gemini-client.js';
+import { callGroq } from './groq-client.js';
+
+/** Meeting types whose transcripts are synthesized by Gemini 2.5 Flash-Lite
+ *  (large-context report writing) — see agents/config/token-economy.json
+ *  report_models_by_meeting_type. All other meeting types use Groq
+ *  (llama3-8b-8192), falling back to Cloudflare Workers AI. */
+const GEMINI_MEETING_TYPES = new Set(['monthly', 'quarterly', 'semi_yearly', 'yearly']);
 
 const REPO_OWNER = 'avivnofar';
 const REPO_NAME = 'data-center';
@@ -610,23 +617,46 @@ export async function runMeeting(meetingType, env, opts = {}) {
   const data = await gatherMeetingData(meetingType, env, attendeeIds, opts);
   const { systemPrompt, prompt } = buildMeetingPrompt(meetingType, attendeeSnapshots, data, opts);
 
-  const simConfig = env.SIM_CONFIG?.GEMINI || {};
-  const geminiResult = await queryGemini({
-    apiKey: env.GEMINI_API_KEY,
-    model: simConfig.model || 'gemini-2.5-flash-lite',
-    endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
-    temperature: simConfig.temperature ?? 0.9,
-    maxTokens: Math.max(simConfig.max_tokens ?? 1024, 2048),
-    prompt,
-    systemPrompt,
-    ai: env.AI,
-  });
-
-  if (geminiResult.source === 'cloudflare-fallback') {
-    console.warn('[meeting-engine] Gemini quota exhausted — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)');
+  let modelResult;
+  if (GEMINI_MEETING_TYPES.has(meetingType)) {
+    const simConfig = env.SIM_CONFIG?.GEMINI || {};
+    modelResult = await callGemini({
+      apiKey: env.GEMINI_API_KEY,
+      model: simConfig.model || 'gemini-2.5-flash-lite',
+      endpoint: simConfig.api_endpoint || 'https://generativelanguage.googleapis.com/v1beta/models',
+      temperature: simConfig.temperature ?? 0.9,
+      maxTokens: Math.max(simConfig.max_tokens ?? 1024, 2048),
+      prompt,
+      systemPrompt,
+      ai: env.AI,
+    });
+    if (modelResult.source === 'cloudflare-fallback') {
+      console.warn(`[meeting-engine] Gemini quota exhausted (${meetingType}) — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
+    }
+  } else {
+    const groqResult = await callGroq({
+      apiKey: env.GROQ_API_KEY,
+      prompt,
+      systemPrompt,
+      temperature: 0.9,
+      maxTokens: 1024,
+      agentId: `meeting-${meetingType}`,
+    });
+    if (groqResult) {
+      modelResult = groqResult;
+    } else {
+      console.warn(`[meeting-engine] Groq unavailable (${meetingType}) — used cloudflare-fallback (@cf/meta/llama-3.1-8b-instruct-fp8)`);
+      modelResult = await callCloudflareFallback({
+        ai: env.AI,
+        prompt,
+        systemPrompt,
+        temperature: 0.9,
+        maxTokens: 1024,
+      });
+    }
   }
 
-  const responseText = geminiResult.text;
+  const responseText = modelResult.text;
 
   const { transcript, decisions } = parseMeetingResponse(responseText);
 

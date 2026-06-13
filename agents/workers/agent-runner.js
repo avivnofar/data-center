@@ -44,6 +44,7 @@ import { TraineeAgent } from '../agents/agent-4-trainee.js';
 import { StubAgent } from '../agents/agent-stub.js';
 
 import { runMeeting, MEETING_TYPES } from './meeting-engine.js';
+import { callCFRouter } from './gemini-client.js';
 import {
   generateAssignedDailyBatch,
   persistCrmCases,
@@ -139,7 +140,7 @@ export async function runGeminiTest(agentId, prompt, env, opts = {}) {
   const agent = instantiateAgent(agentId, env);
   await agent.loadState();
   const text = await agent.queryGemini(prompt, undefined, { forceFallback: !!opts.forceFallback });
-  return { agentId, prompt, text, source: agent.lastGeminiSource };
+  return { agentId, prompt, text, source: agent.lastModelSource };
 }
 
 function corsHeaders(origin) {
@@ -802,6 +803,14 @@ function partitionCasesByShare(cases, blocks) {
  * accumulates per-agent stats + the model-education low-quality log.
  */
 async function processCaseBatch(env, batchCases, agentInstances, agentStats, lowQualityLog) {
+  // Lightweight, free case classification/routing via Cloudflare Workers AI
+  // (agents/config/token-economy.json routing_model). Best-effort — null on
+  // any failure, never blocks dispatch.
+  for (const c of batchCases) {
+    const routing = await callCFRouter({ ai: env.AI, caseDescription: `${c.title}. ${c.description || ''}` });
+    if (routing) c.cf_category = routing.category;
+  }
+
   const byAgent = new Map();
   for (const c of batchCases) {
     if (!byAgent.has(c.assigned_to)) byAgent.set(c.assigned_to, []);
@@ -823,6 +832,15 @@ async function processCaseBatch(env, batchCases, agentInstances, agentStats, low
     stats.caseCount += agentCases.length;
 
     if (agent.isAngry) continue;
+
+    // Agent 10 (The Architect) never calls an AI model for routine cases
+    // (agents/config/token-economy.json architect_model: "human+claude-code")
+    // — root-level escalations are filed as a GitHub Issue for human/
+    // Claude-Code review instead of being handled in-sim.
+    if (agentId === 10) {
+      await processArchitectCaseBatch(env, agent, agentCases, stats);
+      continue;
+    }
 
     for (const c of agentCases) {
       const raw = await agent.handleCase(c, { archiveGuides: [] });
@@ -866,6 +884,38 @@ async function processCaseBatch(env, batchCases, agentInstances, agentStats, low
       if (agent.isAngry) break;
     }
   }
+}
+
+/**
+ * Agent 10 (The Architect)'s case-batch handler. Each case routed to the
+ * Architect is a root-level escalation (requires_it_chief and/or
+ * advanced-difficulty — see crm-engine.js assignCase()). Per
+ * agents/config/token-economy.json (architect_model: "human+claude-code"),
+ * the Architect does not call Groq/Gemini/Cloudflare for these — sessions
+ * are logged for mood/state bookkeeping only, and the batch is filed as a
+ * single 'claude-action' + 'architect-task' GitHub Issue for human/
+ * Claude-Code review. No-ops without env.GITHUB_TOKEN.
+ */
+async function processArchitectCaseBatch(env, agent, agentCases, stats) {
+  for (const c of agentCases) {
+    await agent.startSession(c, 'search');
+    agent.session.cases_handled = 1;
+    await agent.endSession();
+    stats.handled += 1;
+    if (c.difficulty === 'advanced') stats.advancedCases += 1;
+  }
+
+  const body = agentCases.map((c) => {
+    const tags = [c.category, c.difficulty, c.requires_it_chief ? 'IT-chief escalation' : null, c.cf_category ? `routed as "${c.cf_category}"` : null]
+      .filter(Boolean).join(', ');
+    return `- **${c.title}** (\`${c.id}\`${tags ? ` — ${tags}` : ''})\n  ${c.description || ''}`;
+  }).join('\n');
+
+  await fileGitHubIssue(env, REPO_NAME, {
+    title: `[Architect] ${agentCases.length} root-level case${agentCases.length === 1 ? '' : 's'} escalated`,
+    body: `Agent 10 (The Architect) received the following root-level escalation(s) this batch. Per agents/config/token-economy.json, the Architect does not call an AI model for routine cases — these are queued here for human/Claude-Code review:\n\n${body}`,
+    labels: ['claude-action', 'architect-task'],
+  });
 }
 
 /**
