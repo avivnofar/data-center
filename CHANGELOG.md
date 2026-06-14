@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-14 — 4be3ec4] (master)
+
+- fix: YAML syntax error in scheduled-claude.yml line 35, upgrade to Node 24 ([4be3ec4](https://github.com/avivnofar/data-center/commit/4be3ec40a23f51974312c549891f1c3317a30151))
+
+
 ## [2026-06-14 — 905a0a0] (master)
 
 - docs: fix misleading automation log, update scope to Netvill ([905a0a0](https://github.com/avivnofar/data-center/commit/905a0a06fa311607b1f14662872eae6368e6eba8))
