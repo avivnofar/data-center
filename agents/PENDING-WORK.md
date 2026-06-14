@@ -130,4 +130,54 @@ Not done (remaining for agent-9/agent-10, board item `runbook`):
 
 ### Status — filled in at end of session
 
-(see bottom of file)
+**Priority 1 (UI fixes): DONE.**
+- 3 AI mode radio buttons, "Solve a Case" action buttons/chips, and CLI Mode
+  (Terminal Academy via CommandFlow) were already implemented in an earlier
+  session today (commit a92d87c) — verified present, no changes needed.
+- Left sidebar navigation (200px, collapsible, mobile hamburger overlay,
+  auto-collapse while chatting) was newly implemented and committed
+  (4463a77 / 4463a77 rebased to 4463a77).
+- Full-screen chat layout (~80vh, FAQ pills hidden during conversation) was
+  already implemented today — verified present, no changes needed.
+
+**Hebrew/English RTL audit: 1 issue found and fixed.**
+- Office-lock-modal Hebrew text had a bare "AI" not wrapped in
+  `.ltr-term` — fixed. All other flagged strings render via `.textContent`
+  or `escHtml()`, so no further changes were needed.
+
+**Priority 2 — Feature A (runbook integration): PARTIAL.**
+- Done: `tools/runbook/{terminal-demo.js, incident-timeline.js,
+  metrics-dashboard.js}` created as dependency-free vanilla-JS modules;
+  `tools/commandflow/commands.json` gained the Terminal Demo's 3 commands
+  (ping/systemctl/df) for richer CLI Mode output. `runbook` board item added
+  (in-progress, agent-9/agent-10, priority week).
+- Remaining: wire `incident-timeline.js` into "Solve a Case" mode
+  (`#diagnose-controls`) and `metrics-dashboard.js` into the admin/Office
+  tab in `index.html` (add `<script>` tags + call sites). See "Feature A —
+  Runbook Integration Status" above for exact hook points.
+
+**Priority 2 — Feature B (DB integration): PLANNED, not implemented (per
+instruction).**
+- Implementation plan written above ("Feature B — Database Integration
+  Implementation Plan"). `database-integration` board item added (planned,
+  agent-10, estimated this-week). Templates use Drizzle/MySQL — explicitly
+  NOT to be adopted; plan instead proposes a `agents/workers/db-helpers.js`
+  CRUD-helper layer over the existing D1 `schema.sql`.
+
+**Office automation**: `agents/config/simulation-config.json` updated —
+`tomorrow_focus: cases_only`, agent_9/agent_10 feature-work exceptions only
+after cases + token allow, `new_features_policy: BLOCKED` elsewhere,
+`model_training_priority: HIGH`.
+
+**Commits pushed this session** (after rebase onto origin/master):
+4463a77 (sidebar nav + RTL fix), 65ffdf2 (PENDING-WORK + sim config),
+1a83e86 (board.json runbook/db entries), 8e37cc3 (tools/runbook/ +
+commandflow commands.json).
+
+**For the next automated session (02:30/07:30 Israel time)**:
+1. If token budget allows and tomorrow's cases are done early: wire
+   `tools/runbook/incident-timeline.js` into "Solve a Case" mode (agent-9 +
+   agent-10, per `runbook` board item).
+2. agent-10: start the DB-integration helper layer per the plan above —
+   one table at a time, starting with `cases` or `interactions`.
+3. No other Priority 1/2 items remain outstanding from this session.
