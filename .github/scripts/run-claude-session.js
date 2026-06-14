@@ -1,3 +1,7 @@
+// Calls the Anthropic API directly (not the Claude Code CLI) for a single
+// scheduled-claude.yml session. Reads SESSION_TYPE/TASK from env, writes
+// claude_result.json (file changes applied) or claude_error.txt (failure)
+// or claude_summary.txt (text-only reply, no file changes).
 const https = require('https');
 const fs = require('fs');
 
@@ -18,13 +22,15 @@ const body = JSON.stringify({
   model: 'claude-sonnet-4-6',
   max_tokens: 4096,
   system: systemPrompt,
-  messages: [{role: 'user', content:
-    `Session type: ${process.env.SESSION_TYPE}\n` +
-    `Task: ${task}\n\n` +
-    `Current TOKEN-BUDGET.md:\n` +
-    fs.readFileSync('TOKEN-BUDGET.md', 'utf8') + '\n\n' +
-    `Current CLAUDE.md summary:\n` +
-    fs.readFileSync('CLAUDE.md', 'utf8').slice(0, 3000)
+  messages: [{
+    role: 'user',
+    content:
+      `Session type: ${process.env.SESSION_TYPE}\n` +
+      `Task: ${task}\n\n` +
+      `Current TOKEN-BUDGET.md:\n` +
+      fs.readFileSync('TOKEN-BUDGET.md', 'utf8') + '\n\n' +
+      `Current CLAUDE.md summary:\n` +
+      fs.readFileSync('CLAUDE.md', 'utf8').slice(0, 3000)
   }]
 });
 
@@ -41,6 +47,11 @@ const req = https.request({
   let data = '';
   res.on('data', c => data += c);
   res.on('end', () => {
+    if (res.statusCode !== 200) {
+      console.error('Anthropic API error:', res.statusCode, data);
+      fs.writeFileSync('claude_error.txt', data);
+      return;
+    }
     try {
       const response = JSON.parse(data);
       const text = response.content[0].text;
@@ -53,8 +64,8 @@ const req = https.request({
       }
       const result = JSON.parse(text.slice(start, end));
       result.files.forEach(f => {
-        const dir = f.path.split('/').slice(0,-1).join('/');
-        if (dir) fs.mkdirSync(dir, {recursive: true});
+        const dir = f.path.split('/').slice(0, -1).join('/');
+        if (dir) fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(f.path, f.content);
         console.log('Written:', f.path);
       });
@@ -62,12 +73,15 @@ const req = https.request({
         commit_message: result.commit_message,
         summary: result.summary
       }));
-    } catch(e) {
+    } catch (e) {
       console.error('Parse error:', e.message);
       fs.writeFileSync('claude_error.txt', data);
     }
   });
 });
-req.on('error', e => { console.error(e); process.exit(1); });
+req.on('error', e => {
+  console.error(e);
+  fs.writeFileSync('claude_error.txt', String(e));
+});
 req.write(body);
 req.end();
