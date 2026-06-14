@@ -32,7 +32,7 @@ jobs:
       issues: write
     env:
       SESSION_TYPE: office_day_night
-      TASK: ${{ github.event.inputs.task_override || 'Run office Day simulation: agents 1-4 work cases using Groq, emphasis on solving as many cases as possible using the app. Agents 5-9 and 11 work at 20% case capacity. Architect and Designer do planning only after cases complete — minimal tokens.' }}
+      TASK: "${{ github.event.inputs.task_override || 'Run office Day simulation: agents 1-4 work cases using Groq, emphasis on solving as many cases as possible using the app. Agents 5-9 and 11 work at 20% case capacity. Architect and Designer do planning only after cases complete — minimal tokens.' }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Run Claude task
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -59,7 +59,7 @@ jobs:
       issues: write
     env:
       SESSION_TYPE: office_day_morning
-      TASK: ${{ github.event.inputs.task_override || 'Complete the in-progress office Day or start the next one in the same pattern: max case resolution, app usage emphasis, light planning only.' }}
+      TASK: "${{ github.event.inputs.task_override || 'Complete the in-progress office Day or start the next one in the same pattern: max case resolution, app usage emphasis, light planning only.' }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Run Claude task
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -92,7 +92,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Determine task from TOKEN-BUDGET.md
         id: task
         run: |
