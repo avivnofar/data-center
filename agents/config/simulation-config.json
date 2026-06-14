@@ -45,5 +45,13 @@
     "agent_focus": "solve_cases_via_app",
     "collaboration_agents_case_share": 0.20,
     "new_features": "BLOCKED"
-  }
+  },
+  "tomorrow_focus": "cases_only",
+  "agent_exceptions": {
+    "agent_9_designer": "feature work only after cases done + token allows",
+    "agent_10_architect": "DB integration plan only after cases done"
+  },
+  "new_features_policy": "BLOCKED for all except architect/designer post-cases",
+  "model_training_priority": "HIGH",
+  "token_economy": "cases first, features only if leftover token"
 }
