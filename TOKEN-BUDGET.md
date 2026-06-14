@@ -712,3 +712,5 @@ URLs were avoided after two guessed pages returned 403 via fetch. Both
   invalid ANTHROPIC_API_KEY GitHub Actions secret; zero Claude calls made, no
   real changes produced). Side effects (junk files, this log line) cleaned up
   in the 2026-06-14 follow-up session — see "Daily automation fixes" below.
+
+- [2026-06-14 22:49 UTC] Auto-session: maintenance — failed: api_error
