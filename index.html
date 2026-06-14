@@ -118,6 +118,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       height: 56px;
       position: sticky;
       top: 0;
@@ -201,30 +202,57 @@
     }
     .faq-pill:hover { border-color: var(--accent2); color: var(--accent2); }
 
-    /* ── Tab nav ───────────────────────────────────────────────────────────── */
+    /* ── Left sidebar nav ─────────────────────────────────────────────────── */
     #tab-nav {
       display: flex;
-      gap: 4px;
-      padding: 16px 20px 0;
-      max-width: 900px;
-      margin: 0 auto;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 2px;
+      padding: 10px 8px;
+      width: 200px;
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 90;
+      transition: width 0.2s ease, transform 0.25s ease;
     }
-    .tab-btn {
+    #sidebar-toggle-btn {
+      align-self: flex-end;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 8px 8px 0 0;
+      border-radius: 6px;
       color: var(--text-muted);
       cursor: pointer;
-      font-family: var(--sans);
-      font-size: 0.82rem;
-      padding: 7px 14px;
-      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      flex-shrink: 0;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      transition: border-color 0.2s, color 0.2s;
     }
-    .tab-btn:hover { background: var(--surface); color: var(--text); }
+    #sidebar-toggle-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .tab-btn {
+      align-items: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      gap: 8px;
+      padding: 9px 12px;
+      text-align: left;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      width: 100%;
+    }
+    .tab-btn:hover { background: var(--surface2); color: var(--text); }
     .tab-btn.active {
-      background: var(--surface);
-      border-bottom-color: var(--surface);
+      background: var(--accent-soft);
+      border-color: var(--accent);
       color: var(--accent);
       font-weight: 600;
     }
@@ -235,7 +263,35 @@
     }
     .tab-btn.locked { opacity: 0.6; }
     .tab-btn.locked:hover { opacity: 0.85; border-color: var(--accent3); color: var(--accent3); }
-    .tab-btn .tab-icon { margin-left: 4px; }
+    .tab-btn .tab-icon { flex-shrink: 0; font-size: 1.05rem; }
+    .tab-btn .tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Collapsed (icons-only) sidebar */
+    #tab-nav.collapsed { width: 56px; }
+    #tab-nav.collapsed #sidebar-toggle-btn { align-self: center; }
+    #tab-nav.collapsed .tab-btn { justify-content: center; padding: 9px 0; }
+    #tab-nav.collapsed .tab-label { display: none; }
+
+    #nav-sidebar-overlay {
+      background: rgba(0,0,0,0.6);
+      display: none;
+      inset: 0;
+      position: fixed;
+      z-index: 89;
+    }
+    #nav-sidebar-overlay.visible { display: block; }
+
+    #hamburger-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      font-size: 1rem;
+      padding: 5px 10px;
+    }
+    #hamburger-btn:hover { border-color: var(--accent2); color: var(--accent2); }
 
     /* ── Office lock modal ────────────────────────────────────────────────── */
     #office-lock-overlay {
@@ -278,8 +334,11 @@
     #main-content {
       max-width: 900px;
       margin: 0 auto;
+      margin-left: 216px;
       padding: 0 20px 60px;
+      transition: margin-left 0.2s ease;
     }
+    #tab-nav.collapsed ~ #main-content { margin-left: 72px; }
 
     /* ── Filter row ────────────────────────────────────────────────────────── */
     .filter-row {
@@ -1288,19 +1347,30 @@
 
     /* ── Mobile (≤768px) ───────────────────────────────────────────────────── */
     @media (max-width: 768px) {
+      /* Sidebar becomes an off-canvas overlay, toggled by the hamburger button */
       #tab-nav {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        width: 240px;
+        transform: translateX(-100%);
+        box-shadow: 2px 0 16px rgba(0,0,0,0.5);
       }
-      #tab-nav::-webkit-scrollbar { display: none; }
-      .tab-btn { flex-shrink: 0; }
+      #tab-nav.mobile-open { transform: translateX(0); }
+      #tab-nav.collapsed { width: 240px; }
+      #tab-nav.collapsed .tab-label { display: inline; }
+      #tab-nav.collapsed .tab-btn { justify-content: flex-start; padding: 9px 12px; }
+      #tab-nav.collapsed #sidebar-toggle-btn { align-self: flex-end; }
+      #sidebar-toggle-btn { display: none; }
+
+      #main-content,
+      #tab-nav.collapsed ~ #main-content {
+        margin-left: 0;
+      }
+
+      #hamburger-btn { display: inline-flex; }
 
       /* 44px minimum touch targets (WCAG 2.5.5 / Apple HIG) */
       .tab-btn, .filter-btn, .faq-pill {
         min-height: 44px;
-        display: inline-flex;
+        display: flex;
         align-items: center;
       }
 
@@ -1432,6 +1502,7 @@
 </div>
 
 <div id="topbar">
+  <button id="hamburger-btn" onclick="toggleMobileSidebar()" aria-label="Toggle navigation" aria-controls="tab-nav">☰</button>
   <div id="logo"><span aria-hidden="true">⚙</span> <span class="logo-text">data-center</span></div>
   <div id="topbar-right">
     <a id="commandflow-link" href="tools/commandflow/index.html" target="_blank" rel="noopener">
@@ -1450,6 +1521,7 @@
 </main>
 
 <div id="tooltip" role="tooltip"></div>
+<div id="nav-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
 <div id="ai-sidebar-overlay" onclick="toggleAiSidebar()"></div>
 
 <div id="office-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="office-lock-title" onclick="if (event.target === this) closeOfficeLockModal()">
@@ -1460,7 +1532,7 @@
       <span class="en" style="display:none">The Office hasn't opened yet</span>
     </h3>
     <p>
-      <span class="he">סימולציית סוכני ה-AI שלנו עדיין לא התחילה את שנת העבודה הראשונה שלה. כשהיא תתחיל, תוכלו לעקוב כאן אחרי הצוות שלהם בזמן אמת.</span>
+      <span class="he">סימולציית סוכני ה-<span class="ltr-term">AI</span> שלנו עדיין לא התחילה את שנת העבודה הראשונה שלה. כשהיא תתחיל, תוכלו לעקוב כאן אחרי הצוות שלהם בזמן אמת.</span>
       <span class="en" style="display:none">Our AI agent simulation hasn't started its first work year yet. Once it does, you'll be able to follow their team here in real time.</span>
     </p>
     <button onclick="closeOfficeLockModal()">
@@ -1599,6 +1671,7 @@ function applyLang() {
   });
   updateAiPanelLang();
   updateStatusBar();
+  updateSidebarToggleIcon();
 }
 
 async function init() {
@@ -1617,6 +1690,7 @@ async function init() {
 
   buildTabNav();
   document.getElementById('tab-nav').addEventListener('keydown', handleTabNavKeydown);
+  applySidebarCollapsedState();
   applyLang();
 
   const active = DB.modules.filter(m => m.status === 'active');
@@ -1652,6 +1726,13 @@ function buildTabNav() {
   const contents = document.getElementById('tab-contents');
   nav.innerHTML = '';
   contents.innerHTML = '';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.id = 'sidebar-toggle-btn';
+  toggleBtn.setAttribute('aria-label', 'Collapse navigation');
+  toggleBtn.textContent = '«';
+  toggleBtn.onclick = toggleSidebarCollapse;
+  nav.appendChild(toggleBtn);
 
   // Order: AI Search (first/default) → active modules → Workflows → Office
   // → any remaining "coming-soon" placeholder modules.
@@ -1795,6 +1876,18 @@ function switchTab(id) {
     panel.style.display = 'block';
     renderPanel(id, panel);
   }
+
+  // Close the off-canvas mobile nav and re-check the auto-collapse state
+  // (only the AI tab with an active conversation auto-collapses).
+  const nav = document.getElementById('tab-nav');
+  const overlay = document.getElementById('nav-sidebar-overlay');
+  if (nav && nav.classList.contains('mobile-open')) {
+    nav.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('visible');
+  }
+  const chatArea = document.getElementById('ai-chat-messages');
+  const hasMessages = chatArea ? chatArea.querySelectorAll('.ai-message').length > 0 : false;
+  updateSidebarAutoCollapse(hasMessages);
 }
 
 function handleTabNavKeydown(e) {
@@ -3203,6 +3296,56 @@ function updateConversationUiState() {
   const modeGroup = document.getElementById('ai-mode-radiogroup');
   if (faqPills) faqPills.classList.toggle('conversation-active', hasMessages);
   if (modeGroup) modeGroup.classList.toggle('conversation-active', hasMessages);
+  updateSidebarAutoCollapse(hasMessages);
+}
+
+/* ── Left sidebar nav: collapse / mobile toggle ──────────────────────────── */
+function toggleSidebarCollapse() {
+  const nav = document.getElementById('tab-nav');
+  if (!nav) return;
+  const collapsed = !nav.classList.contains('collapsed');
+  nav.classList.toggle('collapsed', collapsed);
+  localStorage.setItem('dc-sidebar-collapsed', collapsed ? '1' : '0');
+  updateSidebarToggleIcon();
+}
+
+function updateSidebarToggleIcon() {
+  const nav = document.getElementById('tab-nav');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (!nav || !btn) return;
+  const rtl = document.documentElement.dir === 'rtl';
+  const collapsed = nav.classList.contains('collapsed');
+  btn.textContent = collapsed ? (rtl ? '«' : '»') : (rtl ? '»' : '«');
+}
+
+function applySidebarCollapsedState() {
+  const nav = document.getElementById('tab-nav');
+  if (!nav) return;
+  const stored = localStorage.getItem('dc-sidebar-collapsed') === '1';
+  nav.classList.toggle('collapsed', stored);
+  updateSidebarToggleIcon();
+}
+
+// While actively chatting on the AI tab, auto-collapse the sidebar to
+// icons-only so the conversation gets the full width — restores the user's
+// manual preference once the conversation is cleared.
+function updateSidebarAutoCollapse(hasMessages) {
+  const nav = document.getElementById('tab-nav');
+  if (!nav) return;
+  if (window.innerWidth <= 768) return; // off-canvas on mobile — nothing to collapse
+  const manualCollapsed = localStorage.getItem('dc-sidebar-collapsed') === '1';
+  const shouldCollapse = manualCollapsed || (activeTab === 'ai' && hasMessages);
+  nav.classList.toggle('collapsed', shouldCollapse);
+  updateSidebarToggleIcon();
+}
+
+function toggleMobileSidebar() {
+  const nav = document.getElementById('tab-nav');
+  const overlay = document.getElementById('nav-sidebar-overlay');
+  if (!nav) return;
+  const open = !nav.classList.contains('mobile-open');
+  nav.classList.toggle('mobile-open', open);
+  if (overlay) overlay.classList.toggle('visible', open);
 }
 
 function appendMessageBubble(role, content) {
@@ -3775,6 +3918,15 @@ async function renderAdminMetrics(statuses, sessions) {
       ${usageBlock}
     </div>`;
 }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    const nav = document.getElementById('tab-nav');
+    const overlay = document.getElementById('nav-sidebar-overlay');
+    if (nav) nav.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('visible');
+  }
+});
 
 init();
 </script>
