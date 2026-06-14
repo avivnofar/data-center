@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-14 — 905a0a0] (master)
+
+- docs: fix misleading automation log, update scope to Netvill ([905a0a0](https://github.com/avivnofar/data-center/commit/905a0a06fa311607b1f14662872eae6368e6eba8))
+- feat: Netvill scope — VoIP/SIP knowledge base + system prompt context ([1a19ad5](https://github.com/avivnofar/data-center/commit/1a19ad5d27c70a980b2595ae30e316a9ce82bb05))
+- fix: RTL/LTR rendering in Claude responses + full-screen chat UI ([a92d87c](https://github.com/avivnofar/data-center/commit/a92d87c80a2f25431a27d7e611a30091bbc4c9ad))
+- fix: GitHub Actions — explicit session types, honest logging, junk cleanup ([0e259eb](https://github.com/avivnofar/data-center/commit/0e259eba85d6578d37d9f1ad94cda0465696d8b8))
+
+
 ## [2026-06-13 — fef988e] (master)
 
 - chore(agents): Day 3/4 office rules + session log ([fef988e](https://github.com/avivnofar/data-center/commit/fef988e7b1636d040a03743f0b7f99e4b7b5ffdd))
