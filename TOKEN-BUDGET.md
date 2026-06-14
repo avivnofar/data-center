@@ -5,6 +5,14 @@ rough scope, so each session can pick up the next item without re-deriving
 priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 `agents/STRATEGY.md` for the framing behind this order.
 
+## ⏳ Next
+
+- Maintenance — Test the expanded Claude AI Search chat UI (full-screen
+  layout, collapsed sidebar, RTL/LTR fixes) end-to-end in a browser, in both
+  Hebrew and English, including a Netvill VoIP/SIP query (e.g. "SIP phone not
+  registering"); otherwise continue AI Search/UI polish per Current Strategy
+  before resuming the office simulation.
+
 ## Queue
 
 0. **Month-1 launch run** — STOPPED by owner request at the end of Day 1
@@ -632,6 +640,66 @@ both keys (they were pasted into chat); (2) if/when `master` is pushed, run
 Actions to activate `scheduled-claude.yml`, with a real Anthropic spend cap
 in place first.
 
+## Daily automation fixes + Netvill VoIP/SIP expansion (2026-06-14)
+
+Follow-up session addressing the failed 11:47 UTC auto-session above and
+applying the day's maintenance scope.
+
+**Automation fixes (Task 0)**:
+- Removed junk files `run_claude.js` and `claude_error.txt` (tracked
+  artifacts from the failed run) and the untracked scratch file
+  `AUTOMATION-STATUS.md`.
+- Extracted the inline Anthropic-API call into
+  `.github/scripts/run-claude-session.js`, which now writes
+  `claude_error.txt` on any non-200 response or JSON-parse failure (not just
+  silently failing).
+- Added `.github/scripts/commit-and-log.sh`, a shared commit/log step that
+  only writes "completed" to this file when `claude_result.json` actually
+  exists; otherwise it logs `failed: auth_error` / `failed: api_error` /
+  `failed: no output` honestly.
+- Rewrote `.github/workflows/scheduled-claude.yml` into three explicit jobs —
+  `night-office` (cron `30 23 * * 0-4`), `morning-office` (cron
+  `30 4 * * 0-4`), and `maintenance` (cron `30 18 * * 0-4`, reads the
+  `## ⏳ Next` item above via grep) — replacing the old wall-clock-hour
+  session-type guess. All three also support `workflow_dispatch` with a
+  `session_type` choice for manual runs.
+- Replaced the misleading `- ... Auto-session: maintenance — completed` line
+  for the 11:47 UTC run (above) with an honest `FAILED (authentication_error
+  ...)` note.
+- **GitHub Actions `ANTHROPIC_API_KEY`**: `gh` CLI is not available in this
+  environment, so the secret could not be verified or the workflow
+  re-triggered directly — needs a manual check (Settings → Secrets →
+  Actions) before the next scheduled run at 23:30 UTC.
+
+**RTL/LTR + chat UI (Tasks 1-2)**: see `index.html` — Claude response bubbles
+now get an explicit `dir="rtl"`/`dir="ltr"` (driven by `LANG`, not just
+`unicode-bidi: plaintext`), a new `wrapInlineTechTerms()` pass wraps
+un-backticked CLI flags/paths in `<span dir="ltr">` inside Hebrew text, and
+the AI tab now uses ~80vh height, a default-collapsed sidebar, a 52px input
+bar, and a `conversation-active` class that hides the FAQ pills/mode selector
+once a chat has messages. Verified via a Node `new Function()` syntax check
+of every inline `<script>` block — **not yet tested in a live browser**, see
+the `## ⏳ Next` item above.
+
+**Netvill VoIP/SIP scope (Task 3)**: added a "Netvill context" paragraph to
+`cloudflare-worker/worker.js`'s system prompt (B2B telecom hardware company,
+VoIP/SIP/PoE/1COM focus, AD/Windows-domain out of scope) and updated its
+"LOCAL DATABASE QUICK REFERENCE" block. Added a new `voip` category to
+`data/network.json` (`modules.json`, `validate-json.js`, `health-check.js`,
+and `CLAUDE.md`'s category table all updated) plus `asterisk.org` to the
+approved-domain allowlist in both validator scripts and `CLAUDE.md`. Added 10
+new `network.json` entries (`sip-registration-troubleshoot`,
+`rtp-port-range`, `sip-nat-traversal`, `vlan-voice`, `qos-dscp-voip`,
+`poe-troubleshoot`, `sip-options-keepalive`, `asterisk-cli-basics`,
+`freepbx-troubleshoot`, `1com-sip-trunk`) and 3 new `troubleshoot.json`
+entries (`ts-sip-not-registering`, `ts-voip-one-way-audio`,
+`ts-poe-intercom-no-power`), sourced from `docs.asterisk.org` and
+`rfc-editor.org` (RFC 3261/3550/3621/4594) plus `kernel.org` — `cisco.com`
+URLs were avoided after two guessed pages returned 403 via fetch. Both
+`validate-json.js` and `health-check.js` pass with 115 total entries.
+
+**Worker redeploy (Task 4)**: see commit/push summary for deployment status.
+
 ## Notes
 
 - Each session should aim to stay within roughly 5,500 tokens of work
@@ -640,4 +708,7 @@ in place first.
   changed, and wait for explicit confirmation before `git push` to
   `master`.
 
-- [2026-06-14 11:47 UTC] Auto-session: maintenance — completed
+- [2026-06-14 11:47 UTC] Auto-session: maintenance — FAILED (authentication_error:
+  invalid ANTHROPIC_API_KEY GitHub Actions secret; zero Claude calls made, no
+  real changes produced). Side effects (junk files, this log line) cleaned up
+  in the 2026-06-14 follow-up session — see "Daily automation fixes" below.

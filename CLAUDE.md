@@ -94,10 +94,10 @@ data-center/
 ├── index.html                   # Entire app — HTML + CSS + JS in one file
 ├── data/
 │   ├── modules.json             # Tab registry — source of truth for all modules
-│   ├── linux.json               # Linux commands (24 entries)
-│   ├── cmd.json                 # Windows CMD commands (13 entries)
-│   ├── network.json             # Cross-platform network tools (10 entries)
-│   └── troubleshoot.json        # Step-by-step troubleshoot scenarios (9 entries)
+│   ├── linux.json               # Linux commands (42 entries)
+│   ├── cmd.json                 # Windows CMD commands (25 entries)
+│   ├── network.json             # Cross-platform network + VoIP/SIP tools (30 entries)
+│   └── troubleshoot.json        # Step-by-step troubleshoot scenarios (18 entries)
 ├── flagged/                      # Source flagging system (see Rules section)
 │   ├── README.md                # How the pending → approved/rejected flow works
 │   ├── pending-review.md        # Candidate source URLs awaiting review
@@ -209,7 +209,7 @@ The `t(entry, 'field')` helper in `index.html` returns the correct language base
 |------|-----------------|
 | `linux.json` | `network`, `process`, `disk`, `permission`, `system`, `logs`, `user` |
 | `cmd.json` | `network`, `process`, `disk`, `system`, `user` |
-| `network.json` | `diagnostic`, `ports`, `routing`, `dns`, `firewall` |
+| `network.json` | `diagnostic`, `ports`, `routing`, `dns`, `firewall`, `voip` |
 
 ### `data/troubleshoot.json`
 
@@ -275,6 +275,7 @@ The `t(entry, 'field')` helper in `index.html` returns the correct language base
    - `ss64.com`, `linux.org`, `kernel.org`, `iana.org`, `rfc-editor.org`
    - `nmap.org`, `wireshark.org`, `ubuntu.com`, `redhat.com`, `debian.org`
    - `cloudflare.com`, `cisco.com`, `tcpdump.org`, `iperf.fr`, `software.es.net`
+   - `asterisk.org`
 
 8. **Blocked domains** (validator will reject):
    `stackoverflow.com`, `reddit.com`, `medium.com`, `youtube.com`, `github.com`, `geeksforgeeks.org`, `w3schools.com`, `*.blogspot.com`
