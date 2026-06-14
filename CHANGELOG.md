@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-14 — 1def0e4] (master)
+
+- fix: restore 3 AI modes + Claude chat fills full screen ([1def0e4](https://github.com/avivnofar/data-center/commit/1def0e4611aa93801166ba22c45ebabee503b6b5))
+
+
 ## [2026-06-14 — 8e37cc3] (master)
 
 - feat(architect+designer): begin runbook feature extraction ([8e37cc3](https://github.com/avivnofar/data-center/commit/8e37cc3e1644afb08fd76f11e495a7d337d53e1e))
