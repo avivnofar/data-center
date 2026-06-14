@@ -340,6 +340,36 @@
     }
     #tab-nav.collapsed ~ #main-content { margin-left: 72px; }
 
+    /* ── AI tab: fill the entire right-hand content area ─────────────────── */
+    #main-content.ai-fullscreen {
+      max-width: none;
+      padding: 0;
+      height: calc(100vh - 56px - 28px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #main-content.ai-fullscreen #tab-contents {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #main-content.ai-fullscreen #panel-ai {
+      flex: 1;
+      display: flex !important;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #main-content.ai-fullscreen #ai-tab-container {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+      margin: 0;
+      border-radius: 0;
+    }
+
     /* ── Filter row ────────────────────────────────────────────────────────── */
     .filter-row {
       display: flex;
@@ -1869,6 +1899,9 @@ function switchTab(id) {
     b.setAttribute('aria-selected', isActive ? 'true' : 'false');
     b.setAttribute('tabindex', isActive ? '0' : '-1');
   });
+
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.classList.toggle('ai-fullscreen', id === 'ai');
 
   document.querySelectorAll('#tab-contents > div').forEach(p => p.style.display = 'none');
   const panel = document.getElementById(`panel-${id}`);
