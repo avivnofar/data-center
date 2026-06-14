@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-14 — 8e37cc3] (master)
+
+- feat(architect+designer): begin runbook feature extraction ([8e37cc3](https://github.com/avivnofar/data-center/commit/8e37cc3e1644afb08fd76f11e495a7d337d53e1e))
+- feat: add runbook + DB integration to asset pipeline queue ([1a83e86](https://github.com/avivnofar/data-center/commit/1a83e861609e011b952fe6dc9006f7c28013ed82))
+- docs: session plan + tomorrow office focus = cases only ([65ffdf2](https://github.com/avivnofar/data-center/commit/65ffdf2f95eb25fdfdeef66c196601162ec14f44))
+- feat: left sidebar navigation + RTL fix for office lock modal ([4463a77](https://github.com/avivnofar/data-center/commit/4463a7743f884caa2ca091a7bc44c5425f37c45d))
+
+
 ## [2026-06-14 — 4be3ec4] (master)
 
 - fix: YAML syntax error in scheduled-claude.yml line 35, upgrade to Node 24 ([4be3ec4](https://github.com/avivnofar/data-center/commit/4be3ec40a23f51974312c549891f1c3317a30151))
