@@ -974,5 +974,467 @@
       }
     ],
     "tags": "host dns lookup resolve mx ptr reverse record dig nslookup"
+  },
+  {
+    "id": "sip-registration-troubleshoot",
+    "name": "SIP Registration (PJSIP)",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון תהליך <span class=\"ltr-term\">registration</span> של טלפוני <span class=\"ltr-term\">SIP</span> מול <span class=\"ltr-term\">Asterisk/PJSIP</span> — מצב רישום, שגיאות 401/403 ו-timeouts.",
+    "desc_en": "Diagnosing SIP phone registration against Asterisk/PJSIP — checking registration status and resolving 401/403 and timeout failures.",
+    "source_url": "https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/Configuring-Outbound-Registrations/",
+    "source_name": "Asterisk Documentation — PJSIP Outbound Registrations",
+    "usage": [
+      {"cmd": "asterisk -rx \"pjsip show registrations\"", "cmt_he": "הצג את מצב כל ה-outbound registrations (Registered/Rejected/Unregistered)", "cmt_en": "Show the status of all outbound registrations (Registered/Rejected/Unregistered)"},
+      {"cmd": "asterisk -rx \"pjsip show endpoints\"", "cmt_he": "רשימת כל ה-endpoints המוגדרים ומצב ה-contacts שלהם", "cmt_en": "List all configured endpoints and their contact status"},
+      {"cmd": "asterisk -rx \"pjsip show endpoint myphone\"", "cmt_he": "פרטים מלאים על endpoint ספציפי — auth, transport, contacts", "cmt_en": "Full details for a specific endpoint — auth, transport, contacts"},
+      {"cmd": "asterisk -rx \"pjsip set logger on\"", "cmt_he": "הפעל לוג SIP חי לדיבאג רישום בזמן אמת", "cmt_en": "Enable live SIP message logging to debug registration in real time"}
+    ],
+    "quick_flags": [
+      {"flag": "pjsip show registrations", "desc_he": "מצב outbound registrations", "desc_en": "Outbound registration status"},
+      {"flag": "pjsip show endpoint NAME", "desc_he": "פרטי endpoint כולל auth ו-contacts", "desc_en": "Endpoint details including auth and contacts"},
+      {"flag": "pjsip set logger on/off", "desc_he": "הפעל/כבה לוג SIP חי", "desc_en": "Enable/disable live SIP message logging"}
+    ],
+    "scenarios_he": [
+      "טלפון IP מציג 'Registration failed' — בדוק האם ה-PBX רואה את הניסיון עם pjsip set logger on",
+      "Registration מצליח אבל קורס מחדש כל כמה דקות — בדוק qualify ו-expiration",
+      "endpoint חדש לא מתחבר כלל — ודא ש-show endpoints מציג אותו ושה-transport תקין"
+    ],
+    "scenarios_en": [
+      "An IP phone shows 'Registration failed' — check whether the PBX even sees the attempt via pjsip set logger on",
+      "Registration succeeds but drops every few minutes — check qualify and expiration settings",
+      "A newly added endpoint doesn't connect at all — verify it appears in show endpoints and its transport is correct"
+    ],
+    "mistakes": [
+      {
+        "x_he": "התמקדות ב-firewall כשהבעיה היא 401 Unauthorized על האימות",
+        "x_en": "Focusing on the firewall when the real issue is a 401 Unauthorized on authentication",
+        "fix_he": "<span class=\"ltr-term\">pjsip set logger on</span> מבדיל בין 401 (אימות שגוי — בדוק username/password) ל-timeout (כשל רשת/NAT)",
+        "fix_en": "<span class=\"ltr-term\">pjsip set logger on</span> distinguishes a 401 (bad credentials — check username/password) from a timeout (network/NAT failure)"
+      },
+      {
+        "x_he": "הסתמכות על show endpoints בלבד מבלי לבדוק show registrations עבור trunks יוצאים",
+        "x_en": "Relying only on show endpoints without checking show registrations for outbound trunks",
+        "fix_he": "<span class=\"ltr-term\">endpoints</span> הם connections נכנסים/מוגדרים; <span class=\"ltr-term\">registrations</span> הם ניסיונות יוצאים לרישום אצל ספק — בדוק את שניהם",
+        "fix_en": "Endpoints are configured/incoming connections; registrations are outbound attempts to register with a provider — check both"
+      }
+    ],
+    "tags": "sip pjsip registration asterisk voip 401 unauthorized endpoint pbx"
+  },
+  {
+    "id": "rtp-port-range",
+    "name": "RTP Port Range",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת והתאמת <span class=\"ltr-term\">RTP port range</span> לשיחות קוליות — קריטי לפתיחת firewall/NAT עבור מדיה.",
+    "desc_en": "Configuring and matching the RTP port range used for voice media — critical for opening firewall/NAT rules for media traffic.",
+    "source_url": "https://www.rfc-editor.org/rfc/rfc3550",
+    "source_name": "RFC 3550 — RTP: A Transport Protocol for Real-Time Applications",
+    "usage": [
+      {"cmd": "grep -E \"rtpstart|rtpend\" /etc/asterisk/rtp.conf", "cmt_he": "בדוק את ה-range המוגדר ל-RTP ב-Asterisk (לרוב 10000-20000)", "cmt_en": "Check the RTP port range configured in Asterisk (commonly 10000-20000)"},
+      {"cmd": "ss -u -a -n | grep -E \":1[0-9]{4}\"", "cmt_he": "הצג sockets UDP פתוחים בטווח ה-RTP — מי מאזין ולמה", "cmt_en": "Show open UDP sockets in the RTP range — who's listening and why"},
+      {"cmd": "firewall-cmd --add-port=10000-20000/udp --permanent", "cmt_he": "פתח את ה-range ב-firewalld (לאחר זה: reload)", "cmt_en": "Open the range in firewalld (follow with: reload)"},
+      {"cmd": "tcpdump -ni any udp portrange 10000-20000 -c 20", "cmt_he": "תפוס מספר חבילות RTP לאימות שמדיה בכלל זורמת בטווח", "cmt_en": "Capture a few RTP packets to confirm media is actually flowing in the range"}
+    ],
+    "quick_flags": [
+      {"flag": "rtpstart / rtpend", "desc_he": "תחילת/סוף טווח הפורטים ב-rtp.conf", "desc_en": "Start/end of the port range in rtp.conf"},
+      {"flag": "portrange", "desc_he": "פילטר tcpdump לטווח פורטים", "desc_en": "tcpdump filter for a port range"}
+    ],
+    "scenarios_he": [
+      "שיחה מתחברת אבל אין אודיו (one-way/no audio) — חשד לחסימת RTP ב-firewall",
+      "צמצום טווח ה-RTP למספר שיחות מצומצם כדי לפשט כללי firewall",
+      "בדיקה אם NAT/router חוסם UDP בטווח ה-RTP המוגדר"
+    ],
+    "scenarios_en": [
+      "A call connects but there's no audio (one-way/no audio) — suspected RTP blocked by firewall",
+      "Narrowing the RTP range to a small number of concurrent calls to simplify firewall rules",
+      "Checking whether a NAT/router is blocking UDP in the configured RTP range"
+    ],
+    "mistakes": [
+      {
+        "x_he": "פתיחת רק פורט SIP (5060) ב-firewall ושכחת ה-RTP range",
+        "x_en": "Opening only the SIP port (5060) in the firewall and forgetting the RTP range",
+        "fix_he": "SIP (signaling) ו-RTP (מדיה) הם שני ערוצים נפרדים — שניהם חייבים להיות פתוחים: <span class=\"ltr-term\">5060/udp</span> + טווח ה-RTP המוגדר",
+        "fix_en": "SIP (signaling) and RTP (media) are separate channels — both must be open: <span class=\"ltr-term\">5060/udp</span> plus the configured RTP range"
+      },
+      {
+        "x_he": "טווח RTP רחב מאוד (לדוגמה 10000-60000) ללא צורך — מקשה על firewall ו-NAT",
+        "x_en": "An unnecessarily wide RTP range (e.g. 10000-60000) — makes firewall and NAT configuration harder",
+        "fix_he": "חשב טווח לפי מספר שיחות סימולטניות מקסימלי (כ-4 ports לשיחה כולל RTCP) וצמצם בהתאם",
+        "fix_en": "Size the range based on the max number of concurrent calls (~4 ports per call including RTCP) and narrow it accordingly"
+      }
+    ],
+    "tags": "rtp port range voip sip media udp firewall nat asterisk"
+  },
+  {
+    "id": "sip-nat-traversal",
+    "name": "SIP NAT Traversal (PJSIP)",
+    "cat": "voip",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "פתרון בעיות <span class=\"ltr-term\">NAT</span> ב-<span class=\"ltr-term\">SIP/PJSIP</span> — הגדרת external IP, local_net, ו-STUN.",
+    "desc_en": "Resolving NAT issues in SIP/PJSIP — configuring external IP, local_net, and STUN.",
+    "source_url": "https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/Configuring-res_pjsip-to-work-through-NAT/",
+    "source_name": "Asterisk Documentation — Configuring res_pjsip to work through NAT",
+    "usage": [
+      {"cmd": "grep -E \"external_media_address|external_signaling_address|local_net\" /etc/asterisk/pjsip.conf", "cmt_he": "בדוק את הגדרות ה-NAT הנוכחיות ב-transport", "cmt_en": "Check the current NAT settings in the transport section"},
+      {"cmd": "asterisk -rx \"pjsip show transport\"", "cmt_he": "הצג transports מוגדרים ואת ה-IP/port שלהם", "cmt_en": "Show configured transports and their IP/port"},
+      {"cmd": "curl ifconfig.me", "cmt_he": "ברר את ה-IP הציבורי האמיתי של השרת — להשוואה ל-external_media_address", "cmt_en": "Find the server's real public IP — to compare against external_media_address"},
+      {"cmd": "tcpdump -ni any host <phone_ip> and udp port 5060 -A", "cmt_he": "תפוס תעבורת SIP מול הטלפון לבדיקת ה-IP ב-SDP", "cmt_en": "Capture SIP traffic to/from the phone to inspect the IP in the SDP"}
+    ],
+    "quick_flags": [
+      {"flag": "external_media_address", "desc_he": "IP חיצוני המוחלף ב-SDP למדיה", "desc_en": "External IP substituted in the SDP for media"},
+      {"flag": "external_signaling_address", "desc_he": "IP חיצוני לסיגנלינג SIP", "desc_en": "External IP for SIP signaling"},
+      {"flag": "local_net", "desc_he": "טווחי IP פנימיים שלא עוברים NAT rewrite", "desc_en": "Internal IP ranges excluded from NAT rewrite"}
+    ],
+    "scenarios_he": [
+      "שיחות יוצאות לעולם החיצון נכשלות באודיו, אבל פנימיות תקינות — חשד ל-external_media_address שגוי/חסר",
+      "PBX מאחורי router עם NAT — צריך להגדיר את ה-IP הציבורי בקובץ ה-transport",
+      "טלפונים בכמה subnets פנימיים — local_net צריך לכלול את כולם"
+    ],
+    "scenarios_en": [
+      "Calls to the outside world fail on audio, but internal calls work fine — suspect a missing/incorrect external_media_address",
+      "PBX is behind a NAT router — the public IP must be configured in the transport section",
+      "Phones across multiple internal subnets — local_net must include all of them"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הגדרת external_media_address כ-IP ציבורי קבוע על שרת עם IP דינמי",
+        "x_en": "Setting external_media_address to a fixed public IP on a server with a dynamic IP",
+        "fix_he": "אם ה-IP הציבורי מתחלף, השתמש ב-<span class=\"ltr-term\">STUN</span> או ב-DDNS, ועדכן את ה-config בהתאם לשינויים",
+        "fix_en": "If the public IP changes, use <span class=\"ltr-term\">STUN</span> or DDNS and update the config when it changes"
+      },
+      {
+        "x_he": "שכחה לכלול את כל הרשתות הפנימיות ב-local_net כשיש כמה VLAN/subnet",
+        "x_en": "Forgetting to include all internal networks in local_net when there are multiple VLANs/subnets",
+        "fix_he": "כל subnet פנימי שממנו מתחברים טלפונים חייב להיות ב-<span class=\"ltr-term\">local_net</span>, אחרת ה-IP שלהם ייכתב מחדש בטעות ל-external",
+        "fix_en": "Every internal subnet phones connect from must be listed in <span class=\"ltr-term\">local_net</span>, otherwise their IP gets incorrectly rewritten to the external address"
+      }
+    ],
+    "tags": "sip nat pjsip stun external_media_address local_net voip asterisk traversal"
+  },
+  {
+    "id": "vlan-voice",
+    "name": "Voice VLAN (802.1Q)",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת <span class=\"ltr-term\">VLAN</span> נפרד לקול (802.1Q tagging) — הפרדת תעבורת VoIP מתעבורת דאטה לאיכות ואבטחה.",
+    "desc_en": "Configuring a dedicated voice VLAN (802.1Q tagging) — separating VoIP traffic from data traffic for quality and security.",
+    "source_url": "https://www.kernel.org/doc/html/latest/networking/index.html",
+    "source_name": "Linux Kernel Networking Documentation (8021q VLAN driver)",
+    "usage": [
+      {"cmd": "ip link add link eth0 name eth0.20 type vlan id 20", "cmt_he": "צור interface מתויג VLAN 20 על eth0", "cmt_en": "Create a VLAN 20 tagged interface on eth0"},
+      {"cmd": "ip addr add 10.20.0.5/24 dev eth0.20 && ip link set eth0.20 up", "cmt_he": "הקצה IP והפעל את ה-VLAN interface", "cmt_en": "Assign an IP and bring the VLAN interface up"},
+      {"cmd": "ip -d link show eth0.20", "cmt_he": "בדוק את ה-VLAN ID והמצב של ה-interface", "cmt_en": "Check the VLAN ID and status of the interface"},
+      {"cmd": "tcpdump -nei eth0 vlan 20 -c 10", "cmt_he": "תפוס תעבורה מתויגת VLAN 20 — אמת שהטלפון שולח tags נכונים", "cmt_en": "Capture VLAN 20 tagged traffic — verify the phone is sending correct tags"}
+    ],
+    "quick_flags": [
+      {"flag": "type vlan id N", "desc_he": "צור interface 802.1Q עם VLAN ID מספרי", "desc_en": "Create an 802.1Q interface with a numeric VLAN ID"},
+      {"flag": "vlan N", "desc_he": "פילטר tcpdump לתעבורה מתויגת VLAN ספציפי", "desc_en": "tcpdump filter for traffic tagged with a specific VLAN"}
+    ],
+    "scenarios_he": [
+      "טלפון IP מקבל הוראת VLAN קולי מה-switch (LLDP/CDP) אבל לא נכנס לרשת — בדוק תיוג בפועל עם tcpdump",
+      "הפרדת VoIP מ-data VLAN להפחתת jitter ולחימה על bandwidth",
+      "שרת Asterisk/PBX מחובר ל-trunk port — צריך VLAN interface ייעודי לקול"
+    ],
+    "scenarios_en": [
+      "An IP phone receives a voice VLAN assignment from the switch (LLDP/CDP) but doesn't get on the network — verify actual tagging with tcpdump",
+      "Separating VoIP from the data VLAN to reduce jitter and bandwidth contention",
+      "An Asterisk/PBX server connects to a trunk port — needs a dedicated VLAN interface for voice"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הגדרת VLAN interface בלינוקס בלי לוודא שה-switch port מוגדר כ-trunk עם אותו VLAN ID",
+        "x_en": "Configuring a VLAN interface on Linux without verifying the switch port is set to trunk with the matching VLAN ID",
+        "fix_he": "ה-VLAN ID חייב להתאים בשני הצדדים — אם ה-switch port הוא access ולא trunk, תעבורה מתויגת תיפול",
+        "fix_en": "The VLAN ID must match on both ends — if the switch port is access rather than trunk, tagged traffic will be dropped"
+      },
+      {
+        "x_he": "שינוי VLAN configuration עם פקודות ip בלבד על מערכת שמנוהלת ע\"י NetworkManager/netplan",
+        "x_en": "Changing VLAN config with ip commands only, on a system managed by NetworkManager/netplan",
+        "fix_he": "שינויים עם <span class=\"ltr-term\">ip link</span> אינם persistent — הגדר VLAN גם בקובצי ה-config (netplan/nmcli) כדי שישרוד reboot",
+        "fix_en": "Changes made with <span class=\"ltr-term\">ip link</span> aren't persistent — also configure the VLAN in netplan/nmcli config files so it survives a reboot"
+      }
+    ],
+    "tags": "vlan 802.1q voice voip tagging trunk switch ip link asterisk"
+  },
+  {
+    "id": "qos-dscp-voip",
+    "name": "QoS / DSCP Marking for VoIP",
+    "cat": "voip",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "סימון <span class=\"ltr-term\">DSCP</span> לתעבורת VoIP לקבלת עדיפות (QoS) ברשת — מקטין jitter ו-latency.",
+    "desc_en": "DSCP marking for VoIP traffic to gain priority (QoS) on the network — reduces jitter and latency.",
+    "source_url": "https://www.rfc-editor.org/rfc/rfc4594",
+    "source_name": "RFC 4594 — Configuration Guidelines for DiffServ Service Classes",
+    "usage": [
+      {"cmd": "iptables -t mangle -A OUTPUT -p udp --dport 10000:20000 -j DSCP --set-dscp-class EF", "cmt_he": "סמן תעבורת RTP יוצאת ב-DSCP EF (Expedited Forwarding) — עדיפות לקול", "cmt_en": "Mark outgoing RTP traffic with DSCP EF (Expedited Forwarding) — voice priority"},
+      {"cmd": "tc qdisc show dev eth0", "cmt_he": "הצג את ה-queueing discipline הנוכחי על ה-interface", "cmt_en": "Show the current queueing discipline on the interface"},
+      {"cmd": "tcpdump -ni eth0 -v udp port 5060 | grep -i tos", "cmt_he": "בדוק את שדה ה-ToS/DSCP בחבילות SIP בפועל", "cmt_en": "Check the ToS/DSCP field in actual SIP packets"}
+    ],
+    "quick_flags": [
+      {"flag": "EF (DSCP 46)", "desc_he": "מחלקת עדיפות מומלצת לקול (Expedited Forwarding)", "desc_en": "Recommended priority class for voice (Expedited Forwarding)"},
+      {"flag": "--set-dscp-class", "desc_he": "קביעת DSCP class ב-iptables mangle", "desc_en": "Set DSCP class via iptables mangle table"}
+    ],
+    "scenarios_he": [
+      "שיחות VoIP נשמעות 'חתוכות' (jitter) ברשת עמוסה — בדוק אם תעבורת קול מסומנת בעדיפות",
+      "switch/router בארגון מוגדר לכבד DSCP — צריך לוודא שהמכשירים בקצה שולחים סימון נכון",
+      "אבחון אם בעיית שיחה היא bandwidth contention עם תעבורת דאטה כבדה"
+    ],
+    "scenarios_en": [
+      "VoIP calls sound 'choppy' (jitter) on a busy network — check whether voice traffic is marked with priority",
+      "Organization switches/routers are configured to honor DSCP — verify endpoint devices send correct markings",
+      "Diagnosing whether a call-quality issue is bandwidth contention with heavy data traffic"
+    ],
+    "mistakes": [
+      {
+        "x_he": "סימון DSCP רק בצד השרת אבל לא בטלפונים/switch — אין עדיפות אם רק קצה אחד מסמן",
+        "x_en": "Marking DSCP only on the server side but not on phones/switches — no priority if only one end marks traffic",
+        "fix_he": "DSCP חייב להיות מסומן ומכובד בכל הקפיצות (end-to-end) — בדוק הגדרות trust DSCP ב-switches בדרך",
+        "fix_en": "DSCP must be marked and honored end-to-end across every hop — check trust-DSCP settings on switches along the path"
+      },
+      {
+        "x_he": "בחירת DSCP class אקראית לתעבורת קול",
+        "x_en": "Choosing an arbitrary DSCP class for voice traffic",
+        "fix_he": "RFC 4594 מגדיר <span class=\"ltr-term\">EF (DSCP 46)</span> כמחלקה המומלצת לתעבורת VoIP — שמור על עקביות עם התקן",
+        "fix_en": "RFC 4594 defines <span class=\"ltr-term\">EF (DSCP 46)</span> as the recommended class for VoIP traffic — stay consistent with the standard"
+      }
+    ],
+    "tags": "qos dscp voip rtp priority jitter iptables mangle tc"
+  },
+  {
+    "id": "poe-troubleshoot",
+    "name": "PoE Troubleshooting",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון תקלות <span class=\"ltr-term\">Power over Ethernet (PoE)</span> לטלפוני IP, מצלמות ואינטרקומים — power budget ו-negotiation.",
+    "desc_en": "Diagnosing Power over Ethernet (PoE) issues for IP phones, cameras, and intercoms — power budget and negotiation.",
+    "source_url": "https://www.rfc-editor.org/rfc/rfc3621",
+    "source_name": "RFC 3621 — Power Ethernet MIB",
+    "usage": [
+      {"cmd": "ethtool eth0 | grep -i speed", "cmt_he": "ודא ש-link speed תקין — חיבור PoE לא תקין עלול לפגוע גם ב-negotiation", "cmt_en": "Verify link speed is correct — a bad PoE connection can also affect negotiation"},
+      {"cmd": "snmpget -v2c -c public switch-ip 1.3.6.1.2.1.105.1.1.1.2.1.<port>", "cmt_he": "שאל את ה-Power Ethernet MIB לקבלת מצב אספקת חשמל לפורט (למשל: delivering/searching/fault)", "cmt_en": "Query the Power Ethernet MIB for the port's power-delivery status (e.g. delivering/searching/fault)"},
+      {"cmd": "dmesg | grep -i poe", "cmt_he": "חפש שגיאות PoE בלוג הקרנל (במכשירי embedded/אינטרקום מבוססי Linux)", "cmt_en": "Search the kernel log for PoE errors (on embedded/Linux-based intercom devices)"}
+    ],
+    "quick_flags": [
+      {"flag": "pethPsePortDetectionStatus", "desc_he": "OID לבדיקת מצב גילוי PD ב-MIB", "desc_en": "MIB OID for PD detection status"},
+      {"flag": "power budget", "desc_he": "סכום כל ה-watts הזמינים ב-switch מתחלק בין הפורטים", "desc_en": "Total available watts on the switch shared across ports"}
+    ],
+    "scenarios_he": [
+      "אינטרקום IP לא נדלק כשמחברים לפורט PoE — בדוק power budget של ה-switch ואת קלאס ה-PD",
+      "מספר מכשירים מאבדים חשמל בעת חיבור מכשיר חדש — חשד למיצוי power budget",
+      "כבל ארוך/באיכות נמוכה גורם ל-PoE negotiation לא יציב"
+    ],
+    "scenarios_en": [
+      "An IP intercom won't power on when plugged into a PoE port — check the switch's power budget and the PD's power class",
+      "Multiple devices lose power when a new device is connected — suspect power budget exhaustion",
+      "A long or low-quality cable causes unstable PoE negotiation"
+    ],
+    "mistakes": [
+      {
+        "x_he": "התעלמות מ-power budget כולל של ה-switch בתוספת מכשירי PoE רבים",
+        "x_en": "Ignoring the switch's total power budget when adding many PoE devices",
+        "fix_he": "סכום הצריכה (watts) של כל ה-PDs המחוברים לא יכול לעבור את ה-power budget הכולל של ה-switch — בדוק עם <span class=\"ltr-term\">show power inline</span> או ה-MIB",
+        "fix_en": "The combined wattage of all connected PDs can't exceed the switch's total power budget — check with <span class=\"ltr-term\">show power inline</span> or the MIB"
+      },
+      {
+        "x_he": "הנחה שכבל Ethernet תקין ל-data בהכרח תקין גם ל-PoE",
+        "x_en": "Assuming an Ethernet cable that's fine for data is necessarily fine for PoE",
+        "fix_he": "כבלים פגומים/קצרים יכולים לעבוד ל-data (Mbps נמוכים) אך לא לשאת מתח PoE כראוי — בדוק/החלף כבל בחשד ל-PoE fault",
+        "fix_en": "Damaged/marginal cables can pass data (at lower speeds) but fail to carry PoE power properly — test/replace the cable when you suspect a PoE fault"
+      }
+    ],
+    "tags": "poe power over ethernet intercom ip phone switch budget mib snmp"
+  },
+  {
+    "id": "sip-options-keepalive",
+    "name": "SIP OPTIONS Keepalive (qualify)",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "שימוש ב-<span class=\"ltr-term\">SIP OPTIONS</span> כ-keepalive לבדיקת זמינות trunks/endpoints (qualify).",
+    "desc_en": "Using SIP OPTIONS as a keepalive to monitor trunk/endpoint reachability (qualify).",
+    "source_url": "https://www.rfc-editor.org/rfc/rfc3261",
+    "source_name": "RFC 3261 — SIP: Session Initiation Protocol",
+    "usage": [
+      {"cmd": "grep -i qualify /etc/asterisk/pjsip.conf", "cmt_he": "בדוק אם qualify מופעל ובאיזה אינטרוול עבור endpoint/aor", "cmt_en": "Check whether qualify is enabled and at what interval for an endpoint/aor"},
+      {"cmd": "asterisk -rx \"pjsip show aor mytrunk\"", "cmt_he": "הצג סטטוס qualify (Avail/Unavail) ו-round-trip time עבור AOR", "cmt_en": "Show qualify status (Avail/Unavail) and round-trip time for an AOR"},
+      {"cmd": "tcpdump -ni any udp port 5060 -A | grep -A2 OPTIONS", "cmt_he": "תפוס הודעות OPTIONS ותגובות 200 OK לאימות keepalive תקין", "cmt_en": "Capture OPTIONS messages and 200 OK responses to verify keepalive is working"}
+    ],
+    "quick_flags": [
+      {"flag": "qualify=yes", "desc_he": "הפעלת ping תקופתי (OPTIONS) ל-endpoint/aor", "desc_en": "Enable periodic OPTIONS ping to the endpoint/aor"},
+      {"flag": "qualify_frequency", "desc_he": "תדירות שליחת OPTIONS בשניות", "desc_en": "Frequency (in seconds) of sending OPTIONS"}
+    ],
+    "scenarios_he": [
+      "Trunk SIP מוצג כ-Unavailable לפרקים — בדוק אם תגובות OPTIONS מתעכבות/נופלות",
+      "טלפון מתנתק ומתחבר חזרה (flapping) — qualify_frequency אגרסיבי מדי לעומת latency ברשת",
+      "ספק SIP חוסם OPTIONS לא מזוהה — יש לבדוק אם דרוש User-Agent ספציפי"
+    ],
+    "scenarios_en": [
+      "A SIP trunk periodically shows Unavailable — check whether OPTIONS responses are delayed or dropped",
+      "A phone flaps connected/disconnected — qualify_frequency is too aggressive relative to network latency",
+      "A SIP provider blocks unrecognized OPTIONS — check if a specific User-Agent header is required"
+    ],
+    "mistakes": [
+      {
+        "x_he": "qualify_frequency אגרסיבי מאוד (כל כמה שניות) על קישור עם latency גבוה",
+        "x_en": "A very aggressive qualify_frequency (every few seconds) on a high-latency link",
+        "fix_he": "ערכים סבירים הם 30-60 שניות; תדירות גבוהה מדי גורמת ל-'Unavailable' שגוי על קישורים עם latency משתנה",
+        "fix_en": "Reasonable values are 30-60 seconds; too-frequent qualify causes false 'Unavailable' status on links with variable latency"
+      },
+      {
+        "x_he": "פירוש 'Unavailable' כ-בעיה ב-trunk בלי לבדוק אם זה הספק שלא מגיב ל-OPTIONS",
+        "x_en": "Interpreting 'Unavailable' as a trunk problem without checking whether the provider simply doesn't respond to OPTIONS",
+        "fix_he": "חלק מהספקים לא מממשים OPTIONS — אם ה-trunk עובד בפועל לשיחות, אפשר לכבות qualify או לעבור ל-method אחר",
+        "fix_en": "Some providers don't implement OPTIONS — if the trunk actually works for calls, disable qualify or switch to a different method"
+      }
+    ],
+    "tags": "sip options qualify keepalive pjsip trunk asterisk aor"
+  },
+  {
+    "id": "asterisk-cli-basics",
+    "name": "Asterisk CLI Basics",
+    "cat": "diagnostic",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "פקודות בסיס ל-<span class=\"ltr-term\">Asterisk CLI</span> — ניטור channels, מודולים, ולוגים בזמן אמת.",
+    "desc_en": "Basic Asterisk CLI commands — monitoring channels, modules, and logs in real time.",
+    "source_url": "https://docs.asterisk.org/Operation/Asterisk-Command-Line-Interface/Creating-and-Manipulating-Channels-from-the-CLI/",
+    "source_name": "Asterisk Documentation — Command Line Interface",
+    "usage": [
+      {"cmd": "asterisk -rvvv", "cmt_he": "התחבר ל-CLI של Asterisk הרץ עם verbosity גבוה", "cmt_en": "Connect to the running Asterisk CLI with high verbosity"},
+      {"cmd": "asterisk -rx \"core show channels\"", "cmt_he": "הצג את כל ה-channels הפעילים כרגע", "cmt_en": "Show all currently active channels"},
+      {"cmd": "asterisk -rx \"module reload chan_pjsip.so\"", "cmt_he": "טען מחדש מודול ספציפי בלי לאתחל את Asterisk כולו", "cmt_en": "Reload a specific module without restarting all of Asterisk"},
+      {"cmd": "asterisk -rx \"core set verbose 3\"", "cmt_he": "הגדל את רמת ה-verbosity ללוגים בזמן אמת", "cmt_en": "Increase real-time log verbosity"}
+    ],
+    "quick_flags": [
+      {"flag": "-r", "desc_he": "התחבר ל-Asterisk הרץ (remote console)", "desc_en": "Connect to the running Asterisk (remote console)"},
+      {"flag": "-x \"CMD\"", "desc_he": "הרץ פקודת CLI בודדת ללא כניסה אינטראקטיבית", "desc_en": "Run a single CLI command without entering interactively"},
+      {"flag": "core show channels", "desc_he": "channels פעילים כרגע", "desc_en": "Currently active channels"},
+      {"flag": "module reload", "desc_he": "טען מחדש מודול ספציפי", "desc_en": "Reload a specific module"}
+    ],
+    "scenarios_he": [
+      "שיחה 'תקועה' — בדוק עם core show channels אם ה-channel עדיין קיים ובאיזה state",
+      "שינוי קונפיגורציה ב-pjsip.conf — טען מחדש רק את chan_pjsip בלי לאתחל את כל המערכת",
+      "אבחון תקלה חיה — הגדל verbosity וצפה בלוגים בזמן אמת בעת ביצוע שיחה"
+    ],
+    "scenarios_en": [
+      "A 'stuck' call — use core show channels to check whether the channel still exists and its state",
+      "A pjsip.conf config change — reload only chan_pjsip instead of restarting the whole system",
+      "Live troubleshooting — increase verbosity and watch logs in real time while a call is placed"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת asterisk -r מתוך חשש שהיא תיצור תהליך Asterisk נוסף",
+        "x_en": "Running asterisk -r out of concern it will start an additional Asterisk process",
+        "fix_he": "<span class=\"ltr-term\">asterisk -r</span> מתחבר ל-instance קיים; אם אין instance רץ הוא יציג שגיאת חיבור ולא יצור תהליך חדש בטעות",
+        "fix_en": "<span class=\"ltr-term\">asterisk -r</span> connects to an existing instance; if none is running it shows a connection error and won't accidentally spawn a new process"
+      },
+      {
+        "x_he": "restart מלא של Asterisk לכל שינוי קונפיגורציה קטן",
+        "x_en": "A full Asterisk restart for every small config change",
+        "fix_he": "השתמש ב-<span class=\"ltr-term\">module reload</span> או <span class=\"ltr-term\">dialplan reload</span> הספציפי — restart מלא מנתק את כל השיחות הפעילות",
+        "fix_en": "Use the specific <span class=\"ltr-term\">module reload</span> or <span class=\"ltr-term\">dialplan reload</span> — a full restart drops all active calls"
+      }
+    ],
+    "tags": "asterisk cli channels module reload verbose pbx voip"
+  },
+  {
+    "id": "freepbx-troubleshoot",
+    "name": "FreePBX Troubleshooting",
+    "cat": "diagnostic",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון תקלות ב-<span class=\"ltr-term\">FreePBX</span> — סנכרון config מול Asterisk, לוגים, ו-PJSIP.",
+    "desc_en": "Diagnosing FreePBX issues — syncing config with Asterisk, logs, and PJSIP.",
+    "source_url": "https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/Asterisk-PJSIP-Troubleshooting-Guide/",
+    "source_name": "Asterisk Documentation — PJSIP Troubleshooting Guide",
+    "usage": [
+      {"cmd": "fwconsole reload", "cmt_he": "סנכרן שינויים שנעשו ב-GUI של FreePBX לתוך קובצי ה-config של Asterisk", "cmt_en": "Sync changes made in the FreePBX GUI into Asterisk's config files"},
+      {"cmd": "fwconsole restart", "cmt_he": "אתחל את Asterisk תחת FreePBX (חותך שיחות פעילות)", "cmt_en": "Restart Asterisk under FreePBX (drops active calls)"},
+      {"cmd": "tail -f /var/log/asterisk/full", "cmt_he": "עקוב בזמן אמת אחרי הלוג המלא — שגיאות PJSIP/dialplan מופיעות כאן", "cmt_en": "Follow the full log in real time — PJSIP/dialplan errors appear here"},
+      {"cmd": "fwconsole ma list", "cmt_he": "הצג את כל המודולים המותקנים וגרסאותיהם — בדוק אם חסר/לא מעודכן מודול קריטי", "cmt_en": "List all installed modules and their versions — check for a missing/outdated critical module"}
+    ],
+    "quick_flags": [
+      {"flag": "fwconsole reload", "desc_he": "סנכרון config ללא הפסקת שירות", "desc_en": "Sync config without service interruption"},
+      {"flag": "fwconsole restart", "desc_he": "אתחול מלא של Asterisk — מנתק שיחות", "desc_en": "Full Asterisk restart — drops calls"},
+      {"flag": "/var/log/asterisk/full", "desc_he": "קובץ הלוג המרכזי לדיבאג", "desc_en": "The main log file for debugging"}
+    ],
+    "scenarios_he": [
+      "שינוי הוגדר ב-FreePBX GUI אבל לא נכנס לתוקף — fwconsole reload לא רץ אוטומטית",
+      "extension חדש לא נרשם — בדוק בלוג המלא אם PJSIP מקבל בקשת REGISTER עבורו",
+      "אחרי עדכון מודול — בדוק fwconsole ma list שאין conflict גרסאות"
+    ],
+    "scenarios_en": [
+      "A change was made in the FreePBX GUI but isn't taking effect — fwconsole reload wasn't run automatically",
+      "A new extension doesn't register — check the full log to see whether PJSIP is receiving a REGISTER request for it",
+      "After a module update — check fwconsole ma list for version conflicts"
+    ],
+    "mistakes": [
+      {
+        "x_he": "ערכת שינויים ידנית בקבצי pjsip.conf כש-FreePBX מנהל אותם",
+        "x_en": "Manually editing pjsip.conf files that FreePBX manages",
+        "fix_he": "FreePBX דורס קבצי config מנוהלים ב-reload הבא — שינויים ידניים שייכים ל-pjsip.conf_custom או ל-GUI",
+        "fix_en": "FreePBX overwrites managed config files on the next reload — manual edits belong in pjsip.conf_custom or the GUI"
+      },
+      {
+        "x_he": "fwconsole restart כצעד ראשון לכל תקלה",
+        "x_en": "Running fwconsole restart as the first step for every issue",
+        "fix_he": "התחל מ-<span class=\"ltr-term\">fwconsole reload</span> ובדיקת הלוג המלא — restart מלא מנתק שיחות פעילות וצריך להיות המוצא האחרון",
+        "fix_en": "Start with <span class=\"ltr-term\">fwconsole reload</span> and check the full log — a full restart drops active calls and should be a last resort"
+      }
+    ],
+    "tags": "freepbx fwconsole asterisk pjsip log reload module pbx"
+  },
+  {
+    "id": "1com-sip-trunk",
+    "name": "1COM SIP Trunk Setup",
+    "cat": "voip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת <span class=\"ltr-term\">SIP trunk</span> מול פלטפורמת ה-<span class=\"ltr-term\">1COM</span> (Cloud PBX) ב-Asterisk/PJSIP — registration, codecs, ו-DID routing.",
+    "desc_en": "Setting up a SIP trunk to the 1COM cloud PBX platform on Asterisk/PJSIP — registration, codecs, and DID routing.",
+    "source_url": "https://docs.asterisk.org/Configuration/Channel-Drivers/SIP/Configuring-res_pjsip/PJSIP-Configuration-Wizard/",
+    "source_name": "Asterisk Documentation — PJSIP Configuration Wizard",
+    "usage": [
+      {"cmd": "asterisk -rx \"pjsip show registrations\"", "cmt_he": "ודא שה-registration אל 1COM במצב Registered", "cmt_en": "Verify the registration to 1COM shows Registered"},
+      {"cmd": "asterisk -rx \"pjsip show endpoint 1com-trunk\"", "cmt_he": "בדוק codecs, auth ו-contacts של ה-trunk endpoint", "cmt_en": "Check codecs, auth, and contacts for the trunk endpoint"},
+      {"cmd": "asterisk -rx \"dialplan show from-trunk\"", "cmt_he": "ודא שקיים routing נכון לשיחות נכנסות מ-1COM (DIDs)", "cmt_en": "Verify correct routing exists for inbound calls from 1COM (DIDs)"},
+      {"cmd": "asterisk -rx \"pjsip set logger on\"", "cmt_he": "עקוב אחרי הודעות SIP מול 1COM בזמן ניסיון שיחה", "cmt_en": "Watch SIP messages with 1COM during a call attempt"}
+    ],
+    "quick_flags": [
+      {"flag": "pjsip show registrations", "desc_he": "מצב הרישום מול ה-trunk", "desc_en": "Trunk registration status"},
+      {"flag": "pjsip show endpoint NAME", "desc_he": "codecs, auth, contacts של ה-trunk", "desc_en": "Codecs, auth, contacts for the trunk"}
+    ],
+    "scenarios_he": [
+      "שיחות יוצאות מתחברות אבל אין צליל — בדוק התאמת codecs בין Asterisk ל-1COM",
+      "שיחות נכנסות מ-1COM לא מתנתבות ל-extension — בדוק dialplan ב-from-trunk",
+      "Trunk מציג Rejected — אמת username/secret/host מול פרטי 1COM"
+    ],
+    "scenarios_en": [
+      "Outbound calls connect but there's no audio — check codec match between Asterisk and 1COM",
+      "Inbound calls from 1COM aren't routed to an extension — check the from-trunk dialplan",
+      "Trunk shows Rejected — verify username/secret/host against the 1COM credentials"
+    ],
+    "mistakes": [
+      {
+        "x_he": "אי-התאמת codecs בין הגדרת ה-endpoint למה ש-1COM שולח/מקבל",
+        "x_en": "Codec mismatch between the endpoint configuration and what 1COM sends/accepts",
+        "fix_he": "ודא ש-allow/disallow ב-endpoint כולל codec משותף (לרוב <span class=\"ltr-term\">ulaw</span> או <span class=\"ltr-term\">g729</span>) — בדוק את ה-SDP ב-pjsip logger אם יש שיחה חד-כיוונית",
+        "fix_en": "Make sure allow/disallow on the endpoint includes a shared codec (commonly <span class=\"ltr-term\">ulaw</span> or <span class=\"ltr-term\">g729</span>) — inspect the SDP via pjsip logger if a call is one-way"
+      },
+      {
+        "x_he": "הגדרת trunk ללא from-domain/from-user נכונים כשה-provider דורש אותם",
+        "x_en": "Configuring a trunk without correct from-domain/from-user when the provider requires them",
+        "fix_he": "ספקים מסוימים כמו 1COM דורשים from_domain/from_user תואמים לחשבון הלקוח — בדוק את הוראות ה-provisioning הספציפיות שלהם",
+        "fix_en": "Some providers like 1COM require from_domain/from_user to match the customer account — check their specific provisioning instructions"
+      }
+    ],
+    "tags": "1com sip trunk asterisk pjsip pbx cloud did codec israel"
   }
 ]

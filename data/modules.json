@@ -29,8 +29,8 @@
     "data_file": "data/network.json",
     "status": "active",
     "filter_type": "command",
-    "categories_he": {"diagnostic":"אבחון","ports":"פורטים","routing":"ניתוב","dns":"DNS","firewall":"חומת אש"},
-    "categories": ["diagnostic", "ports", "routing", "dns", "firewall"]
+    "categories_he": {"diagnostic":"אבחון","ports":"פורטים","routing":"ניתוב","dns":"DNS","firewall":"חומת אש","voip":"VoIP/SIP"},
+    "categories": ["diagnostic", "ports", "routing", "dns", "firewall", "voip"]
   },
   {
     "id": "troubleshoot",

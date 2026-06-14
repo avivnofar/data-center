@@ -35,6 +35,7 @@ const APPROVED_DOMAINS = [
   'tcpdump.org',
   'iperf.fr',
   'software.es.net',
+  'asterisk.org',
 ];
 
 const BLOCKED_DOMAINS = [
@@ -104,7 +105,7 @@ const COMMAND_DIFF = ['beginner', 'intermediate', 'advanced'];
 const CATEGORY_MAP = {
   'linux.json':   ['network', 'process', 'disk', 'permission', 'system', 'logs', 'user'],
   'cmd.json':     ['network', 'process', 'disk', 'system', 'user'],
-  'network.json': ['diagnostic', 'ports', 'routing', 'dns', 'firewall'],
+  'network.json': ['diagnostic', 'ports', 'routing', 'dns', 'firewall', 'voip'],
 };
 
 function validateCommandEntry(entry, file) {

@@ -915,5 +915,158 @@
         "note_en": "If curl from another machine succeeds (or fails the same way) — this confirms whether the issue is server-side (same error for everyone) or specific to that client's trust store/clock"
       }
     ]
+  },
+  {
+    "id": "ts-sip-not-registering",
+    "title_he": "טלפון SIP לא נרשם ל-PBX",
+    "title_en": "SIP Phone Not Registering to PBX",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "טלפון IP / אינטרקום מציג <span class=\"ltr-term\">Registration Failed</span> או לא מופיע כ-Registered ב-PBX — אבחון שכבה אחר שכבה: רשת, אימות, וקונפיגורציה.",
+    "desc_en": "An IP phone/intercom shows 'Registration Failed' or doesn't appear as Registered on the PBX — layer-by-layer diagnosis: network, authentication, and configuration.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק קישוריות בסיסית בין הטלפון ל-PBX",
+        "text_en": "Check basic connectivity between the phone and the PBX",
+        "cmd": "ping pbx-ip",
+        "note_he": "אם אין תגובה — בדוק VLAN/routing לפני שממשיכים לבעיות ברמת SIP",
+        "note_en": "If there's no response — check VLAN/routing before moving on to SIP-level issues"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שפורט SIP (5060/UDP) פתוח בין הטלפון ל-PBX",
+        "text_en": "Check that SIP port (5060/UDP) is open between the phone and the PBX",
+        "cmd": "nc -vzu pbx-ip 5060",
+        "note_he": "אם הפורט חסום ב-firewall — בקשת REGISTER לא תגיע ל-PBX בכלל",
+        "note_en": "If the port is blocked by a firewall — the REGISTER request never reaches the PBX"
+      },
+      {
+        "n": 3,
+        "text_he": "הפעל לוג SIP חי ב-PBX ובדוק אם בקשת REGISTER מתקבלת",
+        "text_en": "Enable live SIP logging on the PBX and check whether a REGISTER request arrives",
+        "cmd": "asterisk -rx \"pjsip set logger on\"",
+        "note_he": "אם REGISTER לא מופיע בלוג כלל — הבעיה ברשת/firewall. אם מופיע עם 401 — הבעיה ב-username/password",
+        "note_en": "If REGISTER never appears in the log — the issue is network/firewall. If it appears with a 401 — the issue is the username/password"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק את מצב הרישום עבור ה-endpoint",
+        "text_en": "Check the registration status for the endpoint",
+        "cmd": "asterisk -rx \"pjsip show endpoint <ext>\"",
+        "note_he": "סטטוס ה-Contact צריך להיות Avail. Unreachable/Removed מעידים על בעיית רשת או ש-endpoint לא קיים בקונפיגורציה",
+        "note_en": "Contact status should be Avail. Unreachable/Removed indicates a network problem or the endpoint doesn't exist in the configuration"
+      },
+      {
+        "n": 5,
+        "text_he": "אמת את פרטי ה-credentials בטלפון מול ה-config ב-PBX",
+        "text_en": "Verify the credentials on the phone match the PBX config",
+        "cmd": "grep -A5 \"\\[<ext>\\]\" /etc/asterisk/pjsip.conf",
+        "note_he": "השווה username/secret/host בין הטלפון לקונפיגורציה — שים לב לתווים מיוחדים בסיסמה",
+        "note_en": "Compare username/secret/host between the phone and config — watch for special characters in the password"
+      }
+    ]
+  },
+  {
+    "id": "ts-voip-one-way-audio",
+    "title_he": "אודיו חד-כיווני בשיחות VoIP (RTP)",
+    "title_en": "One-Way Audio on VoIP Calls (RTP)",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "שיחת VoIP מתחברת אך צד אחד (או שני הצדדים) לא שומע אודיו — תקלה קלאסית הקשורה ל-<span class=\"ltr-term\">RTP/NAT</span>, נפרדת מבעיית הסיגנלינג (SIP) שכבר הצליחה.",
+    "desc_en": "A VoIP call connects but one side (or both) hears no audio — a classic RTP/NAT issue, distinct from the SIP signaling which already succeeded.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "אמת ששיחה מתחברת בהצלחה בסיגנלינג (SIP)",
+        "text_en": "Confirm the call connects successfully at the signaling (SIP) level",
+        "cmd": "asterisk -rx \"core show channels verbose\"",
+        "note_he": "אם ה-channel קיים ובמצב Up — הסיגנלינג תקין וההתמקדות צריכה לעבור ל-RTP",
+        "note_en": "If the channel exists and is in Up state — signaling is fine and the focus should shift to RTP"
+      },
+      {
+        "n": 2,
+        "text_he": "תפוס תעבורת RTP בזמן השיחה",
+        "text_en": "Capture RTP traffic during the call",
+        "cmd": "tcpdump -ni any udp portrange 10000-20000 -c 50",
+        "note_he": "אם רואים RTP רק בכיוון אחד — הצד השני לא שולח/לא מקבל מדיה",
+        "note_en": "If RTP is seen in only one direction — that side isn't sending/receiving media"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק את כתובות ה-IP שמופיעות ב-SDP",
+        "text_en": "Check the IP addresses shown in the SDP",
+        "cmd": "asterisk -rx \"pjsip set logger on\"",
+        "note_he": "אם ה-SDP מכיל IP פרטי (RFC1918) במקום ה-IP הציבורי — הבעיה ב-external_media_address/NAT",
+        "note_en": "If the SDP contains a private (RFC1918) IP instead of the public IP — the issue is external_media_address/NAT"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק חוקי firewall לטווח ה-RTP בשני הכיוונים",
+        "text_en": "Check firewall rules for the RTP range in both directions",
+        "cmd": "iptables -L -n -v | grep -i 10000",
+        "note_he": "ודא ש-UDP בטווח ה-RTP מותר גם INBOUND וגם OUTBOUND — חסימה חד-כיוונית גורמת לאודיו חד-כיווני",
+        "note_en": "Ensure UDP in the RTP range is allowed both INBOUND and OUTBOUND — a one-directional block causes one-way audio"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק התאמת codecs בין שני הצדדים",
+        "text_en": "Check codec compatibility between both sides",
+        "cmd": "asterisk -rx \"pjsip show endpoint <ext>\" | grep -i codec",
+        "note_he": "אי-התאמת codec לרוב חוסמת שיחה כליל, אבל transcoding שנכשל באמצע יכול להישמע כאודיו חד-כיווני/קטוע",
+        "note_en": "Codec mismatch usually blocks a call entirely, but failed mid-call transcoding can sound like one-way/choppy audio"
+      }
+    ]
+  },
+  {
+    "id": "ts-poe-intercom-no-power",
+    "title_he": "מתג PoE לא מספק חשמל לאינטרקום IP",
+    "title_en": "PoE Switch Not Powering an IP Intercom",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "אינטרקום IP מחובר ל-switch PoE אך לא נדלק — אבחון power budget, קלאס ה-PD, וכבילה.",
+    "desc_en": "An IP intercom is connected to a PoE switch but doesn't power on — diagnosing power budget, PD power class, and cabling.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את מצב הפורט ב-switch",
+        "text_en": "Check the port status on the switch",
+        "cmd": "show interface status",
+        "note_he": "ודא שהפורט לא מוגדר כ-shutdown ושהוא מזהה חיבור פיזי (connected)",
+        "note_en": "Verify the port isn't shut down and shows a physical connection (connected)"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק את מצב אספקת ה-PoE לפורט",
+        "text_en": "Check the PoE delivery status for the port",
+        "cmd": "show power inline",
+        "note_he": "מצב 'on' = מספק חשמל. 'off'/'faulty' מעידים על תקלה. 'deny' לרוב אומר חריגה מ-power budget",
+        "note_en": "'on' = power being delivered. 'off'/'faulty' indicate a fault. 'deny' usually means the power budget was exceeded"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק את ה-power budget הכולל של ה-switch לעומת הצריכה הנוכחית",
+        "text_en": "Check the switch's total power budget against current consumption",
+        "cmd": "show power inline detail",
+        "note_he": "אם ה-total power קרוב למקסימום — אינטרקום נוסף עם דרישת חשמל גבוהה (Class 4) עלול להידחה",
+        "note_en": "If total power is near the maximum — adding another high-power-class (Class 4) intercom may be denied"
+      },
+      {
+        "n": 4,
+        "text_he": "החלף כבל/פורט לבידוד תקלת חיבור פיזית",
+        "text_en": "Swap the cable/port to isolate a physical connection fault",
+        "cmd": "show interfaces <port> | include errors",
+        "note_he": "כבל פגום/קצר מדי או connector לא תקין יכולים לאפשר data ב-Mbps נמוכים אך לא לשאת PoE — נסה כבל קצר ידוע-תקין",
+        "note_en": "A damaged/marginal cable or bad connector can allow low-Mbps data but fail to carry PoE — try a known-good short cable"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק את ה-PoE class הנדרש לעומת מה ש-switch תומך",
+        "text_en": "Check the required PoE class versus what the switch supports",
+        "cmd": "show power inline <port> detail",
+        "note_he": "אינטרקום שדורש 802.3at (Class 4, עד 30W) לא יקבל מספיק חשמל מ-switch שתומך רק ב-802.3af (Class 3, עד 15.4W)",
+        "note_en": "An intercom requiring 802.3at (Class 4, up to 30W) won't get enough power from a switch that only supports 802.3af (Class 3, up to 15.4W)"
+      }
+    ]
   }
 ]

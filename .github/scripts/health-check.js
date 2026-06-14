@@ -13,6 +13,7 @@ const APPROVED_DOMAINS = [
   'ss64.com', 'linux.org', 'kernel.org', 'iana.org', 'rfc-editor.org',
   'nmap.org', 'wireshark.org', 'ubuntu.com', 'redhat.com', 'debian.org',
   'cloudflare.com', 'cisco.com', 'tcpdump.org', 'iperf.fr', 'software.es.net',
+  'asterisk.org',
 ];
 
 function isApprovedDomain(url) {
