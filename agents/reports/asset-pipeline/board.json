@@ -91,6 +91,46 @@
       ]
     },
     {
+      "id": "runbook",
+      "title": "Runbook Demo Integration (Terminal/Timeline/Metrics)",
+      "owner_agents": [9, 10],
+      "owners": ["agent-9", "agent-10"],
+      "tool": null,
+      "stage": "in-progress",
+      "status": "in-progress",
+      "priority": "week",
+      "version": 1.00,
+      "spec_file": null,
+      "description": "Extract Terminal Demo, Incident Timeline, and Metrics Dashboard logic from agents/assets/incoming/datacenter-runbook-optimized/datacenter-export/dist/public/assets/ (built React/Vite components) into dependency-free vanilla-JS modules under tools/runbook/. Terminal Demo's command outputs (ping/systemctl/df) were also merged into tools/commandflow/commands.json for more realistic CLI Mode output. Remaining: wire incident-timeline.js into 'Solve a Case' mode to visualize diagnosis progress, and metrics-dashboard.js into the admin/Office tab.",
+      "created_day": 1,
+      "updated_day": 1,
+      "history": [
+        {
+          "day": 1,
+          "stage": "in-progress",
+          "note": "tools/runbook/{terminal-demo.js, incident-timeline.js, metrics-dashboard.js} created (vanilla JS, render/mount APIs). commands.json gained the 3 demo commands (ping -c 4 192.168.1.1, systemctl status nginx, df -h /var/log). Index.html wiring into Solve-a-Case and admin/Office tab not yet done — see agents/PENDING-WORK.md."
+        }
+      ]
+    },
+    {
+      "id": "database-integration",
+      "title": "Database Integration Plan (D1 schema + helpers)",
+      "owner_agents": [10],
+      "owner": "agent-10",
+      "tool": null,
+      "stage": "queued",
+      "status": "planned",
+      "estimated": "this-week",
+      "version": null,
+      "spec_file": null,
+      "description": "Plan (not yet implemented) for adopting the schema/db-helper templates from agents/assets/incoming/database-integration-complete/database-integration-complete/templates/ (schema-template.ts, db-helpers-template.ts) for the agent simulation's D1 database. See agents/PENDING-WORK.md for the implementation plan written this session.",
+      "created_day": 1,
+      "updated_day": 1,
+      "history": [
+        { "day": 1, "stage": "queued", "note": "Implementation plan written to agents/PENDING-WORK.md (Feature B). Not implemented per token-budget instruction — queued for agent-10 this week." }
+      ]
+    },
+    {
       "id": "crm-placeholder",
       "title": "CRM (placeholder — flagged for future serious development)",
       "owner_agents": [],
