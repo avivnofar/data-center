@@ -1,0 +1,630 @@
+[
+  {
+    "id": "1com-ip-phone-registration",
+    "name": "1COM IP Phone Registration",
+    "cat": "hardware",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "רישום מכשיר טלפון <span class=\"ltr-term\">IP</span> (כגון Rainbow1/2/4, Biz28) לשלוחה בפלטפורמת <span class=\"ltr-term\">1COM</span> באמצעות פרטי <span class=\"ltr-term\">SIP</span>.",
+    "desc_en": "Registering an IP phone (e.g. Rainbow1/2/4, Biz28) to an extension on the 1COM cloud PBX using SIP credentials.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "SIP Server: sip.1com.co.il", "cmt_he": "כתובת שרת ה-SIP של 1COM שיש להזין בהגדרות המכשיר", "cmt_en": "The 1COM SIP server address to enter in the device settings"},
+      {"cmd": "Account: <extension number + password from 1COM portal>", "cmt_he": "מספר השלוחה והסיסמה כפי שמוגדרים בפורטל הניהול של 1COM", "cmt_en": "Extension number and password as configured in the 1COM admin portal"},
+      {"cmd": "SIP Port: 5060", "cmt_he": "פורט SIP סטנדרטי לרישום מול 1COM", "cmt_en": "Standard SIP port for registering with 1COM"}
+    ],
+    "scenarios_he": [
+      "התקנת טלפון חדש לעובד חדש — יש ליצור שלוחה בפורטל 1COM ולהזין את פרטי ה-SIP במכשיר",
+      "החלפת מכשיר פיזי לעובד קיים — יש להעביר את פרטי ההזדהות של השלוחה למכשיר החדש",
+      "בדיקת תקינות רישום לאחר עדכון firmware במכשיר"
+    ],
+    "scenarios_en": [
+      "Setting up a new phone for a new employee — create the extension in the 1COM portal and enter the SIP details on the device",
+      "Swapping a physical device for an existing employee — move the extension's credentials to the new device",
+      "Verifying registration health after a device firmware update"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הזנת מספר השלוחה כ-<span class=\"ltr-term\">Caller ID</span> בלבד מבלי להגדיר את שדה ה-<span class=\"ltr-term\">Authentication ID</span>",
+        "x_en": "Entering the extension number only as the Caller ID without setting the Authentication ID field",
+        "fix_he": "מכשירים רבים מפרידים בין <span class=\"ltr-term\">Display Name</span>, <span class=\"ltr-term\">User ID</span> ו-<span class=\"ltr-term\">Authentication ID</span> — כל שלושתם צריכים להיות תואמים לפרטי השלוחה בפורטל 1COM",
+        "fix_en": "Many devices separate Display Name, User ID, and Authentication ID — all three must match the extension's credentials in the 1COM portal"
+      }
+    ],
+    "tags": "1com sip extension registration ip-phone rainbow biz28 voip"
+  },
+  {
+    "id": "1com-ata-analog-phone",
+    "name": "1COM ATA Analog Adapter Setup",
+    "cat": "hardware",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "חיבור מכשיר אנלוגי (טלפון/פקס) לפלטפורמת <span class=\"ltr-term\">1COM</span> באמצעות מתאם <span class=\"ltr-term\">ATA</span> (Analog Telephone Adapter).",
+    "desc_en": "Connecting an analog device (phone/fax) to the 1COM platform via an ATA (Analog Telephone Adapter).",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "ATA SIP Server: sip.1com.co.il", "cmt_he": "כתובת השרת שיש להגדיר ב-ATA כמו בכל מכשיר IP אחר", "cmt_en": "The server address to configure on the ATA, same as any other IP device"},
+      {"cmd": "Codec priority: G.711u, then T.38 for fax", "cmt_he": "להגדרת פקס יש להעדיף G.711 ולהפעיל T.38 fax relay אם ה-ATA תומך", "cmt_en": "For fax, prefer G.711 and enable T.38 fax relay if the ATA supports it"},
+      {"cmd": "FXS Port 1: extension <N>", "cmt_he": "כל יציאת FXS פיזית מקושרת לשלוחה נפרדת בפורטל 1COM", "cmt_en": "Each physical FXS port maps to a separate extension in the 1COM portal"}
+    ],
+    "scenarios_he": [
+      "חיבור מכונת פקס משרדית קיימת לפלטפורמת 1COM ללא רכישת מכשיר IP חדש",
+      "חיבור טלפון אנלוגי ישן (למשל בדלפק קבלה) שאין לו תמיכת SIP מובנית",
+      "פקסים נכשלים — יש לבדוק הגדרות codec ו-T.38 ב-ATA"
+    ],
+    "scenarios_en": [
+      "Connecting an existing office fax machine to 1COM without buying a new IP device",
+      "Connecting an old analog phone (e.g. at a reception desk) with no built-in SIP support",
+      "Faxes are failing — check codec and T.38 settings on the ATA"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפעלת <span class=\"ltr-term\">G.729</span> כ-codec יחיד עבור קו פקס",
+        "x_en": "Using G.729 as the only codec for a fax line",
+        "fix_he": "פקס דורש <span class=\"ltr-term\">G.711</span> או <span class=\"ltr-term\">T.38</span> — codecs דחוסים כמו G.729 גורמים לכשל בשידור הפקס",
+        "fix_en": "Fax requires G.711 or T.38 — compressed codecs like G.729 cause fax transmission to fail"
+      }
+    ],
+    "tags": "1com ata analog fax g711 t38 fxs adapter"
+  },
+  {
+    "id": "1com-supported-phone-models",
+    "name": "1COM Supported Phone Models",
+    "cat": "hardware",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "רשימת דגמי מכשירי הטלפון הנתמכים רשמית בפלטפורמת <span class=\"ltr-term\">1COM</span> ומאפייניהם.",
+    "desc_en": "List of phone device models officially supported by the 1COM platform and their characteristics.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Rainbow1 / Rainbow2 / Rainbow4", "cmt_he": "טלפוני שולחן עם מסך, תומכים BLF ו-multi-line, מתאימים למשתמשי קצה רגילים ומנהלים", "cmt_en": "Desk phones with displays, support BLF and multi-line, suitable for regular users and managers"},
+      {"cmd": "Biz28", "cmt_he": "טלפון שולחני עסקי בסיסי, מתאים לעמדות עובד סטנדרטיות", "cmt_en": "Basic business desk phone, suitable for standard employee desks"},
+      {"cmd": "W56 (DECT)", "cmt_he": "מערכת אלחוטית DECT — base station + שפופרות, מתאים לעובדים ניידים במשרד/מחסן", "cmt_en": "DECT wireless system — base station + handsets, suitable for mobile employees in office/warehouse"}
+    ],
+    "scenarios_he": [
+      "בחירת מכשיר עבור עובד חדש — Biz28 לעמדה קבועה, W56 לעובד נייד",
+      "מנהל הזקוק למקשי BLF רבים — Rainbow2/Rainbow4 עם הרחבות BLF",
+      "אימות תאימות מכשיר לפני רכישה מרוכזת"
+    ],
+    "scenarios_en": [
+      "Choosing a device for a new employee — Biz28 for a fixed desk, W56 for a mobile worker",
+      "A manager needing many BLF keys — Rainbow2/Rainbow4 with BLF expansion modules",
+      "Verifying device compatibility before a bulk purchase"
+    ],
+    "mistakes": [
+      {
+        "x_he": "רכישת מכשירי <span class=\"ltr-term\">IP</span> שאינם ברשימת הדגמים הנתמכים ותלונה על בעיות <span class=\"ltr-term\">provisioning</span>",
+        "x_en": "Buying IP devices that aren't on the supported model list and reporting provisioning issues",
+        "fix_he": "מכשירים שאינם מהדגמים הנתמכים עדיין יכולים להתחבר עם הגדרת SIP ידנית, אך לא יקבלו <span class=\"ltr-term\">auto-provisioning</span> ותבניות מקשים מובנות מ-1COM",
+        "fix_en": "Unsupported models can still connect via manual SIP configuration, but won't receive 1COM's auto-provisioning and built-in key templates"
+      }
+    ],
+    "tags": "1com phones models rainbow biz28 w56 dect hardware"
+  },
+  {
+    "id": "1com-auto-provisioning",
+    "name": "1COM Auto-Provisioning",
+    "cat": "hardware",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "תהליך <span class=\"ltr-term\">auto-provisioning</span> להגדרה אוטומטית של מכשירי IP בפלטפורמת <span class=\"ltr-term\">1COM</span> לפי <span class=\"ltr-term\">MAC address</span>.",
+    "desc_en": "Auto-provisioning process for automatic configuration of IP devices on the 1COM platform by MAC address.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Register MAC address in 1COM portal -> bind to extension", "cmt_he": "יש לרשום את כתובת ה-MAC של המכשיר בפורטל ולקשר אותה לשלוחה הרצויה", "cmt_en": "Register the device's MAC address in the portal and bind it to the desired extension"},
+      {"cmd": "DHCP Option 66 / 160 -> provisioning server URL", "cmt_he": "הראוטר/DHCP צריך להפנות את המכשיר לכתובת שרת ה-provisioning של 1COM", "cmt_en": "The router/DHCP must point the device to the 1COM provisioning server URL"},
+      {"cmd": "Device boot -> fetches config file -> auto-registers", "cmt_he": "באתחול הראשון המכשיר מוריד קובץ קונפיגורציה ונרשם אוטומטית לשלוחה המקושרת ל-MAC שלו", "cmt_en": "On first boot the device downloads its config file and auto-registers to the extension bound to its MAC"}
+    ],
+    "scenarios_he": [
+      "פריסת מספר רב של מכשירים חדשים במשרד ללא הגדרה ידנית של כל מכשיר",
+      "מכשיר לא מתעדכן אוטומטית — יש לבדוק את הגדרת DHCP Option 66/160 ברשת הלקוח",
+      "החלפת מכשיר תקול — עדכון כתובת MAC בפורטל מספיק להחזרת השלוחה לפעולה"
+    ],
+    "scenarios_en": [
+      "Deploying many new devices in an office without manually configuring each one",
+      "A device isn't auto-updating — check the DHCP Option 66/160 setting on the customer network",
+      "Replacing a faulty device — updating the MAC address in the portal is enough to restore the extension"
+    ],
+    "mistakes": [
+      {
+        "x_he": "רישום כתובת <span class=\"ltr-term\">MAC</span> שגויה (לדוגמה מהקופסה ולא מהמכשיר עצמו)",
+        "x_en": "Registering the wrong MAC address (e.g. from the box label instead of the device itself)",
+        "fix_he": "יש לאמת את כתובת ה-MAC ממסך המכשיר עצמו (תפריט Status/Network) ולא מהאריזה, מכשירים מסוימים עם כרטיסי רשת כפולים עלולים להטעות",
+        "fix_en": "Verify the MAC address from the device's own screen (Status/Network menu), not the box — some devices with dual network interfaces can be misleading"
+      }
+    ],
+    "secnote_he": "הקפד שכתובת שרת ה-<span class=\"ltr-term\">provisioning</span> תהיה מהדומיין הרשמי של 1COM בלבד — הפניית מכשירים לשרת provisioning זר חושפת קובצי קונפיגורציה הכוללים פרטי הזדהות SIP.",
+    "secnote_en": "Make sure the provisioning server address is the official 1COM domain only — pointing devices to a rogue provisioning server exposes config files containing SIP credentials.",
+    "tags": "1com provisioning mac dhcp option66 auto-configuration"
+  },
+  {
+    "id": "1com-extension-not-registering",
+    "name": "1COM Extension Not Registering — Diagnosis",
+    "cat": "hardware",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון מצב בו שלוחה לא מצליחה להתחבר (<span class=\"ltr-term\">register</span>) לפלטפורמת <span class=\"ltr-term\">1COM</span>.",
+    "desc_en": "Diagnosing a case where an extension fails to register with the 1COM platform.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Check device registration status screen", "cmt_he": "בדוק במסך המכשיר אם מוצג Registered/Unregistered/Registration Failed", "cmt_en": "Check the device screen for Registered/Unregistered/Registration Failed"},
+      {"cmd": "Status code 401/403 -> credential issue", "cmt_he": "קוד 401/403 מעיד על שם משתמש/סיסמה שגויים בשלוחה", "cmt_en": "A 401/403 status indicates wrong username/password on the extension"},
+      {"cmd": "Status: Timeout / no response -> network/firewall issue", "cmt_he": "אין תגובה כלל מהשרת מעיד על חסימת רשת או SIP ALG בראוטר", "cmt_en": "No response from the server at all points to a network block or SIP ALG on the router"}
+    ],
+    "scenarios_he": [
+      "שלוחה הציגה Registered ולאחר הפסקת חשמל/אתחול ראוטר עברה ל-Unregistered",
+      "שלוחה חדשה שהוגדרה היום לא מתחברת — בדוק התאמת פרטי ההזדהות שהוזנו",
+      "כל השלוחות באתר מסוים נופלות יחד — חשד לבעיית אינטרנט/firewall באתר"
+    ],
+    "scenarios_en": [
+      "An extension showed Registered and after a power outage/router reboot became Unregistered",
+      "A newly configured extension won't register — verify the entered credentials match",
+      "All extensions at a site drop together — suspect an internet/firewall issue at that site"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפעלת <span class=\"ltr-term\">SIP ALG</span> בראוטר הביתי/עסקי",
+        "x_en": "Leaving SIP ALG enabled on the home/business router",
+        "fix_he": "כבה את <span class=\"ltr-term\">SIP ALG</span> בראוטר — תכונה זו משבשת לעיתים קרובות הודעות SIP ומונעת רישום תקין",
+        "fix_en": "Disable SIP ALG on the router — this feature frequently corrupts SIP messages and prevents proper registration"
+      },
+      {
+        "x_he": "בדיקת תקלה רק במכשיר מבלי לבדוק אם מדובר בבעיה כלל-אתרית",
+        "x_en": "Troubleshooting only the device without checking if it's a site-wide issue",
+        "fix_he": "אם כל השלוחות באתר מנותקות יחד, מדובר בבעיית רשת/אינטרנט באתר ולא בכל מכשיר בנפרד — בדוק קישוריות יוצאת לכתובת sip.1com.co.il",
+        "fix_en": "If all extensions at a site are down together, it's a site-wide network/internet issue, not a per-device fault — check outbound connectivity to sip.1com.co.il"
+      }
+    ],
+    "tags": "1com registration troubleshooting sip-alg 401 timeout extension"
+  },
+  {
+    "id": "1com-no-audio",
+    "name": "1COM No Audio / One-Way Audio Diagnosis",
+    "cat": "hardware",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון מצב של היעדר קול או קול חד-כיווני בשיחות בפלטפורמת <span class=\"ltr-term\">1COM</span>.",
+    "desc_en": "Diagnosing no-audio or one-way-audio call issues on the 1COM platform.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Check RTP port range allowed through firewall/NAT", "cmt_he": "ודא שתחום פורטי ה-RTP (מדיה) פתוח ב-firewall ולא חסום", "cmt_en": "Verify the RTP (media) port range is open through the firewall and not blocked"},
+      {"cmd": "Verify codec negotiation matches device capability (G.711)", "cmt_he": "ודא שה-codec שנבחר נתמך גם במכשיר וגם בפלטפורמת 1COM, בד\"כ G.711", "cmt_en": "Verify the negotiated codec is supported by both the device and 1COM, typically G.711"},
+      {"cmd": "Test from different network (mobile hotspot) to isolate NAT issue", "cmt_he": "בדיקת שיחה מרשת אחרת מסייעת לבודד תקלת NAT/firewall ספציפית לאתר", "cmt_en": "Testing a call from a different network helps isolate a site-specific NAT/firewall issue"}
+    ],
+    "scenarios_he": [
+      "שיחה מתחברת אבל הצד השני לא שומע (חד-כיווני) — חשד לבעיית NAT/RTP",
+      "אין קול כלל בשני הכיוונים — בדוק codec mismatch",
+      "תקלה מתרחשת רק בשיחות חוצות-רשת (VPN/multi-site)"
+    ],
+    "scenarios_en": [
+      "A call connects but one side can't hear the other (one-way audio) — suspect a NAT/RTP issue",
+      "No audio in either direction — check for a codec mismatch",
+      "The issue only occurs on cross-network calls (VPN/multi-site)"
+    ],
+    "mistakes": [
+      {
+        "x_he": "פתיחת תחום פורטי <span class=\"ltr-term\">RTP</span> צר מדי ב-firewall כך שרק חלק מהשיחות מקבלות פורט פנוי",
+        "x_en": "Opening too narrow an RTP port range in the firewall, so only some calls get a free port",
+        "fix_he": "הרחב את תחום פורטי ה-RTP ב-firewall בהתאם להמלצת 1COM, ובדוק שאין NAT כפול (double NAT) ברשת",
+        "fix_en": "Widen the RTP port range in the firewall per 1COM's recommendation, and check there's no double NAT on the network"
+      }
+    ],
+    "tags": "1com audio rtp nat codec one-way troubleshooting"
+  },
+  {
+    "id": "1com-extensions-management",
+    "name": "1COM Extensions Management",
+    "cat": "config",
+    "diff": "beginner",
+    "sec": false,
+    "desc_he": "יצירה ועריכה של שלוחות (<span class=\"ltr-term\">extensions</span>) בפלטפורמת <span class=\"ltr-term\">1COM</span> — שיוך משתמש, מכשיר והרשאות.",
+    "desc_en": "Creating and editing extensions on the 1COM platform — assigning a user, device, and permissions.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Extensions -> Add Extension", "cmt_he": "יצירת שלוחה חדשה כוללת מספר שלוחה, שם תצוגה ופרטי הזדהות SIP", "cmt_en": "Creating a new extension includes extension number, display name, and SIP credentials"},
+      {"cmd": "Extension -> Assign User -> link to employee profile", "cmt_he": "שיוך השלוחה למשתמש קיים מאפשר ניהול הרשאות, הקלטות ודוחות לפי משתמש", "cmt_en": "Linking the extension to an existing user enables per-user permissions, recordings, and reports"},
+      {"cmd": "Extension -> Voicemail / Call Forwarding settings", "cmt_he": "הגדרת תא קולי והעברת שיחות לשלוחה ספציפית", "cmt_en": "Configure voicemail and call forwarding for a specific extension"}
+    ],
+    "scenarios_he": [
+      "קליטת עובד חדש — יצירת שלוחה ושיוך מכשיר",
+      "עזיבת עובד — השבתת שלוחה ושחרור מספר טלפון מקושר",
+      "שינוי מספר שלוחה לעובד שעבר מחלקה"
+    ],
+    "scenarios_en": [
+      "Onboarding a new employee — create an extension and assign a device",
+      "Employee offboarding — disable the extension and free the linked phone number",
+      "Changing an extension number for an employee who moved departments"
+    ],
+    "mistakes": [
+      {
+        "x_he": "מחיקת שלוחה ישנה במקום השבתה כשיש לה הקלטות/דוחות היסטוריים מקושרים",
+        "x_en": "Deleting an old extension instead of disabling it when it has linked historical recordings/reports",
+        "fix_he": "השבת (<span class=\"ltr-term\">disable</span>) שלוחות לא בשימוש במקום מחיקה — כך נשמרת היסטוריית הדוחות וההקלטות",
+        "fix_en": "Disable unused extensions instead of deleting them — this preserves report and recording history"
+      }
+    ],
+    "tags": "1com extensions config admin onboarding voicemail"
+  },
+  {
+    "id": "1com-call-recording-config",
+    "name": "1COM Call Recording Configuration",
+    "cat": "config",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "הגדרת הקלטת שיחות (<span class=\"ltr-term\">call recording</span>) בפלטפורמת <span class=\"ltr-term\">1COM</span> — מדיניות, שמירה והרשאות גישה.",
+    "desc_en": "Configuring call recording on the 1COM platform — policy, retention, and access permissions.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Recording -> Set recording policy (all/queue-only/per-extension)", "cmt_he": "ניתן להגדיר הקלטה גלובלית, רק לתורים, או לפי שלוחה ספציפית", "cmt_en": "Recording can be set globally, only for queues, or per specific extension"},
+      {"cmd": "Recording -> Retention period", "cmt_he": "הגדרת משך שמירת ההקלטות לפי מדיניות הארגון", "cmt_en": "Set the retention period for recordings per organizational policy"},
+      {"cmd": "Recording -> Access permissions per role", "cmt_he": "הגדרת מי מורשה להאזין/להוריד הקלטות (מנהלים בלבד, צוות QA וכו')", "cmt_en": "Define who's allowed to listen/download recordings (managers only, QA team, etc.)"}
+    ],
+    "scenarios_he": [
+      "דרישת רגולציה/לקוח להקליט את כל שיחות המוקד",
+      "צוות QA צריך גישה להקלטות תור מסוים בלבד, ללא גישה לשיחות הנהלה",
+      "בדיקת מדיניות שמירה לפני ביקורת תקופתית"
+    ],
+    "scenarios_en": [
+      "Regulatory/customer requirement to record all call-center calls",
+      "QA team needs access to recordings of a specific queue only, without access to management calls",
+      "Reviewing retention policy ahead of a periodic audit"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפעלת הקלטה גלובלית לכלל השלוחות ללא בדיקת חובות פרטיות/רגולציה מקומיים",
+        "x_en": "Enabling global recording for all extensions without checking local privacy/regulatory obligations",
+        "fix_he": "בדוק את חובות ההודעה לעובדים/לקוחות (Privacy/GDPR-equivalent) לפני הפעלת הקלטה גלובלית, והגבל גישה להקלטות לפי הצורך העסקי בלבד",
+        "fix_en": "Check employee/customer notification obligations (privacy/GDPR-equivalent) before enabling global recording, and restrict recording access on a need-to-know basis"
+      }
+    ],
+    "secnote_he": "הקלטות שיחה עלולות להכיל מידע רגיש (פרטי תשלום, מידע אישי) — יש להגביל הרשאות גישה לפי תפקיד ולתעד מי האזין/הוריד הקלטה.",
+    "secnote_en": "Call recordings may contain sensitive information (payment details, personal info) — restrict access permissions by role and log who listened to/downloaded a recording.",
+    "tags": "1com recording config retention permissions compliance"
+  },
+  {
+    "id": "1com-user-permissions-roles",
+    "name": "1COM User Roles & Permissions",
+    "cat": "config",
+    "diff": "intermediate",
+    "sec": true,
+    "desc_he": "ניהול תפקידים והרשאות (<span class=\"ltr-term\">roles & permissions</span>) למשתמשי הניהול בפלטפורמת <span class=\"ltr-term\">1COM</span>.",
+    "desc_en": "Managing admin user roles and permissions on the 1COM platform.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Users -> Roles (Super Admin / Manager / Agent)", "cmt_he": "שלושת תפקידי הליבה - Super Admin עם גישה מלאה, Manager לניהול תור/מחלקה, Agent למשתמש קצה", "cmt_en": "The three core roles — Super Admin with full access, Manager for queue/department admin, Agent for end users"},
+      {"cmd": "Users -> Enable Two-Factor Authentication (2FA)", "cmt_he": "הפעלת אימות דו-שלבי לחשבונות ניהול בעלי הרשאות גבוהות", "cmt_en": "Enable two-factor authentication for high-privilege admin accounts"},
+      {"cmd": "Users -> Audit Log -> review admin actions", "cmt_he": "סקירת יומן הפעולות לזיהוי שינויי הגדרות לא מתועדים", "cmt_en": "Review the audit log to identify undocumented configuration changes"}
+    ],
+    "scenarios_he": [
+      "מנהל מחלקה צריך לראות דוחות תור אך לא להגדיר שלוחות של מחלקות אחרות",
+      "עזיבת מנהל IT — יש לבטל הרשאות Super Admin שלו ולבדוק יומן פעולות אחרון",
+      "ביקורת תקופתית של הרשאות גישה לפי תפקיד"
+    ],
+    "scenarios_en": [
+      "A department manager needs to see queue reports but not configure other departments' extensions",
+      "An IT manager leaves — revoke their Super Admin access and review their recent audit log entries",
+      "Periodic audit of role-based access permissions"
+    ],
+    "mistakes": [
+      {
+        "x_he": "מתן הרשאת <span class=\"ltr-term\">Super Admin</span> למספר רב של משתמשים \"לנוחות\"",
+        "x_en": "Granting Super Admin permission to many users \"for convenience\"",
+        "fix_he": "החל עקרון הרשאות מינימליות (<span class=\"ltr-term\">least privilege</span>) — תן הרשאת Manager למנהלי מחלקות ושמור Super Admin לצוות IT מצומצם בלבד, עם 2FA מופעל",
+        "fix_en": "Apply the principle of least privilege — give department managers Manager-level access and keep Super Admin to a small IT team only, with 2FA enabled"
+      }
+    ],
+    "secnote_he": "חשבונות <span class=\"ltr-term\">Super Admin</span> הם יעד תקיפה משתלם — הפעל 2FA לכל חשבון ניהול והגבל את מספר המשתמשים בעלי ההרשאה הגבוהה ביותר.",
+    "secnote_en": "Super Admin accounts are a high-value attack target — enable 2FA on every admin account and minimize the number of users holding the highest privilege level.",
+    "tags": "1com roles permissions admin security 2fa audit"
+  },
+  {
+    "id": "1com-ivr-setup",
+    "name": "1COM IVR / Auto-Attendant Setup",
+    "cat": "ivr",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת <span class=\"ltr-term\">IVR</span> (מענה אוטומטי) בפלטפורמת <span class=\"ltr-term\">1COM</span> — תפריטי שמע וניתוב לפי בחירת המשתמש.",
+    "desc_en": "Setting up an IVR (auto-attendant) on the 1COM platform — audio menus and routing by user selection.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> IVR -> Create Menu -> upload greeting audio", "cmt_he": "העלאת קובץ שמע לברכת הפתיחה של התפריט (פורמט נתמך לפי מדריך 1COM)", "cmt_en": "Upload an audio file for the menu's opening greeting (supported format per 1COM guide)"},
+      {"cmd": "IVR -> Map digit (1-9) -> destination (extension/queue/sub-menu)", "cmt_he": "שיוך כל מקש בתפריט ליעד - שלוחה, תור או תפריט-משנה", "cmt_en": "Map each menu digit to a destination — extension, queue, or sub-menu"},
+      {"cmd": "IVR -> Set timeout/no-input destination", "cmt_he": "הגדרת יעד למקרה שהמתקשר לא בוחר אפשרות (timeout)", "cmt_en": "Set a destination for when the caller doesn't choose an option (timeout)"}
+    ],
+    "scenarios_he": [
+      "בניית תפריט פתיחה ראשי \"לחץ 1 למחלקת מכירות, 2 לתמיכה\"",
+      "תפריט-משנה למחלקת תמיכה לפי סוג תקלה",
+      "הגדרת ניתוב חוץ-שעות לתא קולי כללי"
+    ],
+    "scenarios_en": [
+      "Building a main greeting menu \"press 1 for sales, 2 for support\"",
+      "A support-department sub-menu by issue type",
+      "Setting up after-hours routing to a general voicemail"
+    ],
+    "mistakes": [
+      {
+        "x_he": "אי-הגדרת יעד למקרה <span class=\"ltr-term\">timeout</span>/אי-בחירה, כך שהשיחה מתנתקת",
+        "x_en": "Not setting a destination for timeout/no-selection, causing the call to disconnect",
+        "fix_he": "הגדר תמיד יעד <span class=\"ltr-term\">fallback</span> (לרוב שלוחת קבלה או תא קולי כללי) למקרה שהמתקשר לא בוחר אפשרות בזמן",
+        "fix_en": "Always set a fallback destination (typically reception or general voicemail) for when the caller doesn't choose in time"
+      }
+    ],
+    "tags": "1com ivr auto-attendant menu routing config"
+  },
+  {
+    "id": "1com-call-routing-schedule",
+    "name": "1COM Time-Based Call Routing",
+    "cat": "ivr",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "ניתוב שיחות לפי שעות פעילות (<span class=\"ltr-term\">time conditions</span>) ולפי <span class=\"ltr-term\">DID</span> בפלטפורמת <span class=\"ltr-term\">1COM</span>.",
+    "desc_en": "Routing calls based on business-hours time conditions and DID numbers on the 1COM platform.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Routing -> Time Conditions -> define business hours", "cmt_he": "הגדרת שעות פעילות לכל יום בשבוע, כולל חגים מיוחדים", "cmt_en": "Define business hours for each day of the week, including special holidays"},
+      {"cmd": "Time Conditions -> in-hours destination vs out-of-hours destination", "cmt_he": "שיוך יעד נפרד לשעות פעילות ויעד אחר (תא קולי/הודעת סגירה) לשעות סגירה", "cmt_en": "Assign a separate destination for business hours vs. a different one (voicemail/closed message) for off-hours"},
+      {"cmd": "Routing -> DID -> assign to IVR / department / extension", "cmt_he": "כל מספר נכנס (DID) יכול להיות מנותב לתפריט IVR שונה או ליעד ישיר", "cmt_en": "Each inbound number (DID) can be routed to a different IVR menu or a direct destination"}
+    ],
+    "scenarios_he": [
+      "ניתוב שונה לשעות עבודה לעומת ערבי חג/חגים",
+      "מספר טלפון נפרד למחלקת מכירות שמנותב ישירות לתור המכירות",
+      "הודעת \"המשרד סגור\" אוטומטית מחוץ לשעות הפעילות"
+    ],
+    "scenarios_en": [
+      "Different routing for regular hours vs. holiday eves/holidays",
+      "A separate phone number for the sales department routed directly to the sales queue",
+      "An automatic \"office closed\" message outside business hours"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הגדרת <span class=\"ltr-term\">Time Condition</span> ללא עדכון לאזור הזמן הנכון של הארגון",
+        "x_en": "Setting a Time Condition without updating it to the organization's correct timezone",
+        "fix_he": "ודא שאזור הזמן בהגדרות 1COM תואם את אזור הזמן בפועל של המשרד - אחרת \"שעות פעילות\" יחושבו לפי זמן שגוי",
+        "fix_en": "Verify the timezone in 1COM's settings matches the office's actual timezone — otherwise \"business hours\" will be calculated against the wrong time"
+      }
+    ],
+    "tags": "1com routing time-conditions did schedule ivr"
+  },
+  {
+    "id": "1com-ivr-routing-issue",
+    "name": "1COM IVR / Routing Not Working as Expected",
+    "cat": "ivr",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון מצב בו ניתוב שיחות או תפריט <span class=\"ltr-term\">IVR</span> בפלטפורמת <span class=\"ltr-term\">1COM</span> לא מתנהג כצפוי.",
+    "desc_en": "Diagnosing a case where call routing or an IVR menu on 1COM doesn't behave as expected.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Routing -> trace DID -> confirm it points to the expected IVR/queue", "cmt_he": "אמת שה-DID הנבדק מנותב ל-IVR/תור הצפוי ולא לישות ישנה שהוחלפה", "cmt_en": "Verify the tested DID routes to the expected IVR/queue and not a stale entity that was replaced"},
+      {"cmd": "Time Conditions -> check current time vs configured business hours", "cmt_he": "השוואת השעה הנוכחית להגדרות שעות הפעילות - תקלות רבות נובעות מהתנגשות תנאי זמן", "cmt_en": "Compare current time to configured business hours — many issues stem from conflicting time conditions"},
+      {"cmd": "IVR -> verify digit mapping after recent menu edits", "cmt_he": "בדוק שמיפוי המקשים לא השתנה בעקבות עריכה אחרונה של התפריט", "cmt_en": "Check that digit mapping wasn't changed by a recent menu edit"}
+    ],
+    "scenarios_he": [
+      "מתקשרים מדווחים שהם מגיעים למחלקה הלא נכונה לאחר בחירת מקש",
+      "שיחות שהיו אמורות לעבור למוקד נכנסות לתא קולי כללי",
+      "ניתוב פעל נכון אתמול אך לא היום - חשד לתנאי זמן (Time Condition)"
+    ],
+    "scenarios_en": [
+      "Callers report reaching the wrong department after pressing a key",
+      "Calls that should reach the call center are landing in general voicemail",
+      "Routing worked correctly yesterday but not today — suspect a Time Condition"
+    ],
+    "mistakes": [
+      {
+        "x_he": "עדכון תפריט <span class=\"ltr-term\">IVR</span> אחד מבלי לבדוק תפריטי-משנה שמפנים אליו",
+        "x_en": "Updating one IVR menu without checking sub-menus that point into it",
+        "fix_he": "לאחר כל שינוי ב-IVR, עקוב אחר כל נתיב אפשרי (כל מקש בכל תפריט-משנה) כדי לאתר הפניות שבורות ליעדים שהוסרו",
+        "fix_en": "After any IVR change, walk through every possible path (each key in each sub-menu) to find broken references to removed destinations"
+      },
+      {
+        "x_he": "שינוי הגדרות <span class=\"ltr-term\">Time Condition</span> מבלי לבדוק חפיפה עם תנאי זמן אחרים על אותו DID",
+        "x_en": "Changing Time Condition settings without checking for overlap with other time conditions on the same DID",
+        "fix_he": "כשיש כמה Time Conditions על אותו DID, ודא שאין חפיפת שעות הגורמת לתוצאה לא ודאית - הקדימות בין תנאים חשובה",
+        "fix_en": "When multiple Time Conditions exist on the same DID, ensure there's no overlapping time range causing an ambiguous result — condition priority order matters"
+      }
+    ],
+    "tags": "1com ivr routing troubleshooting time-condition did"
+  },
+  {
+    "id": "1com-queue-call-center-setup",
+    "name": "1COM Queue / Call Center Setup",
+    "cat": "queue",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת תור שיחות (<span class=\"ltr-term\">queue</span>) למוקד שירות בפלטפורמת <span class=\"ltr-term\">1COM</span> — אסטרטגיית חלוקה ונציגים.",
+    "desc_en": "Setting up a call queue for a service call center on the 1COM platform — distribution strategy and agents.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Queues -> Create Queue -> assign agent extensions", "cmt_he": "יצירת תור ושיוך שלוחות נציגים אליו", "cmt_en": "Create a queue and assign agent extensions to it"},
+      {"cmd": "Queue -> Strategy: Ring All / Round Robin / Fewest Calls", "cmt_he": "בחירת אסטרטגיית חלוקת שיחות - לכל הנציגים, רוטציה, או למי שענה לפחות שיחות", "cmt_en": "Choose a distribution strategy — all agents ring, rotation, or whoever answered the fewest calls"},
+      {"cmd": "Queue -> Enable Call Back (offer caller a callback instead of waiting)", "cmt_he": "הצעת \"החזר שיחה\" למתקשר במקום החזקה בתור ארוכה", "cmt_en": "Offer the caller a callback instead of holding in a long queue"}
+    ],
+    "scenarios_he": [
+      "הקמת מוקד תמיכה חדש עם 5 נציגים ואסטרטגיית Round Robin",
+      "מוקד מכירות עומס גבוה - הפעלת Call Back לשעות עומס",
+      "תור VIP עם נציגים מנוסים בלבד ואסטרטגיית Fewest Calls"
+    ],
+    "scenarios_en": [
+      "Setting up a new support call center with 5 agents and a Round Robin strategy",
+      "A high-volume sales queue — enabling Call Back during peak hours",
+      "A VIP queue with experienced agents only and a Fewest Calls strategy"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בחירת אסטרטגיית <span class=\"ltr-term\">Ring All</span> לתור גדול עם הרבה נציגים",
+        "x_en": "Choosing the Ring All strategy for a large queue with many agents",
+        "fix_he": "Ring All מתאים לתורים קטנים בלבד - בתור גדול היא גורמת לעומס מכשירים מיותר; השתמש ב-Round Robin או Fewest Calls",
+        "fix_en": "Ring All is suitable only for small queues — on a large queue it causes unnecessary device load; use Round Robin or Fewest Calls instead"
+      }
+    ],
+    "tags": "1com queue call-center agents strategy roundrobin callback"
+  },
+  {
+    "id": "1com-queue-not-distributing",
+    "name": "1COM Queue Not Distributing Calls",
+    "cat": "queue",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "אבחון מצב בו תור שיחות בפלטפורמת <span class=\"ltr-term\">1COM</span> לא מחלק שיחות לנציגים כצפוי.",
+    "desc_en": "Diagnosing a case where a call queue on the 1COM platform isn't distributing calls to agents as expected.",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Queue -> check agent status (logged in / paused / offline)", "cmt_he": "תור מחלק שיחות רק לנציגים שמחוברים ולא במצב Paused", "cmt_en": "A queue only distributes calls to agents who are logged in and not Paused"},
+      {"cmd": "Queue -> verify extension registration status of each agent", "cmt_he": "נציג עם שלוחה לא רשומה (Unregistered) לא יקבל שיחות מהתור גם אם מסומן Available", "cmt_en": "An agent whose extension isn't registered won't receive queue calls even if marked Available"},
+      {"cmd": "Queue -> check Max Wait Time / overflow destination", "cmt_he": "אם הוגדר זמן מקסימלי להמתנה, שיחות עוברות ל-overflow ולא לנציגים", "cmt_en": "If a max wait time is configured, calls overflow elsewhere instead of reaching agents"}
+    ],
+    "scenarios_he": [
+      "מתקשרים נכנסים לתור אך אף נציג לא מקבל שיחה",
+      "רק חלק מהנציגים בתור מקבלים שיחות",
+      "שיחות עוברות ל-overflow לפני שמישהו עונה"
+    ],
+    "scenarios_en": [
+      "Callers enter the queue but no agent receives a call",
+      "Only some of the queue's agents are receiving calls",
+      "Calls overflow before anyone answers"
+    ],
+    "mistakes": [
+      {
+        "x_he": "נציגים נשארים במצב <span class=\"ltr-term\">Paused</span> מסיבה ישנה ולא שמים לב שזה חוסם שיחות חדשות",
+        "x_en": "Agents remain in Paused status for an old reason and don't notice it's blocking new calls",
+        "fix_he": "בדוק את סטטוס כל הנציגים בתור באופן יזום - מצב Paused שנשאר פעיל מיום קודם הוא הגורם הנפוץ ביותר לתור שלא מחלק שיחות",
+        "fix_en": "Proactively check every agent's status in the queue — a Paused state left over from a previous day is the most common cause of a queue not distributing calls"
+      },
+      {
+        "x_he": "שלוחת נציג נפלה מהרישום (<span class=\"ltr-term\">unregistered</span>) אך הסטטוס בפורטל מציג \"זמין\"",
+        "x_en": "An agent's extension dropped registration but the portal status still shows \"available\"",
+        "fix_he": "סטטוס \"זמין\" בפורטל לא מבטיח שהמכשיר רשום בפועל - בדוק רישום SIP בנפרד עבור נציגים שלא מקבלים שיחות",
+        "fix_en": "An \"available\" portal status doesn't guarantee the device is actually registered — check SIP registration separately for agents who aren't receiving calls"
+      }
+    ],
+    "tags": "1com queue troubleshooting agents paused registration overflow"
+  },
+  {
+    "id": "1com-wowchat-omnichannel",
+    "name": "1COM Wow-Chat Omnichannel Setup",
+    "cat": "omnichannel",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת <span class=\"ltr-term\">Wow-Chat</span> - פלטפורמת ה-<span class=\"ltr-term\">omnichannel</span> של 1COM לניהול תקשורת מרובת ערוצים (WhatsApp, צ'אט אתר, מייל) בתיבה מאוחדת.",
+    "desc_en": "Setting up Wow-Chat — 1COM's omnichannel platform for managing multi-channel communication (WhatsApp, website chat, email) in a unified inbox.",
+    "source_url": "https://1com.co.il/",
+    "source_name": "1COM Cloud PBX",
+    "usage": [
+      {"cmd": "Admin Portal -> Wow-Chat -> Connect channel (WhatsApp Business / Web Chat / Email)", "cmt_he": "חיבור ערוץ תקשורת חדש לתיבה המאוחדת", "cmt_en": "Connect a new communication channel to the unified inbox"},
+      {"cmd": "Wow-Chat -> Routing rules -> assign channel to department/queue", "cmt_he": "הגדרת חוקי ניתוב המפנים פניות מערוץ מסוים למחלקה או תור מתאים", "cmt_en": "Define routing rules that direct inquiries from a specific channel to the appropriate department/queue"},
+      {"cmd": "Wow-Chat -> Unified inbox -> agent views all channels in one screen", "cmt_he": "נציג רואה ועונה לפניות מכל הערוצים ממסך אחד מאוחד", "cmt_en": "An agent sees and replies to inquiries from all channels in one unified screen"}
+    ],
+    "scenarios_he": [
+      "חיבור ערוץ WhatsApp Business עסקי לקבלת פניות לקוחות",
+      "ניתוב פניות צ'אט מאתר החברה לתור התמיכה הטכנית",
+      "נציג עונה ללקוח בוואטסאפ וגם בטלפון מאותו מסך"
+    ],
+    "scenarios_en": [
+      "Connecting a business WhatsApp Business channel to receive customer inquiries",
+      "Routing website chat inquiries to the technical support queue",
+      "An agent replies to a customer via WhatsApp and phone from the same screen"
+    ],
+    "mistakes": [
+      {
+        "x_he": "חיבור ערוץ <span class=\"ltr-term\">WhatsApp Business</span> מבלי להגדיר כללי ניתוב, כך שכל הפניות מצטברות ללא הקצאה",
+        "x_en": "Connecting a WhatsApp Business channel without configuring routing rules, so all inquiries pile up unassigned",
+        "fix_he": "לאחר חיבור כל ערוץ ב-Wow-Chat, הגדר חוקי ניתוב לתור/מחלקה מתאים לפני הפעלתו בפועל - כדי שפניות לא יישארו ללא טיפול",
+        "fix_en": "After connecting any channel in Wow-Chat, configure routing rules to the appropriate queue/department before going live — so inquiries don't sit unhandled"
+      }
+    ],
+    "tags": "1com wowchat omnichannel whatsapp chat unified-inbox"
+  },
+  {
+    "id": "1com-realtime-monitoring",
+    "name": "1COM Real-Time Monitoring Dashboard",
+    "cat": "monitoring",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת ושימוש בממשק <span class=\"ltr-term\">Smart Monitoring</span> לניטור שיחות בזמן אמת בפלטפורמת <span class=\"ltr-term\">1COM</span>.",
+    "desc_en": "Setting up and using the Smart Monitoring interface for real-time call monitoring on the 1COM platform.",
+    "source_url": "https://1com.co.il/service/%D7%9E%D7%9E%D7%A9%D7%A7-%D7%96%D7%9E%D7%9F-%D7%90%D7%9E%D7%AA/",
+    "source_name": "1COM Real-Time Interface Implementation",
+    "usage": [
+      {"cmd": "Step 1: Connect -> link monitoring interface to PBX account", "cmt_he": "שלב ראשון - חיבור ממשק הניטור לחשבון המרכזייה", "cmt_en": "First step — connect the monitoring interface to the PBX account"},
+      {"cmd": "Step 2: KPIs/Dashboards -> select queues and metrics to display", "cmt_he": "שלב שני - בחירת תורים ומדדים (KPIs) להצגה בלוח הבקרה", "cmt_en": "Second step — select queues and KPIs to display on the dashboard"},
+      {"cmd": "Step 3: Permissions -> assign dashboard access per role", "cmt_he": "שלב שלישי - הקצאת הרשאות גישה ללוח הבקרה לפי תפקיד", "cmt_en": "Third step — assign dashboard access permissions per role"},
+      {"cmd": "Step 4: Data validation -> compare dashboard numbers vs queue reports", "cmt_he": "שלב רביעי - אימות שהנתונים בלוח הבקרה תואמים לדוחות התור", "cmt_en": "Fourth step — validate dashboard numbers match queue reports"}
+    ],
+    "scenarios_he": [
+      "מנהל מוקד רוצה לוח בקרה חיובי עם מספר שיחות ממתינות וזמן המתנה ממוצע בזמן אמת",
+      "הקמת לוח ניטור חדש עבור תור שנוצר לאחרונה",
+      "אימות שמספרי הניטור בזמן אמת תואמים את דוחות ה-CDR בסוף היום"
+    ],
+    "scenarios_en": [
+      "A call center manager wants a live dashboard showing waiting calls and average wait time in real time",
+      "Setting up a new monitoring dashboard for a recently created queue",
+      "Validating that real-time monitoring numbers match end-of-day CDR reports"
+    ],
+    "mistakes": [
+      {
+        "x_he": "דילוג על שלב אימות הנתונים (שלב 4) לאחר הקמת לוח הבקרה",
+        "x_en": "Skipping the data-validation step (step 4) after setting up the dashboard",
+        "fix_he": "השווה תמיד את המספרים בלוח הניטור בזמן אמת לדוחות התור הרגילים בסוף היום - פערים מצביעים על תור או הרשאה שלא הוגדרו נכון",
+        "fix_en": "Always compare real-time monitoring numbers to the regular end-of-day queue reports — discrepancies indicate a misconfigured queue or permission"
+      }
+    ],
+    "tags": "1com monitoring dashboard realtime kpi smart-monitoring"
+  },
+  {
+    "id": "1com-crm-integration-issue",
+    "name": "1COM CRM Integration — Caller Info Not Showing",
+    "cat": "integration",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "אבחון מצב בו אינטגרציית <span class=\"ltr-term\">CRM</span> עם פלטפורמת <span class=\"ltr-term\">1COM</span> לא מציגה פרטי מתקשר (<span class=\"ltr-term\">screen-pop</span>).",
+    "desc_en": "Diagnosing a case where the CRM integration with the 1COM platform doesn't show caller information (screen-pop).",
+    "source_url": "https://1com.co.il/support/",
+    "source_name": "1COM Support Portal",
+    "usage": [
+      {"cmd": "Check CRM integration API token validity/expiry in 1COM portal", "cmt_he": "בדוק שתוקף ה-API token של אינטגרציית ה-CRM בפורטל 1COM לא פג", "cmt_en": "Check whether the CRM integration's API token in the 1COM portal has expired"},
+      {"cmd": "Compare incoming Caller ID format vs CRM contact phone format (+972 vs 0)", "cmt_he": "השווה את פורמט מספר המתקשר הנכנס (לדוגמה +972501234567) לפורמט השמור בכרטיס הלקוח ב-CRM (לדוגמה 0501234567)", "cmt_en": "Compare the incoming Caller ID format (e.g. +972501234567) to the format stored on the CRM contact card (e.g. 0501234567)"},
+      {"cmd": "Test screen-pop with a known test contact and check CRM integration logs", "cmt_he": "בצע שיחת בדיקה ממספר ידוע הקיים ב-CRM ועקוב אחר לוגי האינטגרציה", "cmt_en": "Run a test call from a known number that exists in the CRM and watch the integration logs"}
+    ],
+    "scenarios_he": [
+      "כרטיס לקוח לא נפתח אוטומטית כאשר לקוח קיים מתקשר",
+      "האינטגרציה הפסיקה לעבוד אחרי שהיתה תקינה - חשד לתוקף API שפג",
+      "screen-pop עובד רק לחלק מהלקוחות - חשד לפורמט מספרי טלפון"
+    ],
+    "scenarios_en": [
+      "A contact card doesn't open automatically when an existing customer calls",
+      "The integration stopped working after previously functioning — suspect an expired API token",
+      "Screen-pop works only for some customers — suspect a phone number format mismatch"
+    ],
+    "mistakes": [
+      {
+        "x_he": "פורמט מספרי טלפון לא אחיד בין 1COM (בינלאומי +972) לבין ה-CRM (מקומי 05X)",
+        "x_en": "Inconsistent phone number format between 1COM (international +972) and the CRM (local 05X)",
+        "fix_he": "ודא שכלל הנירמול (<span class=\"ltr-term\">normalization rule</span>) באינטגרציה מתרגם בין הפורמט הבינלאומי שמגיע מ-1COM לפורמט המקומי שבו שמורים אנשי הקשר ב-CRM, ולהפך",
+        "fix_en": "Ensure the integration's normalization rule translates between the international format coming from 1COM and the local format used to store CRM contacts, and vice versa"
+      },
+      {
+        "x_he": "<span class=\"ltr-term\">API token</span> של אינטגרציית ה-CRM פג תוקף ולא חודש",
+        "x_en": "The CRM integration's API token expired and wasn't renewed",
+        "fix_he": "הגדר תזכורת לפני תוקף ה-API token, וודא תהליך לחידוש אוטומטי או ידני מתועד מול 1COM",
+        "fix_en": "Set a reminder ahead of API token expiry, and ensure a documented automatic or manual renewal process with 1COM"
+      }
+    ],
+    "secnote_he": "<span class=\"ltr-term\">API tokens</span> לאינטגרציית CRM מעניקים גישה לפרטי לקוחות - אחסן אותם רק בצד השרת של האינטגרציה, לעולם לא בקוד צד-לקוח, והחלף token שדלף באופן מיידי.",
+    "secnote_en": "CRM integration API tokens grant access to customer data — store them only on the integration's server side, never in client-side code, and rotate any leaked token immediately.",
+    "tags": "1com crm integration screen-pop api token caller-id troubleshooting"
+  }
+]

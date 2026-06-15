@@ -160,7 +160,7 @@ All JSON files use a bilingual field naming convention:
 
 The `t(entry, 'field')` helper in `index.html` returns the correct language based on `LANG`.
 
-### `data/linux.json`, `data/cmd.json`, `data/network.json`
+### `data/linux.json`, `data/cmd.json`, `data/network.json`, `data/1com.json`, `data/mirtapbx.json`
 
 ```jsonc
 {
@@ -210,6 +210,8 @@ The `t(entry, 'field')` helper in `index.html` returns the correct language base
 | `linux.json` | `network`, `process`, `disk`, `permission`, `system`, `logs`, `user` |
 | `cmd.json` | `network`, `process`, `disk`, `system`, `user` |
 | `network.json` | `diagnostic`, `ports`, `routing`, `dns`, `firewall`, `voip` |
+| `1com.json` | `hardware`, `config`, `ivr`, `queue`, `omnichannel`, `monitoring`, `integration` |
+| `mirtapbx.json` | `architecture`, `cluster`, `sip`, `recording`, `reporting`, `integration`, `webrtc` |
 
 ### `data/troubleshoot.json`
 
@@ -275,7 +277,10 @@ The `t(entry, 'field')` helper in `index.html` returns the correct language base
    - `ss64.com`, `linux.org`, `kernel.org`, `iana.org`, `rfc-editor.org`
    - `nmap.org`, `wireshark.org`, `ubuntu.com`, `redhat.com`, `debian.org`
    - `cloudflare.com`, `cisco.com`, `tcpdump.org`, `iperf.fr`, `software.es.net`
-   - `asterisk.org`
+   - `asterisk.org`, `1com.co.il`, `mirtapbx.com`, `queuemetrics.com`
+     (vendor-official docs for Netvill's 1COM / MirtaPBX PBX platforms —
+     see "Source Validation (very high)" below and
+     `flagged/approved-sources.md`)
 
 8. **Blocked domains** (validator will reject):
    `stackoverflow.com`, `reddit.com`, `medium.com`, `youtube.com`, `github.com`, `geeksforgeeks.org`, `w3schools.com`, `*.blogspot.com`

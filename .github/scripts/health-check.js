@@ -13,7 +13,7 @@ const APPROVED_DOMAINS = [
   'ss64.com', 'linux.org', 'kernel.org', 'iana.org', 'rfc-editor.org',
   'nmap.org', 'wireshark.org', 'ubuntu.com', 'redhat.com', 'debian.org',
   'cloudflare.com', 'cisco.com', 'tcpdump.org', 'iperf.fr', 'software.es.net',
-  'asterisk.org',
+  'asterisk.org', '1com.co.il', 'mirtapbx.com', 'queuemetrics.com',
 ];
 
 function isApprovedDomain(url) {
@@ -76,6 +76,8 @@ const files = [
   { name: 'linux.json', type: 'command' },
   { name: 'cmd.json', type: 'command' },
   { name: 'network.json', type: 'command' },
+  { name: '1com.json', type: 'command' },
+  { name: 'mirtapbx.json', type: 'command' },
   { name: 'troubleshoot.json', type: 'troubleshoot' },
 ];
 

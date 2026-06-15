@@ -33,6 +33,28 @@
     "categories": ["diagnostic", "ports", "routing", "dns", "firewall", "voip"]
   },
   {
+    "id": "1com",
+    "label_he": "1COM מרכזייה",
+    "label_en": "1COM PBX",
+    "icon": "📞",
+    "data_file": "data/1com.json",
+    "status": "active",
+    "filter_type": "command",
+    "categories_he": {"hardware":"חומרה וטלפונים","config":"הגדרות מרכזייה","ivr":"ניתוב ומענה אוטומטי","queue":"תורים ומוקד","omnichannel":"Omnichannel (Wow-Chat)","monitoring":"ניטור בזמן אמת","integration":"אינטגרציות"},
+    "categories": ["hardware", "config", "ivr", "queue", "omnichannel", "monitoring", "integration"]
+  },
+  {
+    "id": "mirtapbx",
+    "label_he": "MirtaPBX",
+    "label_en": "MirtaPBX",
+    "icon": "🛠️",
+    "data_file": "data/mirtapbx.json",
+    "status": "active",
+    "filter_type": "command",
+    "categories_he": {"architecture":"ארכיטקטורה","cluster":"אשכול שרתים","sip":"רישום SIP","recording":"הקלטות","reporting":"דוחות","integration":"אינטגרציות","webrtc":"WebRTC"},
+    "categories": ["architecture", "cluster", "sip", "recording", "reporting", "integration", "webrtc"]
+  },
+  {
     "id": "troubleshoot",
     "label_he": "פתרון תקלות",
     "label_en": "Troubleshoot",

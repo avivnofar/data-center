@@ -1,0 +1,407 @@
+[
+  {
+    "id": "mirtapbx-architecture-overview",
+    "name": "MirtaPBX Architecture Overview",
+    "cat": "architecture",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "סקירת הארכיטקטורה התלת-שכבתית של <span class=\"ltr-term\">MirtaPBX</span>: ממשק/<span class=\"ltr-term\">provisioning</span>, מסד נתונים מרכזי, ו-<span class=\"ltr-term\">Asterisk node pool</span>.",
+    "desc_en": "Overview of MirtaPBX's three-layer architecture: UI/provisioning, centralized database, and Asterisk node pool.",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "Layer 1: Web UI / Provisioning interface", "cmt_he": "שכבת הניהול - ממשק הוובE לניהול שוכרים, שלוחות והגדרות", "cmt_en": "The management layer — web UI for managing tenants, extensions, and settings"},
+      {"cmd": "Layer 2: Centralized MySQL database", "cmt_he": "מסד נתונים מרכזי מאחסן את כל הקונפיגורציה של כל השוכרים", "cmt_en": "A centralized database stores configuration for all tenants"},
+      {"cmd": "Layer 3: Asterisk node pool / cluster", "cmt_he": "מאגר שרתי Asterisk שמריצים בפועל את השיחות ושולפים קונפיגורציה מהמסד המרכזי", "cmt_en": "A pool of Asterisk servers that actually run the calls and pull configuration from the central database"}
+    ],
+    "scenarios_he": [
+      "הבנת זרימת קונפיגורציה בעת תכנון תוספת שוכר חדש",
+      "תכנון תוספת node לאשכול כדי להגדיל קיבולת שיחות",
+      "אבחון תקלה כללית - יש לזהות באיזו שכבה היא מתרחשת"
+    ],
+    "scenarios_en": [
+      "Understanding configuration flow when planning to add a new tenant",
+      "Planning to add a node to the cluster to increase call capacity",
+      "Diagnosing a general issue — identify which layer it occurs in"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הנחה ש-<span class=\"ltr-term\">MirtaPBX</span> עובד כמו Asterisk עצמאי עם קבצי קונפיגורציה סטטיים",
+        "x_en": "Assuming MirtaPBX works like standalone Asterisk with static config files",
+        "fix_he": "ב-MirtaPBX הקונפיגורציה נשמרת ב-<span class=\"ltr-term\">Realtime DB</span> ולא בקבצים סטטיים כמו sip.conf - שינויים נכנסים לתוקף ללא reload (ראה ערך \"Realtime DB vs Flat Config\")",
+        "fix_en": "In MirtaPBX, configuration is stored in a Realtime DB, not static files like sip.conf — changes take effect without a reload (see the \"Realtime DB vs Flat Config\" entry)"
+      }
+    ],
+    "tags": "mirtapbx architecture overview cluster database asterisk"
+  },
+  {
+    "id": "mirtapbx-realtime-db-vs-flat-config",
+    "name": "MirtaPBX Realtime DB vs Flat Config Files",
+    "cat": "architecture",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "ההבדל בין מודל ה-<span class=\"ltr-term\">Realtime DB</span> של <span class=\"ltr-term\">MirtaPBX</span> לקבצי קונפיגורציה סטטיים (flat files) ב-Asterisk רגיל.",
+    "desc_en": "The difference between MirtaPBX's Realtime DB model and static flat configuration files in standard Asterisk.",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "Standard Asterisk: sip.conf / extensions.conf -> requires reload/restart", "cmt_he": "ב-Asterisk רגיל, שינוי קבצי קונפיגורציה מחייב reload או restart של המודול הרלוונטי", "cmt_en": "In standard Asterisk, changing config files requires a reload or restart of the relevant module"},
+      {"cmd": "MirtaPBX Realtime DB: changes via UI -> written to MySQL -> read live by Asterisk", "cmt_he": "ב-MirtaPBX שינויים מבוצעים בממשק, נשמרים ב-MySQL ונקראים על ידי Asterisk באופן חי", "cmt_en": "In MirtaPBX, changes are made via the UI, saved to MySQL, and read live by Asterisk"},
+      {"cmd": "No reload needed for extension/queue/route changes", "cmt_he": "שינויי שלוחה, תור או ניתוב נכנסים לתוקף ללא צורך ב-reload", "cmt_en": "Extension, queue, and route changes take effect without needing a reload"}
+    ],
+    "scenarios_he": [
+      "שינוי הגדרת שלוחה ובדיקה אם הוא נכנס לתוקף מיידית או דורש reload",
+      "הסבר למנהל מערכת חדש מדוע אין צורך ב-reload כמו ב-Asterisk רגיל",
+      "אבחון מצב בו שינוי לא נכנס לתוקף - בדוק אם מדובר בהגדרה שכן דורשת reload"
+    ],
+    "scenarios_en": [
+      "Changing an extension setting and checking whether it takes effect immediately or requires a reload",
+      "Explaining to a new system administrator why no reload is needed unlike standard Asterisk",
+      "Diagnosing a change that didn't take effect — check if it's a setting that does require a reload"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הרצת <span class=\"ltr-term\">asterisk -rx \"core reload\"</span> מתוך הרגל מ-Asterisk רגיל, מבלי לבדוק אם זה נדרש או מסוכן ב-MirtaPBX",
+        "x_en": "Running asterisk -rx \"core reload\" out of habit from standard Asterisk, without checking if it's needed or risky on MirtaPBX",
+        "fix_he": "ברוב המקרים אין צורך ב-reload ב-MirtaPBX בשל מודל ה-Realtime DB; אם תקלה נמשכת בכל זאת, פנה לתיעוד הרשמי לפני הרצת פקודות reload ידניות שיכולות להשפיע על כל ה-cluster",
+        "fix_en": "In most cases no reload is needed on MirtaPBX due to the Realtime DB model; if an issue persists anyway, consult official docs before running manual reload commands that could affect the whole cluster"
+      }
+    ],
+    "tags": "mirtapbx realtime-db config architecture asterisk reload"
+  },
+  {
+    "id": "mirtapbx-multitenant-isolation",
+    "name": "MirtaPBX Multitenant Architecture & Tenant Isolation",
+    "cat": "architecture",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "מודל ה-<span class=\"ltr-term\">multitenant</span> של <span class=\"ltr-term\">MirtaPBX</span> ואופן הבדלת הנתונים וההגדרות בין שוכרים (<span class=\"ltr-term\">tenant isolation</span>).",
+    "desc_en": "MirtaPBX's multitenant model and how data/settings are isolated between tenants.",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "Each tenant has its own extensions, queues, routes, and recordings namespace", "cmt_he": "לכל שוכר מרחב שמות נפרד לשלוחות, תורים, ניתובים והקלטות", "cmt_en": "Each tenant has its own namespace for extensions, queues, routes, and recordings"},
+      {"cmd": "Tenant Variables -> per-tenant overrides (e.g. server_host for load balancing)", "cmt_he": "משתני שוכר מאפשרים override של הגדרות גלובליות באופן פר-שוכר", "cmt_en": "Tenant variables allow per-tenant overrides of global settings"},
+      {"cmd": "Admin roles scoped per tenant vs system-wide super-admin", "cmt_he": "תפקידי ניהול מוגבלים לשוכר ספציפי, לעומת super-admin שמנהל את כל המערכת", "cmt_en": "Admin roles are scoped to a specific tenant, vs. a system-wide super-admin"}
+    ],
+    "scenarios_he": [
+      "הקמת שוכר חדש (לקוח עסקי) על אותו אשכול שרתים",
+      "אימות שהקלטות/דוחות של שוכר אחד לא נגישים לשוכר אחר",
+      "מנהל שוכר מבקש שינוי גלובלי שמשפיע על שוכרים אחרים - יש לעבור ל-Tenant Variables"
+    ],
+    "scenarios_en": [
+      "Onboarding a new tenant (business customer) on the same server cluster",
+      "Verifying that one tenant's recordings/reports aren't accessible to another tenant",
+      "A tenant admin requests a global change that affects other tenants — use Tenant Variables instead"
+    ],
+    "mistakes": [
+      {
+        "x_he": "מתן הרשאת <span class=\"ltr-term\">super-admin</span> למנהל שוכר בודד \"כדי לפתור תקלה מהר\"",
+        "x_en": "Granting super-admin permission to a single tenant's admin \"to fix an issue quickly\"",
+        "fix_he": "הרשאות super-admin חורגות מתחום השוכר ויכולות לחשוף/לשנות נתוני שוכרים אחרים - השתמש בהרשאות פר-שוכר ופנה לתמיכה לשינויים חוצי-מערכת",
+        "fix_en": "Super-admin permissions extend beyond a single tenant's scope and can expose/modify other tenants' data — use per-tenant permissions and contact support for cross-system changes"
+      }
+    ],
+    "secnote_he": "הקפד שהרשאות מנהל יוגבלו לשוכר הרלוונטי בלבד - חשבון עם הרשאות חוצות-שוכרים שנפרץ חושף את כל הלקוחות על האשכול.",
+    "secnote_en": "Ensure admin permissions are scoped to the relevant tenant only — a compromised account with cross-tenant permissions exposes every customer on the cluster.",
+    "tags": "mirtapbx multitenant tenant-isolation architecture security roles"
+  },
+  {
+    "id": "mirtapbx-add-cluster-node",
+    "name": "MirtaPBX Adding a Node to a Cluster",
+    "cat": "cluster",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "תהליך הוספת <span class=\"ltr-term\">node</span> (שרת Asterisk) חדש לאשכול <span class=\"ltr-term\">MirtaPBX</span> קיים.",
+    "desc_en": "The process of adding a new node (Asterisk server) to an existing MirtaPBX cluster.",
+    "source_url": "https://mirtapbx.com/manual/index.php/Adding_a_node_to_a_cluster",
+    "source_name": "MirtaPBX Manual — Adding a node to a cluster",
+    "usage": [
+      {"cmd": "manager.conf -> configure mutual AMI authentication between nodes", "cmt_he": "הגדרת אימות AMI הדדי בין הצומת הקיים לצומת החדש ב-manager.conf", "cmt_en": "Configure mutual AMI authentication between the existing node and the new node in manager.conf"},
+      {"cmd": "sip.conf -> add peer trunk entries between nodes", "cmt_he": "הוספת רשומות trunk מסוג peer בין הצמתים ב-sip.conf לאפשר ניתוב שיחות פנימי", "cmt_en": "Add peer trunk entries between nodes in sip.conf to allow internal call routing"},
+      {"cmd": "include/db.inc.php -> enable sipregs for the new node", "cmt_he": "הפעלת sipregs בקובץ db.inc.php כדי שהצומת החדש ידווח רישומי SIP למסד הנתונים המרכזי", "cmt_en": "Enable sipregs in db.inc.php so the new node reports SIP registrations to the central database"},
+      {"cmd": "extconfig.conf -> map ODBC tables (sipregs/queues/ps_contacts) per node", "cmt_he": "מיפוי טבלאות ODBC (sipregs, queues, ps_contacts) לצומת החדש ב-extconfig.conf", "cmt_en": "Map ODBC tables (sipregs, queues, ps_contacts) for the new node in extconfig.conf"},
+      {"cmd": "Admin -> PBX Nodes -> register new node", "cmt_he": "רישום הצומת החדש בממשק הניהול תחת PBX Nodes", "cmt_en": "Register the new node in the admin UI under PBX Nodes"}
+    ],
+    "scenarios_he": [
+      "הוספת שרת נוסף לאשכול כדי להגדיל קיבולת שיחות במהלך גידול עסקי",
+      "הוספת node ב-data center גיאוגרפי שונה לצורכי redundancy",
+      "תקלה בהוספת node - בדוק כל אחד מהשלבים לפי הסדר (manager.conf, sip.conf, db.inc.php, extconfig.conf, Admin)"
+    ],
+    "scenarios_en": [
+      "Adding another server to the cluster to increase call capacity during business growth",
+      "Adding a node in a different geographic data center for redundancy",
+      "An issue when adding a node — check each step in order (manager.conf, sip.conf, db.inc.php, extconfig.conf, Admin)"
+    ],
+    "mistakes": [
+      {
+        "x_he": "דילוג על הפעלת <span class=\"ltr-term\">sipregs</span> ב-db.inc.php לצומת החדש",
+        "x_en": "Skipping enabling sipregs in db.inc.php for the new node",
+        "fix_he": "אם sipregs לא מופעל, רישומי SIP מהצומת החדש לא יופיעו במסד הנתונים המרכזי וה-BLF/presence לא יסונכרנו נכון בין הצמתים",
+        "fix_en": "If sipregs isn't enabled, SIP registrations from the new node won't appear in the central database, and BLF/presence won't sync correctly between nodes"
+      },
+      {
+        "x_he": "אי-הוספת רשומות <span class=\"ltr-term\">peer trunk</span> דו-כיוונית בין הצמתים ב-sip.conf",
+        "x_en": "Not adding bidirectional peer trunk entries between nodes in sip.conf",
+        "fix_he": "ודא שה-trunk מוגדר משני הכיוונים - מהצומת הקיים לחדש ומהחדש לקיים - אחרת שיחות חוצות-צמתים יעבדו רק בכיוון אחד",
+        "fix_en": "Ensure the trunk is configured in both directions — from the existing node to the new one and vice versa — otherwise cross-node calls will only work in one direction"
+      }
+    ],
+    "tags": "mirtapbx cluster node manager sip extconfig pbx-nodes"
+  },
+  {
+    "id": "mirtapbx-load-balancing-tenant-variables",
+    "name": "MirtaPBX Load Balancing via Tenant Variables",
+    "cat": "cluster",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "שימוש ב-<span class=\"ltr-term\">Tenant Variables</span> לאיזון עומסים (<span class=\"ltr-term\">load balancing</span>) בין שרתים באשכול <span class=\"ltr-term\">MirtaPBX</span>.",
+    "desc_en": "Using Tenant Variables for load balancing across servers in a MirtaPBX cluster.",
+    "source_url": "https://mirtapbx.com/manual/index.php/Using_tenant_variables_to_manage_load_balancing",
+    "source_name": "MirtaPBX Manual — Using tenant variables to manage load balancing",
+    "usage": [
+      {"cmd": "Admin -> Provisioning -> Variables -> server_host", "cmt_he": "משתנה server_host קובע לאיזה שרת המכשירים של השוכר מתחברים", "cmt_en": "The server_host variable determines which server the tenant's devices connect to"},
+      {"cmd": "Change server_host -> click \"Enforce\" to migrate tenant devices", "cmt_he": "שינוי הערך ולחיצה על Enforce מעבירה בפועל את כל מכשירי השוכר לשרת החדש", "cmt_en": "Changing the value and clicking \"Enforce\" actually migrates all of the tenant's devices to the new server"},
+      {"cmd": "Cold migration: devices re-provision and re-register on new node", "cmt_he": "המעבר הוא \"קר\" - המכשירים מתבצעים provisioning מחדש ונרשמים לצומת החדש", "cmt_en": "The migration is \"cold\" — devices re-provision and re-register on the new node"}
+    ],
+    "scenarios_he": [
+      "צומת אחד עמוס מדי - העברת שוכר שלם לצומת אחר באשכול",
+      "תחזוקה מתוכננת לצומת - העברת השוכרים שעליו לצמתים אחרים מראש",
+      "בדיקת תוצאת ה-Enforce לאחר שינוי server_host - ודא שכל המכשירים נרשמו לצומת החדש"
+    ],
+    "scenarios_en": [
+      "A node is overloaded — migrate an entire tenant to another node in the cluster",
+      "Planned maintenance on a node — migrate its tenants to other nodes in advance",
+      "Verifying the result of \"Enforce\" after changing server_host — confirm all devices registered on the new node"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הפעלת <span class=\"ltr-term\">Enforce</span> בשעות עומס מבלי להודיע למשתמשים שהמכשירים יתנתקו זמנית",
+        "x_en": "Clicking Enforce during business hours without warning users that devices will briefly disconnect",
+        "fix_he": "מכיוון שמדובר ב-cold migration, כל מכשירי השוכר יתנתקו ויתחברו מחדש - תזמן את הפעולה לחוץ שעות פעילות והודע למשתמשים מראש",
+        "fix_en": "Since this is a cold migration, all of the tenant's devices will disconnect and reconnect — schedule this outside business hours and notify users in advance"
+      }
+    ],
+    "tags": "mirtapbx cluster load-balancing tenant-variables migration provisioning"
+  },
+  {
+    "id": "mirtapbx-sip-registration-failure",
+    "name": "MirtaPBX SIP Registration Failure",
+    "cat": "sip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון כשל רישום <span class=\"ltr-term\">SIP</span> של שלוחה בפלטפורמת <span class=\"ltr-term\">MirtaPBX</span>.",
+    "desc_en": "Diagnosing a SIP registration failure for an extension on the MirtaPBX platform.",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "Check sipregs table -> verify extension appears with current IP", "cmt_he": "בדוק בטבלת sipregs (Realtime DB) שהשלוחה מופיעה עם כתובת IP נוכחית", "cmt_en": "Check the sipregs table (Realtime DB) to verify the extension appears with a current IP"},
+      {"cmd": "Verify extension's tenant matches the node it's registering against", "cmt_he": "ודא שהשוכר של השלוחה תואם לצומת שאליו היא מנסה להירשם (ראה Tenant Variables)", "cmt_en": "Verify the extension's tenant matches the node it's attempting to register against (see Tenant Variables)"},
+      {"cmd": "Check credentials (username/secret) match the extension config in admin UI", "cmt_he": "ודא שפרטי ההזדהות (שם משתמש/סיסמה) במכשיר תואמים להגדרת השלוחה בממשק הניהול", "cmt_en": "Verify the device's credentials (username/secret) match the extension configuration in the admin UI"}
+    ],
+    "scenarios_he": [
+      "שלוחה שעברה Enforce ל-load balancing ולא מתחברת לצומת החדש",
+      "שלוחה חדשה שהוגדרה לא נרשמת - בדוק התאמת שוכר (tenant) לצומת",
+      "שלוחה נרשמת ואז מתנתקת חזור ושוב (flapping registration)"
+    ],
+    "scenarios_en": [
+      "An extension that went through an Enforce load-balancing migration isn't registering on the new node",
+      "A newly created extension won't register — check tenant-to-node matching",
+      "An extension registers and then repeatedly drops (flapping registration)"
+    ],
+    "mistakes": [
+      {
+        "x_he": "בדיקת רישום רק מצד המכשיר מבלי לבדוק את טבלת <span class=\"ltr-term\">sipregs</span> במסד הנתונים המרכזי",
+        "x_en": "Checking registration only from the device side without checking the sipregs table in the central database",
+        "fix_he": "ב-MirtaPBX, מצב הרישום האמיתי משתקף בטבלת sipregs ב-Realtime DB - בדוק שם תחילה לפני פתרון תקלה במכשיר עצמו",
+        "fix_en": "In MirtaPBX, the true registration state is reflected in the sipregs table in the Realtime DB — check there first before troubleshooting the device itself"
+      }
+    ],
+    "tags": "mirtapbx sip registration troubleshooting sipregs tenant"
+  },
+  {
+    "id": "mirtapbx-config-change-not-applying",
+    "name": "MirtaPBX Configuration Change Not Taking Effect",
+    "cat": "sip",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "אבחון מצב בו שינוי הגדרה ב-<span class=\"ltr-term\">MirtaPBX</span> נשמר אך לא נכנס לתוקף בפועל.",
+    "desc_en": "Diagnosing a case where a configuration change in MirtaPBX is saved but doesn't actually take effect.",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "Confirm the change was saved successfully in the admin UI (no error)", "cmt_he": "ודא שההגדרה נשמרה בהצלחה בממשק הניהול ולא הוצגה הודעת שגיאה", "cmt_en": "Confirm the setting was saved successfully in the admin UI with no error message"},
+      {"cmd": "Identify which node(s) the affected extension/device is registered to", "cmt_he": "זהה לאיזה צומת/צמתים השלוחה או המכשיר המושפע רשומים", "cmt_en": "Identify which node(s) the affected extension/device is registered to"},
+      {"cmd": "For device-side settings (ringtone, BLF keys) -> device may need re-provisioning", "cmt_he": "הגדרות בצד המכשיר (צלצול, מקשי BLF) עשויות לדרוש provisioning חדש למכשיר ולא רק שמירה בממשק", "cmt_en": "Device-side settings (ringtone, BLF keys) may require re-provisioning the device, not just saving in the UI"}
+    ],
+    "scenarios_he": [
+      "שינוי כללי ניתוב לשלוחה - השיחות עדיין מתנתבות לפי ההגדרה הישנה",
+      "עדכון מקשי BLF במכשיר - המקשים החדשים לא מופיעים עד אתחול המכשיר",
+      "שינוי שבוצע בצומת אחד לא משתקף בצומת אחר באשכול"
+    ],
+    "scenarios_en": [
+      "Changed routing rules for an extension — calls still route per the old configuration",
+      "Updated BLF keys on a device — new keys don't appear until the device reboots",
+      "A change made on one node isn't reflected on another node in the cluster"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הנחה שכל שינוי נכנס לתוקף מיידית מאחר ש-MirtaPBX מבוסס <span class=\"ltr-term\">Realtime DB</span>",
+        "x_en": "Assuming every change takes effect immediately because MirtaPBX is Realtime-DB-based",
+        "fix_he": "הגדרות הנשמרות בצד השרת (ניתוב, תורים) נכנסות לתוקף ללא reload, אך הגדרות שצריכות להגיע למכשיר הפיזי (BLF, צלצולים) דורשות provisioning/אתחול מכשיר",
+        "fix_en": "Server-side settings (routing, queues) take effect without a reload, but settings that need to reach the physical device (BLF, ringtones) require device provisioning/reboot"
+      }
+    ],
+    "tags": "mirtapbx config troubleshooting realtime-db provisioning blf"
+  },
+  {
+    "id": "mirtapbx-recording-google-drive",
+    "name": "MirtaPBX Recording Storage via Google Drive",
+    "cat": "recording",
+    "diff": "advanced",
+    "sec": true,
+    "desc_he": "הגדרת אחסון הקלטות שיחות ב-<span class=\"ltr-term\">Google Drive</span> בפלטפורמת <span class=\"ltr-term\">MirtaPBX</span>.",
+    "desc_en": "Configuring call recording storage on Google Drive in the MirtaPBX platform.",
+    "source_url": "https://mirtapbx.com/manual/index.php/Configuring_Recording_Storage_using_Google_Drive",
+    "source_name": "MirtaPBX Manual — Configuring Recording Storage using Google Drive",
+    "usage": [
+      {"cmd": "Create a Google Cloud service account and download its JSON key", "cmt_he": "יצירת service account ב-Google Cloud והורדת קובץ ה-JSON של מפתח ההזדהות שלו", "cmt_en": "Create a Google Cloud service account and download its JSON authentication key file"},
+      {"cmd": "Share the target Google Drive folder with the service account email", "cmt_he": "שיתוף תיקיית Google Drive המיועדת עם כתובת המייל של ה-service account", "cmt_en": "Share the target Google Drive folder with the service account's email address"},
+      {"cmd": "Extract the folder ID from the Drive folder URL and enter it in MirtaPBX", "cmt_he": "חילוץ ה-folder ID מכתובת ה-URL של התיקייה והזנתו בהגדרות MirtaPBX", "cmt_en": "Extract the folder ID from the Drive folder URL and enter it in MirtaPBX settings"},
+      {"cmd": "Admin -> Recording -> Storage -> upload JSON key + folder ID", "cmt_he": "העלאת קובץ ה-JSON של ה-service account והזנת folder ID בהגדרות ההקלטה", "cmt_en": "Upload the service account JSON key and enter the folder ID in recording settings"}
+    ],
+    "scenarios_he": [
+      "מעבר מאחסון מקומי להקלטות ל-Google Drive לצורך גיבוי וגישה מרחוק",
+      "הקלטות לא מועלות ל-Drive - בדוק הרשאות שיתוף התיקייה ל-service account",
+      "הגדרת תיקיות נפרדות ב-Drive לכל שוכר באשכול multitenant"
+    ],
+    "scenarios_en": [
+      "Migrating from local recording storage to Google Drive for backup and remote access",
+      "Recordings aren't uploading to Drive — check the folder's sharing permissions for the service account",
+      "Setting up separate Drive folders per tenant in a multitenant cluster"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שכחת שיתוף תיקיית ה-<span class=\"ltr-term\">Drive</span> עם כתובת המייל של ה-service account",
+        "x_en": "Forgetting to share the Drive folder with the service account's email address",
+        "fix_he": "ה-service account הוא \"משתמש\" נפרד מבחינת Google Drive - יש לשתף איתו את התיקייה במפורש, גם אם הוא נוצר תחת אותו פרויקט Google Cloud",
+        "fix_en": "The service account is a separate \"user\" from Google Drive's perspective — the folder must be explicitly shared with it, even if it was created under the same Google Cloud project"
+      }
+    ],
+    "secnote_he": "קובץ מפתח ה-<span class=\"ltr-term\">JSON</span> של ה-service account מעניק גישה לתיקיית ההקלטות - אחסן אותו בצורה מאובטחת בצד השרת בלבד ולעולם לא תחת בקרת גרסאות פומבית.",
+    "secnote_en": "The service account's JSON key file grants access to the recordings folder — store it securely server-side only, and never under public version control.",
+    "tags": "mirtapbx recording google-drive storage service-account security"
+  },
+  {
+    "id": "mirtapbx-cdr-vs-sc-simplecdr",
+    "name": "MirtaPBX CDR vs sc_simplecdr — Reporting Accuracy",
+    "cat": "reporting",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "ההבדל הקריטי בין טבלת ה-<span class=\"ltr-term\">CDR</span> הסטנדרטית לבין <span class=\"ltr-term\">sc_simplecdr</span> בדיווח שיחות מוקד ב-<span class=\"ltr-term\">MirtaPBX</span>.",
+    "desc_en": "The critical difference between the standard CDR table and sc_simplecdr for call-center reporting in MirtaPBX.",
+    "source_url": "https://mirtapbx.com/manual/index.php/Agent_Activity",
+    "source_name": "MirtaPBX Manual — Agent Activity",
+    "usage": [
+      {"cmd": "CDR table: marks call as ANSWERED when SIP-level answer occurs", "cmt_he": "טבלת CDR מסמנת שיחה כ-ANSWERED כבר ברגע מענה ברמת SIP - כולל תחילת מצב המתנה בתור עם מוזיקה", "cmt_en": "The CDR table marks a call ANSWERED as soon as a SIP-level answer occurs — including when queue hold/music-on-hold begins"},
+      {"cmd": "sc_simplecdr table: marks call as answered only on actual agent bridge", "cmt_he": "טבלת sc_simplecdr מסמנת שיחה כנענתה רק כשמתבצע bridge בפועל בין המתקשר לנציג", "cmt_en": "The sc_simplecdr table marks a call as answered only when an actual bridge to an agent occurs"},
+      {"cmd": "For call-center \"did a human answer\" reports -> use sc_simplecdr, not CDR", "cmt_he": "לדוחות מוקד מהסוג \"האם נציג ענה בפועל\" - יש להשתמש ב-sc_simplecdr ולא בטבלת CDR", "cmt_en": "For call-center \"did a human actually answer\" reports — use sc_simplecdr, not the CDR table"}
+    ],
+    "scenarios_he": [
+      "דוח הנהלה מציג אחוז מענה גבוה מדי לעומת תחושת הלקוחות בשטח",
+      "השוואת מספרי \"שיחות שנענו\" בין דוח CDR לבין דוח Agent Activity (sc_simplecdr)",
+      "בניית דוח KPI חדש למוקד - יש לבחור את המקור הנכון מההתחלה"
+    ],
+    "scenarios_en": [
+      "A management report shows an unrealistically high answer rate compared to customer feedback",
+      "Comparing \"answered calls\" numbers between a CDR-based report and an Agent Activity (sc_simplecdr) report",
+      "Building a new call-center KPI report — choose the correct data source from the start"
+    ],
+    "mistakes": [
+      {
+        "x_he": "שימוש בטבלת <span class=\"ltr-term\">CDR</span> הרגילה לחישוב \"אחוז שיחות שנענו על ידי נציג\"",
+        "x_en": "Using the regular CDR table to calculate \"percentage of calls answered by an agent\"",
+        "fix_he": "טבלת CDR סופרת שיחה כ-ANSWERED כשמתחילה החזקה בתור (Music-on-Hold), עוד לפני שנציג ענה בפועל - מה שמנפח את אחוז המענה. השתמש ב-sc_simplecdr שסופר רק bridge אמיתי לנציג",
+        "fix_en": "The CDR table counts a call as ANSWERED once queue hold (Music-on-Hold) begins, before an agent actually answers — inflating the answer rate. Use sc_simplecdr, which only counts an actual bridge to an agent"
+      }
+    ],
+    "tags": "mirtapbx cdr sc_simplecdr reporting call-center queue answered critical"
+  },
+  {
+    "id": "mirtapbx-queuemetrics-integration",
+    "name": "MirtaPBX QueueMetrics-Live Integration",
+    "cat": "integration",
+    "diff": "advanced",
+    "sec": false,
+    "desc_he": "הגדרת אינטגרציה בין <span class=\"ltr-term\">MirtaPBX</span> ל-<span class=\"ltr-term\">QueueMetrics-Live</span> לדיווח מתקדם על מוקד שירות.",
+    "desc_en": "Setting up the integration between MirtaPBX and QueueMetrics-Live for advanced call-center reporting.",
+    "source_url": "https://www.queuemetrics.com/blog/2020/07/02/MiRTA-PBX-Integration/",
+    "source_name": "QueueMetrics — MiRTA PBX Integration",
+    "usage": [
+      {"cmd": "QueueMetrics: platform.mirtapbx.<baseurl>/<key>/<tenant>", "cmt_he": "כתובת ה-API של QueueMetrics-Live כוללת base URL, מפתח API ושם שוכר", "cmt_en": "The QueueMetrics-Live API address includes a base URL, API key, and tenant name"},
+      {"cmd": "MirtaPBX Admin -> Settings -> QueueMetrics API -> Enabled, delay 2000ms", "cmt_he": "הפעלת אינטגרציית QueueMetrics API בהגדרות MirtaPBX עם השהיה של 2000ms", "cmt_en": "Enable the QueueMetrics API integration in MirtaPBX settings with a 2000ms delay"},
+      {"cmd": "Configuration -> Queues -> [queue] -> API Integrations -> enable QueueMetrics", "cmt_he": "הפעלת האינטגרציה לכל תור בנפרד בהגדרות התור", "cmt_en": "Enable the integration per-queue in each queue's settings"},
+      {"cmd": "Agent code format: agent/<extension> within AGENTS group", "cmt_he": "קוד הנציג ב-QueueMetrics חייב בפורמט agent/<extension> בתוך קבוצת AGENTS", "cmt_en": "The agent code in QueueMetrics must be in the format agent/<extension> within the AGENTS group"}
+    ],
+    "scenarios_he": [
+      "מוקד שירות זקוק לדוחות KPI מתקדמים שלא קיימים ב-MirtaPBX הסטנדרטי",
+      "נציגים לא מופיעים בדוחות QueueMetrics - בדוק פורמט agent code",
+      "תור חדש לא מדווח ל-QueueMetrics - בדוק הפעלת API Integrations בהגדרות התור"
+    ],
+    "scenarios_en": [
+      "A call center needs advanced KPI reports not available in standard MirtaPBX",
+      "Agents don't appear in QueueMetrics reports — check the agent code format",
+      "A new queue isn't reporting to QueueMetrics — check that API Integrations is enabled in the queue settings"
+    ],
+    "mistakes": [
+      {
+        "x_he": "הגדרת קוד נציג ללא הקידומת <span class=\"ltr-term\">agent/</span> או מחוץ לקבוצת AGENTS",
+        "x_en": "Configuring an agent code without the agent/ prefix or outside the AGENTS group",
+        "fix_he": "QueueMetrics מצפה לפורמט agent/<extension> בדיוק ולחבר אותם לקבוצת AGENTS - קוד בפורמט אחר לא ימופה נכון לנתוני השיחות",
+        "fix_en": "QueueMetrics expects exactly the agent/<extension> format and membership in the AGENTS group — a code in a different format won't map correctly to call data"
+      },
+      {
+        "x_he": "הפעלת אינטגרציית QueueMetrics ברמת המערכת אך לא בהגדרות התור הספציפי",
+        "x_en": "Enabling the QueueMetrics integration system-wide but not in the specific queue's settings",
+        "fix_he": "ההפעלה הגלובלית ב-Admin Settings היא תנאי הכרחי אך לא מספיק - יש להפעיל את האינטגרציה בנפרד עבור כל תור תחת Configuration > Queues",
+        "fix_en": "The global toggle in Admin Settings is necessary but not sufficient — the integration must also be enabled separately for each queue under Configuration > Queues"
+      }
+    ],
+    "tags": "mirtapbx queuemetrics integration reporting call-center agents"
+  },
+  {
+    "id": "mirtapbx-webrtc-client",
+    "name": "MirtaPBX WebRTC Client Configuration",
+    "cat": "webrtc",
+    "diff": "intermediate",
+    "sec": false,
+    "desc_he": "הגדרת לקוח <span class=\"ltr-term\">WebRTC</span> מבוסס דפדפן בפלטפורמת <span class=\"ltr-term\">MirtaPBX</span> (V2022-01+).",
+    "desc_en": "Configuring the browser-based WebRTC client on the MirtaPBX platform (V2022-01+).",
+    "source_url": "https://mirtapbx.com/architecture.html",
+    "source_name": "MirtaPBX Architecture Documentation",
+    "usage": [
+      {"cmd": "WebRTC client requires WebSocket (WSS) connection to the PBX node", "cmt_he": "לקוח ה-WebRTC מתחבר לצומת ה-PBX דרך חיבור WebSocket מאובטח (WSS)", "cmt_en": "The WebRTC client connects to the PBX node via a secure WebSocket (WSS) connection"},
+      {"cmd": "Configure BLF / speeddial keys per tenant-admin permission level", "cmt_he": "הגדרת מקשי BLF/חיוג מהיר בהתאם לרמת ההרשאה של מנהל השוכר", "cmt_en": "Configure BLF/speeddial keys according to the tenant-admin's permission level"},
+      {"cmd": "Install the browser extension to enable tel: link click-to-dial", "cmt_he": "התקנת תוסף הדפדפן מאפשרת חיוג בלחיצה על קישורי tel: באתרים אחרים", "cmt_en": "Installing the browser extension enables click-to-dial on tel: links on other websites"}
+    ],
+    "scenarios_he": [
+      "עובד עובד מהבית וצריך לחייג מהדפדפן ללא טלפון פיזי",
+      "תקלת חיבור WebRTC - בדוק שחיבור ה-WebSocket (WSS) לא חסום ב-firewall",
+      "התקנת תוסף הדפדפן לצוות מכירות לחיוג ישיר מכרטיסי CRM"
+    ],
+    "scenarios_en": [
+      "An employee working from home needs to dial from the browser without a physical phone",
+      "A WebRTC connection issue — check that the WebSocket (WSS) connection isn't blocked by a firewall",
+      "Installing the browser extension for the sales team to dial directly from CRM contact cards"
+    ],
+    "mistakes": [
+      {
+        "x_he": "חסימת פורט <span class=\"ltr-term\">WSS</span> ב-firewall החברה מבלי לדעת שה-WebRTC client תלוי בו",
+        "x_en": "Blocking the WSS port in the company firewall without realizing the WebRTC client depends on it",
+        "fix_he": "ודא שהפורט המשמש לחיבור WebSocket מאובטח (WSS) של MirtaPBX פתוח ב-firewall החברה לפני פריסת לקוחות WebRTC לעובדים",
+        "fix_en": "Ensure the port used for MirtaPBX's secure WebSocket (WSS) connection is open in the company firewall before deploying WebRTC clients to employees"
+      }
+    ],
+    "tags": "mirtapbx webrtc browser websocket blf click-to-dial"
+  }
+]

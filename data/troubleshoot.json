@@ -1068,5 +1068,260 @@
         "note_en": "An intercom requiring 802.3at (Class 4, up to 30W) won't get enough power from a switch that only supports 802.3af (Class 3, up to 15.4W)"
       }
     ]
+  },
+  {
+    "id": "ts-1com-ext-not-registering",
+    "title_he": "שלוחה לא מתחברת ל-1COM",
+    "title_en": "1COM Extension Not Registering",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "שלוחה מציגה <span class=\"ltr-term\">Unregistered</span> / <span class=\"ltr-term\">Registration Failed</span> בפלטפורמת 1COM ולא ניתן לבצע או לקבל שיחות.",
+    "desc_en": "An extension shows Unregistered / Registration Failed on the 1COM platform and can't make or receive calls.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בדוק את מסך הסטטוס במכשיר הטלפון (Status/Network) ואת קוד השגיאה המוצג",
+        "text_en": "Check the phone's status screen (Status/Network) for the displayed registration error code",
+        "cmd": "Device menu: Status -> Network -> SIP Registration",
+        "note_he": "קוד 401/403 מעיד על בעיית הזדהות (username/password); Timeout/no response מעיד על בעיית רשת",
+        "note_en": "A 401/403 code indicates an authentication issue (username/password); Timeout/no response indicates a network issue"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק חיבור רשת בסיסי מהאתר לכתובת השרת של 1COM",
+        "text_en": "Check basic network connectivity from the site to the 1COM server address",
+        "cmd": "ping sip.1com.co.il",
+        "note_he": "אם אין תגובה כלל, יש לבדוק קישוריות אינטרנט/firewall באתר לפני המשך אבחון השלוחה",
+        "note_en": "If there's no response at all, check internet connectivity/firewall at the site before further diagnosing the extension"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם תכונת SIP ALG מופעלת בראוטר",
+        "text_en": "Check whether SIP ALG is enabled on the router",
+        "cmd": "Router admin panel: Advanced -> NAT -> SIP ALG",
+        "note_he": "כבה את SIP ALG - תכונה זו משבשת לעיתים קרובות הודעות SIP ומונעת רישום תקין",
+        "note_en": "Disable SIP ALG — this feature frequently corrupts SIP messages and prevents proper registration"
+      },
+      {
+        "n": 4,
+        "text_he": "אמת את פרטי ההזדהות (שם משתמש/סיסמה) של השלוחה בפורטל הניהול של 1COM",
+        "text_en": "Verify the extension's credentials (username/password) in the 1COM admin portal",
+        "cmd": "1COM Admin Portal -> Extensions -> [extension] -> SIP Credentials",
+        "note_he": "השווה בין הפרטים בפורטל לפרטים המוזנים במכשיר - אות אחת שגויה מספיקה לשגיאת 401",
+        "note_en": "Compare the portal credentials to those entered on the device — a single wrong character causes a 401 error"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק אם כל השלוחות באתר מנותקות יחד (תקלה כלל-אתרית) או רק שלוחה אחת",
+        "text_en": "Check whether all extensions at the site are down together (site-wide issue) or just one",
+        "cmd": "1COM Admin Portal -> Extensions -> filter by site, check status column",
+        "note_he": "אם כל השלוחות נופלות יחד - מדובר בבעיית אינטרנט/רשת באתר ולא בהגדרת שלוחה בודדת",
+        "note_en": "If all extensions drop together — it's a site-wide internet/network issue, not a single extension's configuration"
+      }
+    ]
+  },
+  {
+    "id": "ts-1com-no-audio",
+    "title_he": "אין קול בשיחה ב-1COM",
+    "title_en": "No Audio on 1COM Calls",
+    "plat": "network",
+    "severity": "high",
+    "desc_he": "שיחות מתחברות בהצלחה אך אין קול באחד הכיוונים או בשניהם בפלטפורמת 1COM.",
+    "desc_en": "Calls connect successfully but there's no audio in one or both directions on the 1COM platform.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בצע שיחת בדיקה וקבע אם הבעיה חד-כיוונית או דו-כיוונית",
+        "text_en": "Make a test call and determine whether the issue is one-way or two-way audio",
+        "cmd": "Test call to a known extension/number, ask both sides if they hear audio",
+        "note_he": "חד-כיווני מצביע בדרך כלל על NAT/RTP; דו-כיווני מצביע בדרך כלל על codec mismatch",
+        "note_en": "One-way usually points to NAT/RTP; two-way usually points to a codec mismatch"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק שתחום פורטי RTP פתוח ב-firewall של האתר",
+        "text_en": "Check that the RTP port range is open in the site's firewall",
+        "cmd": "Firewall rules: allow UDP RTP port range per 1COM documentation",
+        "note_he": "אם התחום חסום או צר מדי, רק חלק מהשיחות יקבלו מדיה תקינה",
+        "note_en": "If the range is blocked or too narrow, only some calls will get valid media"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם קיים double NAT ברשת (ראוטר נוסף מאחורי הראוטר הראשי)",
+        "text_en": "Check for double NAT on the network (an extra router behind the main router)",
+        "cmd": "Trace network topology: ISP router -> internal router -> switch -> phones",
+        "note_he": "Double NAT גורם לעיתים קרובות לבעיות RTP/NAT שלא ניתן לפתור רק בהגדרות SIP ALG",
+        "note_en": "Double NAT often causes RTP/NAT issues that can't be resolved by SIP ALG settings alone"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק את הגדרות ה-codec במכשיר לעומת הנתמך ב-1COM",
+        "text_en": "Check the device's codec settings against what's supported by 1COM",
+        "cmd": "Device settings: Audio Codecs -> ensure G.711 (ulaw/alaw) is enabled and prioritized",
+        "note_he": "codec לא נתמך או לא תואם גורם לעיתים לחיבור שיחה ללא קול בשני הכיוונים",
+        "note_en": "An unsupported/mismatched codec can cause a call to connect with no audio in either direction"
+      },
+      {
+        "n": 5,
+        "text_he": "בצע שיחת בדיקה מרשת אחרת (לדוגמה hotspot סלולרי) לבידוד בעיית רשת מקומית",
+        "text_en": "Make a test call from a different network (e.g. a cellular hotspot) to isolate a local network issue",
+        "cmd": "Test call using a mobile hotspot connection instead of the office network",
+        "note_he": "אם הבעיה לא חוזרת ברשת אחרת, מדובר בבעיית רשת/firewall ספציפית לאתר",
+        "note_en": "If the issue doesn't recur on a different network, it's a site-specific network/firewall issue"
+      }
+    ]
+  },
+  {
+    "id": "ts-1com-routing",
+    "title_he": "ניתוב שיחות לא עובד כצפוי ב-1COM",
+    "title_en": "1COM Call Routing Not Working as Expected",
+    "plat": "network",
+    "severity": "medium",
+    "desc_he": "שיחות נכנסות מנותבות ליעד שגוי או לא מגיעות ליעד הצפוי בפלטפורמת 1COM (IVR, תורים, Time Conditions).",
+    "desc_en": "Inbound calls route to the wrong destination or don't reach the expected destination on the 1COM platform (IVR, queues, Time Conditions).",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "אמת לאיזה DID/מספר הגיעה השיחה הבעייתית",
+        "text_en": "Verify which DID/number the problematic call came in on",
+        "cmd": "1COM Admin Portal -> Call Logs -> filter by date/time of the test call",
+        "note_he": "מספרים שונים יכולים להיות מנותבים ל-IVR/תורים שונים - יש לוודא שבדקת את ה-DID הנכון",
+        "note_en": "Different numbers can route to different IVRs/queues — make sure you're checking the correct DID"
+      },
+      {
+        "n": 2,
+        "text_he": "בדוק את הגדרת ה-Routing עבור ה-DID הזה ולאן הוא מצביע",
+        "text_en": "Check the routing configuration for this DID and what it points to",
+        "cmd": "1COM Admin Portal -> Routing -> DID -> [number] -> destination",
+        "note_he": "ודא שהיעד הוא ה-IVR/תור/שלוחה הצפוי ולא ישות ישנה שהוחלפה",
+        "note_en": "Confirm the destination is the expected IVR/queue/extension and not a stale entity that was replaced"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם קיים Time Condition פעיל שמשנה את הניתוב לפי השעה",
+        "text_en": "Check whether an active Time Condition is changing the routing based on time of day",
+        "cmd": "1COM Admin Portal -> Routing -> Time Conditions -> review business-hours schedule and timezone",
+        "note_he": "ניתוב שעבד אתמול אך לא היום מעיד בדרך כלל על Time Condition או אזור זמן שגוי",
+        "note_en": "Routing that worked yesterday but not today usually points to a Time Condition or wrong timezone"
+      },
+      {
+        "n": 4,
+        "text_he": "אם מדובר בתפריט IVR, עבור על כל מקש בתפריט ובתפריטי-המשנה",
+        "text_en": "If this involves an IVR menu, walk through every key in the menu and sub-menus",
+        "cmd": "1COM Admin Portal -> IVR -> [menu] -> review digit mapping for each key",
+        "note_he": "עדכון אחרון בתפריט יכול לשבור הפניות בתפריטי-משנה שמצביעים ליעדים שהוסרו",
+        "note_en": "A recent menu update can break references in sub-menus pointing to removed destinations"
+      },
+      {
+        "n": 5,
+        "text_he": "בדוק את יעד ה-timeout/no-input של ה-IVR",
+        "text_en": "Check the IVR's timeout/no-input destination",
+        "cmd": "1COM Admin Portal -> IVR -> [menu] -> Timeout destination",
+        "note_he": "אם אין יעד fallback מוגדר, שיחות שלא נבחר בהן יתנתקו",
+        "note_en": "If no fallback destination is set, calls where no option is selected will disconnect"
+      }
+    ]
+  },
+  {
+    "id": "ts-mirtapbx-config-not-applying",
+    "title_he": "שינוי הגדרה ב-MirtaPBX לא נכנס לתוקף",
+    "title_en": "MirtaPBX Configuration Change Not Taking Effect",
+    "plat": "network",
+    "severity": "medium",
+    "desc_he": "שינוי שבוצע בממשק הניהול של MirtaPBX (ניתוב, שלוחה, תור) נשמר אך לא משפיע על שיחות בפועל.",
+    "desc_en": "A change made in the MirtaPBX admin UI (routing, extension, queue) is saved but doesn't affect actual calls.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "אמת שההגדרה נשמרה בהצלחה ללא הודעת שגיאה בממשק",
+        "text_en": "Confirm the setting was saved successfully with no error message in the UI",
+        "cmd": "Admin UI: re-open the changed setting and verify the new value is displayed",
+        "note_he": "אם הערך חזר לישן, השמירה נכשלה - בדוק הרשאות המשתמש המבצע את השינוי",
+        "note_en": "If the value reverted to the old one, the save failed — check the permissions of the user making the change"
+      },
+      {
+        "n": 2,
+        "text_he": "זהה לאיזה צומת (node) השלוחה/המכשיר המושפע רשומים",
+        "text_en": "Identify which node the affected extension/device is registered to",
+        "cmd": "Admin -> PBX Nodes -> check which node the extension's sipregs entry is on",
+        "note_he": "באשכול multi-node, ודא שאתה בודק את הצומת הנכון - שינוי יכול להיות תקין בצומת אחד ולא להשפיע על אחר",
+        "note_en": "On a multi-node cluster, make sure you're checking the correct node — a change can be fine on one node but not affect another"
+      },
+      {
+        "n": 3,
+        "text_he": "בדוק אם ההגדרה ששונתה היא בצד שרת (ניתוב/תור) או בצד מכשיר (BLF/צלצול)",
+        "text_en": "Determine whether the changed setting is server-side (routing/queue) or device-side (BLF/ringtone)",
+        "cmd": "Classify the changed setting: server-side config vs device provisioning template",
+        "note_he": "הגדרות שרת נכנסות לתוקף ללא reload בשל מודל Realtime DB, אך הגדרות מכשיר דורשות provisioning מחדש",
+        "note_en": "Server-side settings take effect without a reload due to the Realtime DB model, but device settings require re-provisioning"
+      },
+      {
+        "n": 4,
+        "text_he": "אם נדרש provisioning מחדש, הפעל אתחול/resync למכשיר",
+        "text_en": "If re-provisioning is required, trigger a device reboot/resync",
+        "cmd": "Device admin: trigger reboot or 'check for config update'",
+        "note_he": "מכשירים רבים בודקים עדכוני קונפיגורציה רק באתחול או במרווח זמן קבוע",
+        "note_en": "Many devices only check for config updates on reboot or at a fixed interval"
+      },
+      {
+        "n": 5,
+        "text_he": "בצע שיחת בדיקה חדשה לאחר שלבי האימות לעיל",
+        "text_en": "Run a new test call after completing the verification steps above",
+        "cmd": "Place a fresh test call and confirm the new behavior applies",
+        "note_he": "שיחה שהתחילה לפני השינוי עלולה עדיין לפעול לפי ההגדרה הישנה",
+        "note_en": "A call that started before the change may still follow the old configuration"
+      }
+    ]
+  },
+  {
+    "id": "ts-mirtapbx-cdr-vs-simplecdr",
+    "title_he": "דוח CDR מראה מענה אבל הלקוח לא דיבר עם נציג",
+    "title_en": "CDR Report Shows Answered But Customer Never Spoke With an Agent",
+    "plat": "network",
+    "severity": "medium",
+    "desc_he": "דוח CDR סטנדרטי ב-MirtaPBX מציג שיחות מוקד כ-<span class=\"ltr-term\">ANSWERED</span>, אך לקוחות מדווחים שלא דיברו עם נציג.",
+    "desc_en": "A standard CDR report in MirtaPBX shows call-center calls as ANSWERED, but customers report they never spoke with an agent.",
+    "steps": [
+      {
+        "n": 1,
+        "text_he": "בחר שיחה ספציפית שדווחה כ-ANSWERED ב-CDR אך הלקוח טוען שלא דיבר עם נציג",
+        "text_en": "Pick a specific call marked ANSWERED in CDR where the customer claims they never spoke to an agent",
+        "cmd": "CDR report: locate the call by date/time/caller number",
+        "note_he": "רשום את ה-uniqueid או חותמת הזמן המדויקת של השיחה לבדיקה הבאה",
+        "note_en": "Note the uniqueid or exact timestamp of the call for the next step"
+      },
+      {
+        "n": 2,
+        "text_he": "חפש את אותה שיחה בטבלת sc_simplecdr",
+        "text_en": "Look up the same call in the sc_simplecdr table",
+        "cmd": "Query sc_simplecdr for the matching uniqueid/timestamp",
+        "note_he": "אם השיחה לא מופיעה ב-sc_simplecdr כ-answered, לא התקיים bridge בפועל עם נציג",
+        "note_en": "If the call doesn't appear as answered in sc_simplecdr, no actual bridge to an agent occurred"
+      },
+      {
+        "n": 3,
+        "text_he": "השווה את משך השיחה (duration) בין CDR ל-sc_simplecdr",
+        "text_en": "Compare the call duration between CDR and sc_simplecdr",
+        "cmd": "Compare CDR.duration/billsec vs sc_simplecdr talk time for the same call",
+        "note_he": "ב-CDR ה-duration כולל זמן המתנה בתור (Music on Hold); ב-sc_simplecdr הוא משקף רק זמן שיח אמיתי עם נציג",
+        "note_en": "In CDR, duration includes queue hold time (Music on Hold); in sc_simplecdr it reflects only actual talk time with an agent"
+      },
+      {
+        "n": 4,
+        "text_he": "בדוק את יומן התור - האם השיחה ננטשה (abandoned) לפני שנציג ענה",
+        "text_en": "Check the queue log — was the call abandoned before an agent answered",
+        "cmd": "Review queue_log / Agent Activity report for the queue around that timestamp",
+        "note_he": "שיחה שננטשה בתור עדיין יכולה להופיע כ-ANSWERED ב-CDR אם המוזיקה בתור נחשבת SIP answer",
+        "note_en": "A call abandoned in the queue can still appear as ANSWERED in CDR if queue hold music counts as a SIP answer"
+      },
+      {
+        "n": 5,
+        "text_he": "מעכשיו, בנה דוחות KPI של מוקד מבוססי sc_simplecdr ולא CDR",
+        "text_en": "Going forward, build call-center KPI reports based on sc_simplecdr, not CDR",
+        "cmd": "Update report queries/dashboards to source from sc_simplecdr for 'agent answered' metrics",
+        "note_he": "זהו ההבדל הקריטי בין הטבלאות - CDR סופר מענה SIP, sc_simplecdr סופר bridge בפועל עם נציג",
+        "note_en": "This is the critical difference between the tables — CDR counts SIP answer, sc_simplecdr counts an actual agent bridge"
+      }
+    ]
   }
 ]

@@ -36,6 +36,9 @@ const APPROVED_DOMAINS = [
   'iperf.fr',
   'software.es.net',
   'asterisk.org',
+  '1com.co.il',
+  'mirtapbx.com',
+  'queuemetrics.com',
 ];
 
 const BLOCKED_DOMAINS = [
@@ -103,9 +106,11 @@ function requireBilingual(file, id, obj, prefix) {
 // ── Command entry schema (linux / cmd / network) ─────────────────────────────
 const COMMAND_DIFF = ['beginner', 'intermediate', 'advanced'];
 const CATEGORY_MAP = {
-  'linux.json':   ['network', 'process', 'disk', 'permission', 'system', 'logs', 'user'],
-  'cmd.json':     ['network', 'process', 'disk', 'system', 'user'],
-  'network.json': ['diagnostic', 'ports', 'routing', 'dns', 'firewall', 'voip'],
+  'linux.json':    ['network', 'process', 'disk', 'permission', 'system', 'logs', 'user'],
+  'cmd.json':      ['network', 'process', 'disk', 'system', 'user'],
+  'network.json':  ['diagnostic', 'ports', 'routing', 'dns', 'firewall', 'voip'],
+  '1com.json':     ['hardware', 'config', 'ivr', 'queue', 'omnichannel', 'monitoring', 'integration'],
+  'mirtapbx.json': ['architecture', 'cluster', 'sip', 'recording', 'reporting', 'integration', 'webrtc'],
 };
 
 function validateCommandEntry(entry, file) {
@@ -300,7 +305,7 @@ function checkDuplicateId(entry, file) {
 // ── Run validation ────────────────────────────────────────────────────────────
 validateModulesJson();
 
-const commandFiles = ['linux.json', 'cmd.json', 'network.json'];
+const commandFiles = ['linux.json', 'cmd.json', 'network.json', '1com.json', 'mirtapbx.json'];
 const tsFiles      = ['troubleshoot.json'];
 
 for (const filename of commandFiles) {
