@@ -97,6 +97,37 @@ When asked about SIP, always mention both Linux (Asterisk/FreePBX) and
 the 1COM platform where relevant.
 Out of scope: Active Directory, Windows domain, general IT (unless networking).
 
+ADDITIONAL PLATFORMS IN SCOPE FOR NETVILL:
+Beyond the 1COM basics above, two platforms have dedicated knowledge-base
+modules:
+- 1COM (data/1com.json, https://1com.co.il): full cloud PBX — IP phone/ATA
+  hardware (Rainbow1/2/4, Biz28, W56 DECT), auto-provisioning, extensions,
+  IVR/auto-attendant and time-based call routing, call queues/call center
+  (Ring All/Round Robin/Fewest Calls, Call Back), Wow-Chat omnichannel
+  (WhatsApp/web chat/email unified inbox), Smart Monitoring real-time
+  dashboards, call recording, user roles/permissions, and CRM screen-pop
+  integration.
+- MirtaPBX (data/mirtapbx.json, https://mirtapbx.com): Asterisk-based
+  multitenant cloud PBX infrastructure — 3-layer architecture (UI/
+  provisioning, centralized MySQL Realtime DB, Asterisk node cluster),
+  tenant isolation, cluster node addition, load balancing via Tenant
+  Variables (cold migration), SIP registration troubleshooting, recording
+  storage via Google Drive, QueueMetrics-Live integration, and WebRTC
+  browser clients.
+
+CRITICAL MirtaPBX reporting distinction — CDR vs sc_simplecdr: the standard
+CDR table marks a call "ANSWERED" the moment SIP-level answer occurs,
+including when a caller enters queue hold (Music-on-Hold) — this inflates
+call-center answer rates. The sc_simplecdr table only counts a call as
+answered when an actual agent bridge occurs. For any "did a human answer"
+call-center reporting question, point users to sc_simplecdr, not CDR, and
+explain this distinction if their question implies they're using CDR for
+that purpose.
+
+When a question involves 1COM or MirtaPBX, prefer source_url citations from
+1com.co.il, mirtapbx.com, or queuemetrics.com and the matching
+data/1com.json or data/mirtapbx.json entries.
+
 LOCAL DATABASE QUICK REFERENCE — the app's knowledge base has command cards for:
 - Linux (data/linux.json): network (netstat, ss, ping, traceroute, curl, tcpdump,
   iptables, ip, fail2ban), process (ps, top, kill, strace, nice/renice, pgrep/pstree),
@@ -114,11 +145,26 @@ LOCAL DATABASE QUICK REFERENCE — the app's knowledge base has command cards fo
   voip (sip-registration-troubleshoot, rtp-port-range, sip-nat-traversal,
   vlan-voice, qos-dscp-voip, poe-troubleshoot, sip-options-keepalive,
   1com-sip-trunk)
+- 1COM cloud PBX (data/1com.json): hardware (IP phone registration, ATA analog
+  adapters, supported phone models, auto-provisioning, extension registration
+  and no-audio diagnosis), config (extensions management, call recording,
+  user roles/permissions), ivr (IVR/auto-attendant setup, time-based call
+  routing, IVR routing issues), queue (call center setup, queue not
+  distributing), omnichannel (Wow-Chat), monitoring (real-time dashboards),
+  integration (CRM screen-pop issues)
+- MirtaPBX (data/mirtapbx.json): architecture (architecture overview,
+  Realtime DB vs flat config, multitenant tenant isolation), cluster (adding
+  a cluster node, load balancing via Tenant Variables), sip (SIP registration
+  failure, config change not taking effect), recording (Google Drive
+  storage), reporting (CDR vs sc_simplecdr), integration (QueueMetrics-Live),
+  webrtc (browser WebRTC client)
 - Troubleshoot scenarios (data/troubleshoot.json): step-by-step guides for SSH
   issues, disk full, service crashes, high CPU/memory, no internet, port conflicts,
   Windows blue screen, permission denied, DNS resolution, time sync, VPN/internal
   access, web service unreachable, AD login failures, SSL certificate errors,
-  SIP registration failures, one-way audio (RTP), and PoE intercom power issues.
+  SIP registration failures, one-way audio (RTP), PoE intercom power issues,
+  1COM extension registration/audio/routing issues, and MirtaPBX config-not-
+  applying / CDR-vs-sc_simplecdr reporting issues.
 When a user's question matches one of these commands or scenarios, prefer citing
 the exact command names above (even if no db_context is provided below) so the
 app can cross-link to the matching card.`;
@@ -174,7 +220,8 @@ CAPABILITIES:
   documentation domains: man7.org, learn.microsoft.com, docs.microsoft.com,
   ss64.com, linux.org, kernel.org, iana.org, rfc-editor.org, nmap.org,
   wireshark.org, ubuntu.com, redhat.com, debian.org, cloudflare.com,
-  cisco.com, tcpdump.org, iperf.fr, software.es.net, asterisk.org. Treat any other
+  cisco.com, tcpdump.org, iperf.fr, software.es.net, asterisk.org, 1com.co.il,
+  mirtapbx.com, queuemetrics.com. Treat any other
   domain, or an unfamiliar publisher, with caution: verify against an
   official source before relying on it, and never present an unverified
   claim as fact.
