@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-06-16 — 70702e8] (master)
+
+- docs: simulation status, token economy, case distribution ([70702e8](https://github.com/avivnofar/data-center/commit/70702e8adf540a0f2a533b74ad9cf850ab549895))
+- feat: 1COM + MirtaPBX cases (30%/20% of daily pool), token economy enforced ([797d305](https://github.com/avivnofar/data-center/commit/797d305e0d577f3fdf636e4c70872de624c40e4a))
+- fix: unblock simulation — Claude capped at 5/day, Groq primary, VoIP escalations ([6859973](https://github.com/avivnofar/data-center/commit/68599734c45452a97bdd9f83bf19f22eaa12cefa))
+- fix: reduce automation to once-daily 02:30 IL — remove redundant runs ([5954b1c](https://github.com/avivnofar/data-center/commit/5954b1c8f12876358afa2eedf52127fcecefe498))
+
+
 ## [2026-06-16 — 043f7f0] (master)
 
 - docs: daily progress report 2026-06-15 ([043f7f0](https://github.com/avivnofar/data-center/commit/043f7f0276e0084fc217bdee08bba70a3da1e7b1))
