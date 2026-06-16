@@ -2,30 +2,24 @@ name: Scheduled Claude Automation
 
 on:
   schedule:
-    # NIGHT OFFICE: 23:30 UTC = 02:30 Israel time — office Day simulation session
+    # NIGHT OFFICE: 23:30 UTC = 02:30 Israel time — office simulation session
     - cron: '30 23 * * 0-4'
-    # MORNING OFFICE: 04:30 UTC = 07:30 Israel time — office Day simulation continuation
-    - cron: '30 4 * * 0-4'
-    # MAINTENANCE: 18:30 UTC = 21:30 Israel time — TOKEN-BUDGET.md queue item
-    - cron: '30 18 * * 0-4'
   workflow_dispatch:
     inputs:
       session_type:
         description: 'Which session to run manually'
         required: true
         type: choice
-        default: 'maintenance'
+        default: 'night-office'
         options:
           - night-office
-          - morning-office
-          - maintenance
       task_override:
-        description: 'Override task (leave empty to use default for the chosen session_type)'
+        description: 'Override task (leave empty to use default)'
         required: false
 
 jobs:
   night-office:
-    if: github.event.schedule == '30 23 * * 0-4' || (github.event_name == 'workflow_dispatch' && github.event.inputs.session_type == 'night-office')
+    if: github.event.schedule == '30 23 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,64 +43,4 @@ jobs:
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         run: node .github/scripts/run-claude-session.js
       - name: Commit changes and log session
-        run: bash .github/scripts/commit-and-log.sh
-
-  morning-office:
-    if: github.event.schedule == '30 4 * * 0-4' || (github.event_name == 'workflow_dispatch' && github.event.inputs.session_type == 'morning-office')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-    env:
-      SESSION_TYPE: office_day_morning
-      TASK: "${{ github.event.inputs.task_override || 'Complete the in-progress office Day or start the next one in the same pattern: max case resolution, app usage emphasis, light planning only.' }}"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Run Claude task
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
-        run: node .github/scripts/run-claude-session.js
-      - name: Commit changes and log session
-        run: bash .github/scripts/commit-and-log.sh
-
-  maintenance:
-    if: github.event.schedule == '30 18 * * 0-4' || (github.event_name == 'workflow_dispatch' && github.event.inputs.session_type == 'maintenance')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Determine task from TOKEN-BUDGET.md
-        id: task
-        run: |
-          NEXT_TASK=$(grep -A1 "⏳ Next" TOKEN-BUDGET.md | tail -1 | sed 's/.*— //')
-          echo "NEXT_TASK=$NEXT_TASK" >> "$GITHUB_OUTPUT"
-      - name: Run Claude task
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
-          SESSION_TYPE: maintenance
-          TASK: ${{ github.event.inputs.task_override || steps.task.outputs.NEXT_TASK }}
-        run: node .github/scripts/run-claude-session.js
-      - name: Commit changes and log session
-        env:
-          SESSION_TYPE: maintenance
         run: bash .github/scripts/commit-and-log.sh
