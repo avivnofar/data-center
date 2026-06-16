@@ -755,3 +755,5 @@ Full diagnostic and unblock of the office simulation. All 5 tasks completed.
 **Next session**: Confirm the first automated simulation day ran (check D1 `SELECT COUNT(*) FROM agent_sessions ORDER BY started_at DESC LIMIT 5`) and review `agents/reports/daily/day-001-summary.md` once committed by the Worker.
 
 - [2026-06-16 ~15:55 UTC] Autonomous session: simulation-fix — completed
+
+- [2026-06-16 18:17 UTC] Auto-session: office_day_night — failed: api_error
