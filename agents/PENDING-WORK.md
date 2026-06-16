@@ -1,8 +1,55 @@
 # Pending Work — Session Log
 
 This file tracks what an autonomous session intended to do, what it
-finished, and what remains for the next automated session (02:30 / 07:30
-Israel time) or a human/Claude-Code session to pick up.
+finished, and what remains for the next automated session (02:30 Israel time)
+or a human/Claude-Code session to pick up.
+
+---
+
+## Session 2026-06-16 — Simulation unblock + 1COM/MirtaPBX cases + token economy
+
+### Tasks completed
+
+**Task 1 — Automation reduced to once-daily:**
+- `.github/workflows/scheduled-claude.yml`: removed `morning-office` (04:30 UTC)
+  and `maintenance` (18:30 UTC) jobs. Kept only `night-office` cron
+  `30 23 * * 0-4` (02:30 Israel time) + `workflow_dispatch`.
+
+**Task 2 — Simulation unblocked:**
+- Diagnosis: `SIM_KV "simulation-state"` had `paused: true`, Worker was
+  stale (last deployed 2026-06-13).
+- Fix: unpaused via `wrangler kv key put` → `paused: false`. Redeployed
+  Worker (version `2a6319c5`, 2026-06-16 ~15:55 UTC) with all new code.
+- RTL audit: no actionable issues found.
+
+**Tasks 3 + 4 — Case pool + token economy:**
+- `agents/workers/case-generator.js`: +10 1COM cases + 8 MirtaPBX cases.
+- `agents/workers/crm-engine.js`: `PLATFORM_WEIGHTS` (1com 30% / mirtapbx 20%
+  / general 50%), `selectCaseTemplate()`. `requiresItChief` extended to VoIP.
+- `agents/config/simulation-config.json`: added `case_distribution` block.
+- `agents/config/token-economy.json`: `claude_daily_cap: 5`, `groq_primary:
+  true`, `cf_ai_fallback: true`, `run_until_quota_exhausted: true`; `claude_api`
+  limit 50 → 5.
+- `agents/agents/agent-base.js`: `interactWithApp()` now queries D1 for
+  today's `model_source='claude'` count; if >= 5, uses Groq fallback (free)
+  instead of calling the app. Simulation never halts on Claude cap.
+
+**Task 5 — Verification:**
+- `GET /api/simulation` confirmed `paused: false`.
+- Full trigger test skipped: `ADMIN_TOKEN` not accessible in this session
+  (Worker secret by design). Next cron tick: 05:00 UTC (08:00 Israel) tomorrow.
+
+### D1 migration status
+
+**`model_source TEXT` column**: confirmed ALREADY EXISTS in live D1
+(`ALTER TABLE ... ADD COLUMN model_source TEXT` returned "duplicate column name:
+model_source"). The 2026-06-13 session must have run it. The Claude cap query
+in `agent-base.js` will work correctly from day 1.
+
+### Status
+
+Simulation is LIVE (`paused: false`). Will run automatically at 05:00 UTC
+(08:00 Israel) on the next weekday cron tick. All code changes deployed.
 
 ---
 
