@@ -11,11 +11,17 @@
   "app_search_model": "anthropic/claude-sonnet-4-6",
   "architect_model": "human+claude-code",
 
+  "claude_daily_cap": 5,
+  "groq_primary": true,
+  "cf_ai_fallback": true,
+  "run_until_quota_exhausted": true,
+  "description": "Groq and CF AI are free — run agents hard. Claude API is paid — cap at 5 calls/day maximum across ALL agents combined.",
+
   "daily_limits": {
     "groq": 14400,
     "cloudflare_ai": 10000,
     "gemini": 1500,
-    "claude_api": 50
+    "claude_api": 5
   },
 
   "gemini_reset_israel": "11:00",

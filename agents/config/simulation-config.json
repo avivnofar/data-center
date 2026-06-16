@@ -4,6 +4,12 @@
     "real_minutes_per_work_day": 60,
     "description": "24 real hours = 1 simulated work week of 5 days"
   },
+  "case_distribution": {
+    "1com": 0.30,
+    "mirtapbx": 0.20,
+    "general_it": 0.50,
+    "_note": "Matches PLATFORM_WEIGHTS in crm-engine.js. 1COM and MirtaPBX are Netvill's primary VoIP platforms."
+  },
   "WORK_DAY": {
     "cases_per_day_min": 30,
     "cases_per_day_max": 50,
