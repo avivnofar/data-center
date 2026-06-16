@@ -350,6 +350,43 @@ export class AgentBase {
    * @param {'search'|'diagnose'} [mode]
    */
   async interactWithApp(query, mode = 'search') {
+    // Hard daily cap on Claude API calls (token-economy.json claude_daily_cap: 5).
+    // If today's global claude interaction count is at or above the cap, resolve
+    // the case with Groq instead (free) so the simulation keeps running.
+    const CLAUDE_DAILY_CAP = 5;
+    if (this.env.DB) {
+      const row = await this.env.DB.prepare(
+        `SELECT COUNT(*) AS n FROM interactions WHERE model_source = 'claude' AND DATE(timestamp) = DATE('now')`
+      ).first().catch(() => null);
+      const claudeCount = row?.n ?? 0;
+      if (claudeCount >= CLAUDE_DAILY_CAP) {
+        console.warn(`[agent-${this.id}] Claude daily cap (${CLAUDE_DAILY_CAP}) reached — using Groq fallback`);
+        const moodBefore = this.mood;
+        const groqResult = await callGroq({
+          apiKey: this.env.GROQ_API_KEY,
+          prompt: `IT support query: ${query}. Provide a brief, helpful answer.`,
+          systemPrompt: 'You are a knowledgeable IT support assistant. Answer concisely.',
+          temperature: 0.7,
+          maxTokens: 300,
+          agentId: this.id,
+        });
+        const responseText = groqResult?.text || '';
+        const quality = Math.min(1, responseText.length / 600);
+        if (this.session) this.session.cases_handled += 1;
+        await this.logInteraction({
+          type: `app_${mode}`,
+          query,
+          response_summary: responseText.slice(0, 500),
+          mood_before: moodBefore,
+          mood_after: this.mood,
+          irritation_change: 0,
+          state_change: null,
+          model_source: 'groq',
+        });
+        return { ok: true, quality, response: responseText };
+      }
+    }
+
     const base = this.env.APP_API_BASE || 'https://data-center-api.avivnofar.workers.dev';
     const moodBefore = this.mood;
 

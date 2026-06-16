@@ -47,6 +47,26 @@ const SEVERITY_WEIGHTS = [
   { severity: 'critical', weight: 7 },
 ];
 
+/**
+ * Platform distribution weights: 1COM (30%), MirtaPBX (20%), general IT (50%).
+ * Matches agents/config/simulation-config.json case_distribution and the
+ * knowledge-base expansion in data/1com.json + data/mirtapbx.json.
+ */
+const PLATFORM_WEIGHTS = [
+  { platform: '1com',    weight: 30 },
+  { platform: 'mirtapbx', weight: 20 },
+  { platform: 'general', weight: 50 },
+];
+
+/** Picks a case template using weighted platform selection. */
+function selectCaseTemplate() {
+  const platformPick = weightedPick(PLATFORM_WEIGHTS).platform;
+  const subset = platformPick === 'general'
+    ? CASE_POOL.filter((t) => t.platform !== '1com' && t.platform !== 'mirtapbx')
+    : CASE_POOL.filter((t) => t.platform === platformPick);
+  return randomItem(subset.length ? subset : CASE_POOL);
+}
+
 const DAILY_VOLUME = 50;
 const WEEK_DAYS = 7;
 
@@ -92,15 +112,19 @@ export function generateDailyCaseBatch(dayIndex, opts = {}) {
 
   const cases = [];
   for (let i = 1; i <= count; i++) {
-    const template = randomItem(CASE_POOL);
+    const template = selectCaseTemplate();
     const client = randomItem(CLIENT_POOL);
     const { severity } = weightedPick(SEVERITY_WEIGHTS);
 
     const isUniqueClient = client.tier === 'unique';
-    // Hard/critical, deeply technical categories may require the IT Chief.
+    // Hard/critical cases may require the IT Chief — includes VoIP platforms
+    // because 1COM/MirtaPBX cluster and integration issues are senior work.
     const requiresItChief =
       severity === 'critical' ||
-      (severity === 'high' && ['network', 'firewall', 'routing'].includes(template.category) && Math.random() < 0.5);
+      (severity === 'high' && (
+        ['network', 'firewall', 'routing'].includes(template.category) ||
+        ['1com', 'mirtapbx'].includes(template.platform)
+      ) && Math.random() < 0.5);
 
     cases.push({
       id: `crm-${y}-w${pad(w, 2)}-d${dayIndex}-${pad(i, 3)}`,
