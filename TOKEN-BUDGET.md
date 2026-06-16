@@ -718,3 +718,5 @@ URLs were avoided after two guessed pages returned 403 via fetch. Both
 - [2026-06-15 18:05 UTC] Auto-session: office_day_night — failed: api_error
 
 - [2026-06-15 19:12 UTC] Auto-session: office_day_morning — failed: api_error
+
+- [2026-06-16 00:19 UTC] Auto-session: maintenance — failed: api_error
