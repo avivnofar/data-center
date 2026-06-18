@@ -7,11 +7,11 @@ priorities. See `CLAUDE.md`'s "Current Strategy (authoritative)" section and
 
 ## ⏳ Next
 
-- Maintenance — Test the expanded Claude AI Search chat UI (full-screen
-  layout, collapsed sidebar, RTL/LTR fixes) end-to-end in a browser, in both
-  Hebrew and English, including a Netvill VoIP/SIP query (e.g. "SIP phone not
-  registering"); otherwise continue AI Search/UI polish per Current Strategy
-  before resuming the office simulation.
+- Maintenance — Verify the 02:30 IL nightly automation (scheduled-claude.yml)
+  now runs clean (input was fixed — TOKEN-BUDGET.md truncated to last 50 lines).
+  Check GitHub Actions logs the morning of 2026-06-19. Also check D1 for
+  simulation Day 2+ data (`SELECT COUNT(*) FROM agent_sessions`) and confirm
+  the Worker is committing daily summaries to `agents/reports/daily/`.
 
 ## Queue
 
@@ -761,3 +761,24 @@ Full diagnostic and unblock of the office simulation. All 5 tasks completed.
 - [2026-06-17 13:03 UTC] Auto-session: office_day_night — failed: api_error
 
 - [2026-06-18 12:32 UTC] Auto-session: office_day_night — failed: api_error
+
+## Automation + UI fix session (2026-06-18)
+
+Autonomous session. RTL audit: no issues (all AI_STRINGS via textContent, browser BiDi handles English terms). D1 confirms simulation ran today.
+
+**Task 1 — Automation fix:**
+- `.github/scripts/run-claude-session.js`: replaced full TOKEN-BUDGET.md read with last-50-lines slice (`budgetLines.slice(-50).join('\n')`). CLAUDE.md reduced from 3000 to 2000 chars. Added `totalInput > 8000` guard with console.error. Total input to API now ~2–3KB instead of ~30KB.
+
+**Task 2 — Daily simulation report (D1 query results):**
+- Created `agents/reports/daily/README-2026-06-18.md` from live D1 data.
+- 47 sessions today across agents 1–5, 10, 11. Agents 6–9 absent. 39 interactions (34 Groq + 5 Claude — cap hit exactly). 15 reports (8 status, 4 incident, 3 model_education).
+
+**Task 3 — AI mode selector always visible:**
+- Removed `#ai-mode-radiogroup.conversation-active { display: none; }` from CSS (was hiding mode buttons after first message). Removed corresponding JS toggle. Mode selector now stays visible throughout conversation.
+- FAQ pills still auto-hide on conversation (intentional — they're replaced by chat context).
+
+**Task 4 — GITHUB_TOKEN verified:**
+- `wrangler secret list --name data-center-agents` confirms GITHUB_TOKEN is set.
+- `agent-runner.js` line 1597 already calls `commitFileToRepo` for `agents/reports/daily/day-NNN-summary.md` at end of each simulated day. No code change needed.
+
+- [2026-06-18] Autonomous session: automation-ui-fix — completed

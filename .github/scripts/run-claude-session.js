@@ -18,6 +18,14 @@ Gemini for reports only. Output ONLY file changes as JSON:
 
 const task = process.env.TASK || 'Read TOKEN-BUDGET.md and execute the next queued task.';
 
+const budgetLines = fs.readFileSync('TOKEN-BUDGET.md', 'utf8').split('\n');
+const budget = budgetLines.slice(-50).join('\n');
+const claudeMd = fs.readFileSync('CLAUDE.md', 'utf8').slice(0, 2000);
+const totalInput = budget.length + claudeMd.length + task.length;
+if (totalInput > 8000) {
+  console.error('Input too large: ' + totalInput + ' chars — truncating');
+}
+
 const body = JSON.stringify({
   model: 'claude-sonnet-4-6',
   max_tokens: 4096,
@@ -27,10 +35,10 @@ const body = JSON.stringify({
     content:
       `Session type: ${process.env.SESSION_TYPE}\n` +
       `Task: ${task}\n\n` +
-      `Current TOKEN-BUDGET.md:\n` +
-      fs.readFileSync('TOKEN-BUDGET.md', 'utf8') + '\n\n' +
+      `Current TOKEN-BUDGET.md (last 50 lines):\n` +
+      budget + '\n\n' +
       `Current CLAUDE.md summary:\n` +
-      fs.readFileSync('CLAUDE.md', 'utf8').slice(0, 3000)
+      claudeMd
   }]
 });
 
