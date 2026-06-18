@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-06-18 — ed1eb42] (master)
+
+- feat(office): daily simulation report 2026-06-18 from D1 data ([ed1eb42](https://github.com/avivnofar/data-center/commit/ed1eb425a0b2330a6affc6c3ef32ea4a23ace745))
+- fix: restore 3 AI modes — keep mode selector visible in active chat ([9f96e18](https://github.com/avivnofar/data-center/commit/9f96e18d85940beec6fae1edbba1d1d73c755899))
+- fix: truncate TOKEN-BUDGET.md input — fix automation crash ([d7e9cb4](https://github.com/avivnofar/data-center/commit/d7e9cb45dff4171834f88870f00598df9715d4eb))
+
+
 ## [2026-06-16 — 70702e8] (master)
 
 - docs: simulation status, token economy, case distribution ([70702e8](https://github.com/avivnofar/data-center/commit/70702e8adf540a0f2a533b74ad9cf850ab549895))
