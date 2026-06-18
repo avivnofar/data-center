@@ -160,12 +160,13 @@ export function generateWeeklyCaseBatches(opts = {}) {
 
 /**
  * Assigns a CRM case to an agent ID per agents-config.json case_focus /
- * clearance. Agents 6 (QA), 7 (Team Lead), 8 (Lead QA), and 9 (Designer)
- * never receive IT/CRM cases — their work is audits, management, and
- * design, generated separately (meeting-engine.js / scheduler.js).
+ * clearance. Agents 6-9 now receive ~20% of general cases (5% each) so
+ * they appear in D1 daily — they handle them as supplementary review/audit
+ * work via agent-stub.js. The remaining 80% splits across workers 1-3 as
+ * before.
  *
  * @param {object} caseObj - a case from generateDailyCaseBatch
- * @returns {number} agent id (1, 2, 3, 4, 5, 10, or 11)
+ * @returns {number} agent id (1-11)
  */
 export function assignCase(caseObj) {
   // Critical, IT-Chief-required cases go to the IT Chief (5), overflowing
@@ -188,7 +189,15 @@ export function assignCase(caseObj) {
   // Hard/advanced cases occasionally escalate straight to the Architect.
   if (caseObj.difficulty === 'advanced' && Math.random() < 0.1) return 10;
 
-  // Remaining cases split across the three general workers.
+  // Admin agents (6-9): 5% each = 20% total of the general pool, handled
+  // as supplementary review/audit work (agent-stub.js).
+  const adminRoll = Math.random();
+  if (adminRoll < 0.05) return 6;
+  if (adminRoll < 0.10) return 7;
+  if (adminRoll < 0.15) return 8;
+  if (adminRoll < 0.20) return 9;
+
+  // Remaining 80% splits across the three general workers.
   return randomItem([1, 2, 3]);
 }
 

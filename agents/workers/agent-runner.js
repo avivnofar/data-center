@@ -1443,8 +1443,14 @@ export async function runScheduledBlock(env, israelTime, dayOfWeek) {
   const agentStats = new Map(Object.entries(cycle.agentStats).map(([k, v]) => [Number(k), v]));
   const agentInstances = new Map();
 
-  const ensureAgentInstances = async () => {
-    for (const id of agentStats.keys()) {
+  // Pass includeAll=true for report/spare-time blocks so admin agents
+  // (6-9) that handled zero cases still participate in daily standup
+  // and file their presence in D1.
+  const ensureAgentInstances = async (includeAll = false) => {
+    const ids = includeAll
+      ? agentsConfig.agents.map((a) => a.id)
+      : Array.from(agentStats.keys());
+    for (const id of ids) {
       if (!agentInstances.has(id)) {
         const agent = instantiateAgent(id, env);
         await agent.loadState();
@@ -1464,12 +1470,12 @@ export async function runScheduledBlock(env, israelTime, dayOfWeek) {
       } else if (block.type === 'tool_task_window') {
         cycle.results.toolTask = await maybeOpenAssetTask(env, dayOfWeek, cycle.day);
       } else if (block.type === 'report') {
-        await ensureAgentInstances();
+        await ensureAgentInstances(true);
         cycle.results.aiExperience = await runDailyAiExperienceReports(env, agentInstances, cycle.lowQualityLog);
       } else if (block.type === 'meeting' && block.meeting_type === 'daily_standup') {
         cycle.results.standup = await runMeeting('daily_standup', env);
       } else if (block.type === 'spare_time') {
-        await ensureAgentInstances();
+        await ensureAgentInstances(true);
         for (const [, agent] of agentInstances) {
           cycle.results.spareTime.push(await runSpareTimeForAgent(env, agent, { forceIdle: !!block.force_idle }));
         }
