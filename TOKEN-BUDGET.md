@@ -782,3 +782,34 @@ Autonomous session. RTL audit: no issues (all AI_STRINGS via textContent, browse
 - `agent-runner.js` line 1597 already calls `commitFileToRepo` for `agents/reports/daily/day-NNN-summary.md` at end of each simulated day. No code change needed.
 
 - [2026-06-18] Autonomous session: automation-ui-fix — completed
+
+## Multi-task fix session (2026-06-18)
+
+Autonomous session. Preflight clean. RTL audit: no issues.
+
+**Task 1 — Agents 6-9 scheduling fixed:**
+- Root cause: `assignCase()` in `crm-engine.js` never routed to agents 6-9.
+- Fix: Added 20% admin share (5% each) for agents 6, 7, 8, 9 in `assignCase()`.
+- Fix: `ensureAgentInstances(includeAll=true)` in `agent-runner.js` now instantiates
+  all 11 agents for report/spare-time blocks, not just case-assigned agents.
+- Expected: all 11 agents appear in D1 `agent_sessions` over a week.
+
+**Task 2 — Image/screenshot analysis:**
+- `cloudflare-worker/worker.js`: accepts `images[]` (base64 + media_type, max 3),
+  injects them as vision content blocks into the Anthropic API call, adds
+  image-analysis instruction to system prompt. Redeployed as version `38b028f0`.
+- `index.html`: `📎` attach button, Ctrl+V paste, thumbnail strip with × removal,
+  bilingual "📷 תמונה מצורפת" indicator, clears on send. `pendingImages[]` state.
+  `streamFromWorker()` accepts `images` param.
+
+**Task 3 — Three AI modes:**
+- Already fixed in session 9f96e18 (2026-06-18). Confirmed: buttons exist in HTML,
+  populated by `applyAiLang()`, mode selector always visible.
+
+**Task 4 — Automation:**
+- `run-claude-session.js`: TOKEN-BUDGET.md truncation already in place.
+- `TOKEN-BUDGET.md`: `## ⏳ Next` marker present.
+- `scheduled-claude.yml`: single cron `30 23 * * 0-4` confirmed. TASK updated to
+  "all 11 agents process their cases using Groq, Claude capped at 5 calls."
+
+- [2026-06-18] Autonomous session: multi-task-fix — completed
