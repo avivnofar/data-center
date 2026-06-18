@@ -188,8 +188,7 @@
     }
     #faq-pills:empty { display: none; }
     /* Auto-hidden once a conversation has messages — reappear on new/cleared session */
-    #faq-pills.conversation-active,
-    #ai-mode-radiogroup.conversation-active { display: none; }
+    #faq-pills.conversation-active { display: none; }
     .faq-pill {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -3326,9 +3325,7 @@ function updateConversationUiState() {
   if (!chatArea) return;
   const hasMessages = chatArea.querySelectorAll('.ai-message').length > 0;
   const faqPills = document.getElementById('faq-pills');
-  const modeGroup = document.getElementById('ai-mode-radiogroup');
   if (faqPills) faqPills.classList.toggle('conversation-active', hasMessages);
-  if (modeGroup) modeGroup.classList.toggle('conversation-active', hasMessages);
   updateSidebarAutoCollapse(hasMessages);
 }
 
