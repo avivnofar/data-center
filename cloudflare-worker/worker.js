@@ -207,6 +207,13 @@ Lead with the command(s) in a code block, then at most 1-2 short lines of
 explanation. Avoid background theory unless the user explicitly asks for it.`;
   }
 
+  prompt += `
+
+You can analyze screenshots and images. When a user shares a screenshot of an
+error, config page, or terminal output, describe what you see and provide
+specific troubleshooting steps. For 1COM or MirtaPBX screenshots: identify
+the exact screen, settings page, or error shown and give precise instructions.`;
+
   if (dbContext && dbContext.trim()) {
     prompt += `\n\n${dbContext.trim()}`;
   }
@@ -320,13 +327,33 @@ export default {
       return jsonResponse({ error: 'general', message: 'Invalid JSON body' }, 400, origin);
     }
 
-    const { messages, mode, language, db_context, cli_mode } = body;
+    const { messages, mode, language, db_context, cli_mode, images } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'general', message: '"messages" must be a non-empty array' }, 400, origin);
     }
 
     const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode);
+
+    // If images are attached, inject them into the last user message as
+    // vision content blocks (max 3 images, base64 encoded).
+    let apiMessages = messages;
+    if (Array.isArray(images) && images.length > 0) {
+      const lastUserIdx = [...messages].map((m, i) => ({ m, i })).filter(({ m }) => m.role === 'user').pop()?.i;
+      if (lastUserIdx !== undefined) {
+        const imageBlocks = images.slice(0, 3).map((img) => ({
+          type: 'image',
+          source: { type: 'base64', media_type: img.media_type || 'image/png', data: img.data },
+        }));
+        const lastMsg = messages[lastUserIdx];
+        const textContent = typeof lastMsg.content === 'string' ? lastMsg.content : (lastMsg.content?.[0]?.text || '');
+        apiMessages = [
+          ...messages.slice(0, lastUserIdx),
+          { role: 'user', content: [...imageBlocks, { type: 'text', text: textContent }] },
+          ...messages.slice(lastUserIdx + 1),
+        ];
+      }
+    }
 
     let anthropicResponse;
     try {
@@ -341,7 +368,7 @@ export default {
           model: MODEL,
           max_tokens: MAX_TOKENS,
           system,
-          messages,
+          messages: apiMessages,
           stream: true,
           // Server-side web search — capped per request to bound cost
           // (see CLAUDE.md "Launch Decisions" cost ceiling).
