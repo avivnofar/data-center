@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-06-18 — 9413664] (master)
+
+- chore: log multi-task fix session 2026-06-18 ([9413664](https://github.com/avivnofar/data-center/commit/94136649979c5166dab96328538836621dc4f1a1))
+- fix: automation — all 11 agents nightly task + single cron confirmed ([b45e45d](https://github.com/avivnofar/data-center/commit/b45e45dbe286fa83b69a6c3a43de50f0e4e16381))
+- fix: ensure all 11 agents get scheduled blocks in simulation ([d5e5030](https://github.com/avivnofar/data-center/commit/d5e5030b088e99f822b10ba62cefa4084c5cd23b))
+- feat: image paste+upload in AI search + RTL audit (no issues found) ([a113efd](https://github.com/avivnofar/data-center/commit/a113efdf017bbe361d852a4ce6324cf244f9f602))
+- feat: add image/screenshot analysis to Claude search bar ([bcdd705](https://github.com/avivnofar/data-center/commit/bcdd7050ef50219b6850ae3f297a098a402f5358))
+
+
 ## [2026-06-18 — ed1eb42] (master)
 
 - feat(office): daily simulation report 2026-06-18 from D1 data ([ed1eb42](https://github.com/avivnofar/data-center/commit/ed1eb425a0b2330a6affc6c3ef32ea4a23ace745))
