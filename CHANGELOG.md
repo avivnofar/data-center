@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-19 — 6b31179] (master)
+
+- refactor: move office simulation to office-AI-agents repo ([6b31179](https://github.com/avivnofar/data-center/commit/6b311790cab7ad3d3092aa913bdf35f3ee0f7d7a))
+
+
 ## [2026-06-18 — 9413664] (master)
 
 - chore: log multi-task fix session 2026-06-18 ([9413664](https://github.com/avivnofar/data-center/commit/94136649979c5166dab96328538836621dc4f1a1))
