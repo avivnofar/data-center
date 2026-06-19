@@ -117,15 +117,8 @@ data-center/
 │       ├── agent-cases.yml      # Weekly Monday 09:00 UTC — generates agent simulation case batch
 │       └── agent-reports.yml    # Weekly Tuesday 08:00 UTC — agent simulation weekly report
 ├── cloudflare-worker/            # AI Search backend (Cloudflare Worker, Claude API)
-├── agents/                       # AI Agent Simulation (DRAFT, Phase 1) — see agents/README.md
-│   ├── config/                   # simulation-config.json, agents-config.json
-│   ├── workers/                  # agent-runner.js, scheduler.js, case-generator.js, gemini-client.js, state-manager.js
-│   ├── agents/                   # agent-base.js + per-agent classes (agent-1..4-*.js, agent-stub.js)
-│   ├── dashboard/                # standalone admin dashboard (admin-panel.html, dashboard.js)
-│   ├── reports/templates/        # incident/status/weekly report markdown templates
-│   ├── database/                 # D1 schema.sql + seed-cases.sql
-│   ├── README.md                 # setup, architecture, env vars
-│   └── AGENTS.md                 # agent specification reference (summary, not final)
+├── agents/                       # AI Agent Simulation — MOVED (2026-06-19) to
+│   └── README.md                 # the dedicated avivnofar/office-AI-agents repo; kept here as a pointer only
 ├── .nojekyll                    # Prevents GitHub Pages Jekyll processing
 ├── CLAUDE.md                    # This file
 ├── ROADMAP.md                   # Phase milestones
@@ -435,44 +428,41 @@ human/Claude-Code review.
 
 ---
 
-## AI Agent Simulation (`agents/`)
+## AI Agent Simulation (moved to `office-AI-agents`)
 
-`agents/` scaffolds a simulated "AI agent team" that uses the live app
-(via `data-center-api`'s `/api/chat`) like real sysadmins, role-played by
-Gemini 2.5 Flash-Lite. **Status: DRAFT (Phase 1 foundation)** — agents 1-4
-("The Perfectionist", "The Productive", "The Standard Agent", "The Trainee")
-have full mood/irritation/panic state machines; agents 5-11 have full
-character specs in `agents-config.json` (status: `specified`) but run via
-the generic `agent-stub.js` (no dedicated state machine yet). See
-`agents/README.md` (architecture, setup, env vars) and `agents/AGENTS.md`
-(per-agent behavior summary) — both still describe an older two-Worker
-design and are due a rewrite (see `TOKEN-BUDGET.md`).
+The AI agent office simulation — 11 agents that use this app's live
+`/api/chat` like real sysadmins, role-played via Groq (primary) and Gemini
+(reports) — **moved out of `agents/` into its own repo on 2026-06-19**:
+[`avivnofar/office-AI-agents`](https://github.com/avivnofar/office-AI-agents).
+`agents/README.md` here is just a pointer. See that repo's `CLAUDE.md` for
+the full architecture, agent roster, token economy, and deploy steps.
 
-- **Workers**: `agent-runner.js` (admin HTTP API + agent execution) and
-  `scheduler.js` (cron-driven hourly "work day" / daily "work week" cycles)
-  are Cloudflare Workers backed by D1 (`agents/database/schema.sql`),
-  Durable Objects (`state-manager.js`), and KV (`SIM_KV` for live
-  `inspection_mode`/`paused`/`phase` overrides). None of this is deployed by
-  this commit — see `agents/README.md`'s manual setup steps.
+It remains a separate Cloudflare Worker (`data-center-agents`) that talks to
+this app's `data-center-api` Worker via a service binding (`APP_API`) — see
+"Service binding" caveat in that repo's `wrangler.toml`.
+
 - **Admin tab**: the in-app 🔐 Admin tab (`dataset.moduleId = 'admin'`,
   `buildAdminTabBtn()`/`buildAdminPanelShell()`/`renderAdminPanel()` in
   `index.html`) is a read-only-by-default dashboard (agent status grid, live
   session feed, reports/suggestions, simulation controls, performance
-  metrics). A standalone equivalent lives at `agents/dashboard/admin-panel.html`.
+  metrics) that calls the `data-center-agents` Worker directly. A standalone
+  equivalent lives in `office-AI-agents/dashboard/admin-panel.html`.
 - **Admin auth**: the dashboard never ships a real secret. The admin types a
   token into the page once (stored in `localStorage` as `dc-admin-token`,
-  sent as the `X-Admin-Token` header); `agent-runner.js` and `scheduler.js`
-  validate it server-side against `env.ADMIN_TOKEN` (a Worker secret). This
+  sent as the `X-Admin-Token` header); the `office-AI-agents` Worker
+  validates it server-side against `env.ADMIN_TOKEN` (a Worker secret). This
   is the same pattern required by the credential rules below — never embed
-  `ADMIN_TOKEN` (or `GEMINI_API_KEY`/`GITHUB_TOKEN`) in `index.html` or
-  `dashboard.js`.
-- **CI**: `agent-cases.yml` and `agent-reports.yml` (see Automation
-  Workflows below) keep the simulation's case pool and weekly reports
-  flowing once the Workers are deployed.
+  `ADMIN_TOKEN` (or any model API key) in `index.html`.
 
 ---
 
 ## Daily Automation & AI-Tool Coordination
+
+> **This entire section now describes `office-AI-agents`, not this repo.**
+> All `agents/config/*.json` and `agents/workers/*.js` paths below live at
+> `config/*.json` and `workers/*.js` (no `agents/` prefix) in that repo as
+> of the 2026-06-19 migration. Kept here as historical context — see that
+> repo's `CLAUDE.md`/`AGENTS.md` for the current, path-correct version.
 
 Built on the 2026-06-12 daily-automation session. Defines the tactical
 24-hour schedule the office simulation runs (config only — **no cron is
