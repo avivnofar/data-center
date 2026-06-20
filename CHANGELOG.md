@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026-06-20 — ebfc858] (master)
+
+- chore: remove remaining office report files added after initial migration ([ebfc858](https://github.com/avivnofar/data-center/commit/ebfc8581efdbf8e3290eef11d060a620b3dd2fa8))
+- refactor: remove office simulation files — moved to office-AI-agents repo ([deec66c](https://github.com/avivnofar/data-center/commit/deec66cc0823ff376341e81953dc834047b17968))
+
+
 ## [2026-06-19 — 6b31179] (master)
 
 - refactor: move office simulation to office-AI-agents repo ([6b31179](https://github.com/avivnofar/data-center/commit/6b311790cab7ad3d3092aa913bdf35f3ee0f7d7a))
