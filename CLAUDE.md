@@ -13,6 +13,21 @@
 
 ---
 
+## Project Separation
+
+The office simulation has moved to a dedicated repository:
+https://github.com/avivnofar/office-AI-agents
+
+data-center contains ONLY:
+- `index.html` (the main app)
+- `data/` (knowledge base JSON files)
+- `cloudflare-worker/` (Claude AI search proxy)
+- `tools/` (CommandFlow terminal simulator)
+
+The office agents work ON data-center but live in office-AI-agents.
+
+---
+
 ## Current Strategy (authoritative)
 
 This section reflects the project owner's current direction and supersedes
