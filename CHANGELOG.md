@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-24 — 39e70f7] (master)
+
+- feat: add usage logging to data-center-api for spike visibility ([39e70f7](https://github.com/avivnofar/data-center/commit/39e70f72c485774fddbca208518a22eff985ef2c))
+
+
 ## [2026-06-20 — ebfc858] (master)
 
 - chore: remove remaining office report files added after initial migration ([ebfc858](https://github.com/avivnofar/data-center/commit/ebfc8581efdbf8e3290eef11d060a620b3dd2fa8))
