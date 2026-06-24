@@ -333,6 +333,30 @@ export default {
       return jsonResponse({ error: 'general', message: '"messages" must be a non-empty array' }, 400, origin);
     }
 
+    // Usage logging — Cloudflare Workers Logs (Observability → Logs). No
+    // user content logged, only metadata, so spikes can be attributed later.
+    console.log(JSON.stringify({
+      event: 'claude_api_call',
+      timestamp: new Date().toISOString(),
+      ip_hash: btoa(ip).slice(0, 8),
+      mode: body.mode || 'search',
+      language: body.language || 'he',
+      has_images: !!(body.images && body.images.length),
+      db_context_chars: (body.db_context || '').length,
+    }));
+
+    const today = new Date().toISOString().split('T')[0];
+    const dayKey = 'day-' + today;
+    const dayCount = (ipRequests.get(dayKey) || { count: 0 }).count + 1;
+    ipRequests.set(dayKey, { count: dayCount });
+    if (dayCount % 10 === 0) {
+      console.log(JSON.stringify({
+        event: 'daily_milestone',
+        date: today,
+        total_calls: dayCount,
+      }));
+    }
+
     const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode);
 
     // If images are attached, inject them into the last user message as

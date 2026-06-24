@@ -1,0 +1,7 @@
+name = "data-center-api"
+main = "worker.js"
+compatibility_date = "2026-06-24"
+
+# ANTHROPIC_API_KEY is an encrypted secret set via the Cloudflare dashboard
+# (Settings -> Variables) or `wrangler secret put ANTHROPIC_API_KEY` — never
+# set it here.
