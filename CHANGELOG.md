@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-06-30 — 455a087] (master)
+
+- feat(worker): inject Notebook-X knowledge index into system prompt ([455a087](https://github.com/avivnofar/data-center/commit/455a0876ac65d0ecb6225203d22b956eca950dc8))
+
+
 ## [2026-06-24 — 39e70f7] (master)
 
 - feat: add usage logging to data-center-api for spike visibility ([39e70f7](https://github.com/avivnofar/data-center/commit/39e70f72c485774fddbca208518a22eff985ef2c))
