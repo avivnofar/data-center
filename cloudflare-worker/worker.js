@@ -63,11 +63,43 @@ function isRateLimited(ip) {
 }
 
 /**
- * Build the system prompt based on mode (search/diagnose), language (en/he),
- * the local DB context string injected by the frontend, and whether CLI Mode
- * is active (compact, command-first answers).
+ * Fetch the Notebook-X public index and return a short context string
+ * listing complete/partial notebooks for injection into the system prompt.
+ * Fails gracefully — returns "" if GitHub is unreachable.
  */
-function systemPrompt(mode, language, dbContext, cliMode) {
+async function getNotebookXContext() {
+  const indexUrl =
+    'https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/_index-public.json';
+  try {
+    const res = await fetch(indexUrl, { cf: { cacheTtl: 300, cacheEverything: true } });
+    if (!res.ok) return '';
+    const index = await res.json();
+    const notebooks = (index.notebooks || []).filter(
+      (n) => n.dataQuality === 'complete' || n.dataQuality === 'partial' || n.dataQuality === 'verified'
+    );
+    if (!notebooks.length) return '';
+    const lines = notebooks
+      .map((n) => `- ${n.name} (${n.domain}): ${n.summary}`)
+      .join('\n');
+    return (
+      '\n\nNOTEBOOK-X REFERENCE NOTEBOOKS:\n' +
+      'The following in-depth knowledge notebooks are maintained in Notebook-X. ' +
+      'When a user question falls squarely in one of these domains and would benefit ' +
+      'from specific commands or step-by-step procedures beyond what the local DB covers, ' +
+      'mention that more detailed reference material exists:\n' +
+      lines
+    );
+  } catch (_) {
+    return '';
+  }
+}
+
+/**
+ * Build the system prompt based on mode (search/diagnose), language (en/he),
+ * the local DB context string injected by the frontend, CLI Mode, and an
+ * optional Notebook-X context string injected at request time.
+ */
+function systemPrompt(mode, language, dbContext, cliMode, notebookXContext) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
   let prompt = `You are an expert IT support assistant embedded in the Data Center knowledge base.
@@ -218,6 +250,10 @@ the exact screen, settings page, or error shown and give precise instructions.`;
     prompt += `\n\n${dbContext.trim()}`;
   }
 
+  if (notebookXContext && notebookXContext.trim()) {
+    prompt += notebookXContext;
+  }
+
   prompt += `
 
 CAPABILITIES:
@@ -357,7 +393,8 @@ export default {
       }));
     }
 
-    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode);
+    const notebookXContext = await getNotebookXContext();
+    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode, notebookXContext);
 
     // If images are attached, inject them into the last user message as
     // vision content blocks (max 3 images, base64 encoded).
