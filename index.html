@@ -2476,13 +2476,30 @@ function buildDbContext(query) {
 }
 
 /* ── Lightweight markdown renderer ───────────────────────────────────────── */
-function wrapInlineTechTerms(segment) {
-  let s = segment;
-  // CLI flags: -x, --long-flag (must start at a word boundary, not mid-Hebrew-word)
-  s = s.replace(/(^|[\s(])(--?[A-Za-z][\w-]*)/g, (m, pre, flag) => `${pre}<span dir="ltr">${flag}</span>`);
-  // File/registry paths: /etc/passwd, C:\Windows\System32, HKLM\...
-  s = s.replace(/(^|[\s(])((?:[A-Za-z]:)?(?:[\\/][\w.-]+)+)/g, (m, pre, path) => `${pre}<span dir="ltr">${path}</span>`);
-  return s;
+// Wraps embedded technical terms (commands, flags, paths, IPs, versions, and
+// — in Hebrew responses — standalone English words/acronyms) in an isolated
+// LTR span so mixed Hebrew/English text renders in the correct visual order.
+// Runs on plain (already-escHtml'd) text segments outside code spans; see
+// renderMarkdown()'s backtick-delimited split. Uses null-byte placeholders
+// so later, broader patterns never re-match text already wrapped by an
+// earlier, more specific pattern.
+function wrapLtrTerms(segment) {
+  const isHebrew = LANG === 'he';
+  const patterns = [
+    /https?:\/\/[^\s<>"')\]]+/,
+    /\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b/,
+    /(?<=^|[\s(])(?:[A-Za-z]:)?(?:[\\/][\w.-]+)+/,
+    /(?<=^|[\s(])--?[A-Za-z][\w-]*/,
+  ];
+  if (isHebrew) {
+    // Version numbers (8.0.1, 2.4) and standalone English words/acronyms
+    // (2+ chars) are only isolated in Hebrew flow — not worth the cost
+    // of wrapping every word in an all-English response.
+    patterns.push(/\b\d+\.\d+(?:\.\d+)?\b/);
+    patterns.push(/[A-Za-z][A-Za-z0-9]*(?:[_.-][A-Za-z0-9]+)*/);
+  }
+  const re = new RegExp(patterns.map(p => p.source).join('|'), 'g');
+  return segment.replace(re, (m) => `<span dir="ltr" style="unicode-bidi:isolate">${m}</span>`);
 }
 
 function renderMarkdown(text) {
@@ -2494,11 +2511,12 @@ function renderMarkdown(text) {
 
   let html = escHtml(body);
 
-  // Wrap stray command-like tokens (CLI flags, file/registry paths) that
-  // aren't already inside backtick code spans in <span dir="ltr">, so they
-  // don't get caught up in RTL flow when mixed with Hebrew text.
+  // Wrap stray command-like tokens (CLI flags, file/registry paths, IPs,
+  // URLs, versions, and — in Hebrew responses — standalone English terms)
+  // that aren't already inside backtick code spans in an isolated LTR span,
+  // so they don't get caught up in RTL flow when mixed with Hebrew text.
   html = html.split(/(```[\s\S]*?```|`[^`\n]+`)/g)
-    .map((part, i) => (i % 2 === 0 ? wrapInlineTechTerms(part) : part))
+    .map((part, i) => (i % 2 === 0 ? wrapLtrTerms(part) : part))
     .join('');
 
   // fenced code blocks

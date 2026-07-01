@@ -90,7 +90,7 @@ Office Simulation. These supersede any conflicting framing in
   never halt the run.
 - **Models**: `gemini-2.5-flash-lite` for the office simulation
   (`gemini-2.0-flash` is deprecated — do not reintroduce it),
-  `claude-sonnet-4-6` for `data-center-api`.
+  `claude-sonnet-5` for `data-center-api`.
 - **Architecture (3 Workers)**: `data-center-api` (Claude proxy — AI
   Search/Diagnose/CLI + escalations), `data-center-agents` (Gemini office
   simulation, ONE Worker, all 11 personas via `agents-config.json`),
