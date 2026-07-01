@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-07-01 — f64eb30] (master)
+
+- feat: upgrade to claude-sonnet-5, fix Hebrew/English RTL rendering, expand IT scope beyond Netvill ([f64eb30](https://github.com/avivnofar/data-center/commit/f64eb30e195ec631988f1a113b807b2620513ecb))
+
+
 ## [2026-06-30 — 455a087] (master)
 
 - feat(worker): inject Notebook-X knowledge index into system prompt ([455a087](https://github.com/avivnofar/data-center/commit/455a0876ac65d0ecb6225203d22b956eca950dc8))
