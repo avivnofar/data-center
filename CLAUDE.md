@@ -14,6 +14,10 @@ zero-dependency static HTML file deployable to any static host.
 **Hebrew default:** The UI defaults to Hebrew with RTL layout. Language is
 toggled via a button and stored in `localStorage` key `dc-lang`.
 
+**Feature status:** this file holds rules and standards only. For what is
+actually implemented and verified working, see **`CURRENT-SPEC.md`** —
+do not duplicate feature detail here.
+
 ### Scope
 
 - **Current**: general IT support — Linux, Windows/CMD, networking,
@@ -110,11 +114,15 @@ Or: `npx serve .`
   `Notebook-X/notebooks/_index-public.json` at request time and appends a
   short list of available notebooks to the system prompt. This is
   read-only awareness — see "Future Vision".
-- **Self-extension / self-education (suggest-only)**: Claude may append
-  `<!-- CAPABILITY_SUGGESTION: {...} -->` or `<!-- LEARNED_SOURCE: {...} -->`
-  blocks to answers; the app offers to file these as `claude-action`
-  GitHub Issues. The Worker never gets GitHub write access, and learned
-  sources must pass Source Validation (below) before touching `data/*.json`.
+- **Self-extension / self-education (suggest-only, prompt-side only)**:
+  the system prompt instructs Claude to append plain-text
+  `CAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}` lines after a
+  `---` separator when it spots a knowledge-base gap or a good new source.
+  **No client-side handler exists yet** — the blocks render as text and a
+  human acts on them manually (see CURRENT-SPEC.md #7-#10). If a handler
+  is ever built, Issue filing must go through a server-side component (the
+  Worker never gets GitHub write access), and learned sources must pass
+  Source Validation (below) before touching `data/*.json`.
 
 ---
 

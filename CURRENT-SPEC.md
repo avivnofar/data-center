@@ -1,8 +1,8 @@
 # Data Center — Current Technical Specification
 
-*Audited 2026-07-19. Source of truth for architecture and feature status.
-Rules and standards live in `CLAUDE.md`; this file records what actually
-exists and works today.*
+*Comprehensive feature audit 2026-07-19 (27 items, code-verified). Source
+of truth for architecture and feature status. Rules and standards live in
+`CLAUDE.md`; this file records what actually exists and works today.*
 
 ## Scope
 
@@ -10,64 +10,95 @@ General IT support knowledge base and AI assistant for IT professionals
 (sysadmins, DevOps, helpdesk, students), bilingual Hebrew/English with
 Hebrew-first RTL. Expanding toward cybersecurity content (a `security`
 module is registered `coming-soon`). Vendor PBX modules (1COM, MirtaPBX)
-remain as ordinary content modules — the project is not scoped to any one
-company. AI backend model: **`claude-sonnet-5`**.
+remain as ordinary specialty content modules — the project is not scoped
+to any one company. AI backend model: **`claude-sonnet-5`**.
 
 ## Architecture
 
-- **Frontend**: `index.html` (~4,100 lines) — entire app in one file, no
+- **Frontend**: `index.html` (~3,440 lines) — entire app in one file, no
   build step, no dependencies. Tabs are data-driven from
   `data/modules.json`; `init()` loads all data files via
-  `Promise.all(fetch(...))`.
+  `Promise.all(fetch(...))`. Navigation is a fixed, collapsible 200px
+  left sidebar (`#tab-nav`); AI Search is the default tab and the chat
+  fills the main content area.
 - **AI backend**: `cloudflare-worker/worker.js` (~500 lines) — the
   `data-center-api` Cloudflare Worker, a secure proxy holding the
-  Anthropic API key as a Worker secret. Streams responses, enforces an
-  origin allowlist and 20 req/min/IP rate limit, and includes the
-  `web_search` tool (max 3 uses per request).
+  Anthropic API key as a Worker secret. Streams SSE responses
+  (`streamAnthropicResponse()` re-streams Anthropic deltas), enforces an
+  origin allowlist and 20 req/min/IP rate limit.
 - **AI Search flow**: the app builds a small `db_context` from locally
   matched knowledge-base entries, sends
   `{messages, mode, language, db_context, cli_mode, images}` to
   `/api/chat`; the Worker assembles a bilingual system prompt (plus a
-  live-fetched Notebook-X notebook index) and calls Claude.
+  live-fetched Notebook-X notebook index via `getNotebookXContext()`)
+  and calls Claude with the `web_search` tool enabled.
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
-  `localStorage` `dc-modes`): Free Search, Solve a Case (platform/severity
-  chips + start/next/resolved/escalate/guide actions), and CLI Mode.
+  `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
 - **CLI Mode / CommandFlow**: `tools/commandflow/` — standalone "Terminal
   Academy" simulator (registered in `data/tools.json`, linked from the
   topbar) whose engine (`commandflow-core.js` + `commands.json`, 7
-  platforms) also powers in-app CLI Mode: recognized commands render
-  instantly client-side at zero API cost; unmatched input falls through to
-  Claude.
+  platforms) also powers in-app CLI Mode at zero API cost, with
+  fall-through to Claude for unmatched input.
 - **Workflows tab**: renders bilingual workflow markdown fetched from the
-  sibling `data-center-archive` repo (raw.githubusercontent.com), with a
-  graceful "archive not connected" fallback and print-based PDF export.
+  sibling `data-center-archive` repo, with a graceful "archive not
+  connected" fallback and print-based PDF export.
+- **Zero office-simulation coupling** since 2026-07-19 — the former
+  Office/Admin UI was fully removed.
 
-## Verified Feature Status (audited 2026-07-19)
+## Verified Feature Status (comprehensive audit, 2026-07-19)
 
-| Feature | Status | Evidence |
+All 27 ever-requested features were checked against the actual code.
+"Code-verified" means the full request/response path was read; no live
+paid API calls were made.
+
+### ✅ Fully Working (19)
+
+| # | Feature | Evidence |
 |---|---|---|
-| Image/screenshot analysis | **Fully working** (code-verified) | UI: attach button `#ai-attach-btn` + document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64 + media_type, previews, removable). Sent as `images` in the `/api/chat` body. Worker: validates array, slices to max 3, injects `type:'image'` base64 content blocks into the last user message; system prompt tells Claude it can analyze screenshots. |
-| PDF export (workflows) | **Fully working** | `generatePdf()` → `window.print()` with `@media print` isolation of `.print-target`. Print-based only — no jsPDF/library. |
-| Presentation/slide generation | **Not implemented** | Zero matches for presentation/slide/pptx/jsPDF anywhere in the repo. Never built. |
-| Workflow document *viewing* | **Fully working** | `WORKFLOWS` array + `openWorkflow()` fetch from `data-center-archive` with bilingual fallback message. |
-| Workflow document *generation* | **Not implemented** | No code generates workflow docs; they are authored manually in the archive repo. |
-| Terminal/CLI Mode (CommandFlow) | **Fully working** | `tools/commandflow/` intact; registered in `data/tools.json`; in-app `tryRunCliCommand()` → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; fall-through to Claude on unmatched input. |
-| Three AI modes (Free Search / Solve a Case / CLI) | **Fully working** | `role="radiogroup"` with three `role="radio"` buttons; `setAiMode()` enforces `AI_MODES = [mode]` (exactly one); `loadAiModes()` sanitizes stored state to a single valid mode, defaulting to `search`. |
-| Hebrew/English RTL rendering | **Fully working** | `wrapLtrTerms()` (index.html:2486) wraps URLs/IPs/paths/flags — plus versions and English words in Hebrew flow — in `dir="ltr"` isolated spans; applied inside `renderMarkdown()` on non-code segments. All modes (streaming finalize, history replay, CLI output) render through `renderMarkdown()`. |
-| Web search in AI answers | **Fully working** (code-verified) | Worker request includes `web_search_20250305` tool, max 3 uses; system prompt instructs citing sources. |
-| Notebook-X context injection | **Working (phase 1 only)** | `getNotebookXContext()` fetches the public notebook index and appends it to the system prompt; silent no-op on failure. Content-level retrieval not built. |
-| Bookmark bars on AI answers | **Present** | `renderBookmarkBars()` wired into bubble finalize/append; localStorage-persisted. |
-| Office/Admin tab | **Removed (2026-07-19)** | All Office/Admin UI stripped from `index.html` per owner decision — zero coupling to the external `office-AI-agents` project remains. |
+| 1 | Claude streaming AI search | `worker.js`: `stream: true`, `streamAnthropicResponse()` re-streams SSE as `{"delta"}` events; client renders via the streaming bubble path. |
+| 2 | Three mutually exclusive AI modes | `AI_MODE_VALUES`; `setAiMode()` sets `AI_MODES = [mode]`; `loadAiModes()` sanitizes stored state to one valid mode. |
+| 3 | Solve a Case guided controls | `#diagnose-controls`: platform/severity chips (`selectDiagnoseChip()` → `DIAGNOSE_PLATFORM/SEVERITY`) + 5 action buttons wired to `diagnoseAction()` (index.html:2908) — `start` prefills the input with chip context; next/resolved/escalate/guide call `sendAiMessage()`. |
+| 4 | CLI Mode terminal-in-chat | `tryRunCliCommand()` (index.html:2963) → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; unmatched input falls through to Claude. |
+| 5 | Image paste + upload + vision | Attach button `#ai-attach-btn` and document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64, previews, removable) → `images` in the request body; Worker injects `type:'image'` blocks (max 3). |
+| 6 | Web search tool for Claude | `worker.js:462`: `tools: [{type:'web_search_20250305', name:'web_search', max_uses:3}]` — yes, actually added; system prompt lists preferred official domains. |
+| 11 | Hebrew default + English toggle | `LANG = localStorage.getItem('dc-lang') \|\| 'he'`; `applyLang()` flips `document.documentElement.dir` and re-renders. |
+| 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` (index.html:2306) intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
+| 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html:205); `toggleSidebarCollapse()` (index.html:3285) + persisted collapsed state + mobile off-canvas mode. |
+| 14 | Chat as dominant UI | `init()` ends with `switchTab('ai')` — AI Search is the default tab; the chat panel fills the entire main content area beside the 200px sidebar. |
+| 15 | Hover tooltips on commands | `showTooltip()` — 200ms delay, viewport-aware positioning, flag list from `data-flags`, keyboard focus support. |
+| 17 | Mobile responsiveness | ≤768px: 44px touch targets (`.tab-btn/.filter-btn/.faq-pill`, `.copy-btn`), 16px inputs (iOS zoom fix), off-canvas sidebars; ≤480px adjustments. |
+| 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
+| 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. |
+| 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. |
+| 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
+| 25 | 1COM + MirtaPBX modules | Present and active (17 + 11 entries), rendered as normal tabs. Now specialty/vendor content within general-IT scope, not the defining boundary. |
+| 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">` (index.html:1480), `data/tools.json` registry, topbar link, CLI Mode path all intact. |
+| 27 | Data validation scripts | `validate-json.js` (schema, bilingual pairs, approved/blocked domain enforcement) + `health-check.js` (Hebrew QA) — both pass as of this audit. |
 
-"Code-verified" = verified by reading the full request/response path in
-code; no live paid API call was made during this audit.
+### 🔶 Partially Built / Needs Finishing (6)
+
+| # | Feature | What exists | What's missing |
+|---|---|---|---|
+| 7 | Self-education (LEARNED_SOURCE) | Worker system prompt (worker.js:301-306) instructs Claude to append a plain-text `LEARNED_SOURCE: {...}` line after `---` for good web-search sources, restricted to approved domains. | **No client-side code** detects the block — it renders as visible text in the chat. No GitHub Issue is created. To finish: parse the block in the app, offer a "file as claude-action Issue" action (via a server-side component, never a browser token). |
+| 8 | Very-high source scrutiny | Approved/blocked domain allowlists enforced in code (`validate-json.js:18-85`, runs in CI on every push); `flagged/` pending→approved/rejected files exist; worker prompt instructs verification caution. | The quarantine flow is a documented **manual process** — `flagged/pending-review.md` is an empty table, and nothing automatically routes AI-suggested URLs into it. |
+| 9 | Auto-update KB via GitHub Issue | Prompt-side only: `CAPABILITY_SUGGESTION` covers KB gaps (worker.js:297-300). | Same gap as #7 — no code path creates an Issue anywhere in this repo. |
+| 10 | Self-extending capability | Prompt-side only: `CAPABILITY_SUGGESTION: {...}` block spec in the system prompt. | Same gap as #7/#9: no app detection, no Issue filing. Currently aspirational beyond the prompt. |
+| 16 | Expandable cards + copy buttons | Expand/collapse fully works (`toggleCard()`, `aria-expanded`, keyboard support via `handleExpandKeydown`). | **Copy-to-clipboard exists only on AI-chat code blocks** (`copyAiCode()`); command-card `usage-cmd` rows have no copy button. |
+| 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders — not just UI). Client-side only, no tokens. | No UI to **browse or manage** the saved list — saved URLs are write-only unless read from localStorage manually. |
+
+### ❌ Requested But Never Built (2)
+
+| # | Feature | Evidence |
+|---|---|---|
+| 22 | Presentation/slide generation | Zero matches for presentation/slide/pptx/jsPDF repo-wide. Candidate for future work, not a phantom regression. |
+| 23 | Workflow document *generation* | Definitive: workflow *viewing* works (fetch + render from `data-center-archive`), but nothing generates workflow documents — they are authored manually in the archive repo. |
 
 ## File Structure (post-cleanup)
 
 ```
 data-center/
-├── index.html
+├── index.html              # entire app (~3,440 lines)
 ├── data/
 │   ├── modules.json        # 13 modules: 6 active, 7 coming-soon
 │   ├── linux.json          # 42 entries
@@ -104,10 +135,15 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Known Issues / Open Items
 
-- None currently flagged. (The 2026-07-19 audit's three open items —
-  Office/Admin UI in `index.html`, the untracked `notebooks/` staging
-  folder, and `data/resources and links.txt` — were all removed per owner
-  decision on the same date.)
+- The four partially-built AI self-improvement items (#7-#10 above) share
+  one root gap: the suggestion blocks Claude emits have no client-side
+  parser and no Issue-filing path. Until built, they appear as plain text
+  at the end of some chat answers.
+- Command cards lack copy buttons on usage rows (#16); saved bookmarks
+  have no browsing UI (#20).
+- No functional bugs currently flagged. (The 2026-07-19 audit's three
+  open items — Office/Admin UI, `notebooks/`, `data/resources and
+  links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
 
@@ -115,20 +151,16 @@ needed) and validated by `.github/scripts/validate-json.js`.
   Hebrew/English RTL rendering fixed via `wrapLtrTerms()`; IT scope
   expanded beyond Netvill to general IT.
 - **Notebook-X index injection** (commit `455a087`): Worker system prompt
-  now lists available Notebook-X notebooks at request time.
+  lists available Notebook-X notebooks at request time.
 - **Usage logging** (commit `39e70f7`): request logging on
   `data-center-api` for spike visibility.
-- **Office simulation fully migrated out** (commits `deec66c`, `ebfc858`,
-  and this audit): `agents/` removed earlier; this audit removed the last
-  leftovers (`tools/runbook/` — three unwired demo-component ports) and
-  rewrote `CLAUDE.md` without simulation content.
-- **This audit (2026-07-19)**: repo-wide feature verification (table
-  above), `CLAUDE.md` rewrite, `CURRENT-SPEC.md` created, `ROADMAP.md`
-  folded in and removed, `README.md` refreshed. Per owner decision, all
-  Office/Admin UI was then stripped from `index.html` (~660 lines: locked
-  tab, lock modal, admin dashboard, `CONFIG.AGENTS_API_BASE`), and
-  `notebooks/` + `data/resources and links.txt` were deleted — the repo
-  now has zero coupling to the office simulation.
+- **Audit & cleanup (2026-07-19, commits `d5331cd` + `153152f`)**:
+  repo-wide audit; `CLAUDE.md` rewritten; `ROADMAP.md` folded in and
+  removed; `README.md` refreshed; all office-simulation leftovers deleted
+  (`tools/runbook/`, then per owner decision the in-app Office/Admin UI
+  (~660 lines), `notebooks/`, and `data/resources and links.txt`) — zero
+  office coupling remains. Followed by this comprehensive 27-item
+  feature audit.
 
 ## Future Vision (Not Started)
 
@@ -136,7 +168,10 @@ needed) and validated by `.github/scripts/validate-json.js`.
 in-depth knowledge notebooks. Only phase 1 (index injection into the
 system prompt) exists; retrieving actual notebook content into answers is
 planned but not started, and should not be built until the core app is
-stable. Content-module roadmap (from the retired ROADMAP.md): activate the
-`powershell`, `cloud`, `security`, `docker`, `cicd`, `casestudies`, and
-`cli` modules as content is authored; longer-term ideas (PWA/offline,
-contribution guide) remain unscheduled.
+stable. Content-module roadmap (from the retired ROADMAP.md): activate
+the `powershell`, `cloud`, `security`, `docker`, `cicd`, `casestudies`,
+and `cli` modules as content is authored; longer-term ideas (PWA/offline,
+contribution guide) remain unscheduled. Natural next steps surfaced by
+this audit: a client-side parser + Issue-filing flow for the
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks, copy buttons on command
+cards, and a saved-bookmarks browsing panel.
