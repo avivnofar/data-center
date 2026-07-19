@@ -429,11 +429,10 @@ When operating autonomously across sessions on this project:
 ## Future Vision (planned, not started)
 
 **Notebook-X integration**: enrich Claude's AI Search answers with the
-Notebook-X project's in-depth knowledge notebooks. Phase 1 (lightweight
-index injection into the Worker's system prompt via
-`getNotebookXContext()`) is live; actual notebook *content* retrieval is
-**not started**. Revisit only once the core app is stable — do not build
-ahead of need.
+Notebook-X project's in-depth knowledge notebooks. Phase 1 (index injection
+via `getNotebookXContext()`) is implemented — see CURRENT-SPEC.md for
+current status. Actual notebook *content* retrieval is **not started**.
+Revisit only once the core app is stable — do not build ahead of need.
 
 ---
 

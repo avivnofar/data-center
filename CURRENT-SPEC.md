@@ -29,9 +29,12 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
 - **AI Search flow**: the app builds a small `db_context` from locally
   matched knowledge-base entries, sends
   `{messages, mode, language, db_context, cli_mode, images}` to
-  `/api/chat`; the Worker assembles a bilingual system prompt (plus a
-  live-fetched Notebook-X notebook index via `getNotebookXContext()`)
-  and calls Claude with the `web_search` tool enabled.
+  `/api/chat`; the Worker assembles a bilingual system prompt and calls
+  Claude with the `web_search` tool enabled. `getNotebookXContext()` is
+  implemented but currently non-functional in production — it fetches
+  Notebook-X's index unauthenticated, which 404s against the private repo
+  and fails silently, so no notebook index is actually appended to the
+  system prompt today (see `automation/NEEDS_YOUR_REVIEW.md`).
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
   `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
@@ -150,8 +153,12 @@ needed) and validated by `.github/scripts/validate-json.js`.
 - **2026-07 (commit `f64eb30`)**: Worker upgraded to `claude-sonnet-5`;
   Hebrew/English RTL rendering fixed via `wrapLtrTerms()`; IT scope
   expanded beyond Netvill to general IT.
-- **Notebook-X index injection** (commit `455a087`): Worker system prompt
-  lists available Notebook-X notebooks at request time.
+- **Notebook-X index injection** (commit `455a087`): code exists to list
+  available Notebook-X notebooks in the system prompt at request time, but
+  it is currently non-functional in production — the fetch is
+  unauthenticated against a private repo (404, fails silently), so no
+  notebook index is actually injected today (see
+  `automation/NEEDS_YOUR_REVIEW.md`).
 - **Usage logging** (commit `39e70f7`): request logging on
   `data-center-api` for spike visibility.
 - **Audit & cleanup (2026-07-19, commits `d5331cd` + `153152f`)**:
