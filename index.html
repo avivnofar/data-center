@@ -260,8 +260,6 @@
       cursor: default;
       font-style: italic;
     }
-    .tab-btn.locked { opacity: 0.6; }
-    .tab-btn.locked:hover { opacity: 0.85; border-color: var(--accent3); color: var(--accent3); }
     .tab-btn .tab-icon { flex-shrink: 0; font-size: 1.05rem; }
     .tab-btn .tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -291,43 +289,6 @@
       padding: 5px 10px;
     }
     #hamburger-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-
-    /* ── Office lock modal ────────────────────────────────────────────────── */
-    #office-lock-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 500;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    #office-lock-overlay.visible { display: flex; }
-    .office-lock-modal {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: var(--card-radius);
-      max-width: 420px;
-      width: 100%;
-      padding: 24px;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-    .office-lock-modal .office-lock-icon { font-size: 2.4rem; margin-bottom: 8px; }
-    .office-lock-modal h3 { font-size: 1.05rem; margin-bottom: 10px; }
-    .office-lock-modal p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px; }
-    .office-lock-modal button {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 0.85rem;
-      padding: 8px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .office-lock-modal button:hover { border-color: var(--accent2); color: var(--accent2); }
 
     /* ── Main container ────────────────────────────────────────────────────── */
     #main-content {
@@ -1448,7 +1409,7 @@
       #tooltip { max-width: min(280px, 80vw); }
 
       /* Prevent iOS Safari auto-zoom on focus (inputs <16px trigger it) */
-      #ai-input, #admin-token-input { font-size: 16px; }
+      #ai-input { font-size: 16px; }
     }
 
     /* ── Small mobile (≤480px) ─────────────────────────────────────────────── */
@@ -1463,80 +1424,6 @@
       #status-bar .status-side.status-right { display: none; }
     }
 
-    /* ── Admin (Agent Simulation) ────────────────────────────────────────────── */
-    .admin-login { max-width: 360px; margin: 60px auto; text-align: center; }
-    .admin-login h2 { margin-bottom: 8px; font-size: 1.1rem; }
-    .admin-hint { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
-    .admin-login input {
-      width: 100%; padding: 10px; margin-bottom: 12px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; font-family: var(--mono);
-    }
-    .admin-btn {
-      background: var(--accent2); border: none; color: #07101f;
-      padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
-    }
-    .admin-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .admin-error { color: var(--danger); margin-top: 10px; font-size: 0.85rem; }
-    .admin-loading { color: var(--text-muted); padding: 40px; text-align: center; }
-    .admin-loading::before {
-      content: ''; display: inline-block; width: 16px; height: 16px;
-      margin-inline-end: 8px; vertical-align: middle;
-      border: 2px solid var(--surface2); border-top-color: var(--accent2);
-      border-radius: 50%; animation: admin-spin 0.7s linear infinite;
-    }
-    @keyframes admin-spin { to { transform: rotate(360deg); } }
-    .admin-empty { color: var(--text-muted); padding: 16px; text-align: center; font-size: 0.85rem; }
-    .admin-controls-row select {
-      background: var(--surface); border: 1px solid var(--border); color: var(--text);
-      padding: 7px 10px; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem;
-    }
-    .admin-toolbar { display: flex; gap: 10px; margin-bottom: 20px; }
-    .admin-section { margin-bottom: 28px; }
-    .admin-section > h2 {
-      font-size: 1.05rem; margin-bottom: 10px;
-      border-bottom: 1px solid var(--border); padding-bottom: 6px;
-    }
-    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-    .admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 14px; }
-    .admin-card h3 { font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .admin-card .admin-sub { color: var(--text-muted); font-size: 0.78rem; margin-top: 4px; }
-    .admin-mood-bar { height: 8px; border-radius: 4px; background: var(--surface2); overflow: hidden; margin: 6px 0; }
-    .admin-mood-fill { height: 100%; background: var(--accent); }
-    .admin-dots { display: flex; gap: 4px; margin: 4px 0; }
-    .admin-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); display: inline-block; }
-    .admin-dot.lit { background: var(--danger); }
-    .admin-badge {
-      display: inline-block; font-size: 0.68rem; padding: 2px 8px;
-      border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted);
-    }
-    .admin-badge-HAPPY { color: var(--accent); border-color: var(--accent); }
-    .admin-badge-IRRITATED, .admin-badge-ANGRY { color: var(--danger); border-color: var(--danger); }
-    .admin-badge-PANIC { color: var(--accent3); border-color: var(--accent3); }
-    .admin-feed {
-      max-height: 320px; overflow-y: auto; font-family: var(--mono); font-size: 0.78rem;
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 10px;
-      direction: ltr; text-align: left;
-    }
-    .admin-feed > div { padding: 2px 0; border-bottom: 1px solid var(--surface2); }
-    .admin-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-    .admin-tabs button {
-      background: var(--surface); border: 1px solid var(--border); color: var(--text);
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
-    }
-    .admin-tabs button.active { border-color: var(--accent2); color: var(--accent2); }
-    .admin-report-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
-    .admin-report-card h4 { font-size: 0.85rem; margin-bottom: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .admin-report-card pre {
-      white-space: pre-wrap; font-size: 0.78rem; color: var(--text-muted);
-      direction: ltr; text-align: left; font-family: var(--mono);
-    }
-    .admin-controls-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-    .admin-bar-row { display: grid; grid-template-columns: 140px 1fr 48px; gap: 8px; align-items: center; margin: 6px 0; font-size: 0.8rem; }
-    .admin-bar-track { height: 10px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
-    .admin-bar-fill { height: 100%; background: var(--accent2); }
-    .admin-metric-block { margin-bottom: 18px; }
-    .admin-metric-block h4 { font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -1574,23 +1461,6 @@
 <div id="nav-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
 <div id="ai-sidebar-overlay" onclick="toggleAiSidebar()"></div>
 
-<div id="office-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="office-lock-title" onclick="if (event.target === this) closeOfficeLockModal()">
-  <div class="office-lock-modal">
-    <div class="office-lock-icon" aria-hidden="true">🔒</div>
-    <h3 id="office-lock-title">
-      <span class="he">המשרד עדיין לא נפתח</span>
-      <span class="en" style="display:none">The Office hasn't opened yet</span>
-    </h3>
-    <p>
-      <span class="he">סימולציית סוכני ה-<span class="ltr-term">AI</span> שלנו עדיין לא התחילה את שנת העבודה הראשונה שלה. כשהיא תתחיל, תוכלו לעקוב כאן אחרי הצוות שלהם בזמן אמת.</span>
-      <span class="en" style="display:none">Our AI agent simulation hasn't started its first work year yet. Once it does, you'll be able to follow their team here in real time.</span>
-    </p>
-    <button onclick="closeOfficeLockModal()">
-      <span class="he">הבנתי</span>
-      <span class="en" style="display:none">Got it</span>
-    </button>
-  </div>
-</div>
 <button id="pdf-fab" onclick="generatePdf()">
   <span class="he">📄 צור PDF</span>
   <span class="en" style="display:none">📄 Generate PDF</span>
@@ -1617,15 +1487,7 @@ const CONFIG = {
   DEFAULT_LANGUAGE: 'en',
   MAX_HISTORY_SESSIONS: 50,
   STREAM_TYPING_SPEED: 1,
-  VERSION: '2.1.0',
-  // Gate for the Office (agent simulation) tab — flip to true once the
-  // simulation's first work year actually kicks off.
-  OFFICE_YEAR_STARTED: false,
-  // Agent simulation admin API (agents/workers/agent-runner.js).
-  // No admin secret lives here — the dashboard prompts for a token and
-  // sends it as X-Admin-Token; agent-runner.js checks it against its own
-  // ADMIN_TOKEN Worker secret. See agents/README.md.
-  AGENTS_API_BASE: 'https://data-center-agents.avivnofar.workers.dev'
+  VERSION: '2.1.0'
 };
 
 const DB = { linux: [], cmd: [], network: [], troubleshoot: [], modules: [] };
@@ -1710,12 +1572,6 @@ function applyLang() {
       btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'מדריכים' : 'Workflows';
       return;
     }
-    if (id === 'admin') {
-      btn.querySelector('.tab-label').textContent = LANG === 'he' ? 'משרד' : 'Office';
-      btn.querySelector('.tab-icon').textContent = CONFIG.OFFICE_YEAR_STARTED ? '🔐' : '🔒';
-      btn.title = CONFIG.OFFICE_YEAR_STARTED ? '' : (LANG === 'he' ? 'המשרד עדיין לא נפתח' : 'Office not open yet');
-      return;
-    }
     const mod = DB.modules.find(m => m.id === id);
     if (mod) btn.querySelector('.tab-label').textContent = (LANG === 'he' ? mod.label_he : mod.label_en) || mod.id;
   });
@@ -1784,7 +1640,7 @@ function buildTabNav() {
   toggleBtn.onclick = toggleSidebarCollapse;
   nav.appendChild(toggleBtn);
 
-  // Order: AI Search (first/default) → active modules → Workflows → Office
+  // Order: AI Search (first/default) → active modules → Workflows
   // → any remaining "coming-soon" placeholder modules.
   nav.appendChild(buildAiTabBtn());
   contents.appendChild(buildAiPanelShell());
@@ -1823,42 +1679,7 @@ function buildTabNav() {
   nav.appendChild(buildWorkflowsTabBtn());
   contents.appendChild(buildWorkflowsPanelShell());
 
-  nav.appendChild(buildAdminTabBtn());
-  contents.appendChild(buildAdminPanelShell());
-
   DB.modules.filter(m => m.status !== 'active').forEach(buildModuleTab);
-}
-
-function buildAdminTabBtn() {
-  const btn = document.createElement('button');
-  const locked = !CONFIG.OFFICE_YEAR_STARTED;
-  btn.className = 'tab-btn' + (locked ? ' locked' : '');
-  btn.dataset.moduleId = 'admin';
-  btn.id = 'tab-admin';
-  btn.setAttribute('role', 'tab');
-  btn.setAttribute('aria-controls', 'panel-admin');
-  btn.setAttribute('aria-selected', 'false');
-  btn.setAttribute('tabindex', '-1');
-  const label = LANG === 'he' ? 'משרד' : 'Office';
-  const icon = locked ? '🔒' : '🔐';
-  btn.innerHTML = `<span class="tab-icon" aria-hidden="true">${icon}</span><span class="tab-label">${escHtml(label)}</span>`;
-  if (locked) {
-    btn.title = LANG === 'he' ? 'המשרד עדיין לא נפתח' : 'Office not open yet';
-    btn.onclick = () => showOfficeLockModal();
-  } else {
-    btn.onclick = () => switchTab('admin');
-  }
-  return btn;
-}
-
-function buildAdminPanelShell() {
-  const panel = document.createElement('div');
-  panel.id = 'panel-admin';
-  panel.style.display = 'none';
-  panel.setAttribute('role', 'tabpanel');
-  panel.setAttribute('aria-labelledby', 'tab-admin');
-  panel.setAttribute('tabindex', '0');
-  return panel;
 }
 
 function buildWorkflowsTabBtn() {
@@ -1971,7 +1792,6 @@ function renderActiveTab() {
 function renderPanel(id, panel) {
   if (id === 'ai') { renderAiPanel(panel); return; }
   if (id === 'workflows') { renderWorkflowsPanel(panel); return; }
-  if (id === 'admin') { renderAdminPanel(panel); return; }
   const mod = DB.modules.find(m => m.id === id);
   if (!mod) return;
   if (mod.filter_type === 'troubleshoot') renderTsPanel(id, panel, mod);
@@ -3595,490 +3415,6 @@ function highlightDbEntry(name) {
       return;
     }
   }
-}
-
-/* ── Admin (Agent Simulation) ─────────────────────────────────────────────── */
-const ADMIN_TOKEN_KEY = 'dc-admin-token';
-let adminReportTab = 'incident';
-let agentsConfigCache = null;
-
-function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
-}
-
-async function adminFetch(path) {
-  const res = await fetch(`${CONFIG.AGENTS_API_BASE}${path}`, {
-    headers: { 'X-Admin-Token': getAdminToken() },
-  });
-  if (res.status === 401) throw new Error('unauthorized');
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
-}
-
-async function adminPost(path, body) {
-  const res = await fetch(`${CONFIG.AGENTS_API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getAdminToken() },
-    body: JSON.stringify(body || {}),
-  });
-  if (res.status === 401) throw new Error('unauthorized');
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
-}
-
-async function getAgentsConfig() {
-  if (agentsConfigCache) return agentsConfigCache;
-  try {
-    const res = await fetch('agents/config/agents-config.json');
-    agentsConfigCache = await res.json();
-  } catch (e) {
-    agentsConfigCache = { agents: [] };
-  }
-  return agentsConfigCache;
-}
-
-function showOfficeLockModal() {
-  document.getElementById('office-lock-overlay').classList.add('visible');
-}
-
-function closeOfficeLockModal() {
-  document.getElementById('office-lock-overlay').classList.remove('visible');
-}
-
-function renderAdminPanel(panel) {
-  if (!CONFIG.OFFICE_YEAR_STARTED) {
-    showOfficeLockModal();
-    return;
-  }
-  if (!getAdminToken()) {
-    renderAdminLogin(panel);
-    return;
-  }
-  panel.innerHTML = `<div class="admin-loading">${LANG === 'he' ? 'טוען נתוני סוכנים...' : 'Loading agent data...'}</div>`;
-  loadAdminDashboard(panel);
-}
-
-function renderAdminLogin(panel) {
-  const title = LANG === 'he' ? '🔐 לוח ניהול סימולציית הסוכנים' : '🔐 Agent Simulation Admin';
-  const hint = LANG === 'he'
-    ? 'הזן את אסימון הניהול שהוגדר כ-secret בצד ה-Worker. האסימון נשמר רק בדפדפן שלך ונשלח ככותרת X-Admin-Token; האימות עצמו מתבצע בשרת.'
-    : 'Enter the admin token configured as a Worker secret. It is stored only in your browser and sent as the X-Admin-Token header — validation happens server-side.';
-  const placeholder = LANG === 'he' ? 'אסימון ניהול' : 'Admin token';
-  const enterLabel = LANG === 'he' ? 'כניסה' : 'Enter';
-
-  panel.innerHTML = `
-    <div class="admin-login">
-      <h2>${escHtml(title)}</h2>
-      <p class="admin-hint">${escHtml(hint)}</p>
-      <input type="password" id="admin-token-input" placeholder="${escHtml(placeholder)}" autocomplete="off" />
-      <div><button class="admin-btn" onclick="adminLogin()">${escHtml(enterLabel)}</button></div>
-      <div id="admin-login-error" class="admin-error" style="display:none"></div>
-    </div>`;
-
-  const input = panel.querySelector('#admin-token-input');
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') adminLogin(); });
-}
-
-async function adminLogin() {
-  const input = document.getElementById('admin-token-input');
-  const token = input.value.trim();
-  if (!token) return;
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
-
-  const panel = document.getElementById('panel-admin');
-  try {
-    await adminFetch('/api/agents/status');
-    renderAdminPanel(panel);
-  } catch (err) {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    const errEl = document.getElementById('admin-login-error');
-    if (errEl) {
-      errEl.style.display = 'block';
-      errEl.textContent = LANG === 'he' ? 'אסימון שגוי או שהשרת אינו זמין.' : 'Invalid token, or the API is unreachable.';
-    }
-  }
-}
-
-function adminLogout() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  renderActiveTab();
-}
-
-async function loadAdminDashboard(panel) {
-  let statuses, sessions, simState;
-  try {
-    [statuses, sessions, simState] = await Promise.all([
-      adminFetch('/api/agents/status'),
-      adminFetch('/api/agents/sessions?limit=50'),
-      adminFetch('/api/simulation'),
-    ]);
-  } catch (err) {
-    if (err.message === 'unauthorized') {
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      renderAdminLogin(panel);
-      return;
-    }
-    const msg = err instanceof TypeError
-      ? (LANG === 'he' ? `Worker הסוכנים אינו זמין (${CONFIG.AGENTS_API_BASE}).` : `Agents Worker unreachable (${CONFIG.AGENTS_API_BASE}).`)
-      : `${LANG === 'he' ? 'שגיאה בטעינת נתונים: ' : 'Failed to load data: '}${err.message}`;
-    panel.innerHTML = `<div class="admin-error">${escHtml(msg)}</div>`;
-    return;
-  }
-
-  const refreshLabel = LANG === 'he' ? '↻ רענון' : '↻ Refresh';
-  const logoutLabel = LANG === 'he' ? 'התנתק' : 'Log out';
-
-  panel.innerHTML = `
-    <div class="admin-toolbar">
-      <button class="admin-btn" onclick="renderAdminPanel(document.getElementById('panel-admin'))">${escHtml(refreshLabel)}</button>
-      <button class="admin-btn admin-btn-secondary" onclick="adminLogout()">${escHtml(logoutLabel)}</button>
-    </div>
-    <section class="admin-section">
-      <h2>${LANG === 'he' ? 'סטטוס סוכנים' : 'Agent Status'}</h2>
-      <div class="admin-grid" id="admin-agent-grid"></div>
-    </section>
-    <section class="admin-section">
-      <h2>${LANG === 'he' ? 'פיד שיחות חי' : 'Live Session Feed'}</h2>
-      <div class="admin-feed" id="admin-feed"></div>
-    </section>
-    <section class="admin-section">
-      <h2>${LANG === 'he' ? 'דוחות והצעות' : 'Reports & Suggestions'}</h2>
-      <div class="admin-tabs" id="admin-report-tabs"></div>
-      <div id="admin-reports-list"></div>
-    </section>
-    <section class="admin-section">
-      <h2>${LANG === 'he' ? 'בקרות סימולציה' : 'Simulation Controls'}</h2>
-      <div id="admin-controls"></div>
-    </section>
-    <section class="admin-section">
-      <h2>${LANG === 'he' ? 'מדדי ביצועים' : 'Performance Metrics'}</h2>
-      <div id="admin-metrics"></div>
-    </section>`;
-
-  renderAdminAgentGrid(statuses);
-  renderAdminFeed(sessions);
-  renderAdminReportTabs();
-  await adminShowReportTab(adminReportTab);
-  renderAdminControls(simState, statuses);
-  await renderAdminMetrics(statuses, sessions);
-}
-
-function adminStateOf(a) {
-  if (a.isAngry) return 'ANGRY';
-  if (a.isPanic) return 'PANIC';
-  if (a.isHappy) return 'HAPPY';
-  if (a.irritation > 0) return 'IRRITATED';
-  return 'NEUTRAL';
-}
-
-const ADMIN_STATE_LABELS = {
-  he: { NEUTRAL: 'נייטרלי', HAPPY: 'מרוצה', IRRITATED: 'מתוסכל', ANGRY: 'כועס', PANIC: 'פאניקה' },
-  en: { NEUTRAL: 'NEUTRAL', HAPPY: 'HAPPY', IRRITATED: 'IRRITATED', ANGRY: 'ANGRY', PANIC: 'PANIC' },
-};
-
-function renderAdminAgentGrid(statuses) {
-  const grid = document.getElementById('admin-agent-grid');
-  if (!grid) return;
-
-  grid.innerHTML = statuses.map((a) => {
-    const state = adminStateOf(a);
-    const stateLabel = ADMIN_STATE_LABELS[LANG][state] || state;
-    const dots = Array.from({ length: 5 }, (_, i) => `<span class="admin-dot${i < a.irritation ? ' lit' : ''}"></span>`).join('');
-    const cases = a.session?.cases_handled ?? 0;
-    const target = a.quotas ? `${a.quotas.cases_per_day_min}-${a.quotas.cases_per_day_max}` : '—';
-    const lastActive = a.last_active ? new Date(a.last_active).toISOString().replace('T', ' ').slice(0, 16) : '—';
-    const stubBadge = a.status === 'stub' ? `<span class="admin-badge">${LANG === 'he' ? 'טיוטה' : 'STUB'}</span>` : '';
-
-    return `
-      <div class="admin-card">
-        <h3>${escHtml(a.name)} <span class="admin-badge admin-badge-${state}">${escHtml(stateLabel)}</span>${stubBadge}</h3>
-        <div class="admin-sub">${escHtml(a.role || '')} · ${escHtml(a.clearance)}</div>
-        <div class="admin-mood-bar"><div class="admin-mood-fill" style="width:${a.mood}%"></div></div>
-        <div class="admin-sub">${LANG === 'he' ? 'מצב רוח' : 'Mood'} ${a.mood}/100</div>
-        <div class="admin-dots">${dots}</div>
-        <div class="admin-sub">${LANG === 'he' ? 'מקרים היום' : 'Cases today'}: ${cases} / ${escHtml(target)}</div>
-        <div class="admin-sub">${LANG === 'he' ? 'פעילות אחרונה' : 'Last active'}: ${escHtml(lastActive)}</div>
-      </div>`;
-  }).join('');
-}
-
-function renderAdminFeed(sessions) {
-  const feed = document.getElementById('admin-feed');
-  if (!feed) return;
-
-  if (!sessions.length) {
-    feed.innerHTML = `<div class="admin-empty">${LANG === 'he' ? 'אין נתונים עדיין — הסימולציה עוד לא רצה.' : "No data yet — simulation hasn't run."}</div>`;
-    return;
-  }
-
-  feed.innerHTML = sessions.map((s) => {
-    const ts = new Date(s.timestamp).toISOString().replace('T', ' ').slice(0, 19);
-    const summary = (s.response_summary || '').slice(0, 100).replace(/\n/g, ' ');
-    const stateClass = s.state_change ? ` admin-badge-${s.state_change}` : '';
-    return `<div><span class="admin-badge${stateClass}">${escHtml(ts)}</span> [${escHtml(s.agent_name)}] [${escHtml(s.type)}] ${escHtml(summary)}</div>`;
-  }).join('');
-}
-
-function renderAdminReportTabs() {
-  const tabs = document.getElementById('admin-report-tabs');
-  if (!tabs) return;
-
-  const labels = {
-    incident: LANG === 'he' ? 'אירועים' : 'Incidents',
-    status: LANG === 'he' ? 'סטטוס' : 'Status',
-    weekly: LANG === 'he' ? 'שבועי' : 'Weekly',
-    suggestions: LANG === 'he' ? 'הצעות' : 'Suggestions',
-  };
-
-  tabs.innerHTML = Object.entries(labels).map(([key, label]) =>
-    `<button class="${key === adminReportTab ? 'active' : ''}" onclick="adminShowReportTab('${key}', this)">${escHtml(label)}</button>`
-  ).join('');
-}
-
-async function adminShowReportTab(type, btn) {
-  adminReportTab = type;
-  if (btn) {
-    btn.parentElement.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  const container = document.getElementById('admin-reports-list');
-  if (!container) return;
-
-  try {
-    const items = type === 'suggestions'
-      ? await adminFetch('/api/agents/suggestions')
-      : await adminFetch(`/api/agents/reports?type=${type}`);
-
-    if (!items.length) {
-      container.innerHTML = `<div class="admin-empty">${LANG === 'he' ? 'אין נתונים עדיין — הסימולציה עוד לא רצה.' : "No data yet — simulation hasn't run."}</div>`;
-      return;
-    }
-
-    container.innerHTML = items.map((r) => {
-      const meta = r.severity
-        ? `<span class="admin-badge admin-badge-${(r.severity === 'critical' ? 'ANGRY' : '')}">${escHtml(r.severity)}</span>`
-        : '';
-      const perm = r.permission_level ? `<span class="admin-badge">${escHtml(r.permission_level)}</span>` : '';
-      const ackLabel = LANG === 'he' ? 'אשר' : 'Acknowledge';
-      const ack = (type !== 'suggestions' && !r.acknowledged)
-        ? `<button class="admin-btn admin-btn-secondary" onclick="adminAcknowledge('${type}','${r.id}',this)">${escHtml(ackLabel)}</button>`
-        : '';
-      return `
-        <div class="admin-report-card">
-          <h4>${escHtml(r.title)} ${meta}${perm}</h4>
-          <div class="admin-sub">${new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 19)}</div>
-          <pre dir="ltr">${escHtml((r.content || '').slice(0, 800))}</pre>
-          ${ack}
-        </div>`;
-    }).join('');
-  } catch (err) {
-    container.innerHTML = `<div class="admin-error">${escHtml(err.message)}</div>`;
-  }
-}
-
-/**
- * Acknowledging reports requires a future POST /api/agents/reports/:id/ack
- * endpoint (not yet built — see agents/README.md Phase 2 notes). For now
- * this just hides the button optimistically.
- */
-function adminAcknowledge(type, id, btn) {
-  if (btn) btn.style.display = 'none';
-}
-
-const ADMIN_MEETING_TYPES = [
-  { value: 'daily_standup', he: 'עדכון בוקר יומי', en: 'Daily standup' },
-  { value: 'weekly', he: 'ישיבה שבועית', en: 'Weekly meeting' },
-  { value: 'monthly', he: 'דוח חודשי', en: 'Monthly report meeting' },
-  { value: 'quarterly', he: 'ישיבה רבעונית', en: 'Quarterly meeting' },
-  { value: 'semi_yearly', he: 'ישיבה חצי-שנתית', en: 'Semi-yearly meeting' },
-  { value: 'yearly', he: 'ישיבת סיכום שנתית', en: 'Yearly meeting' },
-  { value: 'emergency_huddle', he: 'כינוס חירום', en: 'Emergency huddle' },
-  { value: 'audit_session', he: 'ביקורת QA', en: 'QA audit session' },
-];
-
-function renderAdminControls(simState, statuses) {
-  const container = document.getElementById('admin-controls');
-  if (!container) return;
-
-  const active = statuses.filter((a) => a.status !== 'stub').length;
-  const stubs = statuses.length - active;
-
-  const phaseLabel = LANG === 'he' ? 'שלב' : 'Phase';
-  const inspectionLabel = LANG === 'he' ? 'מצב פיקוח' : 'Inspection mode';
-  const pauseLabel = simState.paused
-    ? (LANG === 'he' ? '▶ המשך סימולציה' : '▶ Resume simulation')
-    : (LANG === 'he' ? '⏸ השהה סימולציה' : '⏸ Pause simulation');
-  const dayLabel = LANG === 'he' ? '⏭ הפעל מחזור יום' : '⏭ Trigger Day Cycle';
-  const meetingLabel = LANG === 'he' ? '📋 כנס ישיבה' : '📋 Trigger Meeting';
-  const resetLabel = LANG === 'he' ? '🔄 איפוס שבוע' : '🔄 Reset Week';
-  const resetConfirm = LANG === 'he'
-    ? 'לאפס את כל מצב הסוכנים לתחילת השבוע? פעולה זו אינה הפיכה.'
-    : 'Reset all agent state back to the start of the week? This cannot be undone.';
-  const agentsLabel = LANG === 'he' ? 'סוכנים פעילים / טיוטה' : 'Active / stub agents';
-  const meetingOptions = ADMIN_MEETING_TYPES.map(m =>
-    `<option value="${m.value}">${escHtml(LANG === 'he' ? m.he : m.en)}</option>`
-  ).join('');
-
-  container.innerHTML = `
-    <div class="admin-controls-row">
-      <span class="admin-badge">${escHtml(phaseLabel)} ${simState.phase ?? 1}</span>
-      <span class="admin-badge">${escHtml(agentsLabel)}: ${active} / ${stubs}</span>
-      <span class="admin-badge${simState.paused ? ' admin-badge-ANGRY' : ''}">${simState.paused ? (LANG === 'he' ? 'מושהה' : 'PAUSED') : (LANG === 'he' ? 'פעיל' : 'RUNNING')}</span>
-    </div>
-    <div class="admin-controls-row">
-      <label class="admin-sub">
-        <input type="checkbox" id="admin-inspection-toggle" ${simState.inspection_mode ? 'checked' : ''} onchange="adminToggleInspection(this)" />
-        ${escHtml(inspectionLabel)}
-      </label>
-      <button class="admin-btn admin-btn-secondary" onclick="adminTogglePause()">${escHtml(pauseLabel)}</button>
-    </div>
-    <div class="admin-controls-row">
-      <button class="admin-btn" onclick="adminTriggerDay(this)">${escHtml(dayLabel)}</button>
-      <select id="admin-meeting-type">${meetingOptions}</select>
-      <button class="admin-btn" onclick="adminTriggerMeeting(this)">${escHtml(meetingLabel)}</button>
-      <button class="admin-btn admin-btn-secondary" onclick="adminResetWeek(this, '${resetConfirm.replace(/'/g, "\\'")}')">${escHtml(resetLabel)}</button>
-    </div>
-    <div id="admin-controls-msg" class="admin-sub"></div>`;
-}
-
-async function adminToggleInspection(checkbox) {
-  const active = checkbox.checked;
-  try {
-    await adminPost('/api/agents/trigger', { type: 'inspection', active });
-    adminControlsMsg(active
-      ? (LANG === 'he' ? 'מצב פיקוח הופעל.' : 'Inspection mode enabled.')
-      : (LANG === 'he' ? 'מצב פיקוח כובה.' : 'Inspection mode disabled.'), false);
-  } catch (err) {
-    checkbox.checked = !checkbox.checked;
-    adminControlsMsg(err.message, true);
-  }
-}
-
-async function adminTogglePause() {
-  try {
-    const current = await adminFetch('/api/simulation');
-    const updated = await adminPost('/api/simulation', { paused: !current.paused });
-    renderAdminControls(updated, await adminFetch('/api/agents/status'));
-  } catch (err) {
-    adminControlsMsg(err.message, true);
-  }
-}
-
-/** Runs one simulated work day inline via the unified /api/agents/trigger endpoint. */
-async function adminTriggerDay(btn) {
-  await adminRunTrigger(btn, { type: 'day' },
-    LANG === 'he' ? 'מחזור היום הורץ.' : 'Day cycle complete.');
-}
-
-/**
- * Runs the selected meeting type via /api/agents/trigger. audit_session and
- * emergency_huddle have required opts (meeting-engine.js MEETING_TYPES); for
- * a manual admin trigger we supply sensible defaults (audit agent 1,
- * "manual_admin_trigger") rather than exposing extra controls.
- */
-async function adminTriggerMeeting(btn) {
-  const select = document.getElementById('admin-meeting-type');
-  const meetingType = select ? select.value : 'daily_standup';
-  const opts = {};
-  if (meetingType === 'audit_session') opts.auditedAgentId = 1;
-  if (meetingType === 'emergency_huddle') opts.trigger = 'manual_admin_trigger';
-  await adminRunTrigger(btn, { type: 'meeting', meetingType, opts },
-    LANG === 'he' ? 'הישיבה הסתיימה.' : 'Meeting complete.');
-}
-
-/** Resets all agent state to the start of the week, after explicit confirmation. */
-async function adminResetWeek(btn, confirmMsg) {
-  if (!window.confirm(confirmMsg)) return;
-  await adminRunTrigger(btn, { type: 'week_reset' },
-    LANG === 'he' ? 'השבוע אופס.' : 'Week reset.');
-}
-
-/** Shared helper: disables btn, shows loading state, posts to /api/agents/trigger, refreshes dashboard. */
-async function adminRunTrigger(btn, body, successMsg) {
-  if (btn) btn.disabled = true;
-  adminControlsMsg(LANG === 'he' ? 'מבצע...' : 'Running...', false);
-  try {
-    await adminPost('/api/agents/trigger', body);
-    adminControlsMsg(successMsg, false);
-    await renderAdminPanel(document.getElementById('panel-admin'));
-  } catch (err) {
-    adminControlsMsg(
-      err.message === 'unauthorized'
-        ? (LANG === 'he' ? 'אסימון לא מורשה.' : 'Unauthorized — check admin token.')
-        : (LANG === 'he' ? `שגיאה: ${err.message}` : `Error: ${err.message}`),
-      true
-    );
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-
-function adminControlsMsg(text, isError) {
-  const el = document.getElementById('admin-controls-msg');
-  if (!el) return;
-  el.textContent = text;
-  el.style.color = isError ? 'var(--danger)' : 'var(--text-muted)';
-}
-
-function adminBarRow(label, value, max) {
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  return `
-    <div class="admin-bar-row">
-      <span>${escHtml(label)}</span>
-      <div class="admin-bar-track"><div class="admin-bar-fill" style="width:${pct}%"></div></div>
-      <span>${typeof value === 'number' ? Math.round(value * 100) / 100 : value}</span>
-    </div>`;
-}
-
-async function renderAdminMetrics(statuses, sessions) {
-  const container = document.getElementById('admin-metrics');
-  if (!container) return;
-
-  const agentsConfig = await getAgentsConfig();
-
-  // Cases handled this session, per agent.
-  const casesBlock = statuses.map((a) => adminBarRow(a.name, a.session?.cases_handled || 0, 50)).join('');
-
-  // Model usage rate per agent (Agent 3 is mood-proportional -> compute live).
-  const usageBlock = statuses.map((a) => {
-    const cfg = agentsConfig.agents.find((c) => c.id === a.id);
-    let rate = typeof cfg?.model_usage_rate === 'number' ? cfg.model_usage_rate : a.mood / 100;
-    return adminBarRow(a.name, Math.round(rate * 100), 100);
-  }).join('');
-
-  // Irritation events from the live feed, grouped per agent.
-  const irritationCounts = {};
-  sessions.forEach((s) => {
-    if (s.state_change === 'IRRITATED') {
-      irritationCounts[s.agent_name] = (irritationCounts[s.agent_name] || 0) + 1;
-    }
-  });
-  const maxIrritation = Math.max(1, ...Object.values(irritationCounts));
-  const irritationBlock = Object.keys(irritationCounts).length
-    ? Object.entries(irritationCounts).map(([name, count]) => adminBarRow(name, count, maxIrritation)).join('')
-    : `<div class="admin-sub">${LANG === 'he' ? 'אין אירועי תסכול בפיד הנוכחי.' : 'No irritation events in the current feed.'}</div>`;
-
-  // Mood per agent (Phase 2: replace with a real time series).
-  const moodBlock = statuses.map((a) => adminBarRow(a.name, a.mood, 100)).join('');
-
-  container.innerHTML = `
-    <div class="admin-metric-block">
-      <h4>${LANG === 'he' ? 'מקרים שטופלו (סשן נוכחי)' : 'Cases solved (current session)'}</h4>
-      ${casesBlock}
-    </div>
-    <div class="admin-metric-block">
-      <h4>${LANG === 'he' ? 'מצב רוח נוכחי' : 'Current mood'}</h4>
-      ${moodBlock}
-    </div>
-    <div class="admin-metric-block">
-      <h4>${LANG === 'he' ? 'אירועי תסכול (פיד אחרון)' : 'Irritation events (recent feed)'}</h4>
-      ${irritationBlock}
-    </div>
-    <div class="admin-metric-block">
-      <h4>${LANG === 'he' ? 'שיעור שימוש במודל' : 'Model usage rate'}</h4>
-      ${usageBlock}
-    </div>`;
 }
 
 window.addEventListener('resize', () => {

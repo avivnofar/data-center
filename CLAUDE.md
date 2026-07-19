@@ -30,9 +30,9 @@ toggled via a button and stored in `localStorage` key `dc-lang`.
 
 - [`office-AI-agents`](https://github.com/avivnofar/office-AI-agents) — the
   AI agent office simulation. **A separate project entirely**: data-center
-  has no involvement in its planning or execution. The only touchpoints in
-  this repo are the locked in-app "Office" tab / Admin panel in
-  `index.html` (a read-only viewer that calls that project's Worker).
+  has no involvement in its planning or execution, and as of 2026-07-19 has
+  **zero code coupling** to it (the former in-app "Office" tab / Admin
+  panel was removed from `index.html`). Do not reintroduce coupling.
 - [`data-center-archive`](https://github.com/avivnofar/data-center-archive)
   — longer-form bilingual workflow documents rendered in the in-app
   Workflows tab, plus generated PDFs. Keep it lean: workflow `.md` files

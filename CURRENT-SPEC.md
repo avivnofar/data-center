@@ -58,7 +58,7 @@ company. AI backend model: **`claude-sonnet-5`**.
 | Web search in AI answers | **Fully working** (code-verified) | Worker request includes `web_search_20250305` tool, max 3 uses; system prompt instructs citing sources. |
 | Notebook-X context injection | **Working (phase 1 only)** | `getNotebookXContext()` fetches the public notebook index and appends it to the system prompt; silent no-op on failure. Content-level retrieval not built. |
 | Bookmark bars on AI answers | **Present** | `renderBookmarkBars()` wired into bubble finalize/append; localStorage-persisted. |
-| Office/Admin tab | **Dormant by design** | `CONFIG.OFFICE_YEAR_STARTED: false` — tab shows a locked modal; Admin panel calls the external `data-center-agents` Worker (separate `office-AI-agents` project). |
+| Office/Admin tab | **Removed (2026-07-19)** | All Office/Admin UI stripped from `index.html` per owner decision — zero coupling to the external `office-AI-agents` project remains. |
 
 "Code-verified" = verified by reading the full request/response path in
 code; no live paid API call was made during this audit.
@@ -76,14 +76,12 @@ data-center/
 │   ├── 1com.json           # 17 entries
 │   ├── mirtapbx.json       # 11 entries
 │   ├── troubleshoot.json   # 23 scenarios
-│   ├── tools.json          # 1 tool (CommandFlow)
-│   └── resources and links.txt   # ⚠ raw research dump — flagged for owner decision
+│   └── tools.json          # 1 tool (CommandFlow)
 ├── tools/commandflow/      # standalone simulator + shared CLI engine
 ├── cloudflare-worker/      # worker.js, wrangler.toml, README.md (deploy guide)
 ├── flagged/                # source flagging system
 ├── .github/scripts/        # validate-json.js, health-check.js, check-links.js
 ├── .github/workflows/      # validate, health, link-check, monthly-review, changelog
-├── notebooks/              # ⚠ untracked Notebook-X staging content — likely belongs in Notebook-X repo
 ├── CLAUDE.md               # rules & standards
 ├── CURRENT-SPEC.md         # this file
 ├── TOKEN-BUDGET.md         # session history log
@@ -106,18 +104,10 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Known Issues / Open Items
 
-- **Office/Admin UI in `index.html`** — leftover viewer for the separate
-  office-AI-agents project (locked "Office" tab, lock modal, admin panel,
-  `CONFIG.AGENTS_API_BASE`). Owner decision needed: keep as the app's
-  window into the simulation, or strip (~400 lines).
-- **`notebooks/` (untracked)** — kb-1com/bash/linux content JSONs staged
-  locally; probably belong in the Notebook-X repo. Owner decision.
-- **`data/resources and links.txt`** — raw Hebrew 1COM/MirtaPBX research
-  dump; violates the "memory over files" rule. Owner decision on
-  delete/relocate.
-- **DST caveat carried over**: any cron/time logic tied to Israel time
-  must be rechecked at IDT↔IST transitions (relevant to the external
-  agents project, not this repo's workflows, which are UTC).
+- None currently flagged. (The 2026-07-19 audit's three open items —
+  Office/Admin UI in `index.html`, the untracked `notebooks/` staging
+  folder, and `data/resources and links.txt` — were all removed per owner
+  decision on the same date.)
 
 ## Recently Completed
 
@@ -134,7 +124,11 @@ needed) and validated by `.github/scripts/validate-json.js`.
   rewrote `CLAUDE.md` without simulation content.
 - **This audit (2026-07-19)**: repo-wide feature verification (table
   above), `CLAUDE.md` rewrite, `CURRENT-SPEC.md` created, `ROADMAP.md`
-  folded in and removed, `README.md` refreshed.
+  folded in and removed, `README.md` refreshed. Per owner decision, all
+  Office/Admin UI was then stripped from `index.html` (~660 lines: locked
+  tab, lock modal, admin dashboard, `CONFIG.AGENTS_API_BASE`), and
+  `notebooks/` + `data/resources and links.txt` were deleted — the repo
+  now has zero coupling to the office simulation.
 
 ## Future Vision (Not Started)
 
