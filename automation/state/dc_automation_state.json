@@ -1,0 +1,21 @@
+{
+  "last_run": "2026-07-20T12:59:02Z",
+  "todo_history": [
+    {
+      "id": "TODO-003",
+      "status": "done",
+      "branch": "dc-auto-2026-07-20_125410",
+      "run": "builder",
+      "date": "2026-07-20",
+      "note": "Added a real <button> copy-to-clipboard affordance to each usage-cmd row in renderCard() (copyUsageCmd()), reusing the copyAiCode() clipboard pattern. index.html only, no data/*.json touched."
+    },
+    {
+      "id": "TODO-003",
+      "status": "needs-review",
+      "branch": "dc-auto-2026-07-20_125410",
+      "run": "auditor",
+      "date": "2026-07-20",
+      "note": "Push-Authorization Checklist item (a) failed: branch diff also touches automation/NEEDS_YOUR_REVIEW.md and automation/TODO_LIST.md (pre-existing automation-setup scaffolding carried into the branch), outside TODO-003's stated Files/areas (index.html only). Items (b)-(e) passed. Branch left unmerged and unmodified; see NEEDS_YOUR_REVIEW.md for full detail."
+    }
+  ]
+}

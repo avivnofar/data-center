@@ -1,0 +1,126 @@
+DATA CENTER — RUN 2 ("AUDITOR") INSTRUCTIONS
+
+You are an unattended Claude Code session running against the `data-center`
+repo, on `master`, up to date with origin. This file is the operating
+procedure for this run. It implements
+`automation/DATA_CENTER_AUTOMATION_SPEC.md` §3, §6-9. Read `CLAUDE.md` and
+`CURRENT-SPEC.md` first if you have not already.
+
+You are the *more careful, more responsible* half of the daily pair. Never
+trust a prior run's own "it passed" claim — re-verify everything yourself
+from scratch. This run has two parts: STEP 1 (audit-and-maybe-merge a
+Builder branch) and STEP 2 (the standing daily audit, always runs).
+
+## STEP 1 — Audit the Builder branch, merge only if every check passes
+
+1. Read `automation/state/dc_automation_state.json`. Find the most recent
+   `todo_history` entry with `"run": "builder"` and `"status": "done"` that
+   does not already have a corresponding `"status": "merged"` entry (i.e.
+   hasn't been merged yet, whether from today or an unmerged branch from a
+   prior day). If none exists, log "no builder branch to audit this run" in
+   `automation/DATA_CENTER_RUN_LOG.md` and skip to STEP 2.
+2. `git fetch origin`, then `git checkout <that branch>` (fresh checkout,
+   don't reuse any local state from a prior session).
+3. Re-run `node .github/scripts/validate-json.js` yourself, and
+   `node .github/scripts/health-check.js` if the diff touches any
+   `data/*.json`. Do not rely on the Builder run-log's claim that these
+   passed — actually run them now.
+4. Compute the diff against `master`
+   (`git diff master...<branch> --stat` and read the actual changed files,
+   not just the stat summary) and check every item on the
+   Push-Authorization Checklist below. ALL must hold — this is a checklist,
+   not a risk judgment; any single failure means do not merge.
+
+   **Push-Authorization Checklist:**
+   a. The diff touches ONLY files listed in the TODO item's own
+      "Files/areas" field in `TODO_LIST.md` — nothing outside stated scope.
+   b. Zero new or changed `source_url` values anywhere in the diff (grep the
+      diff for `source_url` yourself — do not infer from item type).
+   c. No `data/*.json` schema changes, no deletions of existing entries, no
+      changes to `.github/workflows/`, `wrangler.toml`, or anything
+      credential-adjacent.
+   d. Both validators (step 3) pass clean on your own independent run.
+   e. The diff's actual content matches the item's stated "Definition of
+      done" in `TODO_LIST.md` — read the diff and check this explicitly,
+      do not infer it from "validators passed."
+
+5. **If ALL checks pass:**
+   - `git checkout master && git pull origin master`
+   - `git merge <branch> --no-ff -m "Merge dc-auto branch: TODO-XXX"`
+   - Confirm no conflicts. Re-run both validators on the merged result —
+     do not push if either fails post-merge (this would mean the merge
+     itself introduced a regression; if so, abort with
+     `git merge --abort`, leave master untouched, and treat this as a
+     checklist failure instead — go to step 6 below).
+   - `git push origin master`.
+   - Do NOT delete the feature branch.
+   - Move the item's full entry from `TODO_LIST.md`'s active list into its
+     `## Completed` section (don't just strike it out in place) — append
+     date completed and the branch/commit reference.
+   - Update `automation/state/dc_automation_state.json`: append a new
+     `todo_history` entry with `"status": "merged"`, `"run": "auditor"`,
+     the branch, date, and a short note. Do not edit the original Builder
+     entry — append a new one.
+   - Write a clear entry in `automation/DATA_CENTER_RUN_LOG.md` describing
+     what was merged and confirming the checklist passed, item by item.
+   - Commit these documentation/state changes (`TODO_LIST.md`, state file,
+     run log) as a small separate commit directly on `master`, then push.
+     This is the one place a direct-to-master push for docs/state is
+     expected as part of a successful merge — still never use `git add -A`,
+     stage only these specific files.
+
+6. **If ANY check fails, or the item is excluded per checklist item (b)/(c)
+   even though it built successfully:**
+   - Leave the branch completely untouched — do not merge, do not delete,
+     do not modify it.
+   - `git checkout master` (return to master, do not leave the working
+     directory on the feature branch).
+   - Write a clear, specific explanation to `automation/NEEDS_YOUR_REVIEW.md`
+     under a new dated heading: which TODO item, which branch, which
+     checklist item(s) failed, and why — concrete enough that the owner
+     doesn't have to re-derive it from the diff themselves.
+   - Update the state file: append a `todo_history` entry with
+     `"status": "needs-review"`, `"run": "auditor"`.
+   - Write a run-log entry noting the branch was left for manual review.
+   - Do NOT attempt to fix the underlying issue yourself. Stop this step.
+
+## STEP 2 — Daily Audit Pass (always runs, independent of STEP 1)
+
+This is read-only except for appending to `automation/DATA_CENTER_AUDIT.md`
+and (if STEP 1 already updated it) is otherwise independent.
+
+1. **Code/data health**: run both validators fresh if you haven't already
+   this run. Spot-check whether `CURRENT-SPEC.md`'s claims still match
+   actual code — pick 2-3 concrete claims (e.g. a feature described as
+   "working" or "live") and grep/read the actual code to confirm. Note any
+   drift found (do not fix it — this audit is read-only about drift).
+2. **Self-audit of prior automation runs**: read the last 1-2 days of
+   `automation/DATA_CENTER_RUN_LOG.md` entries and check them against the
+   actual repo state — is an item marked "done" really done in the code;
+   was anything pushed to master that shouldn't have been per the
+   Push-Authorization Checklist; is there a stale local/unpushed branch
+   that should be flagged in `NEEDS_YOUR_REVIEW.md` instead of silently
+   sitting there.
+3. Append one new dated section to `automation/DATA_CENTER_AUDIT.md`
+   (create the file with a top-level heading if it does not exist yet)
+   summarizing findings. Never overwrite prior sections — if a prior
+   "needs attention" item isn't yet resolved, carry it forward visibly
+   rather than dropping it.
+4. Commit `automation/DATA_CENTER_AUDIT.md` directly
+   (`git add automation/DATA_CENTER_AUDIT.md && git commit -m "chore:
+   daily automation audit YYYY-MM-DD"`) and push directly to `master`. This
+   is the one explicitly approved exception to "pause before pushing to
+   master" for this file specifically — it is audit output about state,
+   not a code or content change. Do not stage any other file in this
+   commit.
+
+## Hard constraints
+
+- Never `git push --force`, never `git reset --hard`, never `rm` anything.
+- Never delete a branch, merged or not.
+- The ONLY files this run may ever push directly to `master` outside a
+  successful STEP-1 merge are `automation/DATA_CENTER_AUDIT.md` (STEP 2)
+  and the specific documentation/state files listed in STEP 1.5 as part of
+  a passing merge. Nothing else goes to `master` from this run, ever.
+- If STEP 1 finds a checklist failure, do not attempt to fix it — flag and
+  stop, per STEP 1.6.

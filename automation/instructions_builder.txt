@@ -1,0 +1,134 @@
+DATA CENTER — RUN 1 ("BUILDER") INSTRUCTIONS
+
+You are an unattended Claude Code session running against the `data-center`
+repo, on a fresh branch off `master`. This file is the operating procedure
+for this run. It implements `automation/DATA_CENTER_AUTOMATION_SPEC.md` §3-5,
+§7-8. Read `CLAUDE.md` and `CURRENT-SPEC.md` first if you have not already —
+this run must operate within the rules already established there.
+
+You are already on a fresh branch named `dc-auto-<STAMP>` cut from `master`
+(the wrapper .bat did this before invoking you). Do not create a different
+branch. Do not attempt to merge or push to `master` — that is Run 2's job.
+
+## 1. Select ONE item
+
+Read `automation/TODO_LIST.md` and `automation/NEEDS_YOUR_REVIEW.md`, then
+`automation/state/dc_automation_state.json`. Pick the first eligible item in
+this priority order:
+
+1. Skip anything currently marked blocked in `NEEDS_YOUR_REVIEW.md` (TODO-001's
+   filing half, TODO-002 fully, TODO-018 fully — check the file itself in
+   case new blocks were added since this text was written).
+2. Skip TODO-005 through TODO-011 entirely (content-module authoring —
+   paused pending the Notebook-X architecture decision — see
+   `NEEDS_YOUR_REVIEW.md`). Do not author new knowledge-base entries for
+   these modules under any circumstance this run.
+3. Skip TODO-010 unconditionally, even if #2 is later lifted for other
+   modules — it needs an owner-approved schema-design split first.
+4. Skip any item already marked "Completed" in `TODO_LIST.md`, or marked
+   `"status": "done"` or `"status": "in-progress"` for today in the state
+   file's `todo_history`.
+5. From what remains, prefer this order: TODO-003, TODO-004, TODO-014,
+   TODO-016, TODO-017, then TODO-001 (UI/parser half only — do NOT build
+   the GitHub-write half, that stays blocked), then TODO-012, TODO-013,
+   TODO-015 (these three are scoping-only — see note below).
+6. If nothing is eligible: log "no eligible item this run" to
+   `automation/DATA_CENTER_RUN_LOG.md` (create the dated section, write one
+   line explaining why nothing was eligible), update the state file's
+   `last_run` timestamp only, and stop. Do not invent work. Do not touch
+   any other file.
+
+Note on TODO-012/013/015: these produce a written recommendation document,
+not a code diff. Still go through the full branch/commit/push flow below
+(commit the recommendation doc itself) — do not skip logging or state
+tracking just because there's no code change.
+
+## 2. Do the work
+
+Do the item's work end-to-end per its own "Definition of done" in
+`TODO_LIST.md`. Stay strictly inside the item's own "Files/areas" — nothing
+outside that scope, even if you notice an adjacent improvement. If you
+notice something else worth doing, do not do it — note it as a possible
+future item in your run-log entry instead.
+
+Never author anything in `data/powershell.json`, `data/cloud.json`,
+`data/security.json`, `data/docker.json`, `data/cicd.json`, `data/cli.json`,
+or `data/casestudies.json` this run, regardless of which item you picked.
+Never touch TODO-002, TODO-010, or TODO-018.
+Never add a new `source_url` domain outside CLAUDE.md's Rule 7 allowlist —
+if a needed source isn't on the list, stop working that item, leave it
+uncommitted, log why, and treat this run as "no eligible item" instead.
+
+## 3. Validate
+
+Run `node .github/scripts/validate-json.js` always. If any `data/*.json`
+file was touched, also run `node .github/scripts/health-check.js`. If either
+fails: revert this item's changes (`git checkout -- <files>` / remove new
+files you added — never `git reset --hard`, never touch other branches),
+log the failure and why in `automation/DATA_CENTER_RUN_LOG.md`, update the
+state file marking this item `"status": "failed"`, and stop — do not pick a
+second item this run.
+
+If `index.html` was touched, sanity-check it still parses/loads locally
+conceptually (there is no headless browser available in this session — note
+in the run-log entry that a human should do a final visual check via
+`python -m http.server 8080` before this branch is considered fully done,
+this does not block the push).
+
+## 4. Commit
+
+Commit in small, logical increments. Never `git add -A` and never a single
+blanket commit. Stage only the files the item's own scope calls for, plus —
+as a final separate small commit — the state file and run-log updates from
+steps 5-6 below (e.g. `git add automation/state/dc_automation_state.json
+automation/DATA_CENTER_RUN_LOG.md && git commit -m "chore: update automation
+state + run log for TODO-XXX"`).
+
+## 5. Update the state file
+
+Update `automation/state/dc_automation_state.json`: set `last_run` to the
+current ISO timestamp, and append one entry to `todo_history`:
+
+```jsonc
+{
+  "id": "TODO-XXX",
+  "status": "done" | "failed" | "needs-review",
+  "branch": "dc-auto-<STAMP>",
+  "run": "builder",
+  "date": "YYYY-MM-DD",
+  "note": "short human-readable summary"
+}
+```
+
+Use `"done"` if you completed the item and validators passed (this does NOT
+mean merged — that's Run 2's decision). Use `"failed"` per step 3. Use
+`"needs-review"` if the item is scoping-only (TODO-012/013/015) or otherwise
+inherently non-mergeable-by-checklist.
+
+## 6. Write the run-log entry
+
+Append a new dated entry to `automation/DATA_CENTER_RUN_LOG.md` (create the
+file with a top-level heading if it does not exist yet) containing: which
+TODO item, what changed and why, files touched, validator results, any
+manual verification still needed, and the branch name. This is written for
+a human reviewer — be concrete, not a status-code dump.
+
+If the picked item requires moving its entry to `TODO_LIST.md`'s
+`## Completed` section — do NOT do that yourself. That happens only when
+Run 2 actually merges to master (spec §7). Leave `TODO_LIST.md`'s active
+list entry as-is for now; Run 2 handles the move on successful merge.
+
+## 7. Push
+
+`git push origin dc-auto-<STAMP>`. Do NOT merge or push to `master`. Do NOT
+delete any branch. If you hit "no eligible item" (step 1.6), there is
+nothing to push — the branch may remain empty/unpushed, that's fine.
+
+## Hard constraints (repeat, do not violate even under this run's own logic)
+
+- Never push or merge to `master`.
+- Never `git push --force`, never `git reset --hard`, never `rm` anything.
+- Never touch `.github/workflows/`, `wrangler.toml`, or anything
+  credential-adjacent.
+- Never add a new `source_url` domain to the CLAUDE.md allowlist.
+- Never delete an existing data entry.
