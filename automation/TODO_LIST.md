@@ -396,3 +396,14 @@ chosen.
 
 **Dependency:** `NEEDS_YOUR_REVIEW.md` → "Notebook-X Integration —
 Architecture Decision Needed"
+
+---
+
+## Completed
+
+Items move here in full (not struck out in place) once merged to `master`
+by an Auditor run, per `automation/DATA_CENTER_AUTOMATION_SPEC.md` §7.
+Each entry keeps its original description and appends date completed plus
+the branch/commit reference.
+
+*(none yet)*

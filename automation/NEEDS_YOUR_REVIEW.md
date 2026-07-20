@@ -9,6 +9,27 @@ ambiguous design decisions. Autonomous sessions should skip these and work the
 
 ---
 
+## TODO-005 through TODO-011 — paused pending Notebook-X architecture decision
+
+*(added 2026-07-20, when the twice-daily unattended automation was built —
+see `automation/DATA_CENTER_AUTOMATION_SPEC.md` §4, §10)*
+
+TODO-005 through TODO-011 (activating the `powershell`, `cloud`, `security`,
+`docker`, `cicd`, `casestudies`, `cli` content modules) are paused and must
+not be authored by any automated Builder run until the Notebook-X
+integration architecture decision above resolves — even though nothing else
+in this file previously marked them blocked. Several of these items'
+`TODO_LIST.md` descriptions reference Notebook-X notebooks as topic-outline
+references, and the underlying "what does citing/using Notebook-X content
+actually look like" question is exactly what's undecided above. TODO-010
+additionally stays excluded unconditionally once this pause lifts (its own
+entry calls for an owner-approved schema-design split first).
+
+This does not block TODO-001 through TODO-004 or TODO-014/016/017, which
+have no dependency on this decision.
+
+---
+
 ## Notebook-X Integration — Architecture Decision Needed
 
 *(Part A investigation, 2026-07-19 — read-only, no code changed)*
@@ -143,6 +164,79 @@ function/GitHub Action handle it instead? This is a new credential either way
 and needs explicit sign-off before TODO-001/TODO-002 can be finished
 end-to-end (the parser/UI half of TODO-001 can still be built and shipped
 without this decision — see that TODO's notes).
+
+---
+
+## 2026-07-20 — TODO-003 branch left for manual review (Auditor Run 2)
+
+**Branch:** `dc-auto-2026-07-20_125410` (pushed to origin, NOT merged to
+`master`). **TODO item:** TODO-003 — copy-to-clipboard buttons on
+command-card usage rows.
+
+**Push-Authorization Checklist result:** independently re-verified all 5
+items on the checklist in `automation/instructions_auditor.txt` §Push-
+Authorization Checklist. Item **(a) FAILED**; items (b), (c), (d), (e) all
+passed. Per the checklist ("ALL must hold... any single failure means do
+not merge"), the branch was left untouched and unmerged.
+
+**Item (a) — files touched must match TODO-003's own "Files/areas" field
+(`automation/TODO_LIST.md`), nothing outside stated scope:**
+TODO-003's stated scope is `index.html` only. The branch's actual diff
+against `master` (`git diff master...dc-auto-2026-07-20_125410 --stat`)
+touches 5 files, not 1:
+
+- `index.html` — in scope, and the change itself is clean (see below).
+- `automation/DATA_CENTER_RUN_LOG.md`, `automation/state/dc_automation_state.json`
+  — standard per-run bookkeeping the Builder is separately instructed to
+  produce (spec §5/§8); not treated as a scope violation on its own.
+- `automation/NEEDS_YOUR_REVIEW.md` (+21 lines) and `automation/TODO_LIST.md`
+  (+11 lines) — **not** bookkeeping. These add the TODO-005–011
+  Notebook-X-pause note and the `## Completed` section scaffold required by
+  `DATA_CENTER_AUTOMATION_SPEC.md` §10. The Builder's own commit message
+  (`4db1415`, "carry forward pre-existing pause note + Completed section")
+  says explicitly these were *pre-existing uncommitted edits from the
+  automation-setup session*, unrelated to TODO-003, folded into this
+  branch because they happened to be sitting in the working tree when the
+  Builder run started. That is real scope creep under the checklist's
+  literal wording, regardless of the content being otherwise legitimate
+  and spec-mandated — it doesn't belong bundled into a TODO-003
+  push-authorization decision.
+
+**What was NOT wrong** (checked in full, for the record — items (b)-(e) all
+passed independently):
+- (b) Zero `source_url` values anywhere in the diff (grepped directly).
+- (c) No `data/*.json` touched, no schema/workflow/`wrangler.toml`/
+  credential-adjacent changes.
+- (d) `node .github/scripts/validate-json.js` passes clean on a fresh
+  checkout of the branch (all 7 JSON files valid); `health-check.js` not
+  required since no `data/*.json` changed.
+- (e) The `index.html` diff itself matches TODO-003's Definition of Done: a
+  real `<button class="usage-copy-btn">` per usage row (not a styled
+  `div`), a `copyUsageCmd()` function reusing `copyAiCode()`'s
+  clipboard-write + flash-text pattern, bilingual label, 44px mobile
+  touch-target rule, and it lives inside `.card-body` so it doesn't
+  interfere with `toggleCard()`'s header click handler. This part looks
+  ready to ship as-is.
+
+**Recommended next step for the owner:** the `index.html` change and the
+`automation/NEEDS_YOUR_REVIEW.md` / `automation/TODO_LIST.md` scaffolding
+are both individually fine — they just shouldn't have shipped as one
+push-authorization unit. Either (i) manually merge this branch (owner
+judgment, not an autonomous decision) since the bundled content is legitimate,
+or (ii) ask a future Builder run to split them: commit the setup-scaffolding
+docs on `master` directly (outside any TODO branch) and keep TODO-003
+branches to `index.html` only going forward.
+
+**State/log follow-up:** `automation/state/dc_automation_state.json` and
+`automation/DATA_CENTER_RUN_LOG.md` did not exist on `master` before this
+run (they were only ever created on the Builder's branch, since Run 1 never
+pushes to `master`). This Auditor run created both fresh on `master`,
+carrying forward the Builder's original `TODO-003: done` entry plus a new
+`TODO-003: needs-review` entry, and wrote a matching run-log entry — but
+per the hard constraint that only `automation/DATA_CENTER_AUDIT.md` (and a
+successful STEP-1 merge's doc/state files) may be pushed directly to
+`master`, these are left as **uncommitted working-tree changes**, not
+pushed and not even committed, pending owner review/commit.
 
 ---
 
