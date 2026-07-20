@@ -230,14 +230,15 @@ sized into follow-up implementation TODOs if greenlit.
 
 ### TODO-013 — Workflow document generation: feasibility & design (not code yet)
 
-**Description:** Workflow *viewing* works (fetch from `data-center-archive` +
-render via `renderMarkdown()`); generation doesn't — workflows are authored
-manually today. Scope what "generation" should mean: an in-app editor that
-commits new markdown to `data-center-archive` (this would need GitHub write
-credentials — if this direction is chosen, add it to
-`NEEDS_YOUR_REVIEW.md` before building), versus a client-side
-markdown template/preview tool the user copies out and commits manually
-(no new credentials, fits current architecture). Recommend a direction.
+**Description:** Workflow *viewing* works (self-hosted since 2026-07-20:
+fetch from this repo's own `workflows/` folder + render via
+`renderMarkdown()`); generation doesn't — workflows are authored manually
+today. Scope what "generation" should mean: an in-app editor that commits
+new markdown straight into `workflows/` (this would need GitHub write
+credentials — if this direction is chosen, add it to `NEEDS_YOUR_REVIEW.md`
+before building), versus a client-side markdown template/preview tool the
+user copies out and commits manually (no new credentials, fits current
+architecture). Recommend a direction.
 
 **Files/areas:** none yet.
 
@@ -350,6 +351,135 @@ chosen.
 
 **Dependency:** `NEEDS_YOUR_REVIEW.md` → "Notebook-X Integration —
 Architecture Decision Needed"
+
+---
+
+### TODO-019 — Add required `example` field to `quick_flags[]` schema
+
+**Description:** `CLAUDE.md`'s Bilingual Schema section defines
+`quick_flags[]` entries as `{flag, desc_he, desc_en}` with no field showing
+the flag used in context. Add a new required `example` field: a full,
+realistic command string demonstrating that flag in context (not bilingual —
+follows the existing "no Hebrew in cmd-like fields" rule, same as `flag`
+itself). Update the schema doc in `CLAUDE.md` and add enforcement to
+`validate-json.js` (a new check inside the `quick_flags` validation block,
+`.github/scripts/validate-json.js:160-175`): `example` must be a non-empty
+string and must not contain Hebrew characters (reuse `hasHebrew()`).
+
+**Files/areas:** `CLAUDE.md` (Bilingual Schema → `quick_flags[]` block),
+`.github/scripts/validate-json.js` (`quick_flags` validation).
+
+**Definition of done:** the schema doc lists `example` as required;
+`validate-json.js` fails any `quick_flags[]` entry missing `example` or
+containing Hebrew in it; existing `data/*.json` files will fail validation
+until backfilled (expected — see TODO-020 through TODO-024).
+
+**Complexity:** S
+
+**Dependency:** none — this is a prerequisite for TODO-020 through TODO-024.
+
+---
+
+### TODO-020 — Backfill `quick_flags[].example` in `linux.json`
+
+**Description:** Once TODO-019 lands, populate the new required `example`
+field for every existing `quick_flags` entry in `data/linux.json`. Each
+`example` should be a realistic, complete command string showing that
+specific flag used in context (e.g. for a `-l` flag on `ls`, something like
+`ls -l /var/log`).
+
+**Files/areas:** `data/linux.json`.
+
+**Definition of done:** `node .github/scripts/validate-json.js` passes with
+the TODO-019 enforcement active; every `quick_flags[]` entry in this file
+has a non-empty, Hebrew-free `example`.
+
+**Complexity:** M
+
+**Dependency:** TODO-019
+
+---
+
+### TODO-021 — Backfill `quick_flags[].example` in `cmd.json`
+
+**Description:** Same pattern as TODO-020, for `data/cmd.json`.
+
+**Files/areas:** `data/cmd.json`.
+
+**Definition of done:** same as TODO-020, scoped to this file.
+
+**Complexity:** M
+
+**Dependency:** TODO-019
+
+---
+
+### TODO-022 — Backfill `quick_flags[].example` in `network.json`
+
+**Description:** Same pattern as TODO-020, for `data/network.json`.
+
+**Files/areas:** `data/network.json`.
+
+**Definition of done:** same as TODO-020, scoped to this file.
+
+**Complexity:** M
+
+**Dependency:** TODO-019
+
+---
+
+### TODO-023 — Backfill `quick_flags[].example` in `1com.json`
+
+**Description:** Same pattern as TODO-020, for `data/1com.json`.
+
+**Files/areas:** `data/1com.json`.
+
+**Definition of done:** same as TODO-020, scoped to this file.
+
+**Complexity:** M
+
+**Dependency:** TODO-019
+
+---
+
+### TODO-024 — Backfill `quick_flags[].example` in `mirtapbx.json`
+
+**Description:** Same pattern as TODO-020, for `data/mirtapbx.json`.
+
+**Files/areas:** `data/mirtapbx.json`.
+
+**Definition of done:** same as TODO-020, scoped to this file.
+
+**Complexity:** M
+
+**Dependency:** TODO-019
+
+---
+
+### TODO-025 — Scope: visual redesign of Workflows/guide content rendering
+
+**Description:** Flagged during manual review (2026-07-20), not urgent. The
+Workflows tab's rendered guide content (`#workflow-detail-content`,
+rendered via `renderMarkdown()`) currently reads as a bare list-with-headers
+— plain headings, paragraphs, and tables with no additional visual
+structure (no color-coding by section type, no callout/card styling for
+tips vs. warnings, etc.). Scope a redesign that adds more color, structure,
+and visual clarity to this rendering path, without touching the shared
+`renderMarkdown()` used by AI chat responses (a Workflows-specific wrapper
+or additional CSS scoped to `#workflow-detail-content` is likely the right
+boundary). Produce a recommendation, not code.
+
+**Files/areas:** none yet — eventual implementation would touch CSS scoped
+to `#workflow-detail-content` (`index.html`) and possibly a light
+post-processing pass on the rendered HTML.
+
+**Definition of done:** a scoped recommendation exists (approach + rough
+effort), sized into a follow-up implementation TODO if greenlit.
+
+**Complexity:** S (scoping only)
+
+**Priority:** Low — not urgent, flagged during manual review rather than
+from a user complaint or bug.
 
 ---
 
