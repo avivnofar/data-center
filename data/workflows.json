@@ -1,0 +1,29 @@
+[
+  {
+    "id": "linux-workflow",
+    "title_he": "לינוקס — ניהול מערכת",
+    "title_en": "Linux — System Administration",
+    "desc_he": "משתמשים, מערכת קבצים, הרשאות, תהליכים, שירותים, לוגים, cron וניהול חבילות — 16 פקודות.",
+    "desc_en": "Users, filesystem, permissions, processes, services, logs, cron and package management — 16 commands.",
+    "path": "workflows/linux/linux-workflow.md",
+    "updated": "2026-07-20"
+  },
+  {
+    "id": "linux-workflow-networking",
+    "title_he": "לינוקס — רשת",
+    "title_en": "Linux — Networking",
+    "desc_he": "ממשקי רשת, קישוריות, סריקת פורטים, חומת אש, לכידת חבילות, DNS וניתוב — 13 פקודות.",
+    "desc_en": "Interfaces, connectivity, port scanning, firewall, packet capture, DNS and routing — 13 commands.",
+    "path": "workflows/linux/linux-workflow-networking.md",
+    "updated": "2026-07-20"
+  },
+  {
+    "id": "networking-workflow",
+    "title_he": "מתודולוגיית אבחון רשת",
+    "title_en": "Network Troubleshooting Methodology",
+    "desc_he": "מודל OSI, זרימת אבחון חוצת-פלטפורמות (Linux/Windows), השוואת כלים.",
+    "desc_en": "OSI model, cross-platform (Linux/Windows) diagnostic flow, tool comparison.",
+    "path": "workflows/networking/networking-workflow.md",
+    "updated": "2026-07-20"
+  }
+]
