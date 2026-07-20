@@ -55,7 +55,7 @@ All 27 ever-requested features were checked against the actual code.
 "Code-verified" means the full request/response path was read; no live
 paid API calls were made.
 
-### ✅ Fully Working (19)
+### ✅ Fully Working (20)
 
 | # | Feature | Evidence |
 |---|---|---|
@@ -73,13 +73,14 @@ paid API calls were made.
 | 17 | Mobile responsiveness | ≤768px: 44px touch targets (`.tab-btn/.filter-btn/.faq-pill`, `.copy-btn`), 16px inputs (iOS zoom fix), off-canvas sidebars; ≤480px adjustments. |
 | 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
 | 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. |
+| 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html:3395-3452), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
 | 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. |
 | 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
 | 25 | 1COM + MirtaPBX modules | Present and active (17 + 11 entries), rendered as normal tabs. Now specialty/vendor content within general-IT scope, not the defining boundary. |
 | 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">` (index.html:1480), `data/tools.json` registry, topbar link, CLI Mode path all intact. |
 | 27 | Data validation scripts | `validate-json.js` (schema, bilingual pairs, approved/blocked domain enforcement) + `health-check.js` (Hebrew QA) — both pass as of this audit. |
 
-### 🔶 Partially Built / Needs Finishing (6)
+### 🔶 Partially Built / Needs Finishing (5)
 
 | # | Feature | What exists | What's missing |
 |---|---|---|---|
@@ -88,7 +89,6 @@ paid API calls were made.
 | 9 | Auto-update KB via GitHub Issue | Prompt-side only: `CAPABILITY_SUGGESTION` covers KB gaps (worker.js:297-300). | Same gap as #7 — no code path creates an Issue anywhere in this repo. |
 | 10 | Self-extending capability | Prompt-side only: `CAPABILITY_SUGGESTION: {...}` block spec in the system prompt. | Same gap as #7/#9: no app detection, no Issue filing. Currently aspirational beyond the prompt. |
 | 16 | Expandable cards + copy buttons | Expand/collapse fully works (`toggleCard()`, `aria-expanded`, keyboard support via `handleExpandKeydown`). | **Copy-to-clipboard exists only on AI-chat code blocks** (`copyAiCode()`); command-card `usage-cmd` rows have no copy button. |
-| 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders — not just UI). Client-side only, no tokens. | No UI to **browse or manage** the saved list — saved URLs are write-only unless read from localStorage manually. |
 
 ### ❌ Requested But Never Built (2)
 
@@ -142,14 +142,22 @@ needed) and validated by `.github/scripts/validate-json.js`.
   one root gap: the suggestion blocks Claude emits have no client-side
   parser and no Issue-filing path. Until built, they appear as plain text
   at the end of some chat answers.
-- Command cards lack copy buttons on usage rows (#16); saved bookmarks
-  have no browsing UI (#20).
+- Command cards lack copy buttons on usage rows (#16). (Saved-bookmarks
+  browsing UI, formerly #20 here, shipped — see Recently Completed.)
 - No functional bugs currently flagged. (The 2026-07-19 audit's three
   open items — Office/Admin UI, `notebooks/`, `data/resources and
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
 
+- **My Bookmarks browsing/management panel** (TODO-004, merge commit
+  `ab196ac2`): `#bookmarks-btn` topbar button opens a modal
+  (`openBookmarksPanel()`/`renderBookmarksList()`/`removeBookmark()`,
+  index.html:3395-3452) listing saved bookmarks with per-row Remove and a
+  bilingual empty state — closes the gap noted in feature #20 above. Built
+  and merged by the twice-daily unattended Builder/Auditor automation
+  (`automation/DATA_CENTER_AUTOMATION_SPEC.md`), the first item it fully
+  closed out end-to-end.
 - **2026-07 (commit `f64eb30`)**: Worker upgraded to `claude-sonnet-5`;
   Hebrew/English RTL rendering fixed via `wrapLtrTerms()`; IT scope
   expanded beyond Netvill to general IT.
@@ -180,5 +188,6 @@ the `powershell`, `cloud`, `security`, `docker`, `cicd`, `casestudies`,
 and `cli` modules as content is authored; longer-term ideas (PWA/offline,
 contribution guide) remain unscheduled. Natural next steps surfaced by
 this audit: a client-side parser + Issue-filing flow for the
-`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks, copy buttons on command
-cards, and a saved-bookmarks browsing panel.
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks, and copy buttons on
+command cards (the saved-bookmarks browsing panel also on this list has
+since shipped — see Recently Completed).
