@@ -166,6 +166,23 @@
     #commandflow-link:hover { border-color: var(--accent); color: var(--accent); }
     @media (max-width: 640px) { #commandflow-link .link-label { display: none; } }
 
+    #bookmarks-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #bookmarks-btn:hover { border-color: var(--accent); color: var(--accent); }
+    @media (max-width: 640px) { #bookmarks-btn .link-label { display: none; } }
+
     /* ── File:// warning ───────────────────────────────────────────────────── */
     #file-warning {
       display: none;
@@ -1287,6 +1304,90 @@
     .bookmark-bar button:hover { border-color: var(--accent2); color: var(--accent2); }
     .bookmark-bar .bm-saved { color: var(--accent); }
 
+    /* ── My Bookmarks panel ──────────────────────────────────────────────────
+       Reads/writes only the existing dc-bookmarks / dc-dismissed-bookmarks
+       localStorage keys (see BOOKMARK_SAVED_KEY above) — no new keys, no
+       network calls. */
+    #bookmarks-modal-overlay {
+      background: rgba(0,0,0,0.6);
+      display: none;
+      inset: 0;
+      position: fixed;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #bookmarks-modal-overlay.visible { display: flex; }
+    #bookmarks-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-width: 560px;
+      width: min(92vw, 560px);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #bookmarks-modal-header {
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+    }
+    #bookmarks-modal-header h2 { font-size: 0.95rem; margin: 0; color: var(--text); }
+    #bookmarks-modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 5px 9px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #bookmarks-modal-close:hover { border-color: var(--accent2); color: var(--accent2); }
+    #bookmarks-list { overflow-y: auto; padding: 10px 16px 16px; }
+    #bookmarks-list .bm-empty { color: var(--text-muted); font-size: 0.85rem; padding: 20px 4px; text-align: center; }
+    .bm-row {
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      padding: 10px 2px;
+    }
+    .bm-row:last-child { border-bottom: none; }
+    .bm-row-info { flex: 1; min-width: 0; }
+    .bm-row-url {
+      color: var(--accent2);
+      direction: ltr;
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      overflow: hidden;
+      text-decoration: none;
+      text-overflow: ellipsis;
+      unicode-bidi: isolate;
+      white-space: nowrap;
+    }
+    .bm-row-url:hover { text-decoration: underline; }
+    .bm-row-date { color: var(--text-muted); font-size: 0.72rem; margin-top: 2px; }
+    .bm-row-remove {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .bm-row-remove:hover { border-color: #ef4444; color: #ef4444; }
+
     /* ── PDF export FAB ────────────────────────────────────────────────────── */
     #pdf-fab {
       background: var(--accent);
@@ -1447,7 +1548,25 @@
       <span class="link-label he">Terminal Academy</span>
       <span class="link-label en" style="display:none">Terminal Academy</span>
     </a>
+    <button id="bookmarks-btn" onclick="openBookmarksPanel()" aria-label="My bookmarks" aria-haspopup="dialog">
+      <span aria-hidden="true">💾</span>
+      <span class="link-label he">הסימניות שלי</span>
+      <span class="link-label en" style="display:none">My Bookmarks</span>
+    </button>
     <button id="lang-toggle" onclick="toggleLang()" aria-label="Toggle language">EN / עב</button>
+  </div>
+</div>
+
+<div id="bookmarks-modal-overlay" onclick="closeBookmarksPanel(event)">
+  <div id="bookmarks-modal" role="dialog" aria-modal="true" aria-labelledby="bookmarks-modal-title">
+    <div id="bookmarks-modal-header">
+      <h2 id="bookmarks-modal-title">
+        <span class="he">הסימניות שלי</span>
+        <span class="en" style="display:none">My Bookmarks</span>
+      </h2>
+      <button id="bookmarks-modal-close" onclick="closeBookmarksPanel()" aria-label="Close">✕</button>
+    </div>
+    <div id="bookmarks-list"></div>
   </div>
 </div>
 
@@ -3270,6 +3389,66 @@ function dismissBookmark(btn, encodedUrl) {
   }
   const bar = btn.closest('.bookmark-bar');
   if (bar) bar.remove();
+}
+
+/* ── My Bookmarks panel (view/remove saved bookmarks) ────────────────────── */
+function renderBookmarksList() {
+  const list = document.getElementById('bookmarks-list');
+  if (!list) return;
+  const saved = getSavedBookmarks().slice().sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+
+  if (!saved.length) {
+    list.innerHTML = `<div class="bm-empty">
+      <span class="he">אין עדיין סימניות שמורות.</span>
+      <span class="en" style="display:none">No bookmarks saved yet.</span>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = saved.map(b => {
+    let domain;
+    try { domain = new URL(b.url).hostname; } catch (e) { domain = b.url; }
+    const date = new Date(b.dateAdded);
+    const dateStr = isNaN(date) ? '' : date.toLocaleDateString(LANG === 'he' ? 'he-IL' : 'en-US');
+    const encoded = encodeURIComponent(b.url);
+    return `<div class="bm-row">
+      <div class="bm-row-info">
+        <a class="bm-row-url" href="${escHtml(b.url)}" target="_blank" rel="noopener">${escHtml(domain)}</a>
+        <div class="bm-row-date">${escHtml(dateStr)}</div>
+      </div>
+      <button class="bm-row-remove" onclick="removeBookmark('${encoded}')">${LANG === 'he' ? 'הסר' : 'Remove'}</button>
+    </div>`;
+  }).join('');
+}
+
+function removeBookmark(encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  const saved = getSavedBookmarks().filter(b => b.url !== url);
+  localStorage.setItem(BOOKMARK_SAVED_KEY, JSON.stringify(saved));
+  renderBookmarksList();
+}
+
+function handleBookmarksModalKeydown(e) {
+  if (e.key === 'Escape') closeBookmarksPanel();
+}
+
+function openBookmarksPanel() {
+  const overlay = document.getElementById('bookmarks-modal-overlay');
+  if (!overlay) return;
+  renderBookmarksList();
+  overlay.classList.add('visible');
+  document.addEventListener('keydown', handleBookmarksModalKeydown);
+  const closeBtn = document.getElementById('bookmarks-modal-close');
+  if (closeBtn) closeBtn.focus();
+}
+
+function closeBookmarksPanel(event) {
+  if (event && event.target !== event.currentTarget && event.type === 'click') return;
+  const overlay = document.getElementById('bookmarks-modal-overlay');
+  if (overlay) overlay.classList.remove('visible');
+  document.removeEventListener('keydown', handleBookmarksModalKeydown);
+  const btn = document.getElementById('bookmarks-btn');
+  if (btn) btn.focus();
 }
 
 function updateConversationUiState() {
