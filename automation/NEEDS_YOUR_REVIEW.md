@@ -167,7 +167,7 @@ without this decision — see that TODO's notes).
 
 ---
 
-## 2026-07-20 — TODO-003 branch left for manual review (Auditor Run 2)
+## 2026-07-20 — TODO-003 branch left for manual review (Auditor Run 2) — RESOLVED
 
 **Branch:** `dc-auto-2026-07-20_125410` (pushed to origin, NOT merged to
 `master`). **TODO item:** TODO-003 — copy-to-clipboard buttons on
@@ -237,6 +237,21 @@ per the hard constraint that only `automation/DATA_CENTER_AUDIT.md` (and a
 successful STEP-1 merge's doc/state files) may be pushed directly to
 `master`, these are left as **uncommitted working-tree changes**, not
 pushed and not even committed, pending owner review/commit.
+
+**Resolution (2026-07-20, owner-directed manual merge):** rather than
+merging the branch as a whole (which would have reintroduced the stale
+`automation/NEEDS_YOUR_REVIEW.md`/`TODO_LIST.md` edits this note flags —
+now doubly stale after several more automation runs landed on `master`
+since this note was written), only the `index.html` change was extracted:
+`git diff master...dc-auto-2026-07-20_125410 -- index.html` was applied as
+a patch (not a raw file checkout, since `master`'s `index.html` had since
+gained the unrelated "My Bookmarks panel" feature (TODO-004) that a plain
+`git checkout <branch> -- index.html` would have clobbered) onto a fresh
+branch off current `master`, validated, and merged via
+`b3451b1105de671b38b2f423d0e77a60b94555cb`. `dc-auto-2026-07-20_125410`
+itself was never merged and remains as historical record per the branch-
+retention rule. TODO-003 is now moved to `TODO_LIST.md`'s `## Completed`
+section with the full explanation. No further action needed on this item.
 
 ---
 

@@ -67,29 +67,6 @@ directly by this flow; `validate-json.js`/`health-check.js` still pass.
 
 ---
 
-### TODO-003 — Copy-to-clipboard buttons on command-card usage rows
-
-**Description:** `copyAiCode()` (`index.html:2388`) already implements
-clipboard-copy with a "✓ Copied/הועתק" flash for AI-chat code blocks.
-`renderCard()` (`index.html:1837`) renders each `usage[].cmd` into a
-`.usage-cmd` div (`index.html:1858-1860`) with no copy affordance at all.
-Add a copy button to each usage row reusing the same
-`navigator.clipboard.writeText()` + flash-text pattern.
-
-**Files/areas:** `index.html` (`renderCard()`, a new `copyUsageCmd()`
-function or a shared helper factored out of `copyAiCode()`, CSS near
-`.usage-cmd`, `index.html:457`).
-
-**Definition of done:** every command card's usage rows have a working,
-keyboard-accessible copy button (a real `<button>`, not a `div onclick`) in
-both LANG states; existing card expand/collapse (`toggleCard()`,
-`handleExpandKeydown()`) still works. Manually verify in browser: expand a
-card, click copy, paste to confirm the clipboard content.
-
-**Complexity:** S
-
----
-
 ### TODO-005 — Activate `powershell` content module
 
 **Description:** `data/modules.json` registers `powershell` as
@@ -407,3 +384,39 @@ only, no credentials" rule for this system).
 **Completed:** 2026-07-20, branch `dc-auto-2026-07-20_151157`, merged into
 `master` via commit `ab196ac25e4df2be42a8cdcd81c687b4536c38d9` (merge commit
 "Merge dc-auto branch: TODO-004") by the Run 2 (Auditor) session.
+
+---
+
+### TODO-003 — Copy-to-clipboard buttons on command-card usage rows
+
+**Description:** `copyAiCode()` (`index.html:2388`) already implements
+clipboard-copy with a "✓ Copied/הועתק" flash for AI-chat code blocks.
+`renderCard()` (`index.html:1837`) renders each `usage[].cmd` into a
+`.usage-cmd` div (`index.html:1858-1860`) with no copy affordance at all.
+Add a copy button to each usage row reusing the same
+`navigator.clipboard.writeText()` + flash-text pattern.
+
+**Files/areas:** `index.html` (`renderCard()`, a new `copyUsageCmd()`
+function or a shared helper factored out of `copyAiCode()`, CSS near
+`.usage-cmd`, `index.html:457`).
+
+**Definition of done:** every command card's usage rows have a working,
+keyboard-accessible copy button (a real `<button>`, not a `div onclick`) in
+both LANG states; existing card expand/collapse (`toggleCard()`,
+`handleExpandKeydown()`) still works. Manually verify in browser: expand a
+card, click copy, paste to confirm the clipboard content.
+
+**Complexity:** S
+
+**Completed:** 2026-07-20, isolated cherry-pick of just the `index.html`
+change from branch `dc-auto-2026-07-20_125410` (commit `4db1415`) — the
+branch's Push-Authorization checklist run had failed on item (a) because it
+also carried unrelated stale `automation/NEEDS_YOUR_REVIEW.md` /
+`automation/TODO_LIST.md` edits from before this session's automation build
+(see `automation/NEEDS_YOUR_REVIEW.md` "TODO-003 branch left for manual
+review" entry). Rather than merging the branch as-is, only `index.html` was
+extracted onto a fresh branch off current `master` and merged via
+`b3451b1105de671b38b2f423d0e77a60b94555cb` (merge commit "Merge
+dc-todo003-cherry-pick: TODO-003 copy-to-clipboard buttons"). The original
+`dc-auto-2026-07-20_125410` branch remains unmerged and is kept as
+historical record.
