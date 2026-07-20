@@ -10,7 +10,7 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, '../../data');
 const isSummary = process.argv.includes('--summary');
 const TIMEOUT_MS = 10000;
-const FILES = ['linux.json', 'cmd.json', 'network.json'];
+const FILES = ['linux.json', 'cmd.json', 'network.json', '1com.json', 'mirtapbx.json'];
 const UA = 'Mozilla/5.0 (compatible; DataCenterLinkCheck/1.0; +https://avivnofar.github.io/data-center)';
 
 function loadJson(filename) {
