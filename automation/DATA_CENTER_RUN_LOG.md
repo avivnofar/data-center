@@ -197,3 +197,61 @@ The owner needs to run `git push origin master` manually to publish all of
 it.
 
 ---
+
+## 2026-07-20 — Run 1 (Builder) — `dc-auto-2026-07-21_023811`
+
+**Item selected:** TODO-014 — Fix `check-links.js` blind spot on
+1COM/MirtaPBX source URLs. Selection process: TODO-003 and TODO-004 are
+both already in `TODO_LIST.md`'s `## Completed` section (hard skip per
+step 1.4). TODO-001/TODO-002 have their filing/write halves blocked in
+`NEEDS_YOUR_REVIEW.md`; TODO-005 through TODO-011 are paused pending the
+Notebook-X architecture decision; TODO-010 and TODO-018 are excluded
+unconditionally. TODO-014 had no prior `todo_history` entry, is not
+blocked anywhere, and is next in the priority order (step 1.5) after
+TODO-003/TODO-004. Picked it.
+
+**What changed and why:** `.github/scripts/check-links.js:13` hardcoded
+`FILES = ['linux.json', 'cmd.json', 'network.json']`, so the daily
+`link-check.yml` job never checked the `source_url` values in
+`data/1com.json` (17 entries) or `data/mirtapbx.json` (11 entries) — both
+active, populated modules with a required `source_url` on every entry.
+Added both filenames to the `FILES` array. One-line change.
+
+**Files touched:** `.github/scripts/check-links.js` only — exactly
+TODO-014's stated `Files/areas`. No `data/*.json` touched.
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 7
+JSON files valid. `health-check.js` not run — not required since no
+`data/*.json` changed. Also ran `node .github/scripts/check-links.js`
+itself (not a required gate, but directly demonstrates the Definition of
+Done): unique URLs checked rose from 96 (on `master`, confirmed via
+`git stash`) to 105 with my change — the +9 net matches 1com/mirtapbx
+entries after dedup against URLs already shared with other files. No new
+broken or bot-blocked entries were introduced by this change: the 6
+broken (404) URLs and 5 rate-limited (429) warnings the script reports
+both before and after my change belong entirely to pre-existing
+`linux.json`/`cmd.json`/`network.json` entries (e.g. `linux.json::iotop`,
+`cmd.json::net-start-stop`, several `rfc-editor.org` RFC links) —
+unrelated to this TODO's scope and left untouched, since fixing dead
+`source_url` values is outside TODO-014's Files/areas and would require
+adding/changing `source_url` content, which step 2 of the Builder
+procedure explicitly disallows doing opportunistically. Script still
+exits 0/1 based on the same `classify()` bot-block-vs-broken logic as
+before — unchanged.
+
+**Manual verification still needed:** none beyond the above — this is a
+backend script with no UI surface, and its actual production behavior
+(the daily `link-check.yml` GitHub Actions run) will self-verify on its
+next scheduled run once merged.
+
+**Possible future item (not done, noted only):** the 6 pre-existing
+broken `source_url` values found above (`linux.json::iotop`,
+`cmd.json::net-start-stop`, and 4 `rfc-editor.org` links in
+`network.json`) look like real dead links worth a dedicated fix-up TODO —
+out of scope here since TODO-014 is specifically about `check-links.js`'s
+own file coverage, not about fixing already-flagged broken URLs.
+
+**Branch:** `dc-auto-2026-07-21_023811`, pushed to origin. Not merged to
+`master` — that's Run 2's decision.
+
+---
