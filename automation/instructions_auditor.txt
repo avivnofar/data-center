@@ -13,18 +13,23 @@ Builder branch) and STEP 2 (the standing daily audit, always runs).
 
 ## STEP 1 — Audit the Builder branch, merge only if every check passes
 
-1. Read `automation/state/dc_automation_state.json`. Find the most recent
-   `todo_history` entry with `"run": "builder"` and `"status": "done"` that
-   does not already have a corresponding later entry for the same ID with
-   `"status": "merged"` OR `"status": "needs-review"` (i.e. hasn't been
-   merged yet AND hasn't already been audited-and-declined, whether from
-   today or a prior day). A `needs-review` entry means a previous Auditor
-   run already checked this exact branch and found a checklist failure —
-   do not re-audit it; that would just produce a duplicate, identical
-   finding. Leave it for the owner to clear per `instructions_builder.txt`
-   step 1.4. If no eligible builder/done entry exists, log "no builder
-   branch to audit this run" in `automation/DATA_CENTER_RUN_LOG.md` and
-   skip to STEP 2.
+1. Read `automation/state/dc_automation_state.json`. `todo_history` entries
+   are only ever appended, never reordered or edited in place — read the
+   array in order (not by comparing `"date"` string values: `date` is
+   day-granularity only, and a builder/done entry plus a same-day
+   auditor/needs-review or auditor/merged entry for the same ID is normal,
+   so date alone cannot tell you which came first). Find the most recent
+   (last-in-array) `todo_history` entry with `"run": "builder"` and
+   `"status": "done"` that does not already have a LATER entry (appearing
+   after it in the array) for the same ID with `"status": "merged"` OR
+   `"status": "needs-review"` (i.e. hasn't been merged yet AND hasn't
+   already been audited-and-declined, whether from today or a prior day).
+   A `needs-review` entry means a previous Auditor run already checked
+   this exact branch and found a checklist failure — do not re-audit it;
+   that would just produce a duplicate, identical finding. Leave it for
+   the owner to clear per `instructions_builder.txt` step 1.4. If no
+   eligible builder/done entry exists, log "no builder branch to audit
+   this run" in `automation/DATA_CENTER_RUN_LOG.md` and skip to STEP 2.
 2. `git fetch origin`, then `git checkout <that branch>` (fresh checkout,
    don't reuse any local state from a prior session).
 3. Re-run `node .github/scripts/validate-json.js` yourself, and
@@ -66,7 +71,10 @@ Builder branch) and STEP 2 (the standing daily audit, always runs).
    - Update `automation/state/dc_automation_state.json`: append a new
      `todo_history` entry with `"status": "merged"`, `"run": "auditor"`,
      the branch, date, and a short note. Do not edit the original Builder
-     entry — append a new one.
+     entry — append a new one. Also update the top-level `last_run` field
+     to the current time as true UTC, ISO-8601, `Z`-suffixed — convert
+     from local wall-clock time if your environment reports local time;
+     do not relabel a local timestamp with `Z` without converting it.
    - Write a clear entry in `automation/DATA_CENTER_RUN_LOG.md` describing
      what was merged and confirming the checklist passed, item by item.
    - Commit these documentation/state changes (`TODO_LIST.md`, state file,
@@ -86,7 +94,10 @@ Builder branch) and STEP 2 (the standing daily audit, always runs).
      checklist item(s) failed, and why — concrete enough that the owner
      doesn't have to re-derive it from the diff themselves.
    - Update the state file: append a `todo_history` entry with
-     `"status": "needs-review"`, `"run": "auditor"`.
+     `"status": "needs-review"`, `"run": "auditor"`, and update the
+     top-level `last_run` field to the current time as true UTC,
+     ISO-8601, `Z`-suffixed (convert from local time if needed — never
+     relabel a local timestamp with `Z`).
    - Write a run-log entry noting the branch was left for manual review.
    - Do NOT attempt to fix the underlying issue yourself. Stop this step.
 

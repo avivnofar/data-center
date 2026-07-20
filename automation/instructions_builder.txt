@@ -26,10 +26,20 @@ this priority order:
 3. Skip TODO-010 unconditionally, even if #2 is later lifted for other
    modules — it needs an owner-approved schema-design split first.
 4. Skip any item already marked "Completed" in `TODO_LIST.md`. Also skip any
-   item whose most recent `todo_history` entry for that ID (by date —
-   across ALL days, not just today; a stale unmerged "done" from a prior
-   day is exactly as blocking as one from today) has `"status"` of
-   `"done"`, `"in-progress"`, or `"needs-review"`.
+   item whose most recent `todo_history` entry for that ID has `"status"`
+   of `"done"`, `"in-progress"`, or `"needs-review"` — checked across ALL
+   days, not just today; a stale unmerged "done" from a prior day is
+   exactly as blocking as one from today.
+   - **"Most recent" means array/append position, not the `"date"` field.**
+     `todo_history` entries are only ever appended, never reordered or
+     edited in place, so the LAST entry for a given ID in the array is
+     always the authoritative current status — read the array in order and
+     take the last match for that ID. Do NOT try to determine recency by
+     comparing `"date"` string values: `date` is day-granularity only (no
+     time-of-day), and a Builder entry followed by a same-day Auditor entry
+     for the same ID — which happens routinely, e.g. `done` then
+     `needs-review` both dated the same day — would be indistinguishable
+     by date alone. Array order is the only reliable signal.
    - `"needs-review"` means an Auditor run already declined the item for a
      specific reason recorded in `NEEDS_YOUR_REVIEW.md` — this is a hard
      skip, not a "try again and hope it's cleaner this time." Do not
@@ -37,8 +47,9 @@ this priority order:
      believe you'd avoid the same mistake (e.g. a scope-bundling issue).
      It stays skipped until a human explicitly re-queues it — look for an
      explicit note in `NEEDS_YOUR_REVIEW.md` or a new `todo_history` entry
-     with `"status": "cleared-for-retry"` dated after the `needs-review`
-     entry; if neither exists, it is still blocked.
+     with `"status": "cleared-for-retry"` that appears AFTER the
+     `needs-review` entry in the array for that ID; if neither exists, it
+     is still blocked.
    - If the most recent entry for an ID is `"failed"`, it is NOT
      automatically skipped — treat it as eligible again (a fresh attempt
      may succeed), but read the failure note first so you don't repeat the
@@ -102,7 +113,13 @@ state + run log for TODO-XXX"`).
 ## 5. Update the state file
 
 Update `automation/state/dc_automation_state.json`: set `last_run` to the
-current ISO timestamp, and append one entry to `todo_history`:
+current time as **true UTC**, ISO-8601, `Z`-suffixed (e.g. `2026-07-20T12:11:57Z`)
+— convert from local wall-clock time if your environment reports local
+time; do not relabel a local timestamp with a `Z` suffix without
+converting it, that produces a value that is off by your UTC offset and
+misleads anyone reading the file by hand. `last_run` is informational only
+(not read by any selection logic), but it must still be accurate. Then
+append one entry to `todo_history`:
 
 ```jsonc
 {

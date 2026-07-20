@@ -134,7 +134,7 @@ per run:
 
 ```jsonc
 {
-  "last_run": "2026-07-20T02:30:00",
+  "last_run": "2026-07-19T23:30:00Z",
   "todo_history": [
     {
       "id": "TODO-017",
@@ -158,6 +158,18 @@ item. Run 1 must not re-pick an ID whose latest entry is `"done"`,
 `"in-progress"`, or `"needs-review"`; Run 2 must not re-audit an ID whose
 `"run": "builder"`/`"status": "done"` entry already has a later
 `"needs-review"` or `"merged"` entry for the same ID.
+
+**"Most recent"/"latest" means array position, never the `"date"` field.**
+`todo_history` is append-only — entries are never reordered or edited in
+place — so the last entry for a given ID in the array is authoritative.
+`"date"` is day-granularity only (no time-of-day); a Builder entry and a
+same-day Auditor entry for the same ID (the normal case — see TODO-003 and
+TODO-004 above) share a date and are only distinguishable by array order.
+Similarly, `"last_run"` must be true UTC (`Z`-suffixed, converted from
+local wall-clock time if needed, never just relabeled) — it is
+informational only and not read by any selection logic, but an
+inconsistent format there makes the file misleading to a human reading it
+directly.
 
 ---
 
