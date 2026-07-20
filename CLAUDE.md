@@ -378,6 +378,55 @@ secrets beyond the default `GITHUB_TOKEN`.
 
 ---
 
+## Unattended Twice-Daily Automation (local Task Scheduler)
+
+Separate from the GitHub Actions above, this repo runs a local, unattended
+Claude Code pipeline twice daily on the owner's machine — full design in
+`automation/DATA_CENTER_AUTOMATION_SPEC.md`, exact operating procedure in
+`automation/instructions_builder.txt` / `automation/instructions_auditor.txt`.
+
+- **Two-run model**: each wake time runs the same kind of session but plays
+  a different role. **02:30 — Builder** (`automation/run_dc_1_builder.bat`):
+  picks one eligible item from `automation/TODO_LIST.md`, does the work on a
+  fresh `dc-auto-<STAMP>` branch off `master`, validates, commits in small
+  increments, and pushes the branch to origin — never touches `master`.
+  **07:28 — Auditor** (`automation/run_dc_2_auditor.bat`): independently
+  re-verifies (never trusts) the prior Builder branch against the
+  Push-Authorization Checklist, merges to `master` only if every item
+  passes, and always runs a standing daily audit into
+  `automation/DATA_CENTER_AUDIT.md`. Both wake times are chained as a
+  second Task Scheduler action after the existing `data-center-archive`
+  (smart-archive) automation's own actions — Task Scheduler runs actions
+  in a task unconditionally in sequence, so the data-center action still
+  runs even if the archive action ahead of it fails.
+- **Push-Authorization Checklist — the one narrow, explicit exception to
+  "pause before pushing to master"** (Autonomous Brain Rules, below): the
+  Auditor run may merge a Builder branch and push `master` directly,
+  without a human in the loop, but *only* if every one of these holds —
+  any single failure means leave the branch local/unpushed and flag it in
+  `automation/NEEDS_YOUR_REVIEW.md` instead:
+  1. The diff touches only files in the TODO item's own "Files/areas".
+  2. Zero new/changed `source_url` values anywhere in the diff.
+  3. No `data/*.json` schema changes, no deletions, no changes to
+     `.github/workflows/`, `wrangler.toml`, or anything credential-adjacent.
+  4. Both validators pass clean on the Auditor's own independent re-run.
+  5. The diff's actual content matches the item's Definition of Done.
+
+  This is a checklist, not a risk judgment — this exception does not
+  extend to any other unattended session or any other file.
+- **TODO-005 through TODO-011 are paused**: no Builder run may author
+  content for the `powershell`, `cloud`, `security`, `docker`, `cicd`,
+  `casestudies`, or `cli` modules until the Notebook-X integration
+  architecture decision (`automation/NEEDS_YOUR_REVIEW.md`) resolves — see
+  that file's TODO-005–011 entry for why.
+- Guardrails are enforced at the CLI tool level via `--disallowedTools`
+  (both runs: `Bash(rm:*)`, `Bash(git push --force*)`,
+  `Bash(git reset --hard:*)`; Builder additionally blocks
+  `Bash(git push origin master*)` and `Bash(git merge*)`), not left to
+  prompt instructions alone.
+
+---
+
 ## ⚠️ Hebrew Session Reminder
 
 When adding new entries in a Claude Code session:
