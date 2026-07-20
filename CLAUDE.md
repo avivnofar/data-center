@@ -413,7 +413,20 @@ Claude Code pipeline twice daily on the owner's machine — full design in
   5. The diff's actual content matches the item's Definition of Done.
 
   This is a checklist, not a risk judgment — this exception does not
-  extend to any other unattended session or any other file.
+  extend to any other unattended session, and covers only the merge
+  described above (the branch's own files, plus — as part of that same
+  successful-merge commit — `TODO_LIST.md`'s `## Completed` move and the
+  state/run-log updates).
+- **Daily Audit Pass — a second, separate, unconditional exception**: every
+  Auditor run, independent of whether STEP 1's merge happens or is
+  declined, also appends a dated section to `automation/DATA_CENTER_AUDIT.md`
+  and pushes *that file alone* directly to `master` — no checklist gate,
+  no human in the loop, because it's audit output about repo/automation
+  state, not a code or content change (mirrors the equivalent exception in
+  the `data-center-archive` automation). This is not covered by the
+  Push-Authorization Checklist above; it is its own narrower exception,
+  scoped to that one file only. See `automation/DATA_CENTER_AUTOMATION_SPEC.md`
+  §9 and `automation/instructions_auditor.txt` STEP 2.
 - **TODO-005 through TODO-011 are paused**: no Builder run may author
   content for the `powershell`, `cloud`, `security`, `docker`, `cicd`,
   `casestudies`, or `cli` modules until the Notebook-X integration
