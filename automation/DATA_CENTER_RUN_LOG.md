@@ -56,3 +56,63 @@ since only `DATA_CENTER_AUDIT.md` (STEP 2) is authorized to be pushed
 directly by this run.
 
 ---
+
+
+## 2026-07-20 — Run 1 (Builder) — `dc-auto-2026-07-20_151157`
+
+**Item selected:** TODO-004 — Bookmark browsing/management panel.
+Selection process: TODO-003's most recent `todo_history` entry is
+`status: needs-review` (from the prior Auditor run on
+`dc-auto-2026-07-20_125410`), which per section 1.4 of
+`instructions_builder.txt` is a hard skip, not a "try again" item.
+TODO-005 through TODO-011 are paused (Notebook-X decision,
+`NEEDS_YOUR_REVIEW.md`). TODO-004 had no prior `todo_history` entry and
+is not blocked anywhere, so it was the next eligible item in priority
+order.
+
+**What changed and why:** `saveBookmark()` persisted `{url, dateAdded}`
+entries to the `dc-bookmarks` localStorage key, but there was no UI to
+view or remove them — confirmed write-only before this change. Added:
+- A `#bookmarks-btn` button in the topbar (next to the existing
+  Terminal Academy link and language toggle) that opens a modal.
+- A `#bookmarks-modal-overlay` / `#bookmarks-modal` dialog (new,
+  self-contained modal pattern — no prior modal existed in the codebase
+  to reuse) listing saved bookmarks newest-first, each row showing
+  domain, save date, and a "Remove" button.
+- `renderBookmarksList()`, `removeBookmark()`, `openBookmarksPanel()`,
+  `closeBookmarksPanel()`, `handleBookmarksModalKeydown()` — click-outside
+  and Escape both close the modal; focus moves to the close button on
+  open and back to the trigger button on close.
+- Bilingual empty-state message when there are no saved bookmarks.
+
+No new localStorage keys — reads/writes only the existing
+`dc-bookmarks` key via the pre-existing `getSavedBookmarks()`. No
+network calls, no credentials, matching CLAUDE.md's "client-side only"
+rule for this system. Matches TODO-004's Definition of Done.
+
+**Files touched:** `index.html` only (topbar button + modal markup,
+modal CSS near the existing `.bookmark-bar` styles, and the JS functions
+above, placed directly after the existing `dismissBookmark()` function).
+No `data/*.json` touched.
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 7
+JSON files valid (unaffected by this change, run per procedure anyway).
+`health-check.js` not run — not required since no `data/*.json` changed.
+Extracted the page's single `<script>` block and ran it through
+`new Function()` to confirm no JS syntax errors; also served the page
+with `python -m http.server 8099` and confirmed `index.html` returns
+HTTP 200.
+
+**Manual verification still needed:** no headless browser available in
+this session. A human should open the app via
+`python -m http.server 8080`, save a bookmark or two from an AI Search
+response, open "My Bookmarks" from the topbar, confirm the list renders
+correctly in both LANG states (Hebrew RTL and English), confirm Remove
+actually clears the entry (and that it stops showing as "saved" the
+next time `renderBookmarkBars()` renders that URL), and confirm Escape,
+click-outside, and the close button all dismiss the modal.
+
+**Branch:** `dc-auto-2026-07-20_151157`, pushed to origin. Not merged to
+`master` — that's Run 2's decision.
+
+---

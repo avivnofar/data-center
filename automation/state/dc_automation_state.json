@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-20T12:59:02Z",
+  "last_run": "2026-07-20T15:11:57Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -16,6 +16,14 @@
       "run": "auditor",
       "date": "2026-07-20",
       "note": "Push-Authorization Checklist item (a) failed: branch diff also touches automation/NEEDS_YOUR_REVIEW.md and automation/TODO_LIST.md (pre-existing automation-setup scaffolding carried into the branch), outside TODO-003's stated Files/areas (index.html only). Items (b)-(e) passed. Branch left unmerged and unmodified; see NEEDS_YOUR_REVIEW.md for full detail."
+    },
+    {
+      "id": "TODO-004",
+      "status": "done",
+      "branch": "dc-auto-2026-07-20_151157",
+      "run": "builder",
+      "date": "2026-07-20",
+      "note": "Added a My Bookmarks topbar button + modal panel (new self-contained modal pattern) to view/remove entries saved by the existing saveBookmark()/getSavedBookmarks(). index.html only, no new localStorage keys, no data/*.json touched. validate-json.js passed."
     }
   ]
 }
