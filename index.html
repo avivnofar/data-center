@@ -471,6 +471,12 @@
       margin-bottom: 6px;
       padding: 8px 12px;
     }
+    .usage-row {
+      align-items: flex-start;
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
     .usage-cmd {
       color: var(--accent);
       direction: ltr;
@@ -480,6 +486,19 @@
       white-space: pre-wrap;
       word-break: break-all;
     }
+    .usage-copy-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .usage-copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
     .usage-cmt {
       color: var(--text-muted);
       font-size: 0.82rem;
@@ -1506,6 +1525,7 @@
       .ai-message { max-width: 96%; }
 
       .copy-btn { min-height: 44px; min-width: 44px; }
+      .usage-copy-btn { min-height: 44px; min-width: 44px; }
 
       #tooltip { max-width: min(280px, 80vw); }
 
@@ -1973,9 +1993,13 @@ function renderCard(entry) {
       })))
     : '[]';
 
+  const copyLabel = LANG === 'he' ? 'העתק פקודה' : 'Copy command';
   const usageItems = (entry.usage || []).map(u => `
     <div class="usage-item">
-      <div class="usage-cmd" dir="ltr">${escHtml(u.cmd)}</div>
+      <div class="usage-row">
+        <div class="usage-cmd" dir="ltr">${escHtml(u.cmd)}</div>
+        <button type="button" class="usage-copy-btn" data-cmd="${escHtml(u.cmd)}" onclick="copyUsageCmd(this)" aria-label="${copyLabel}">${LANG === 'he' ? 'העתק' : 'Copy'}</button>
+      </div>
       <div class="usage-cmt">${escHtml(t(u, 'cmt'))}</div>
     </div>`).join('');
 
@@ -2507,6 +2531,15 @@ function renderMarkdown(text) {
 function copyAiCode(btn) {
   const code = btn.parentElement.querySelector('code');
   const text = code ? code.textContent : '';
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = LANG === 'he' ? '✓ הועתק' : '✓ Copied';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+function copyUsageCmd(btn) {
+  const text = btn.dataset.cmd || '';
   navigator.clipboard.writeText(text).then(() => {
     const original = btn.textContent;
     btn.textContent = LANG === 'he' ? '✓ הועתק' : '✓ Copied';
