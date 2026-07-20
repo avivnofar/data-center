@@ -90,29 +90,6 @@ card, click copy, paste to confirm the clipboard content.
 
 ---
 
-### TODO-004 — Bookmark browsing/management panel
-
-**Description:** `saveBookmark()` (`index.html:3248`) persists
-`{url, dateAdded}` entries to the `dc-bookmarks` localStorage key, but there
-is no UI anywhere to view or delete the saved list — confirmed it's currently
-write-only from the user's side. Add a "My Bookmarks" view (modal or small
-panel, triggered from a visible button e.g. in the topbar) that reads
-`getSavedBookmarks()` (`index.html:3212`), lists url + domain + dateAdded per
-row, and lets the user remove entries (filter + re-save `dc-bookmarks`).
-
-**Files/areas:** `index.html` (new panel markup + render/remove functions,
-one new trigger button).
-
-**Definition of done:** saved bookmarks are visible and individually
-removable; empty-state message shown bilingually when there are none; no new
-localStorage keys beyond the existing `dc-bookmarks`/`dc-dismissed-bookmarks`;
-still zero network calls or credentials (matches CLAUDE.md's "client-side
-only, no credentials" rule for this system).
-
-**Complexity:** S
-
----
-
 ### TODO-005 — Activate `powershell` content module
 
 **Description:** `data/modules.json` registers `powershell` as
@@ -406,4 +383,27 @@ by an Auditor run, per `automation/DATA_CENTER_AUTOMATION_SPEC.md` §7.
 Each entry keeps its original description and appends date completed plus
 the branch/commit reference.
 
-*(none yet)*
+### TODO-004 — Bookmark browsing/management panel
+
+**Description:** `saveBookmark()` (`index.html:3248`) persists
+`{url, dateAdded}` entries to the `dc-bookmarks` localStorage key, but there
+is no UI anywhere to view or delete the saved list — confirmed it's currently
+write-only from the user's side. Add a "My Bookmarks" view (modal or small
+panel, triggered from a visible button e.g. in the topbar) that reads
+`getSavedBookmarks()` (`index.html:3212`), lists url + domain + dateAdded per
+row, and lets the user remove entries (filter + re-save `dc-bookmarks`).
+
+**Files/areas:** `index.html` (new panel markup + render/remove functions,
+one new trigger button).
+
+**Definition of done:** saved bookmarks are visible and individually
+removable; empty-state message shown bilingually when there are none; no new
+localStorage keys beyond the existing `dc-bookmarks`/`dc-dismissed-bookmarks`;
+still zero network calls or credentials (matches CLAUDE.md's "client-side
+only, no credentials" rule for this system).
+
+**Complexity:** S
+
+**Completed:** 2026-07-20, branch `dc-auto-2026-07-20_151157`, merged into
+`master` via commit `ab196ac25e4df2be42a8cdcd81c687b4536c38d9` (merge commit
+"Merge dc-auto branch: TODO-004") by the Run 2 (Auditor) session.

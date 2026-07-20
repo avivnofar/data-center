@@ -116,3 +116,77 @@ click-outside, and the close button all dismiss the modal.
 `master` — that's Run 2's decision.
 
 ---
+
+## 2026-07-20 — Run 2 (Auditor) — STEP 1: audit of `dc-auto-2026-07-20_151157`
+
+**Audited:** TODO-004 — Bookmark browsing/management panel, built by Run 1
+(Builder) earlier the same day. Selection: `dc_automation_state.json` on
+`master` only listed TODO-003 (done + needs-review, already resolved per
+`instructions_auditor.txt` step 1 — not re-audited). The branch's own state
+file (committed on `dc-auto-2026-07-20_151157`, base commit matching
+current `master`) carried a `TODO-004 / status: done / run: builder` entry
+with no later `merged`/`needs-review` entry for that ID — the eligible item
+for this run.
+
+**Procedure:** `git fetch origin`, confirmed local `dc-auto-2026-07-20_151157`
+tip matched `origin/dc-auto-2026-07-20_151157` (`c31fbe8`), fresh
+`git checkout` of the branch, re-ran `node .github/scripts/validate-json.js`
+independently (passed, all 7 files valid; `health-check.js` not required —
+diff touches no `data/*.json`), read the full diff against `master`
+(`git diff master...dc-auto-2026-07-20_151157`, all 3 changed files in
+full, not just `--stat`), and checked all 5 Push-Authorization Checklist
+items myself.
+
+**Result: MERGED.** All 5 checklist items passed:
+- **(a) scope:** diff touches `index.html` (TODO-004's stated
+  `Files/areas`) plus `automation/DATA_CENTER_RUN_LOG.md` and
+  `automation/state/dc_automation_state.json` — the standard Builder
+  run-log/state-file companion commit called for by
+  `instructions_builder.txt` step 4, not scope creep. No
+  `NEEDS_YOUR_REVIEW.md` or `TODO_LIST.md` changes this time (unlike the
+  `dc-auto-2026-07-20_125410` branch, which failed this exact item).
+- **(b) source_url:** `git diff master...dc-auto-2026-07-20_151157 | grep -i source_url` — zero matches.
+- **(c) schema/credential:** no `data/*.json`, `.github/workflows/`,
+  `wrangler.toml`, or credential-adjacent files in the diff; no deletions.
+- **(d) validators:** both re-run clean, independently, before *and* after
+  the merge commit.
+- **(e) Definition of done:** read the full `index.html` diff —
+  `#bookmarks-btn` topbar button, `#bookmarks-modal-overlay`/`#bookmarks-modal`
+  dialog, `renderBookmarksList()`/`removeBookmark()`/`openBookmarksPanel()`/
+  `closeBookmarksPanel()`, bilingual empty-state string, and confirmed
+  `BOOKMARK_SAVED_KEY` (`'dc-bookmarks'`) is the pre-existing constant, not
+  a new key. Matches TODO-004's Definition of Done point for point.
+
+**Action taken:**
+- `git checkout master && git pull origin master` (already up to date).
+- `git merge dc-auto-2026-07-20_151157 --no-ff -m "Merge dc-auto branch: TODO-004"`
+  — clean merge, no conflicts (commit `ab196ac25e4df2be42a8cdcd81c687b4536c38d9`).
+- Re-ran both `validate-json.js` and `health-check.js` on the merged result —
+  both passed clean.
+- Moved TODO-004's full entry from `TODO_LIST.md`'s active list to its
+  `## Completed` section, with date and the merge commit reference.
+- Did **not** delete the feature branch.
+- Updated `dc_automation_state.json`: appended a new `TODO-004 / status:
+  merged / run: auditor` entry (original Builder entry left untouched).
+
+**Push outcome — operator test rail, reported verbatim as instructed:**
+this run had `Bash(git push origin master*)` added to its `disallowedTools`
+by the operator for this session only, as an explicit test of the refusal
+path. Per the operator's explicit instruction for this run, I attempted
+`git push origin master` exactly as STEP 1.5 calls for anyway. The tool
+call was denied at the permission layer with: *"Permission to use Bash
+with command cd \"C:\Users\97252\GITHUB\data-center\" && git push origin
+master 2>&1; echo \"EXIT:$?\" has been denied."* Per the operator's
+instruction this is reported here verbatim and is **not** treated as a
+Push-Authorization Checklist failure, and I did not attempt any alternate
+push method (different tool, different remote syntax, etc.) to route
+around it. Net effect: the merge commit `ab196ac25e4df2be42a8cdcd81c687b4536c38d9`
+and this same run's trailing documentation/state commit (`TODO_LIST.md`,
+`dc_automation_state.json`, this run-log entry) both exist locally on
+`master` — checklist-passed and ready — but remain **unpushed to origin**,
+same as the rest of this run's pre-existing local `master` (which was
+already 5 commits ahead of `origin/master` before this session started).
+The owner needs to run `git push origin master` manually to publish all of
+it.
+
+---
