@@ -37,10 +37,11 @@ do not duplicate feature detail here.
   has no involvement in its planning or execution, and as of 2026-07-19 has
   **zero code coupling** to it (the former in-app "Office" tab / Admin
   panel was removed from `index.html`). Do not reintroduce coupling.
-- [`data-center-archive`](https://github.com/avivnofar/data-center-archive)
-  — longer-form bilingual workflow documents rendered in the in-app
-  Workflows tab, plus generated PDFs. Keep it lean: workflow `.md` files
-  and PDFs only.
+- `data-center-archive` — retired (2026-07-20). It was never actually
+  pushed to GitHub; only a local, non-git scratch folder existed. Its real
+  content (3 workflow `.md` files) was migrated into this repo's own
+  `workflows/` folder — see "Workflows (self-hosted)" below. Do not
+  reintroduce a dependency on a sibling archive repo for this feature.
 - [`Notebook-X`](https://github.com/avivnofar/Notebook-X) — knowledge
   notebooks project. See "Future Vision" below.
 
@@ -311,23 +312,29 @@ Mixed Hebrew/English text is the app's hardest rendering problem. The rules:
 
 ---
 
-## Workflows Archive (`data-center-archive`)
+## Workflows (self-hosted)
 
-The **Workflows** tab renders longer-form bilingual workflow documents from
-the sibling `data-center-archive` repo.
+The **Workflows** tab renders longer-form bilingual workflow documents,
+self-hosted in this repo — no external repo dependency.
 
-- Workflow metadata lives in the `WORKFLOWS` array in `index.html` (id,
-  bilingual title/desc, `path`, `updated`).
-- `openWorkflow(id)` fetches `ARCHIVE_RAW_BASE + wf.path`
-  (raw.githubusercontent.com) and renders it via `renderMarkdown()`.
-- **Graceful fallback**: if the fetch fails, the panel shows a bilingual
-  "archive not connected yet" message linking to GitHub instead of erroring.
+- Workflow metadata lives in `data/workflows.json` (array of `id`, bilingual
+  `title_he/en`, `desc_he/en`, `path`, `updated` — loaded into `DB.workflows`
+  by `init()`, same pattern as `data/modules.json`).
+- The markdown files themselves live under `workflows/` (e.g.
+  `workflows/linux/linux-workflow.md`), served same-origin.
+- `openWorkflow(id)` fetches `wf.path` directly (same-origin, relative) and
+  renders it via `renderMarkdown()`. There is no "archive not connected"
+  state to hit — same-origin fetch either serves the file or the panel shows
+  a generic bilingual load-failure message.
+- If `data/workflows.json` is empty, the panel shows a bilingual empty-state
+  message (matching the pattern used by the bookmarks panel) instead of a
+  dead tab.
 - **PDF export**: the "📄 Generate PDF" FAB calls `generatePdf()` →
   `window.print()`, with a `@media print` block that isolates the active
   workflow (`.print-target`) and keeps code LTR. No PDF library, no build
-  step. PDFs are saved manually into `data-center-archive/pdfs/`.
-- **Keep the archive lean** — only workflow markdown and generated PDFs
-  belong there. Research notes belong in Claude's persistent memory.
+  step, no generated PDFs are committed to the repo.
+- Adding a new workflow: add markdown under `workflows/`, add a matching
+  entry to `data/workflows.json` — no code change needed.
 
 ---
 
@@ -458,9 +465,9 @@ When operating autonomously across sessions on this project:
 1. **Memory over files for research** — reference information (links,
    domain notes, prior decisions) goes to Claude's persistent memory
    (`~/.claude/projects/.../memory/`), not new repo files.
-2. **Keep both repos lean** — `data-center-archive` holds only workflow
-   `.md` files and PDFs. This repo holds the app, data, automation, and
-   `flagged/`. No "just in case" reference dumps.
+2. **Keep the repo lean** — Workflows content (`workflows/*.md`) is
+   self-hosted here since the `data-center-archive` retirement (2026-07-20).
+   No "just in case" reference dumps.
 3. **Security first** — never ship write credentials (GitHub tokens, API
    keys) to the browser. `localStorage` is fine for user-local state;
    anything that writes to GitHub or calls paid APIs goes through the
@@ -503,7 +510,6 @@ Revisit only once the core app is stable — do not build ahead of need.
 - Backend: Cloudflare Workers Free Tier (100k requests/day) — $0/month at
   current usage; $5/month paid tier only if exceeded.
 - Hosting: GitHub Pages — $0/month.
-- `data-center-archive`: plain GitHub repo — $0/month.
 - AI: Anthropic API (`data-center-api`, model `claude-sonnet-5`) — pay per
   use, ~$3-8/month estimated at personal-use volume.
 

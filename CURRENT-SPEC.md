@@ -43,9 +43,12 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   topbar) whose engine (`commandflow-core.js` + `commands.json`, 7
   platforms) also powers in-app CLI Mode at zero API cost, with
   fall-through to Claude for unmatched input.
-- **Workflows tab**: renders bilingual workflow markdown fetched from the
-  sibling `data-center-archive` repo, with a graceful "archive not
-  connected" fallback and print-based PDF export.
+- **Workflows tab**: self-hosted (2026-07-20) — renders bilingual workflow
+  markdown from this repo's own `workflows/` folder, registered in
+  `data/workflows.json` (loaded into `DB.workflows`, same pattern as
+  `data/modules.json`). No external repo dependency; print-based PDF export
+  unchanged. `data-center-archive` (the former source) was retired — it was
+  never actually pushed to GitHub, only a local scratch folder.
 - **Zero office-simulation coupling** since 2026-07-19 — the former
   Office/Admin UI was fully removed.
 
@@ -74,7 +77,7 @@ paid API calls were made.
 | 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
 | 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. |
 | 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html:3395-3452), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
-| 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. |
+| 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. Workflows tab itself is now self-hosted from `data/workflows.json` + `workflows/*.md` (no external repo fetch). |
 | 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
 | 25 | 1COM + MirtaPBX modules | Present and active (17 + 11 entries), rendered as normal tabs. Now specialty/vendor content within general-IT scope, not the defining boundary. |
 | 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">` (index.html:1480), `data/tools.json` registry, topbar link, CLI Mode path all intact. |
@@ -95,7 +98,7 @@ paid API calls were made.
 | # | Feature | Evidence |
 |---|---|---|
 | 22 | Presentation/slide generation | Zero matches for presentation/slide/pptx/jsPDF repo-wide. Candidate for future work, not a phantom regression. |
-| 23 | Workflow document *generation* | Definitive: workflow *viewing* works (fetch + render from `data-center-archive`), but nothing generates workflow documents — they are authored manually in the archive repo. |
+| 23 | Workflow document *generation* | Definitive: workflow *viewing* works (fetch + render from this repo's own `workflows/` folder), but nothing generates workflow documents — they are authored manually. |
 
 ## File Structure (post-cleanup)
 
@@ -110,7 +113,9 @@ data-center/
 │   ├── 1com.json           # 17 entries
 │   ├── mirtapbx.json       # 11 entries
 │   ├── troubleshoot.json   # 23 scenarios
-│   └── tools.json          # 1 tool (CommandFlow)
+│   ├── tools.json          # 1 tool (CommandFlow)
+│   └── workflows.json      # 3 workflow guides (self-hosted, Workflows tab)
+├── workflows/              # workflow markdown files (linux/, networking/)
 ├── tools/commandflow/      # standalone simulator + shared CLI engine
 ├── cloudflare-worker/      # worker.js, wrangler.toml, README.md (deploy guide)
 ├── flagged/                # source flagging system
@@ -150,6 +155,15 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Recently Completed
 
+- **Workflows tab made self-hosted (2026-07-20)**: `data-center-archive` was
+  confirmed retired — it was never pushed to GitHub, only a local scratch
+  folder existed. Its 3 real workflow markdown files were migrated into this
+  repo's own `workflows/` folder; the tab now reads a `data/workflows.json`
+  registry (loaded into `DB.workflows`) instead of a hardcoded `WORKFLOWS`
+  array, and `openWorkflow()` fetches same-origin instead of
+  `raw.githubusercontent.com`. The old "archive not connected" fallback is
+  gone (structurally unreachable now); an empty-`data/workflows.json` state
+  shows a bilingual empty-state message instead.
 - **My Bookmarks browsing/management panel** (TODO-004, merge commit
   `ab196ac2`): `#bookmarks-btn` topbar button opens a modal
   (`openBookmarksPanel()`/`renderBookmarksList()`/`removeBookmark()`,
