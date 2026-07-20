@@ -128,7 +128,14 @@ current `master`) carried a `TODO-004 / status: done / run: builder` entry
 with no later `merged`/`needs-review` entry for that ID — the eligible item
 for this run.
 
-**Procedure:** `git fetch origin`, confirmed local `dc-auto-2026-07-20_151157`
+**Procedure:** invoked via a session-scoped test-variant launcher, not the
+production `automation/run_dc_2_auditor.bat` unmodified — identical in
+every respect (same `instructions_auditor.txt`, same STEP 1/STEP 2 logic,
+same `--dangerously-skip-permissions`, same base `--disallowedTools`)
+except one added entry, `Bash(git push origin master*)`, deliberately
+inserted by the operator to make an actual master push structurally
+impossible during this same-session test (see "Push outcome" below for
+why). `git fetch origin`, confirmed local `dc-auto-2026-07-20_151157`
 tip matched `origin/dc-auto-2026-07-20_151157` (`c31fbe8`), fresh
 `git checkout` of the branch, re-ran `node .github/scripts/validate-json.js`
 independently (passed, all 7 files valid; `health-check.js` not required —
