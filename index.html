@@ -1640,39 +1640,8 @@ const FAQ_PILLS = {
   en: ['Port in use', 'Disk full', 'Permission denied', 'SSH failed', 'High CPU', 'DNS broken', 'Service crash'],
 };
 
-/* ── Workflows (data-center-archive) ─────────────────────────────────────── */
-const ARCHIVE_RAW_BASE = 'https://raw.githubusercontent.com/avivnofar/data-center-archive/master/';
-const ARCHIVE_REPO_BASE = 'https://github.com/avivnofar/data-center-archive/blob/master/';
-
-const WORKFLOWS = [
-  {
-    id: 'linux-workflow',
-    title_he: 'לינוקס — ניהול מערכת',
-    title_en: 'Linux — System Administration',
-    desc_he: 'משתמשים, מערכת קבצים, הרשאות, תהליכים, שירותים, לוגים, cron וניהול חבילות — 16 פקודות.',
-    desc_en: 'Users, filesystem, permissions, processes, services, logs, cron and package management — 16 commands.',
-    path: 'workflows/linux/linux-workflow.md',
-    updated: '2026-06-10',
-  },
-  {
-    id: 'linux-workflow-networking',
-    title_he: 'לינוקס — רשת',
-    title_en: 'Linux — Networking',
-    desc_he: 'ממשקי רשת, קישוריות, סריקת פורטים, חומת אש, לכידת חבילות, DNS וניתוב — 13 פקודות.',
-    desc_en: 'Interfaces, connectivity, port scanning, firewall, packet capture, DNS and routing — 13 commands.',
-    path: 'workflows/linux/linux-workflow-networking.md',
-    updated: '2026-06-10',
-  },
-  {
-    id: 'networking-workflow',
-    title_he: 'מתודולוגיית אבחון רשת',
-    title_en: 'Network Troubleshooting Methodology',
-    desc_he: 'מודל OSI, זרימת אבחון חוצת-פלטפורמות (Linux/Windows), השוואת כלים.',
-    desc_en: 'OSI model, cross-platform (Linux/Windows) diagnostic flow, tool comparison.',
-    path: 'workflows/networking/networking-workflow.md',
-    updated: '2026-06-10',
-  },
-];
+/* ── Workflows (self-hosted, data/workflows.json + workflows/) ───────────── */
+const WORKFLOWS_REPO_BASE = 'https://github.com/avivnofar/data-center/blob/master/';
 
 function escHtml(str) {
   if (!str) return '';
@@ -1731,6 +1700,13 @@ async function init() {
   } catch (e) {
     document.getElementById('tab-nav').innerHTML = '<div class="loading">Failed to load modules.json</div>';
     return;
+  }
+
+  try {
+    const workflowsRes = await fetch('data/workflows.json');
+    DB.workflows = await workflowsRes.json();
+  } catch (e) {
+    DB.workflows = [];
   }
 
   buildTabNav();
@@ -2558,14 +2534,26 @@ function renderWorkflowsPanel(panel) {
   const updatedLabel = LANG === 'he' ? 'עודכן לאחרונה' : 'Last updated';
   const backLabel = LANG === 'he' ? '→ חזרה לרשימה' : '← Back to list';
 
-  const cards = WORKFLOWS.map(w => `
+  const workflows = DB.workflows || [];
+
+  if (!workflows.length) {
+    panel.innerHTML = `
+      <h2 style="font-size:1.1rem;margin-bottom:4px;">${escHtml(heading)}</h2>
+      <p style="color:var(--text-muted);font-size:0.85rem;">
+        ${LANG === 'he' ? 'אין עדיין מדריכים זמינים.' : 'No workflow guides available yet.'}
+      </p>`;
+    hidePdfFab();
+    return;
+  }
+
+  const cards = workflows.map(w => `
     <div class="workflow-card">
       <h3>${escHtml(LANG === 'he' ? w.title_he : w.title_en)}</h3>
       <p>${escHtml(LANG === 'he' ? w.desc_he : w.desc_en)}</p>
       <div class="workflow-card-meta">${escHtml(updatedLabel)}: ${escHtml(w.updated)}</div>
       <div class="workflow-card-actions">
         <button class="workflow-btn primary" onclick="openWorkflow('${w.id}')">${escHtml(openLabel)}</button>
-        <a class="workflow-btn" href="${ARCHIVE_REPO_BASE}${w.path}" target="_blank" rel="noopener noreferrer">${escHtml(ghLabel)}</a>
+        <a class="workflow-btn" href="${WORKFLOWS_REPO_BASE}${w.path}" target="_blank" rel="noopener noreferrer">${escHtml(ghLabel)}</a>
       </div>
     </div>`).join('');
 
@@ -2582,7 +2570,7 @@ function renderWorkflowsPanel(panel) {
 }
 
 async function openWorkflow(id) {
-  const wf = WORKFLOWS.find(w => w.id === id);
+  const wf = (DB.workflows || []).find(w => w.id === id);
   if (!wf) return;
   document.getElementById('workflow-list').style.display = 'none';
   const detail = document.getElementById('workflow-detail');
@@ -2593,18 +2581,17 @@ async function openWorkflow(id) {
   hidePdfFab();
 
   try {
-    const res = await fetch(ARCHIVE_RAW_BASE + wf.path);
+    const res = await fetch(wf.path);
     if (!res.ok) throw new Error('not found');
     const md = await res.text();
     content.innerHTML = renderMarkdown(md).html;
     content.classList.add('print-target');
     showPdfFab();
   } catch (e) {
-    const notConnected = LANG === 'he'
-      ? 'הארכיון (data-center-archive) עדיין לא מחובר. ראו <code dir="ltr">CLAUDE.md</code> להוראות חיבור.'
-      : 'The data-center-archive repo isn\'t connected yet. See <code dir="ltr">CLAUDE.md</code> for setup instructions.';
-    const tryGh = LANG === 'he' ? 'נסה לפתוח ב-GitHub' : 'Try opening on GitHub';
-    content.innerHTML = `<p>${notConnected}</p><p><a href="${ARCHIVE_REPO_BASE}${wf.path}" target="_blank" rel="noopener noreferrer">${escHtml(tryGh)}</a></p>`;
+    const failMsg = LANG === 'he'
+      ? 'טעינת המדריך נכשלה. נסה לרענן את הדף.'
+      : 'Failed to load the workflow guide. Try refreshing the page.';
+    content.innerHTML = `<p>${escHtml(failMsg)}</p>`;
   }
 }
 
