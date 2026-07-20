@@ -15,10 +15,16 @@ Builder branch) and STEP 2 (the standing daily audit, always runs).
 
 1. Read `automation/state/dc_automation_state.json`. Find the most recent
    `todo_history` entry with `"run": "builder"` and `"status": "done"` that
-   does not already have a corresponding `"status": "merged"` entry (i.e.
-   hasn't been merged yet, whether from today or an unmerged branch from a
-   prior day). If none exists, log "no builder branch to audit this run" in
-   `automation/DATA_CENTER_RUN_LOG.md` and skip to STEP 2.
+   does not already have a corresponding later entry for the same ID with
+   `"status": "merged"` OR `"status": "needs-review"` (i.e. hasn't been
+   merged yet AND hasn't already been audited-and-declined, whether from
+   today or a prior day). A `needs-review` entry means a previous Auditor
+   run already checked this exact branch and found a checklist failure —
+   do not re-audit it; that would just produce a duplicate, identical
+   finding. Leave it for the owner to clear per `instructions_builder.txt`
+   step 1.4. If no eligible builder/done entry exists, log "no builder
+   branch to audit this run" in `automation/DATA_CENTER_RUN_LOG.md` and
+   skip to STEP 2.
 2. `git fetch origin`, then `git checkout <that branch>` (fresh checkout,
    don't reuse any local state from a prior session).
 3. Re-run `node .github/scripts/validate-json.js` yourself, and

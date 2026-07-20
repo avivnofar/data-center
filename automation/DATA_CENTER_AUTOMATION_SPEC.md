@@ -102,8 +102,13 @@ Pick the **first eligible item**, in this priority order:
    lifted — it's L-complexity and its own text calls for a schema-design
    sub-task split before content authoring; that's the owner's call, not
    an autonomous session's.
-4. **Skip any item already marked "Completed"** (§7) or currently
-   in-progress per the state file (§5).
+4. **Skip any item already marked "Completed"** (§7). Also skip any item
+   whose most recent state-file entry (§5) for that ID — regardless of
+   date, checked across all days, not just today — has status `"done"`,
+   `"in-progress"`, or `"needs-review"`. A `"needs-review"` status (an
+   Auditor already declined it) is a hard skip until a human explicitly
+   re-queues it; a `"failed"` status is NOT a skip (a fresh attempt may
+   succeed, but read the failure note first).
 5. From what remains, prefer items in list order: TODO-003, 004, 014, 016,
    017, then TODO-001 (UI/parser half only), then TODO-012, 013, 015
    (scoping-only — produce a written recommendation, not code; see note
@@ -144,7 +149,15 @@ per run:
 ```
 
 This lets Run 1 skip already-attempted items and lets Run 2 find what to
-audit, across both same-day runs and multi-day gaps.
+audit, across both same-day runs and multi-day gaps. Selection in both
+roles is based on each ID's **most recent** entry, not just today's —
+otherwise a `"done"` or `"needs-review"` item from a prior day that never
+got merged would look eligible again once its own date rolls off, and a
+future Builder run could produce a second, competing branch for the same
+item. Run 1 must not re-pick an ID whose latest entry is `"done"`,
+`"in-progress"`, or `"needs-review"`; Run 2 must not re-audit an ID whose
+`"run": "builder"`/`"status": "done"` entry already has a later
+`"needs-review"` or `"merged"` entry for the same ID.
 
 ---
 

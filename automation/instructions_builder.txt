@@ -25,9 +25,24 @@ this priority order:
    these modules under any circumstance this run.
 3. Skip TODO-010 unconditionally, even if #2 is later lifted for other
    modules — it needs an owner-approved schema-design split first.
-4. Skip any item already marked "Completed" in `TODO_LIST.md`, or marked
-   `"status": "done"` or `"status": "in-progress"` for today in the state
-   file's `todo_history`.
+4. Skip any item already marked "Completed" in `TODO_LIST.md`. Also skip any
+   item whose most recent `todo_history` entry for that ID (by date —
+   across ALL days, not just today; a stale unmerged "done" from a prior
+   day is exactly as blocking as one from today) has `"status"` of
+   `"done"`, `"in-progress"`, or `"needs-review"`.
+   - `"needs-review"` means an Auditor run already declined the item for a
+     specific reason recorded in `NEEDS_YOUR_REVIEW.md` — this is a hard
+     skip, not a "try again and hope it's cleaner this time." Do not
+     re-attempt a `needs-review` item on your own judgment, even if you
+     believe you'd avoid the same mistake (e.g. a scope-bundling issue).
+     It stays skipped until a human explicitly re-queues it — look for an
+     explicit note in `NEEDS_YOUR_REVIEW.md` or a new `todo_history` entry
+     with `"status": "cleared-for-retry"` dated after the `needs-review`
+     entry; if neither exists, it is still blocked.
+   - If the most recent entry for an ID is `"failed"`, it is NOT
+     automatically skipped — treat it as eligible again (a fresh attempt
+     may succeed), but read the failure note first so you don't repeat the
+     same mistake.
 5. From what remains, prefer this order: TODO-003, TODO-004, TODO-014,
    TODO-016, TODO-017, then TODO-001 (UI/parser half only — do NOT build
    the GitHub-write half, that stays blocked), then TODO-012, TODO-013,
