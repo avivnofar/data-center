@@ -350,6 +350,27 @@ for (const filename of tsFiles) {
   passed++;
 }
 
+// ── data/notebooks/** — Notebook-X mirror ────────────────────────────────────
+// Excluded from the bilingual schema checks above: these files are mirrored
+// verbatim (no transformation) from a different project (Notebook-X) with its
+// own schema and its own owner — CLAUDE.md's bilingual/source_url rules don't
+// apply to them. Only a minimal parseability check runs here so a corrupted
+// mirror sync is still caught by CI.
+const notebooksDir = path.join(DATA_DIR, 'notebooks');
+if (fs.existsSync(notebooksDir)) {
+  const notebookFiles = fs.readdirSync(notebooksDir).filter(f => f.endsWith('.json'));
+  notebookFiles.forEach(filename => {
+    const filepath = path.join(notebooksDir, filename);
+    try {
+      JSON.parse(fs.readFileSync(filepath, 'utf8'));
+    } catch (e) {
+      errors.push(`[notebooks/${filename}] JSON parse error: ${e.message}`);
+    }
+  });
+  console.log(`✓  data/notebooks/: ${notebookFiles.length} files parse as valid JSON (schema not enforced — mirrored content)`);
+  passed++;
+}
+
 if (errors.length > 0) {
   console.error(`\n✗  Validation failed with ${errors.length} error(s):\n`);
   errors.forEach(e => console.error('  ' + e));
