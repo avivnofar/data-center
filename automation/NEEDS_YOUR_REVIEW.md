@@ -30,7 +30,33 @@ have no dependency on this decision.
 
 ---
 
-## Notebook-X Integration — Architecture Decision Needed
+## Notebook-X Integration — Architecture Decision Needed — RESOLVED 2026-07-21
+
+**Decision (owner + architect):** repo mirror, not live fetch or KV. A
+scheduled GitHub Action (`.github/workflows/notebook-sync.yml` +
+`.github/scripts/sync-notebooks.js`) pulls the Notebook-X public index and
+all 12 notebooks verbatim into this repo's own `data/notebooks/` weekly,
+using a read-only fine-grained PAT (`NOTEBOOKX_READ_TOKEN` repo secret,
+Contents:read on `avivnofar/Notebook-X` only — created manually by the
+owner). The Worker (`worker.js`) stays a dumb proxy: `getNotebookXContext()`
+(the confirmed silent no-op described below) is deleted, not fixed. The
+client (`index.html`) matches the user's query against the mirrored index
+(`matchNotebooks()` — word-boundary + stopword-filtered scoring, minimum
+relevance threshold so an unrelated notebook is never attached) and
+attaches only relevant sections (`buildNotebookContext()`, capped at ~15 KB,
+truncated at section boundaries) as a new `notebook_context` request field.
+The Worker appends it to the system prompt with a 20 KB server-side cap as
+defense in depth. No Cloudflare KV, no new Cloudflare infrastructure of any
+kind. Implemented and committed locally this session (not yet pushed to
+master — see CURRENT-SPEC.md "Recently Completed" for the full change
+list); the owner still needs to create the `NOTEBOOKX_READ_TOKEN` secret
+before `notebook-sync.yml`'s first scheduled run will succeed (this
+session's `data/notebooks/` content was a one-time manual copy via `gh api`
+so the feature is testable immediately).
+
+This resolves the architecture question below but does **not** itself lift
+the TODO-005–011 pause (that's a separate owner decision, still open — see
+that section above).
 
 *(Part A investigation, 2026-07-19 — read-only, no code changed)*
 

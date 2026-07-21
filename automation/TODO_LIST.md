@@ -309,9 +309,21 @@ confirms a new AI response is announced once, not per-token.
 
 ---
 
-### TODO-018 — Notebook-X integration: BLOCKED placeholder
+### TODO-018 — Notebook-X integration: BLOCKED placeholder — RESOLVED 2026-07-21
 
-**Description:** Do not extend the Notebook-X integration beyond the
+**Resolution:** the architecture decision landed (repo mirror + client-side
+selection, dumb Worker — see `NEEDS_YOUR_REVIEW.md`'s matching entry, now
+marked RESOLVED) and was implemented in a directed, supervised session:
+`.github/workflows/notebook-sync.yml` + `.github/scripts/sync-notebooks.js`
+(weekly mirror sync), `index.html`'s `matchNotebooks()`/`buildNotebookContext()`
+(client-side query matching + section retrieval, `notebook_context` request
+field), and `worker.js`'s `getNotebookXContext()` removed in favor of
+accepting the client-built context with a server-side size cap. Committed
+locally, not yet merged to master. This do-not-touch marker no longer
+applies — see CURRENT-SPEC.md "Recently Completed" for the full change list.
+Original blocked-placeholder text kept below for history.
+
+**Original description:** Do not extend the Notebook-X integration beyond the
 existing (currently broken — see `NEEDS_YOUR_REVIEW.md`) index-injection
 until the owner + architect resolve the architecture decision recorded in
 `NEEDS_YOUR_REVIEW.md` → "Notebook-X Integration — Architecture Decision
