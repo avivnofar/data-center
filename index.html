@@ -1709,6 +1709,16 @@ async function init() {
     DB.workflows = [];
   }
 
+  // Notebook-X mirror (data/notebooks/) — populated by the weekly sync
+  // workflow; tolerate its absence entirely (feature is simply inactive).
+  try {
+    const notebookIdxRes = await fetch('data/notebooks/_index-public.json');
+    const idx = notebookIdxRes.ok ? await notebookIdxRes.json() : null;
+    DB.notebookIndex = (idx && Array.isArray(idx.notebooks)) ? idx.notebooks : [];
+  } catch (e) {
+    DB.notebookIndex = [];
+  }
+
   buildTabNav();
   document.getElementById('tab-nav').addEventListener('keydown', handleTabNavKeydown);
   applySidebarCollapsedState();
@@ -2412,6 +2422,111 @@ function buildDbContext(query) {
     const cmd = entry.usage && entry.usage[0] ? entry.usage[0].cmd : '';
     return `- ${entry.name}: ${entry.desc_en}${cmd ? `. Usage: ${cmd}` : ''}`;
   }).join('\n');
+}
+
+/* ── Notebook-X mirror (data/notebooks/) ─────────────────────────────────── */
+// Session-level cache of fetched full notebook JSONs, keyed by notebook id —
+// they're static mirrored files, no need to re-fetch per message.
+const notebookCache = {};
+const NOTEBOOK_CONTEXT_MAX_CHARS = 15000; // ~15 KB cap per request (server also enforces a cap)
+const NOTEBOOK_MATCH_MIN_SCORE = 3; // require at least one name/domain/tag hit — no match beats a wrong match
+
+// Common words carry no topic signal and are long enough to otherwise pass
+// the 3-char filter below (e.g. "how", "does", "the") — dropped before
+// scoring so they can't rack up cross-notebook weak-signal hits.
+const NOTEBOOK_STOPWORDS = new Set(['how','does','do','did','the','are','was','were','for','and','but','not','you','your','can','could','should','would','this','that','have','has','had','with','what','why','when','where','which','from','into']);
+
+function notebookQueryTokens(query) {
+  return (query || '').toLowerCase().split(/\s+/)
+    .map(w => w.replace(/[^a-z0-9_-]/g, ''))
+    .filter(w => w.length >= 3 && !NOTEBOOK_STOPWORDS.has(w));
+}
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Word-boundary match, not substring — plain .includes() would match e.g.
+// the query word "work" inside the unrelated notebook name "AI Tools & Workflows".
+function notebookWordMatch(haystack, word) {
+  return new RegExp('\\b' + escapeRegExp(word) + '\\b').test(haystack);
+}
+
+// Scores DB.notebookIndex entries against the query using name/domain/tags
+// (strong signal) and summary (weak signal). Returns up to 2 notebooks
+// above the minimum relevance threshold.
+function matchNotebooks(query) {
+  const idx = DB.notebookIndex || [];
+  const words = notebookQueryTokens(query);
+  if (!idx.length || !words.length) return [];
+
+  const scored = idx.map(nb => {
+    const strong = [nb.name, nb.domain, ...(nb.tags || [])].filter(Boolean).join(' ').toLowerCase();
+    const weak = (nb.summary || '').toLowerCase();
+    let score = 0;
+    words.forEach(w => {
+      if (notebookWordMatch(strong, w)) score += 3;
+      if (notebookWordMatch(weak, w)) score += 1;
+    });
+    return { nb, score };
+  }).filter(s => s.score >= NOTEBOOK_MATCH_MIN_SCORE);
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 2).map(s => s.nb);
+}
+
+async function fetchNotebook(id) {
+  if (notebookCache[id]) return notebookCache[id];
+  try {
+    const res = await fetch(`data/notebooks/${id}.json`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    notebookCache[id] = json;
+    return json;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Fetches matched notebooks and selects only sections whose title/tags/
+// content match query terms, capped at ~15 KB total and truncated at
+// section boundaries (never mid-section).
+async function buildNotebookContext(query) {
+  const matches = matchNotebooks(query);
+  if (!matches.length) return '';
+
+  const words = notebookQueryTokens(query);
+  const parts = [];
+  let total = 0;
+
+  for (const meta of matches) {
+    if (total >= NOTEBOOK_CONTEXT_MAX_CHARS) break;
+    const nb = await fetchNotebook(meta.id);
+    const sections = nb && nb.knowledgeBase && Array.isArray(nb.knowledgeBase.sections)
+      ? nb.knowledgeBase.sections
+      : [];
+    const relevant = sections.filter(sec => {
+      const hay = [sec.title, ...(sec.tags || []), sec.content].filter(Boolean).join(' ').toLowerCase();
+      return words.some(w => notebookWordMatch(hay, w));
+    });
+    if (!relevant.length) continue;
+
+    let block = `### ${nb.name} (${nb.domain})\n`;
+    let added = false;
+    for (const sec of relevant) {
+      const secText = `\n#### ${sec.title}\n${sec.content}\n`;
+      if (total + block.length + secText.length > NOTEBOOK_CONTEXT_MAX_CHARS) break;
+      block += secText;
+      added = true;
+    }
+    if (added) {
+      parts.push(block);
+      total += block.length;
+    }
+  }
+
+  if (!parts.length) return '';
+  return 'NOTEBOOK-X REFERENCE SECTIONS (mirrored, may be up to a week old):\n\n' + parts.join('\n');
 }
 
 /* ── Lightweight markdown renderer ───────────────────────────────────────── */
@@ -3219,6 +3334,7 @@ async function sendAiMessage() {
   updateAiInputHint();
 
   const dbContext = buildDbContext(text);
+  const notebookContext = await buildNotebookContext(text);
   const session = getCurrentSession();
   const messages = (session ? session.messages : []).map(m => ({ role: m.role, content: m.content }));
 
@@ -3234,7 +3350,7 @@ async function sendAiMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = AI_STRINGS.sending[LANG]; }
 
   try {
-    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, isCliModeActive(), imagesToSend);
+    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, notebookContext, isCliModeActive(), imagesToSend);
   } catch (e) {
     showAiThinking(false);
     const isConnectionError = e instanceof TypeError;
@@ -3245,11 +3361,11 @@ async function sendAiMessage() {
   }
 }
 
-async function streamFromWorker(messages, mode, language, dbContext, cliMode, images) {
+async function streamFromWorker(messages, mode, language, dbContext, notebookContext, cliMode, images) {
   const response = await fetch(CONFIG.WORKER_URL + '/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, mode, language, db_context: dbContext, cli_mode: !!cliMode, images: images && images.length ? images : undefined }),
+    body: JSON.stringify({ messages, mode, language, db_context: dbContext, notebook_context: notebookContext || undefined, cli_mode: !!cliMode, images: images && images.length ? images : undefined }),
   });
 
   if (!response.ok) {
