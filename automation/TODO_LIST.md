@@ -251,27 +251,6 @@ that implementation is blocked on a new `NEEDS_YOUR_REVIEW.md` credential item.
 
 ---
 
-### TODO-014 — Fix `check-links.js` blind spot on 1COM/MirtaPBX source URLs
-
-**Description:** `.github/scripts/check-links.js:13` hardcodes
-`FILES = ['linux.json', 'cmd.json', 'network.json']` — confirmed `1com.json`
-and `mirtapbx.json` (28 entries combined, every entry has a required
-`source_url`) are never checked by the daily `link-check.yml` job. This is a
-real coverage gap on two active, populated modules. Add both filenames to the
-`FILES` array.
-
-**Files/areas:** `.github/scripts/check-links.js`.
-
-**Definition of done:** `node .github/scripts/check-links.js` reports
-checking a higher unique-URL count including `1com.co.il`/`mirtapbx.com`/
-`queuemetrics.com` entries; script still exits 0 when everything is reachable
-(bot-blocked 401/403/429 responses are correctly treated as warnings, not
-failures, per the existing `classify()` logic — don't change that behavior).
-
-**Complexity:** S
-
----
-
 ### TODO-015 — PWA/offline support: scoping (not code yet)
 
 **Description:** Mentioned in CURRENT-SPEC.md's Future Vision as an
@@ -489,6 +468,34 @@ Items move here in full (not struck out in place) once merged to `master`
 by an Auditor run, per `automation/DATA_CENTER_AUTOMATION_SPEC.md` §7.
 Each entry keeps its original description and appends date completed plus
 the branch/commit reference.
+
+### TODO-014 — Fix `check-links.js` blind spot on 1COM/MirtaPBX source URLs
+
+**Description:** `.github/scripts/check-links.js:13` hardcodes
+`FILES = ['linux.json', 'cmd.json', 'network.json']` — confirmed `1com.json`
+and `mirtapbx.json` (28 entries combined, every entry has a required
+`source_url`) are never checked by the daily `link-check.yml` job. This is a
+real coverage gap on two active, populated modules. Add both filenames to the
+`FILES` array.
+
+**Files/areas:** `.github/scripts/check-links.js`.
+
+**Definition of done:** `node .github/scripts/check-links.js` reports
+checking a higher unique-URL count including `1com.co.il`/`mirtapbx.com`/
+`queuemetrics.com` entries; script still exits 0 when everything is reachable
+(bot-blocked 401/403/429 responses are correctly treated as warnings, not
+failures, per the existing `classify()` logic — don't change that behavior).
+
+**Complexity:** S
+
+**Completed:** 2026-07-21, branch `dc-auto-2026-07-21_023811`, merged into
+`master` via commit `7ef66de` (merge commit "Merge dc-auto branch:
+TODO-014") by the Run 2 (Auditor) session. Independently re-verified:
+`node .github/scripts/check-links.js --summary` reports 105 unique URLs
+checked post-merge (up from 96 pre-change), exit 0, same 6 pre-existing
+broken links and 5 bot-blocked warnings (all unrelated to this change).
+
+---
 
 ### TODO-004 — Bookmark browsing/management panel
 

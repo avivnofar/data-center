@@ -255,3 +255,51 @@ own file coverage, not about fixing already-flagged broken URLs.
 `master` — that's Run 2's decision.
 
 ---
+
+## 2026-07-21 — Run 2 (Auditor) — STEP 1: audit of `dc-auto-2026-07-21_023811`
+
+**Item:** TODO-014 — Fix `check-links.js` blind spot on 1COM/MirtaPBX
+source URLs. Found via `dc_automation_state.json`: last `todo_history`
+entry for TODO-014 was `builder`/`done` with no later `merged` or
+`needs-review` entry — eligible.
+
+**Checklist re-verification (independent, from a fresh checkout of the
+branch):**
+- (a) Scope: `git diff master...dc-auto-2026-07-21_023811 --stat` showed
+  only `.github/scripts/check-links.js` plus the standard
+  `automation/DATA_CENTER_RUN_LOG.md` / `automation/state/dc_automation_state.json`
+  companions — matches TODO-014's stated Files/areas
+  (`.github/scripts/check-links.js`) with no `TODO_LIST.md`/
+  `NEEDS_YOUR_REVIEW.md` creep. **Pass.**
+- (b) Grepped the full diff for `source_url` — the only hits were prose
+  mentions inside the run-log/state notes, zero actual `source_url`
+  values added or changed. **Pass.**
+- (c) No `data/*.json` touched, no `.github/workflows/`, no
+  `wrangler.toml`, nothing credential-adjacent. **Pass.**
+- (d) `node .github/scripts/validate-json.js` re-run clean (all 7 files
+  valid). `health-check.js` not run — not required, no `data/*.json` in
+  the diff. **Pass.**
+- (e) Ran `node .github/scripts/check-links.js --summary` on the branch:
+  105 unique URLs checked (up from 96 pre-change, +9 matching the
+  1com/mirtapbx entries after de-dup), exit 0, same 6 pre-existing broken
+  URLs (`linux.json::iotop`, `cmd.json::net-start-stop`, 4×
+  `rfc-editor.org` links) and 5 bot-blocked (429) warnings as before, no
+  new failures. Matches TODO-014's Definition of Done exactly. **Pass.**
+
+**Merge:** all 5 checklist items passed. `git checkout master && git pull
+origin master` (already up to date), `git merge dc-auto-2026-07-21_023811
+--no-ff -m "Merge dc-auto branch: TODO-014"` — clean, no conflicts
+(commit `7ef66de`). Re-ran both `validate-json.js` and
+`check-links.js --summary` on the merged result — same clean results as
+pre-merge. `git push origin master` succeeded
+(`0600c7e..7ef66de master -> master`). Feature branch left untouched
+(not deleted), as required.
+
+**Docs/state updates:** moved TODO-014's full entry from the active list
+into `TODO_LIST.md`'s `## Completed` section with completion date and
+commit reference; appended a `merged`/`auditor` entry to
+`dc_automation_state.json` and updated `last_run`; this run-log entry.
+These three files will be committed together directly to `master` per
+STEP 1.5, immediately after this entry is written.
+
+---
