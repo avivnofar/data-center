@@ -27,14 +27,25 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   (`streamAnthropicResponse()` re-streams Anthropic deltas), enforces an
   origin allowlist and 20 req/min/IP rate limit.
 - **AI Search flow**: the app builds a small `db_context` from locally
-  matched knowledge-base entries, sends
-  `{messages, mode, language, db_context, cli_mode, images}` to
-  `/api/chat`; the Worker assembles a bilingual system prompt and calls
-  Claude with the `web_search` tool enabled. `getNotebookXContext()` is
-  implemented but currently non-functional in production — it fetches
-  Notebook-X's index unauthenticated, which 404s against the private repo
-  and fails silently, so no notebook index is actually appended to the
-  system prompt today (see `automation/NEEDS_YOUR_REVIEW.md`).
+  matched knowledge-base entries, plus a `notebook_context` from the
+  Notebook-X mirror (see next bullet), and sends
+  `{messages, mode, language, db_context, notebook_context, cli_mode, images}`
+  to `/api/chat`; the Worker assembles a bilingual system prompt (appending
+  both context strings, `notebook_context` capped server-side at 20 KB) and
+  calls Claude with the `web_search` tool enabled.
+- **Notebook-X integration (repo mirror, decided + implemented 2026-07-21)**:
+  `.github/workflows/notebook-sync.yml` mirrors the Notebook-X public index
+  + all 12 notebooks verbatim into `data/notebooks/` weekly (read-only
+  fine-grained PAT, `NOTEBOOKX_READ_TOKEN` secret). `index.html` loads the
+  mirrored index into `DB.notebookIndex` at `init()`; `matchNotebooks()`
+  scores it against the user's query (word-boundary matching + stopword
+  filter, min relevance threshold — no match beats a wrong match) and
+  `buildNotebookContext()` fetches up to 2 matched notebooks, selects only
+  matching sections, and caps content at ~15 KB, truncating at section
+  boundaries. The Worker is a dumb proxy for this — no fetching, no KV, no
+  GitHub credentials on the Worker side. Supersedes the old
+  `getNotebookXContext()` (confirmed silent no-op — unauthenticated fetch
+  against the private repo always 404ed; deleted, not fixed).
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
   `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
@@ -114,13 +125,14 @@ data-center/
 │   ├── mirtapbx.json       # 11 entries
 │   ├── troubleshoot.json   # 23 scenarios
 │   ├── tools.json          # 1 tool (CommandFlow)
-│   └── workflows.json      # 3 workflow guides (self-hosted, Workflows tab)
+│   ├── workflows.json      # 3 workflow guides (self-hosted, Workflows tab)
+│   └── notebooks/          # Notebook-X mirror: index + 12 notebooks (weekly sync)
 ├── workflows/              # workflow markdown files (linux/, networking/)
 ├── tools/commandflow/      # standalone simulator + shared CLI engine
 ├── cloudflare-worker/      # worker.js, wrangler.toml, README.md (deploy guide)
 ├── flagged/                # source flagging system
-├── .github/scripts/        # validate-json.js, health-check.js, check-links.js
-├── .github/workflows/      # validate, health, link-check, monthly-review, changelog
+├── .github/scripts/        # validate-json.js, health-check.js, check-links.js, sync-notebooks.js
+├── .github/workflows/      # validate, health, link-check, monthly-review, notebook-sync, changelog
 ├── CLAUDE.md               # rules & standards
 ├── CURRENT-SPEC.md         # this file
 ├── TOKEN-BUDGET.md         # session history log
@@ -155,6 +167,21 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Recently Completed
 
+- **Notebook-X integration: repo mirror + client-side selection (2026-07-21)**:
+  resolves the architecture decision in `automation/NEEDS_YOUR_REVIEW.md`.
+  `.github/workflows/notebook-sync.yml` + `.github/scripts/sync-notebooks.js`
+  mirror the Notebook-X index + all 12 notebooks into `data/notebooks/`
+  weekly via a read-only fine-grained PAT (`NOTEBOOKX_READ_TOKEN` secret).
+  `index.html` adds `matchNotebooks()` (word-boundary + stopword-filtered
+  scoring against name/domain/tags/summary) and `buildNotebookContext()`
+  (fetches up to 2 matches, selects matching sections, caps at ~15 KB,
+  truncates at section boundaries), wired into `sendAiMessage()` as a new
+  `notebook_context` request field. `worker.js`'s old `getNotebookXContext()`
+  (confirmed silent no-op) is deleted — the Worker now just appends the
+  client-built context to the system prompt with a 20 KB server-side cap,
+  no fetching/KV/credentials of its own. Verified against the real mirrored
+  data via a Node harness reproducing the exact browser code path (Chrome
+  browser automation was unavailable this session).
 - **Workflows tab made self-hosted (2026-07-20)**: `data-center-archive` was
   confirmed retired — it was never pushed to GitHub, only a local scratch
   folder existed. Its 3 real workflow markdown files were migrated into this
@@ -175,12 +202,11 @@ needed) and validated by `.github/scripts/validate-json.js`.
 - **2026-07 (commit `f64eb30`)**: Worker upgraded to `claude-sonnet-5`;
   Hebrew/English RTL rendering fixed via `wrapLtrTerms()`; IT scope
   expanded beyond Netvill to general IT.
-- **Notebook-X index injection** (commit `455a087`): code exists to list
-  available Notebook-X notebooks in the system prompt at request time, but
-  it is currently non-functional in production — the fetch is
-  unauthenticated against a private repo (404, fails silently), so no
-  notebook index is actually injected today (see
-  `automation/NEEDS_YOUR_REVIEW.md`).
+- **Notebook-X index injection** (commit `455a087`, superseded 2026-07-21):
+  the original `getNotebookXContext()` listed available notebooks in the
+  system prompt, but was a confirmed silent no-op in production (unauthenticated
+  fetch against the private repo, always 404ing). Replaced by the repo-mirror
+  design above — see that entry.
 - **Usage logging** (commit `39e70f7`): request logging on
   `data-center-api` for spike visibility.
 - **Audit & cleanup (2026-07-19, commits `d5331cd` + `153152f`)**:
@@ -193,14 +219,14 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Future Vision (Not Started)
 
-**Notebook-X integration** — enrich AI Search answers with Notebook-X's
-in-depth knowledge notebooks. Only phase 1 (index injection into the
-system prompt) exists; retrieving actual notebook content into answers is
-planned but not started, and should not be built until the core app is
-stable. Content-module roadmap (from the retired ROADMAP.md): activate
-the `powershell`, `cloud`, `security`, `docker`, `cicd`, `casestudies`,
-and `cli` modules as content is authored; longer-term ideas (PWA/offline,
-contribution guide) remain unscheduled. Natural next steps surfaced by
+**Notebook-X integration** is now implemented (repo mirror + client-side
+section matching — see Recently Completed above); this unblocks, but does
+not itself lift, the TODO-005–011 content-module pause (owner decision,
+tracked in `automation/NEEDS_YOUR_REVIEW.md`). Content-module roadmap (from
+the retired ROADMAP.md): activate the `powershell`, `cloud`, `security`,
+`docker`, `cicd`, `casestudies`, and `cli` modules as content is authored;
+longer-term ideas (PWA/offline, contribution guide) remain unscheduled.
+Natural next steps surfaced by
 this audit: a client-side parser + Issue-filing flow for the
 `CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks, and copy buttons on
 command cards (the saved-bookmarks browsing panel also on this list has

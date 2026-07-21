@@ -60,7 +60,8 @@ data-center/
 │   ├── 1com.json                # 1COM PBX platform reference
 │   ├── mirtapbx.json            # MirtaPBX platform reference
 │   ├── troubleshoot.json        # Step-by-step troubleshoot scenarios
-│   └── tools.json               # Registry of standalone tools (CommandFlow)
+│   ├── tools.json               # Registry of standalone tools (CommandFlow)
+│   └── notebooks/               # Notebook-X mirror (weekly sync) — see AI Backend below
 ├── tools/
 │   └── commandflow/             # Terminal Academy — standalone terminal simulator
 │                                # (also powers in-app CLI Mode via commandflow-core.js)
@@ -70,8 +71,8 @@ data-center/
 │   └── README.md                # Deployment guide
 ├── flagged/                     # Source flagging system (pending → approved/rejected)
 ├── .github/
-│   ├── scripts/                 # validate-json.js, health-check.js, check-links.js
-│   └── workflows/               # validate, health, link-check, monthly-review, changelog
+│   ├── scripts/                 # validate-json.js, health-check.js, check-links.js, sync-notebooks.js
+│   └── workflows/               # validate, health, link-check, monthly-review, notebook-sync, changelog
 ├── .nojekyll
 ├── CLAUDE.md                    # This file — rules and standards
 ├── CURRENT-SPEC.md              # Living technical spec + verified feature status
@@ -111,10 +112,14 @@ Or: `npx serve .`
   (`#ai-attach-btn`) and paste-from-clipboard.
 - **Web search**: the Claude call includes the `web_search` tool (max 3
   uses) so answers can search and cite live sources.
-- **Notebook-X index injection**: `getNotebookXContext()` fetches
-  `Notebook-X/notebooks/_index-public.json` at request time and appends a
-  short list of available notebooks to the system prompt. This is
-  read-only awareness — see "Future Vision".
+- **Notebook-X integration (repo mirror, decided 2026-07-21)**: notebooks
+  are mirrored verbatim into this repo's own `data/notebooks/` by a weekly
+  GitHub Action (`.github/workflows/notebook-sync.yml`) — no Worker-side
+  fetching, no KV, no new Cloudflare infrastructure. The client
+  (`index.html`) matches the user's query against the mirrored index and
+  attaches only relevant sections to the request as a new
+  `notebook_context` field, alongside the existing `db_context`. See
+  CURRENT-SPEC.md for current status.
 - **Self-extension / self-education (suggest-only, prompt-side only)**:
   the system prompt instructs Claude to append plain-text
   `CAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}` lines after a
@@ -378,10 +383,22 @@ For all AI-suggested sources (AI Search, `LEARNED_SOURCE` blocks):
 | `link-check.yml` | daily 06:00 UTC | Checks every `source_url` is reachable (`check-links.js`); opens/closes a `broken-link` issue |
 | `health.yml` | weekly, Mon 08:00 UTC | Data quality + Hebrew QA (`health-check.js`); opens a `data-quality` issue on critical failure |
 | `monthly-review.yml` | monthly, 1st @ 08:00 UTC | Opens a `source-review` issue if `flagged/pending-review.md` has unreviewed entries |
+| `notebook-sync.yml` | weekly, Sun 05:00 UTC | Mirrors Notebook-X's index + notebooks into `data/notebooks/` (`sync-notebooks.js`); commits directly to master only if content actually changed |
 | `changelog.yml` | on push to master | Auto-generates `CHANGELOG.md` |
 
-All scheduled workflows also support `workflow_dispatch`. None require
-secrets beyond the default `GITHUB_TOKEN`.
+All scheduled workflows also support `workflow_dispatch`. All require only
+the default `GITHUB_TOKEN` except `notebook-sync.yml`, which needs a repo
+secret `NOTEBOOKX_READ_TOKEN` (a fine-grained PAT, read-only Contents scope
+on `avivnofar/Notebook-X` only — created manually by the owner, never
+handled by an automated session).
+
+**Narrow master-push exception**: `notebook-sync.yml` commits directly to
+master, without human review, but only for files under `data/notebooks/`
+and only when triggered from CI (schedule or manual `workflow_dispatch`) —
+this mirrors the existing `changelog.yml` (`CHANGELOG.md` only) and the
+twice-daily automation's Daily Audit Pass (`DATA_CENTER_AUDIT.md` only)
+exceptions. It does not extend to any other file or to any interactively
+run session.
 
 ---
 
@@ -497,11 +514,13 @@ When operating autonomously across sessions on this project:
 
 ## Future Vision (planned, not started)
 
-**Notebook-X integration**: enrich Claude's AI Search answers with the
-Notebook-X project's in-depth knowledge notebooks. Phase 1 (index injection
-via `getNotebookXContext()`) is implemented — see CURRENT-SPEC.md for
-current status. Actual notebook *content* retrieval is **not started**.
-Revisit only once the core app is stable — do not build ahead of need.
+**Notebook-X integration**: the architecture decision landed 2026-07-21 (repo
+mirror + client-side selection, dumb Worker — see "AI Backend" above and
+`automation/NEEDS_YOUR_REVIEW.md`) and the core mirror/matching/retrieval
+path is implemented — see CURRENT-SPEC.md for current status. Remaining
+open items: TODO-005–011 (content-module activation) can now be un-paused
+by owner decision, and any richer use of notebook content (beyond section-
+level string matching) is future work — do not build ahead of need.
 
 ---
 
