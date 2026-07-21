@@ -1,0 +1,138 @@
+{
+  "id": "kb-remote-access",
+  "name": "Remote Access & Monitoring Tools",
+  "version": "2.0",
+  "format": "json",
+  "domain": "it-support",
+  "tags": [
+    "teamviewer",
+    "anydesk",
+    "rustdesk",
+    "remote-desktop",
+    "remote-support",
+    "network-watcher",
+    "azure"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-07-17T00:00:00.000000Z",
+  "updatedAt": "2026-07-17T00:00:00.000000Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-remote-access.json",
+  "knowledgeBase": {
+    "summary": "Practical reference for remote-support desktop tools (TeamViewer, AnyDesk, RustDesk) — setup, unattended access, and security considerations — plus Azure Network Watcher for diagnosing cloud network connectivity, grouped together as the day-to-day remote-access and remote-diagnostics toolset for IT support work.",
+    "lastWebVerified": null,
+    "webSources": [],
+    "sections": [
+      {
+        "id": "remote-access-tools-overview",
+        "title": "Remote Access Tools Overview",
+        "content": "Remote desktop tools fall into two access models: attended access (a person at the remote machine confirms/approves the session — used for ad hoc support) and unattended access (the tool is pre-configured to accept connections without anyone present, used for servers or machines that need ongoing support access).\n\nMost consumer/prosumer tools (TeamViewer, AnyDesk, RustDesk) use a relay-brokered connection model: both ends connect outbound to a rendezvous/relay server (so no inbound firewall port needs to be opened on either side), which then either brokers a direct peer-to-peer (P2P) connection when possible (lower latency, traffic doesn't transit the vendor's servers) or relays traffic through the vendor's infrastructure when P2P/NAT traversal fails (works everywhere, but adds latency and means a third party's servers carry the session traffic).\n\nThe common security model is: a numeric/alias ID identifies the machine, plus a password (either a rotating random password shown on-screen for attended sessions, or a fixed/permanent password configured for unattended access). Anyone with both the ID and a valid password can connect — so a fixed unattended-access password is effectively a standing credential and should be treated with the same care as any other admin password (long, unique, rotated if there's any reason to suspect exposure).\n\nSecurity considerations common to all three tools: restrict which accounts/devices are allowed to initiate unattended connections (allow-listing), require additional confirmation or 2FA on the connecting account where supported, log/audit session history, and never leave a default or weak permanent password on a machine reachable this way — an exposed remote-access credential is effectively an alternate, often less-monitored front door into that machine.",
+        "subsections": [],
+        "tags": ["overview", "unattended-access", "relay", "p2p"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "teamviewer",
+        "title": "TeamViewer",
+        "content": "TeamViewer is the most established commercial remote-support tool, widely used for both ad hoc support and unattended access to managed machines.\n\n**Unattended access setup:** Extras > Options > Security > set a personal password, then enable \"Grant easy access\" for a specific TeamViewer account (ties the machine to an account rather than a static password alone) — this is the recommended unattended-access method over a fixed random password. Devices configured this way show up under \"Computers & Contacts\" in the connecting account without needing the ID/password re-entered each time.\n\n**Device grouping & management:** the web-based Management Console groups devices, shows online/offline status, and (on business/enterprise licenses) supports policies pushed to managed devices, session recording, and centralized user/permission management — relevant for an IT team supporting many endpoints rather than a single machine.\n\n**Security settings worth reviewing:** Options > Security > Black/whitelist restricts which TeamViewer IDs or accounts may connect at all; two-factor authentication can be required on the connecting account; \"Random password\" length/complexity can be increased for attended sessions; and Windows/macOS system access (vs just screen sharing) can be restricted per use case.\n\n**Licensing note:** TeamViewer aggressively fingerprints usage patterns and will flag/lock a free-tier connection as \"commercial use suspected\" based on session frequency/duration heuristics — this is a licensing enforcement behavior, not a bug, and the fix is a proper commercial license, not a workaround.\n\n**Common admin tasks:** Connection Reports (Management Console) show session history/duration per device — useful for both audit and disputing a commercial-use lockout; Easy Access assignment/removal is done per-device from the console without needing physical access to the remote machine.",
+        "subsections": [],
+        "tags": ["teamviewer", "unattended-access", "commercial-use"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "anydesk",
+        "title": "AnyDesk",
+        "content": "AnyDesk is a lightweight commercial alternative to TeamViewer, built on its own low-latency remote-desktop protocol, popular where fast screen performance over constrained connections matters.\n\n**Unattended access setup:** Settings > Security > \"Enable unattended access\" and set a password there — this is the direct equivalent of TeamViewer's permanent password approach. AnyDesk also supports an alias (a human-readable name mapped to the numeric ID, set via \"Set alias\" in Settings) so a machine can be reached by a memorable name instead of the raw numeric AnyDesk-ID.\n\n**Security settings worth reviewing:** Settings > Security > \"Interactive access\" controls whether an incoming connection needs on-screen confirmation (should stay ON for attended-support machines, is intentionally bypassed for unattended-access machines via the password); the ACL/whitelist (\"Access Control List\") restricts which AnyDesk-IDs may connect without a session password prompt at all — tighter than a shared password since it's tied to the specific connecting client's ID.\n\n**Session permissions:** AnyDesk allows granular permission toggles per session (or pre-configured per device) — file transfer, clipboard sync, system access vs view-only, audio — worth restricting to the minimum needed for a given support scenario rather than granting full control by default.\n\n**Common operational notes:** AnyDesk's connection log (Settings > Recent Sessions) records inbound/outbound session history locally on each machine; central management (device groups, policies) requires an AnyDesk for Business/Enterprise license, similar to TeamViewer's tiering — the free/personal tier is single-machine, ad hoc oriented.",
+        "subsections": [],
+        "tags": ["anydesk", "unattended-access", "acl"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "rustdesk",
+        "title": "RustDesk",
+        "content": "RustDesk is an open-source remote-desktop tool, notable for being fully self-hostable: instead of relying on the vendor's public rendezvous/relay servers, an organization can run its own `hbbs` (ID/rendezvous server) and `hbbr` (relay server) — removing dependency on a third-party vendor's infrastructure entirely and keeping session traffic inside infrastructure you control.\n\n**Unattended access setup:** in the client, set a \"Permanent Password\" under Settings > Security (equivalent to TeamViewer/AnyDesk's unattended-access password) — a connecting peer supplying either the permanent password or a one-time session password (shown on-screen) can connect depending on configuration.\n\n**Self-hosting basics:** run `hbbs`/`hbbr` (available as Docker images or standalone binaries) on a server with a public IP/port, then point clients at that server instead of the default public rendezvous server via Settings > Network > ID/Relay Server, entering the self-hosted server's address and its public key. This is the key differentiator from TeamViewer/AnyDesk for organizations wanting no external vendor in the connection path at all.\n\n**Security considerations specific to self-hosting:** since you now own the rendezvous/relay infrastructure, you're also responsible for securing it (keep hbbs/hbbr patched, restrict management access, monitor for abuse) — self-hosting removes a third-party dependency but does not remove the need for the same operational security discipline you'd apply to any other exposed service.\n\n**Common CLI/config notes:**\n```text\n# Client config file location (varies by OS), key fields:\n#   id_server / relay_server / key   -> point at a self-hosted hbbs/hbbr instance\n#   Settings > Security > Permanent Password  -> unattended access credential\n\n# Self-hosted server (Docker):\ndocker run --name hbbs -p 21115-21119:21115-21119 -p 21116:21116/udp -v $(pwd)/data:/root rustdesk/rustdesk-server hbbs\ndocker run --name hbbr -p 21117:21117 -p 21119:21119 -v $(pwd)/data:/root rustdesk/rustdesk-server hbbr\n```",
+        "subsections": [],
+        "tags": ["rustdesk", "self-hosted", "open-source", "hbbs", "hbbr"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "choosing-security-considerations",
+        "title": "Choosing & Security Considerations",
+        "content": "Decision factors when picking a remote-support tool: cost model (TeamViewer/AnyDesk are commercial with free tiers restricted to personal/non-commercial use; RustDesk is free/open-source and self-hostable), infrastructure trust (do you need/want zero dependency on a third-party vendor's servers carrying session traffic — RustDesk self-hosted is the only option among these three that fully removes that dependency), performance (AnyDesk is generally regarded as having the lowest-latency protocol on constrained connections; TeamViewer has the most mature enterprise management tooling), and audit/compliance needs (centralized session logging, SSO integration, and granular permission policies are strongest on the commercial enterprise tiers).\n\nBaseline security hygiene that applies regardless of which tool is chosen: never leave a default or weak unattended-access password; prefer account-tied access (TeamViewer's Easy Access, or an equivalent allow-list) over a shared static password wherever the tool supports it; restrict incoming connections to known IDs/accounts via each tool's whitelist/ACL feature; keep the client software patched (these tools are themselves a documented target for social-engineering-based remote-access scams, e.g. a caller convincing a victim to install AnyDesk/TeamViewer and read out the ID/password — a support process should never involve unsolicited outbound calls asking a user to do this); and treat any machine's remote-access credential as being just as sensitive as its login password, since it is functionally an alternate way to gain control of that machine.\n\nFor a small IT team supporting a fixed set of known machines, unattended access with account-tied/allow-listed connections (rather than shared static passwords) plus session logging is the practical baseline regardless of which specific tool is used.",
+        "subsections": [],
+        "tags": ["comparison", "security", "social-engineering"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "azure-network-watcher",
+        "title": "Azure Network Watcher",
+        "content": "Azure Network Watcher is a regional network diagnostics and monitoring service for Azure virtual networks — it doesn't move traffic itself, it observes and tests the network configuration/path, making it the go-to tool for \"why can't this Azure VM reach that other resource\" questions.\n\n**IP Flow Verify** — tests whether a specific packet (5-tuple: source/dest IP, source/dest port, protocol) would be allowed or denied by the current NSG (Network Security Group) rules, and tells you exactly which rule made that decision — much faster than manually reading through NSG rule lists to figure out why traffic is being blocked.\n```bash\naz network watcher test-ip-flow --resource-group RG --vm VM_NAME \\\n  --direction Inbound --protocol TCP --local 10.0.0.4:3389 --remote 203.0.113.5:50000\n```\n\n**NSG Flow Logs** — logs every allowed/denied flow through an NSG to storage for later analysis (via Traffic Analytics or manual review) — the equivalent of a firewall's connection log, essential for after-the-fact investigation rather than live testing.\n\n**Connection Monitor** — continuously tests connectivity between a source and destination (VM-to-VM, VM-to-endpoint, or on-prem-to-Azure) and alerts on latency/loss thresholds — used for ongoing monitoring rather than one-off diagnosis.\n\n**Next Hop** — shows what the effective next hop is for traffic from a VM to a given destination IP, revealing routing table issues (e.g. traffic unexpectedly routing through a virtual appliance, or missing a expected route to a VPN gateway).\n```bash\naz network watcher show-next-hop --resource-group RG --vm VM_NAME \\\n  --source-ip 10.0.0.4 --dest-ip 203.0.113.5\n```\n\n**Packet Capture** — remotely triggers a packet capture on a VM (via the Network Watcher extension) without needing to RDP/SSH in and run tcpdump/Wireshark manually — useful when you need an actual packet-level capture rather than just a flow/rule verdict.\n\n**Topology** — visualizes the resources and their relationships (NICs, subnets, NSGs, route tables) within a virtual network, useful for building a mental map of an unfamiliar or complex VNet before diagnosing a specific issue.\n\nTypical troubleshooting order: start with IP Flow Verify (fastest, answers \"is an NSG rule the problem\"), check Next Hop if IP Flow Verify says allowed but traffic still isn't arriving (routing issue instead), and fall back to Packet Capture for anything that still isn't explained by rules or routing (application-level or transient issue).",
+        "subsections": [],
+        "tags": ["azure", "network-watcher", "nsg", "diagnostics"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      }
+    ],
+    "glossary": [
+      {"term": "Unattended Access", "definition": "Remote-desktop access pre-configured to accept connections without a person present at the remote machine to approve each session."},
+      {"term": "Relay Server", "definition": "A server that brokers/carries remote-desktop session traffic when a direct peer-to-peer connection can't be established, e.g. due to NAT/firewall restrictions."},
+      {"term": "Rendezvous Server", "definition": "A server that helps two peers discover and negotiate a connection with each other, without necessarily carrying the actual session traffic itself."},
+      {"term": "NAT Hole Punching", "definition": "A technique allowing two devices behind separate NATs to establish a direct peer-to-peer connection with the help of a third-party rendezvous server."},
+      {"term": "Allow-list / ACL", "definition": "A configured list of specific IDs, accounts, or addresses permitted to connect, used to restrict remote-access tools beyond just a shared password."},
+      {"term": "NSG", "definition": "Network Security Group — Azure's firewall construct for filtering traffic to/from resources within a virtual network."},
+      {"term": "Flow Log", "definition": "A record of allowed/denied network flows through an NSG, used for auditing and after-the-fact traffic analysis."},
+      {"term": "IP Flow Verify", "definition": "An Azure Network Watcher tool that tests whether a specific packet would be allowed or denied by current NSG rules, and identifies the matching rule."},
+      {"term": "Next Hop", "definition": "An Azure Network Watcher tool showing the effective next routing hop for traffic from a VM to a given destination, used to diagnose routing issues."},
+      {"term": "Connection Monitor", "definition": "An Azure Network Watcher feature that continuously tests connectivity between endpoints and alerts on latency/loss thresholds."}
+    ],
+    "commonIssues": [
+      {"problem": "TeamViewer session gets cut off with a 'commercial use suspected' message on a free license", "cause": "TeamViewer's usage-pattern fingerprinting flagged the session frequency/duration as commercial activity", "solution": "This is licensing enforcement, not a technical bug — review Connection Reports for actual usage and move to a proper commercial license if usage is genuinely business use", "tags": ["teamviewer", "licensing"]},
+      {"problem": "AnyDesk unattended connection is refused even with the correct password", "cause": "Unattended access wasn't enabled on the target machine, or the connecting AnyDesk-ID isn't on the target's Access Control List while ACL-only mode is enforced", "solution": "Confirm 'Enable unattended access' is checked in Settings > Security on the target machine, and check the ACL/whitelist configuration if one is in use", "tags": ["anydesk", "acl"]},
+      {"problem": "RustDesk client shows 'Ready' status but a peer still cannot connect", "cause": "The client is pointed at a self-hosted hbbs/hbbr server that is unreachable (wrong address/port, server down, or firewall blocking the required ports) rather than the default public server", "solution": "Verify the self-hosted server's address/public key in Settings > Network, confirm hbbs/hbbr are running and their ports (21115-21119, 21116/udp, 21117) are reachable from both peers", "tags": ["rustdesk", "self-hosted"]},
+      {"problem": "A user is convinced by an unsolicited caller to install a remote-access tool and read out the connection ID/password", "cause": "Social-engineering scam impersonating support/tech-company staff, exploiting the fact that these tools are legitimate and widely trusted", "solution": "Train users that legitimate IT support never cold-calls asking to install remote-access software and read out credentials; if it already happened, immediately uninstall the tool and treat any accounts/credentials on that machine as potentially exposed", "tags": ["social-engineering", "security"]},
+      {"problem": "Azure VM can't reach another resource and it's unclear whether it's an NSG rule or a routing problem", "cause": "Ambiguous symptom that could be caused by either layer", "solution": "Run IP Flow Verify first to rule NSG rules in/out definitively; if IP Flow Verify says the traffic is allowed but it still doesn't arrive, check Next Hop for a routing table issue instead", "tags": ["azure", "network-watcher"]},
+      {"problem": "NSG appears to allow the traffic but Packet Capture shows nothing arriving at the VM", "cause": "The issue is upstream of the NSG — a route table sending traffic elsewhere, a peering/VPN misconfiguration, or a security appliance in the path", "solution": "Use Next Hop and Topology to trace the actual path traffic is taking versus the expected path, rather than re-checking NSG rules that IP Flow Verify already confirmed are not the blocker", "tags": ["azure", "routing"]},
+      {"problem": "A remote-access tool's unattended password hasn't been rotated in years and multiple past employees may still know it", "cause": "Fixed/permanent password was set once and never treated as a credential requiring rotation like any other admin password", "solution": "Rotate unattended-access passwords on a schedule (or move to account-tied access like TeamViewer's Easy Access) and whenever staff with knowledge of it leave", "tags": ["security", "credential-rotation"]},
+      {"problem": "Multiple staff members share one static remote-access password for several support machines", "cause": "Convenience shortcut instead of per-account or per-technician access control", "solution": "Use each tool's allow-list/account-tied access feature so individual access can be granted and revoked per person without resetting a shared password for everyone", "tags": ["access-control", "security"]}
+    ],
+    "commands": [
+      {"command": "az network watcher test-ip-flow --resource-group RG --vm VM_NAME --direction Inbound --protocol TCP --local 10.0.0.4:3389 --remote 203.0.113.5:50000", "description": "Test whether a specific packet would be allowed or denied by current NSG rules, and which rule decided it", "platform": "both"},
+      {"command": "az network watcher show-next-hop --resource-group RG --vm VM_NAME --source-ip 10.0.0.4 --dest-ip 203.0.113.5", "description": "Show the effective next routing hop for traffic from a VM to a destination, useful for diagnosing routing issues", "platform": "both"},
+      {"command": "az network watcher packet-capture start --resource-group RG --vm VM_NAME --name capture1", "description": "Start a remote packet capture on an Azure VM without needing to SSH/RDP in", "platform": "both"},
+      {"command": "az network watcher flow-log configure --nsg NSG_NAME --resource-group RG --enabled true --storage-account STORAGE_ID", "description": "Enable NSG flow logging to a storage account for later traffic analysis", "platform": "both"},
+      {"command": "docker run --name hbbs -p 21115-21119:21115-21119 -p 21116:21116/udp -v $(pwd)/data:/root rustdesk/rustdesk-server hbbs", "description": "Run a self-hosted RustDesk rendezvous/ID server (hbbs) via Docker", "platform": "both"},
+      {"command": "docker run --name hbbr -p 21117:21117 -p 21119:21119 -v $(pwd)/data:/root rustdesk/rustdesk-server hbbr", "description": "Run a self-hosted RustDesk relay server (hbbr) via Docker", "platform": "both"}
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "remote-access",
+      "networking"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "Remote-support tooling and cloud network diagnostics reference for an IT professional supporting endpoints and Azure-hosted infrastructure — covers commercial and self-hosted remote-desktop tools plus Azure Network Watcher for connectivity troubleshooting.",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

@@ -1,0 +1,481 @@
+{
+  "id": "kb-linux",
+  "name": "Linux Administration",
+  "version": "2.0",
+  "format": "json",
+  "domain": "linux",
+  "tags": [
+    "linux",
+    "ubuntu",
+    "debian",
+    "systemd",
+    "ssh",
+    "permissions",
+    "cron"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:11:36.179327Z",
+  "updatedAt": "2026-07-10T08:17:14.616101Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
+  "knowledgeBase": {
+    "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
+    "lastWebVerified": null,
+    "webSources": [],
+    "sections": [
+      {
+        "id": "file-system",
+        "title": "File System",
+        "content": "Linux uses a single-rooted hierarchical file system starting at /. Key directories: /etc (system config), /var (variable data, logs), /home (user directories), /usr (user programs), /tmp (temporary files, often cleared on reboot), /proc and /sys (virtual filesystems exposing kernel/process info).\n\nNavigation and inspection:\npwd                     # print working directory\nls -la                  # list all files, long format, including hidden\ndf -h                   # disk free space, human-readable\ndu -sh /path/*          # disk usage per item in a directory\nlsblk                   # list block devices and mount points\nmount | column -t       # show mounted filesystems\nfindmnt /var            # show mount info for a specific path\n\nFinding files:\nfind /var/log -name \"*.log\" -mtime -1     # log files modified in the last day\nfind / -size +100M 2>/dev/null            # files larger than 100MB, suppress permission errors\nlocate filename                            # fast search using the locate database\n\nSymbolic vs hard links: ln -s target linkname creates a symlink (pointer, can cross filesystems); ln target linkname creates a hard link (same inode, must be same filesystem).",
+        "subsections": [],
+        "tags": [
+          "filesystem",
+          "directories",
+          "find"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "user-permission-management",
+        "title": "User & Permission Management",
+        "content": "Linux permissions use three classes (owner, group, other) and three permission types (read, write, execute), represented as rwxrwxrwx or octal (e.g. 755).\n\nViewing and changing permissions:\nls -l file.txt                  # view permissions\nchmod 755 script.sh             # rwxr-xr-x\nchmod u+x script.sh             # add execute for owner only\nchown user:group file.txt       # change owner and group\nchown -R user:group /path/      # recursive\n\nUser management:\nuseradd -m -s /bin/bash newuser    # create user with home dir and bash shell\nusermod -aG sudo username          # add user to sudo group (Debian/Ubuntu)\nusermod -aG wheel username         # add user to wheel group (RHEL/CentOS)\npasswd username                    # set/change password\nuserdel -r username                # delete user and home directory\nid username                        # show UID, GID, and group memberships\ngroups username                    # list groups a user belongs to\n\nSudo configuration: edit with visudo (never edit /etc/sudoers directly). Common entry: username ALL=(ALL) NOPASSWD: ALL grants passwordless sudo.\n\nSpecial permission bits: setuid (chmod u+s), setgid (chmod g+s), sticky bit (chmod +t, commonly on /tmp to prevent users deleting others' files).",
+        "subsections": [],
+        "tags": [
+          "permissions",
+          "users",
+          "sudo",
+          "chmod",
+          "chown"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "process-management",
+        "title": "Process Management",
+        "content": "Every running program is a process with a PID. Processes have a state (running, sleeping, zombie, stopped) and a parent-child relationship tree.\n\nViewing processes:\nps aux                          # all processes, BSD-style full listing\nps -ef                          # all processes, standard format with PPID\ntop                              # live updating process viewer\nhtop                             # improved interactive version\npstree                           # show process tree\nps aux --sort=-%cpu | head -10   # top 10 CPU-consuming processes\nps aux --sort=-%mem | head -10   # top 10 memory-consuming processes\n\nControlling processes:\nkill -15 PID          # graceful termination (SIGTERM)\nkill -9 PID            # force kill (SIGKILL) — last resort\nkillall processname    # kill all processes matching a name\npkill -f \"pattern\"      # kill by matching command line pattern\nnice -n 10 command      # start a process with lower priority\nrenice -n 5 -p PID      # change priority of a running process\n\nBackground/foreground job control:\ncommand &              # run in background\njobs                   # list background jobs\nfg %1                  # bring job 1 to foreground\nbg %1                  # resume job 1 in background\nnohup command &         # run immune to hangup signal\ndisown                 # detach a job from the current shell\n\nA zombie process (state Z in ps) means the child finished but the parent hasn't reaped it.",
+        "subsections": [],
+        "tags": [
+          "process",
+          "kill",
+          "ps",
+          "top",
+          "signals"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "networking-on-linux",
+        "title": "Networking on Linux",
+        "content": "Modern Linux networking tools center on the ip command (replacing the older ifconfig/route/netstat).\n\nInterface and address info:\nip a                      # show all interfaces and addresses\nip link show               # show interface status (up/down)\nip route                   # show routing table\nip route get 8.8.8.8       # show which route would be used to reach an IP\n\nConnections and listening ports:\nss -tulpn                  # TCP/UDP listening sockets with process names\nss -tan state established  # established TCP connections\nlsof -i :8080               # what process is using port 8080\nfuser -k 8080/tcp            # kill whatever is using port 8080\n\nDNS:\ndig example.com              # detailed DNS query\ndig +short example.com        # just the IP\nnslookup example.com\nresolvectl status              # systemd-resolved status\ncat /etc/resolv.conf            # configured DNS servers\n\nConnectivity testing:\nping -c 4 8.8.8.8                  # 4 pings\ntraceroute example.com               # path to destination\nmtr example.com                       # combines ping+traceroute, live updating\ncurl -v https://example.com            # verbose HTTP request\nnc -zv host 22                          # test if a TCP port is open\n\nInterface configuration (temporary, lost on reboot unless persisted):\nip addr add 192.168.1.10/24 dev eth0\nip link set eth0 up",
+        "subsections": [],
+        "tags": [
+          "networking",
+          "ip",
+          "ss",
+          "dns",
+          "ping"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "systemd-services",
+        "title": "systemd & Services",
+        "content": "systemd is the init system and service manager on most modern Linux distributions.\n\nManaging services:\nsystemctl status nginx              # check status\nsystemctl start nginx               # start now\nsystemctl stop nginx                # stop now\nsystemctl restart nginx             # stop then start\nsystemctl reload nginx              # reload config without full restart\nsystemctl enable nginx              # start automatically on boot\nsystemctl disable nginx             # don't start on boot\nsystemctl is-active nginx           # quick active/inactive check\nsystemctl is-enabled nginx          # quick boot-enabled check\n\nFinding problems:\nsystemctl list-units --failed       # show all failed services\nsystemctl list-units --type=service --state=running\njournalctl -u nginx -f                # live tail logs for a service\njournalctl -u nginx --since \"1 hour ago\"\njournalctl -xe                        # recent logs with explanations\njournalctl -b                         # logs since last boot\njournalctl -p err                     # only error-level and above\n\nCustom service units live in /etc/systemd/system/myapp.service. After editing:\nsystemctl daemon-reload    # required after editing any unit file\nsystemctl restart myapp\n\nMinimal unit file:\n[Unit]\nDescription=My App\nAfter=network.target\n\n[Service]\nExecStart=/usr/bin/python3 /opt/myapp/run.py\nRestart=on-failure\nUser=appuser\n\n[Install]\nWantedBy=multi-user.target",
+        "subsections": [],
+        "tags": [
+          "systemd",
+          "systemctl",
+          "journalctl",
+          "services"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "package-management",
+        "title": "Package Management",
+        "content": "Debian/Ubuntu uses APT, RHEL/CentOS/Fedora uses DNF/YUM.\n\nAPT (Debian/Ubuntu):\nsudo apt update                   # refresh package index\nsudo apt upgrade                  # upgrade all installed packages\nsudo apt install nginx            # install a package\nsudo apt remove nginx             # remove, keep config files\nsudo apt purge nginx              # remove including config files\nsudo apt autoremove               # remove unused dependencies\napt list --installed | grep nginx  # check if installed\napt show nginx                     # package details\ndpkg -L nginx                      # list files installed by a package\n\nDNF (RHEL/CentOS 8+/Fedora):\nsudo dnf check-update\nsudo dnf upgrade\nsudo dnf install nginx\nsudo dnf remove nginx\ndnf list installed | grep nginx\nrpm -ql nginx                      # list files installed by a package\n\nFinding what package provides a file:\ndpkg -S /usr/bin/nginx              # Debian/Ubuntu\nrpm -qf /usr/bin/nginx               # RHEL/CentOS\n\nHolding a package at its current version:\nsudo apt-mark hold nginx            # Debian/Ubuntu\nsudo dnf versionlock nginx          # RHEL/CentOS",
+        "subsections": [],
+        "tags": [
+          "apt",
+          "dnf",
+          "yum",
+          "packages"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "log-analysis",
+        "title": "Log Analysis",
+        "content": "Key log locations: /var/log/syslog or /var/log/messages (general system log), /var/log/auth.log or /var/log/secure (authentication events), /var/log/kern.log (kernel messages), /var/log/dmesg (boot-time kernel ring buffer), application-specific logs under /var/log/<appname>/.\n\nReading and filtering:\ntail -f /var/log/syslog              # live follow\ntail -n 100 /var/log/syslog           # last 100 lines\nless /var/log/syslog                   # paginated view, /search inside\ngrep \"error\" /var/log/syslog            # filter for a string\ngrep -i \"failed\" /var/log/auth.log | tail -20\nzgrep \"error\" /var/log/syslog.1.gz       # search inside gzipped rotated logs\n\nCombining with awk/sed for structured extraction:\nawk '{print $1, $2, $5}' /var/log/syslog        # extract specific columns\nsed -n '100,200p' /var/log/syslog                 # print lines 100-200\n\nLog rotation is managed by logrotate, configured in /etc/logrotate.d/.\ncat /var/lib/logrotate/status\nlogrotate -d /etc/logrotate.conf    # dry run\n\nFor systemd-based logging, journalctl largely supersedes flat log files for service-level logs.",
+        "subsections": [],
+        "tags": [
+          "logs",
+          "grep",
+          "tail",
+          "logrotate"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "ssh",
+        "title": "SSH",
+        "content": "SSH is the standard for remote Linux administration.\n\nBasic connection:\nssh user@host                       # connect\nssh -p 2222 user@host                # custom port\nssh -i ~/.ssh/mykey user@host         # specific private key\nssh -v user@host                      # verbose, useful for debugging\n\nKey-based authentication:\nssh-keygen -t ed25519 -C \"comment\"     # generate a modern key pair\nssh-copy-id user@host                   # copy public key to remote authorized_keys\n\nSSH config file (~/.ssh/config) for shortcuts:\nHost myserver\n    HostName 192.168.1.50\n    User admin\n    Port 2222\n    IdentityFile ~/.ssh/mykey\nThen just: ssh myserver\n\nFile transfer:\nscp file.txt user@host:/path/             # copy local to remote\nscp user@host:/path/file.txt .             # copy remote to local\nscp -r folder/ user@host:/path/             # recursive directory copy\nrsync -avz folder/ user@host:/path/           # only copies diffs, better for large transfers\n\nServer-side hardening (/etc/ssh/sshd_config):\nPermitRootLogin no\nPasswordAuthentication no\nAllowUsers admin deploy\nAfter editing: sudo systemctl restart sshd. Always test a new connection in a separate terminal before closing your current session.",
+        "subsections": [],
+        "tags": [
+          "ssh",
+          "scp",
+          "rsync",
+          "keys"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "cron-jobs",
+        "title": "Cron Jobs",
+        "content": "Cron schedules recurring tasks. Format: minute hour day-of-month month day-of-week command.\n\nEditing crontab:\ncrontab -e          # edit current user's crontab\ncrontab -l           # list current user's cron jobs\ncrontab -r           # remove all cron jobs\nsudo crontab -e -u username    # edit another user's crontab\n\nExamples:\n0 2 * * *        /opt/scripts/backup.sh          # daily at 2:00 AM\n*/15 * * * *      /opt/scripts/healthcheck.sh      # every 15 minutes\n0 0 * * 0          /opt/scripts/weekly-report.sh     # weekly, Sunday midnight\n0 9-17 * * 1-5      /opt/scripts/business-hours.sh      # hourly, business hours weekdays\n\nSystem-wide cron locations: /etc/cron.d/, /etc/cron.daily/, /etc/cron.hourly/, /etc/crontab.\n\nDebugging cron jobs (cron has a minimal environment, no full PATH):\nPATH=/usr/local/bin:/usr/bin:/bin\n# Always use absolute paths inside cron scripts\n# Redirect output to a log for debugging:\n0 2 * * * /opt/scripts/backup.sh >> /var/log/backup.log 2>&1\n\nCheck if cron ran: grep CRON /var/log/syslog or journalctl -u cron.\n\nFor user-level scheduled tasks without root, systemd timers are a modern alternative to cron with better logging via journalctl.",
+        "subsections": [],
+        "tags": [
+          "cron",
+          "crontab",
+          "scheduling"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "performance-monitoring",
+        "title": "Performance Monitoring",
+        "content": "CPU:\ntop                       # live view, press 1 for per-core breakdown\nhtop                       # nicer interactive version\nmpstat 1 5                  # per-CPU stats, 5 samples 1 second apart\nuptime                       # load average (1, 5, 15 min)\nnproc                         # number of CPU cores\nlscpu                          # detailed CPU info\n\nMemory:\nfree -h                    # human-readable memory summary\nvmstat 1 5                  # virtual memory stats over time\ncat /proc/meminfo             # detailed breakdown\nps aux --sort=-%mem | head    # top memory consumers\n\nDisk I/O:\niostat -x 1 5               # extended disk I/O stats\niotop                         # live per-process disk I/O\ndf -h                          # disk space usage\ndu -sh /* 2>/dev/null            # size per top-level directory\n\nNetwork:\niftop                       # live bandwidth per connection\nnload                        # simple live bandwidth graph\nss -s                         # socket statistics summary\n\nLoad average interpretation: three numbers are 1/5/15-minute averages of the run queue length. On a 4-core system, a load of 4.0 means cores are fully utilized.\n\nQuick health check one-liner:\necho \"=== CPU ===\"; uptime; echo \"=== MEM ===\"; free -h; echo \"=== DISK ===\"; df -h; echo \"=== TOP ===\"; ps aux --sort=-%cpu | head -5",
+        "subsections": [],
+        "tags": [
+          "performance",
+          "monitoring",
+          "top",
+          "iostat",
+          "load"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      }
+    ],
+    "glossary": [
+      {
+        "term": "inode",
+        "definition": "A data structure storing metadata about a file (permissions, owner, size, location) but not its name — names map to inodes via directory entries."
+      },
+      {
+        "term": "PID",
+        "definition": "Process ID — a unique number identifying a running process."
+      },
+      {
+        "term": "PPID",
+        "definition": "Parent Process ID — the PID of the process that spawned this one."
+      },
+      {
+        "term": "zombie process",
+        "definition": "A process that has finished but still has an entry in the process table because its parent hasn't read its exit status yet."
+      },
+      {
+        "term": "daemon",
+        "definition": "A background process running without direct user interaction, typically providing a service (e.g. sshd, nginx)."
+      },
+      {
+        "term": "SIGTERM",
+        "definition": "Signal 15 — a graceful termination request a process can catch and handle before exiting."
+      },
+      {
+        "term": "SIGKILL",
+        "definition": "Signal 9 — an immediate, unblockable termination the OS enforces; the process cannot clean up."
+      },
+      {
+        "term": "load average",
+        "definition": "A measure of system demand: the average number of processes waiting for or using the CPU over 1, 5, and 15 minute windows."
+      },
+      {
+        "term": "unit file",
+        "definition": "A systemd configuration file (.service, .timer, etc) defining how a service or scheduled task runs."
+      },
+      {
+        "term": "journalctl",
+        "definition": "The command-line tool for querying logs collected by systemd's journal service."
+      },
+      {
+        "term": "sticky bit",
+        "definition": "A permission bit on a directory preventing users from deleting files they don't own, even with write access to the directory (commonly set on /tmp)."
+      },
+      {
+        "term": "symlink",
+        "definition": "A symbolic link — a special file pointing to another file or directory by path, can cross filesystem boundaries."
+      }
+    ],
+    "commonIssues": [
+      {
+        "problem": "A systemd service won't start",
+        "cause": "Config syntax error, missing dependency, permission issue, or port conflict.",
+        "solution": "Run systemctl status servicename for the immediate error, then journalctl -u servicename -n 50 for context. Check port conflicts with ss -tulpn | grep PORT. Verify file permissions match the service's running user.",
+        "tags": [
+          "systemd",
+          "troubleshooting"
+        ]
+      },
+      {
+        "problem": "Disk is full and the system is misbehaving",
+        "cause": "Logs, old kernels, or application data have consumed all available space.",
+        "solution": "Run df -h to confirm which partition is full, then du -sh /var/log/* 2>/dev/null | sort -rh | head to find large log directories. Truncate or rotate logs with journalctl --vacuum-size=200M. Check for orphaned old kernels with dpkg -l | grep linux-image.",
+        "tags": [
+          "disk",
+          "storage",
+          "logs"
+        ]
+      },
+      {
+        "problem": "Permission denied when running a script that should be executable",
+        "cause": "The execute bit isn't set, or the shebang line is missing/wrong.",
+        "solution": "Run chmod +x script.sh. Verify the first line is a valid shebang like #!/bin/bash. If on a noexec-mounted filesystem, move the script or invoke with bash script.sh.",
+        "tags": [
+          "permissions",
+          "scripts"
+        ]
+      },
+      {
+        "problem": "Network interface is down after a reboot",
+        "cause": "Network configuration wasn't persisted, or NetworkManager/netplan config is misconfigured.",
+        "solution": "Check ip a to confirm interface state. On Ubuntu with netplan, check /etc/netplan/*.yaml and run sudo netplan apply. On NetworkManager systems, use nmcli device status and nmcli connection up <name>.",
+        "tags": [
+          "networking",
+          "boot"
+        ]
+      },
+      {
+        "problem": "High load average but CPU usage looks low in top",
+        "cause": "Processes are likely blocked on I/O wait, not CPU-bound.",
+        "solution": "Check the wa column in top or run vmstat 1 5 — high wa percentage confirms I/O bottleneck. Use iotop to identify the process causing I/O load. Check disk health with smartctl -a /dev/sda if available.",
+        "tags": [
+          "performance",
+          "load",
+          "io"
+        ]
+      },
+      {
+        "problem": "SSH connection refused or times out",
+        "cause": "SSH daemon isn't running, firewall is blocking the port, or wrong port/IP is used.",
+        "solution": "On the server: systemctl status sshd to confirm it's running. Check firewall rules with ufw status or iptables -L -n. Confirm SSH is listening with ss -tulpn | grep :22. From the client, verify connectivity with nc -zv host 22 first.",
+        "tags": [
+          "ssh",
+          "networking",
+          "firewall"
+        ]
+      },
+      {
+        "problem": "Cron job isn't running even though the schedule looks correct",
+        "cause": "Cron runs with a minimal environment, so scripts relying on environment variables or relative paths silently fail.",
+        "solution": "Use absolute paths everywhere. Add an explicit PATH at the top of the crontab. Redirect output to a log file. Verify cron itself ran via grep CRON /var/log/syslog.",
+        "tags": [
+          "cron",
+          "scheduling"
+        ]
+      },
+      {
+        "problem": "Out of memory errors or the OOM killer terminating processes",
+        "cause": "A process is consuming more memory than available, or swap is exhausted.",
+        "solution": "Check free -h for memory and swap usage. Identify the culprit with ps aux --sort=-%mem | head. Review dmesg | grep -i \"out of memory\" or journalctl -k | grep -i oom to confirm and identify the killed process.",
+        "tags": [
+          "memory",
+          "oom",
+          "performance"
+        ]
+      },
+      {
+        "problem": "Package installation fails with dependency conflicts",
+        "cause": "Repository metadata is stale, or there's a version conflict.",
+        "solution": "Run apt update (or dnf check-update) first. For stuck dependencies, try apt --fix-broken install. Check apt-cache policy packagename for available versions and pin manually if needed.",
+        "tags": [
+          "packages",
+          "apt",
+          "dependencies"
+        ]
+      },
+      {
+        "problem": "User can't sudo even though they're in the sudo group",
+        "cause": "Group membership requires a new login session, or the group name differs by distro.",
+        "solution": "Have the user log out and back in (or run newgrp sudo). Confirm with groups username. Verify the correct group name: Debian/Ubuntu use sudo, RHEL/CentOS use wheel.",
+        "tags": [
+          "sudo",
+          "permissions",
+          "users"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "systemctl status SERVICE",
+        "description": "Check current status and recent logs for a service",
+        "example": "systemctl status nginx",
+        "platform": "linux",
+        "tags": [
+          "systemd"
+        ]
+      },
+      {
+        "command": "journalctl -u SERVICE -f",
+        "description": "Live-tail logs for a specific systemd service",
+        "example": "journalctl -u nginx -f",
+        "platform": "linux",
+        "tags": [
+          "systemd",
+          "logs"
+        ]
+      },
+      {
+        "command": "ss -tulpn",
+        "description": "Show all listening TCP/UDP ports with owning process",
+        "example": "ss -tulpn | grep :8080",
+        "platform": "linux",
+        "tags": [
+          "networking"
+        ]
+      },
+      {
+        "command": "df -h",
+        "description": "Show disk space usage in human-readable format",
+        "example": "df -h",
+        "platform": "linux",
+        "tags": [
+          "disk"
+        ]
+      },
+      {
+        "command": "du -sh DIR",
+        "description": "Show total size of a directory",
+        "example": "du -sh /var/log",
+        "platform": "linux",
+        "tags": [
+          "disk"
+        ]
+      },
+      {
+        "command": "ps aux --sort=-%cpu",
+        "description": "List processes sorted by CPU usage",
+        "example": "ps aux --sort=-%cpu | head -10",
+        "platform": "linux",
+        "tags": [
+          "process"
+        ]
+      },
+      {
+        "command": "kill -9 PID",
+        "description": "Force-terminate a process immediately",
+        "example": "kill -9 1234",
+        "platform": "linux",
+        "tags": [
+          "process"
+        ]
+      },
+      {
+        "command": "chmod 755 FILE",
+        "description": "Set rwxr-xr-x permissions on a file",
+        "example": "chmod 755 script.sh",
+        "platform": "linux",
+        "tags": [
+          "permissions"
+        ]
+      },
+      {
+        "command": "find PATH -name PATTERN",
+        "description": "Search for files matching a name pattern",
+        "example": "find /var/log -name *.log -mtime -1",
+        "platform": "linux",
+        "tags": [
+          "filesystem"
+        ]
+      },
+      {
+        "command": "ssh-keygen -t ed25519",
+        "description": "Generate a modern SSH key pair",
+        "example": "ssh-keygen -t ed25519 -C my-key",
+        "platform": "linux",
+        "tags": [
+          "ssh"
+        ]
+      },
+      {
+        "command": "rsync -avz SRC DEST",
+        "description": "Sync files efficiently, transferring only differences",
+        "example": "rsync -avz ./folder/ user@host:/path/",
+        "platform": "linux",
+        "tags": [
+          "transfer"
+        ]
+      },
+      {
+        "command": "crontab -e",
+        "description": "Edit the current user's scheduled cron jobs",
+        "example": "crontab -e",
+        "platform": "linux",
+        "tags": [
+          "cron"
+        ]
+      },
+      {
+        "command": "grep -i PATTERN FILE",
+        "description": "Case-insensitive text search within a file",
+        "example": "grep -i error /var/log/syslog",
+        "platform": "linux",
+        "tags": [
+          "logs"
+        ]
+      },
+      {
+        "command": "top",
+        "description": "Live interactive view of running processes and resource usage",
+        "example": "top",
+        "platform": "linux",
+        "tags": [
+          "performance"
+        ]
+      },
+      {
+        "command": "useradd -m -s /bin/bash USER",
+        "description": "Create a new user with a home directory and bash shell",
+        "example": "useradd -m -s /bin/bash deploy",
+        "platform": "linux",
+        "tags": [
+          "users"
+        ]
+      }
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "linux"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

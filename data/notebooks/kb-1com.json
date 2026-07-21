@@ -1,0 +1,398 @@
+{
+  "id": "kb-1com",
+  "name": "1COM Products & Platform",
+  "version": "2.0",
+  "format": "json",
+  "domain": "telecom",
+  "tags": [
+    "1com",
+    "netvill",
+    "cloud-pbx",
+    "ip-phone",
+    "ip-intercom",
+    "poe",
+    "access-control"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:11:58.816344Z",
+  "updatedAt": "2026-07-10T08:16:59.179987Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-1com.json",
+  "knowledgeBase": {
+    "summary": "Reference for 1COM (also known as Netvill), a B2B telecom hardware company specializing in VoIP/SIP telephony, IP intercom, access control, PoE networking, and the 1COM cloud PBX platform — covering the product line, the cloud PBX platform, provisioning, and the tools the IT support team uses daily.",
+    "lastWebVerified": null,
+    "webSources": [],
+    "sections": [
+      {
+        "id": "1com-product-overview",
+        "title": "1COM Product Overview",
+        "content": "1COM (operating under the Netvill brand in some contexts) is a B2B telecom and networking hardware company. The product line spans five core areas: IP telephony (desk phones, SIP-based handsets), cloud PBX (hosted call routing and telephony platform), IP intercom (door entry and building communication systems), access control (badge/card readers, door relays), and PoE networking equipment (switches and injectors that power the other device categories).\n\nThe unifying thread across the product line is that almost every device is a network endpoint that registers to a central platform — phones and intercoms register as SIP extensions, access control panels report to a central controller, and PoE switches provide both data and power to all of the above over a single cable run.\n\nTypical deployment: a site has a PoE switch as the network backbone, IP phones and intercoms registering to the 1COM cloud PBX, and access control panels either integrated into the same network or running on a segregated VLAN for security. The IT support team's daily work centers on these four failure domains: registration issues, call quality issues, provisioning/auto-config issues, and PoE/power issues.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "netvill",
+          "overview",
+          "product-line"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "cloud-pbx-platform",
+        "title": "Cloud PBX Platform",
+        "content": "The 1COM cloud PBX is a hosted telephony platform — customers don't run their own physical PBX server; call routing, voicemail, and extension management happen in 1COM's cloud infrastructure, and on-site devices simply register as SIP endpoints.\n\nCore platform concepts:\nExtension — a numbered endpoint (e.g. 101, 102) tied to a SIP account; can be a desk phone, softphone, or intercom.\nTrunk — the connection between the cloud PBX and the outside PSTN/carrier network for placing and receiving external calls.\nDial plan — the routing rules that decide what happens when a number is dialed (internal extension, external trunk, IVR menu, etc).\nRing group — a set of extensions that ring together or in sequence for a shared line.\nIVR (auto-attendant) — a menu system ('press 1 for sales') that routes incoming calls before reaching a human.\n\nAdmin portal access: the platform has a web-based admin portal for provisioning extensions, configuring trunks, setting up ring groups and IVRs, and pulling call detail records (CDRs). Day-to-day administration (adding a new employee's extension, changing a voicemail greeting) happens here rather than via direct device configuration.\n\nAPI access: the platform exposes API endpoints for provisioning automation — useful when onboarding many extensions at once (e.g. a new client site) rather than manually creating each one through the portal UI.\n\nCall detail records (CDRs) are the primary diagnostic tool for 'a customer says they tried to call and it didn't work' tickets — pulling the CDR for the relevant time window shows whether the call reached the platform, how it was routed, and why it terminated (busy, no-answer, failed routing, etc).",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "cloud-pbx",
+          "extensions",
+          "trunk",
+          "dial-plan",
+          "ivr"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "ip-phones",
+        "title": "IP Phones",
+        "content": "1COM desk phones are SIP endpoints that register to the cloud PBX. They are typically PoE-powered (no separate power adapter needed if connected to a PoE switch port) and auto-provision on first boot.\n\nFirst-boot provisioning flow: phone powers on, requests a DHCP lease (gets IP, gateway, DNS, and often a provisioning server option via DHCP option 66 or 160), contacts the provisioning server, downloads its configuration file (extension number, SIP credentials, display settings), then applies the config and registers to the PBX. This means a brand-new phone, connected to the correct network, configures itself with no manual entry required, assuming DHCP and the provisioning server are correctly reachable.\n\nCommon phone-side settings worth knowing: network settings menu (static IP fallback if DHCP fails), factory reset (usually a button-hold sequence or admin menu option, useful when a phone is stuck with stale config), firmware version (visible in phone status menu, relevant when troubleshooting a bug that's fixed in a newer firmware release).\n\nWhen a phone won't register: check that it has a valid IP (network menu on the phone itself), check that the extension exists and is enabled in the PBX admin portal, check that SIP credentials on the phone match what the PBX expects, and check firewall/NAT rules if the phone is behind a different network boundary than usual (e.g. remote worker's home network).\n\nDisplay and feature considerations: most 1COM phones support a busy lamp field (BLF) showing the status of other extensions, programmable line keys, and a directory/contacts feature synced from the PBX or a central directory source.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "ip-phone",
+          "sip",
+          "provisioning",
+          "dhcp"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "ip-intercom",
+        "title": "IP Intercom",
+        "content": "1COM IP intercoms function as SIP extensions in the same way phones do, but are typically mounted at building entrances and trigger a door relay rather than (or in addition to) being a two-way voice device for a person at a desk.\n\nCall flow: visitor presses the call button at the intercom, the intercom places a SIP call to a pre-configured extension or ring group (often the front desk or a mobile extension), and the person who answers can talk to the visitor and remotely trigger the door relay to unlock, typically via a DTMF tone (e.g. pressing '9' on the answering phone sends a DTMF digit that the intercom interprets as an unlock command).\n\nDTMF relay is critical here — if DTMF tones aren't passed correctly between the answering device and the intercom (common cause: codec mismatch, or DTMF relay method mismatch — RFC 2833 vs SIP INFO vs in-band), the door won't unlock even though the call connects and audio works fine in both directions. RFC 2833 (out-of-band DTMF via RTP) is the most reliable method and should be configured consistently across the PBX and the intercom.\n\nDoor relay timing: most intercoms have a configurable relay-hold duration (how long the door stays unlocked after triggering) — too short causes the door to re-lock before the visitor gets through, too long is a security concern.\n\nNetwork segmentation: intercoms are physical building access points and are often placed on a separate VLAN from the general office network for security, since the device is in a publicly accessible location and represents a larger attack surface than an indoor phone.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "ip-intercom",
+          "dtmf",
+          "door-relay",
+          "sip"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "content": "1COM's access control product line covers badge/card readers, door controllers, and the relays that physically actuate door locks, separate from but often co-located with the intercom system at building entry points.\n\nTypical architecture: a card reader at the door reads a credential (RFID badge, fob, or mobile credential), sends the credential data to a door controller, the controller checks the credential against an authorized list (either stored locally on the controller or via a call to a central access control server), and if authorized, triggers the relay to unlock.\n\nPoE is the standard power delivery method for door controllers and readers, same as phones and intercoms — a single network connection at the door provides both data and power, simplifying installation versus running separate low-voltage power wiring.\n\nCommon troubleshooting scenarios: a badge that should work doesn't unlock the door (check whether the credential is actually provisioned/active in the access control system, not just physically present — a badge can be lost/deactivated, or simply never added), a door that won't lock or unlock at all (check PoE power delivery to the controller first before assuming it's a software/credential issue), and access logs not showing an event (check connectivity between the door controller and the central system — controllers often buffer events locally if connectivity is temporarily lost, but a persistent connectivity issue means events stop being recorded centrally).\n\nIntegration with intercom: in many deployments the intercom and access control share the same physical door and network drop but are logically separate systems — a visitor calling in via intercom and a badge holder using access control are two different authorization paths to the same door.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "access-control",
+          "badge",
+          "door-controller"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "poe-devices",
+        "title": "PoE Devices",
+        "content": "Power over Ethernet (PoE) is the backbone of how 1COM equipment gets powered — phones, intercoms, and access control readers all typically draw power from the same cable that carries their network connection, eliminating the need for separate electrical wiring at each device location.\n\nPoE standards and power budget:\n802.3af (PoE) delivers up to 15.4W at the source, about 12.95W usable at the device after cable loss — sufficient for most basic IP phones.\n802.3at (PoE+) delivers up to 30W at the source, about 25.5W usable — needed for phones with large color displays, intercoms with cameras, or devices with higher power draw.\n802.3bt (PoE++/UPoE) delivers up to 60W or 90-100W depending on type, used for higher-power devices like PTZ cameras.\n\nSwitch power budget: every PoE switch has a total power budget shared across all its ports — adding up the power class of every connected device must stay under that budget. A common deployment mistake is connecting more PoE devices than the switch's total budget supports, causing some ports to fail to deliver power even though each individual port is theoretically PoE-capable.\n\nDiagnosing PoE issues: first check the switch's PoE status page, since most managed switches show per-port power draw and whether PoE is being delivered. If a port shows no power delivery, check total budget usage across the switch — it may be maxed out. Test with a known-good PoE device on the same port to isolate whether the issue is the port, the cable, or the original device. Cable quality matters more for PoE than pure data — damaged or substandard cable can deliver data but fail under PoE's higher current draw, especially over longer runs. A PoE tester (inline meter) is the fastest way to confirm whether power is actually present at the device end of a run, independent of the device itself.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "poe",
+          "power-budget",
+          "networking"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "provisioning",
+        "title": "Provisioning",
+        "content": "Provisioning is the automated process by which a new or factory-reset device configures itself without manual data entry, central to how 1COM deployments scale, since a technician shouldn't need to manually configure dozens of phones and intercoms one at a time.\n\nThe typical provisioning chain: device boots, DHCP assigns network settings often including a provisioning server URL via DHCP option 66 (TFTP server) or option 160/159 (HTTP/HTTPS provisioning URL, vendor-dependent), the device contacts the provisioning server and requests its configuration file usually identified by the device's MAC address, the server returns a config file with extension number, SIP credentials, and device-specific settings, and the device applies the config and registers to the PBX.\n\nFor this to work reliably at scale, the provisioning server needs a pre-populated mapping of MAC addresses to extensions/configs — this is usually set up in the 1COM admin portal or a related provisioning tool before devices are physically deployed, so that plugging in a phone with a known MAC address automatically pulls the correct configuration.\n\nWhen provisioning fails: check DHCP first, since a packet capture or DHCP server logs will show whether the device gets an IP and the provisioning server option at all. Then check whether the provisioning server has a config matching that device's MAC address — a 404 or empty response means the device isn't registered in the provisioning system yet. Then check firewall rules between the device's network segment and the provisioning server if they're on different VLANs.\n\nRe-provisioning an existing device after a config change usually requires either a manual reboot/re-provision trigger from the admin portal, or the device checking in on its own schedule — many SIP devices periodically re-check their provisioning server, which is how remote config pushes work without physically touching each device.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "provisioning",
+          "dhcp",
+          "tftp",
+          "mac-address"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "1com-troubleshooting",
+        "title": "1COM Troubleshooting",
+        "content": "A structured approach for the four most common ticket categories:\n\nPhone or intercom won't register: check the device has a valid IP and can reach the network via its own network status menu. Check the extension is active in the PBX admin portal, since a disabled or deleted extension will never register no matter what the device does. Check SIP credentials on the device match what the PBX expects, as a config mismatch after a password rotation is a common cause. Check firewall/NAT, since SIP traffic (typically UDP 5060, sometimes TCP/TLS on 5061) and the RTP media port range must be permitted both directions where relevant.\n\nCall connects but no audio, or one-way audio: this is almost always a media (RTP) path issue, not a signaling issue — the SIP call setup succeeded but the actual voice packets aren't reaching one or both sides. The usual cause is NAT, where the device behind a NAT boundary advertises an internal IP in its SIP messaging that the other side can't actually route packets to. Check the PBX's NAT handling settings, the device's own NAT/STUN configuration, and firewall rules for the RTP port range specifically, separate from the SIP signaling port.\n\nDoor intercom doesn't unlock on DTMF: confirm the call itself connects and has two-way audio first, since fixing audio is a prerequisite before troubleshooting DTMF. Check DTMF relay method consistency (RFC 2833 is the recommended standard) between the PBX and the intercom, as a mismatch causes the digit to never be correctly interpreted even though it sounds like it 'beeps' over the audio. Verify the correct DTMF digit/sequence is configured on the intercom to match what's actually being sent from the answering device.\n\nPoE device has no power or won't boot: check the switch's PoE port status before assuming the device itself is faulty. Check total PoE budget usage on the switch, since a budget overrun can silently fail to power newly connected devices even if older devices on the same switch work fine. Swap to a known-good port and known-good cable to isolate the fault.\n\nGeneral diagnostic tools worth having available: packet capture (Wireshark) for SIP/RTP-level debugging, the PBX admin portal's CDR view for call-level history, the switch's PoE status page, and a basic PoE inline tester for field diagnostics.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "troubleshooting",
+          "registration",
+          "audio",
+          "dtmf",
+          "poe"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "it-team-tools",
+        "title": "IT Team Tools & Daily Workflow",
+        "content": "Tools the Netvill/1COM IT support team relies on day to day, beyond the 1COM platform itself:\n\n1COM Admin Portal is the primary tool for extension provisioning, trunk config, CDR lookups, and IVR/ring group management — the first stop for any 'a call didn't work' or 'this person needs a new extension' ticket.\n\nMirtaPBX is used alongside or as an alternative PBX platform in some deployments; see the dedicated MirtaPBX knowledge notebook for Asterisk-based dialplan and extension troubleshooting that differs from the 1COM cloud platform's portal-driven model.\n\nWireshark is used for SIP/RTP packet-level debugging when registration or audio issues can't be diagnosed from the device or portal alone. Capturing on the device's network segment during a failed call attempt is often the fastest way to see exactly where the failure occurs — no SIP response at all, a specific error code, or media never establishing.\n\nManaged switch admin interfaces are used for PoE budget/port status checks, VLAN configuration verification, and basic port-level diagnostics (link status, errors, traffic counters) when a device-level issue might actually be a network-layer issue.\n\nGoogle Workspace and internal ticketing handle day-to-day ticket intake and team communication — not 1COM-specific, but part of the daily workflow context for how issues get reported and tracked.\n\nThe Data Center knowledge base at avivnofar.github.io/data-center is an internal documentation system with dedicated 1COM and MirtaPBX modules covering recurring troubleshooting scenarios; this Notebook-X kb-1com notebook is intended to complement and eventually cross-reference that resource.\n\nDHCP server logs and the DHCP server admin interface are essential for diagnosing provisioning failures, since the very first step of any auto-provisioning chain depends on DHCP delivering the right options to the device.",
+        "subsections": [],
+        "tags": [
+          "1com",
+          "tools",
+          "workflow",
+          "wireshark",
+          "mirtapbx"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      }
+    ],
+    "glossary": [
+      {
+        "term": "1COM",
+        "definition": "B2B telecom hardware company (also operating as Netvill) specializing in VoIP/SIP phones, IP intercom, access control, PoE networking, and a cloud PBX platform."
+      },
+      {
+        "term": "cloud PBX",
+        "definition": "A hosted telephony platform where call routing and extension management happen in the provider's cloud infrastructure rather than on an on-site PBX server."
+      },
+      {
+        "term": "extension",
+        "definition": "A numbered SIP endpoint (e.g. 101) tied to a device or person, used for internal and external calling."
+      },
+      {
+        "term": "trunk",
+        "definition": "The connection between a PBX and the outside carrier/PSTN network, used for placing and receiving external calls."
+      },
+      {
+        "term": "dial plan",
+        "definition": "The set of routing rules that determine what happens when a particular number or pattern is dialed."
+      },
+      {
+        "term": "ring group",
+        "definition": "A set of extensions configured to ring together or in sequence for a shared line or department."
+      },
+      {
+        "term": "IVR",
+        "definition": "Interactive Voice Response — an automated menu system that routes callers before reaching a person (auto-attendant)."
+      },
+      {
+        "term": "CDR",
+        "definition": "Call Detail Record — a log entry for each call showing routing, duration, and outcome; the primary tool for diagnosing call-related tickets."
+      },
+      {
+        "term": "DTMF",
+        "definition": "Dual-Tone Multi-Frequency — the tone signaling used for touch-tone dialing and in-call commands like triggering a door relay."
+      },
+      {
+        "term": "RFC 2833",
+        "definition": "The standard method for relaying DTMF tones out-of-band via RTP, generally more reliable than in-band or SIP INFO methods."
+      },
+      {
+        "term": "door relay",
+        "definition": "The electrically actuated mechanism that unlocks a door, typically triggered by an intercom DTMF command or an access control authorization."
+      },
+      {
+        "term": "PoE budget",
+        "definition": "The total power a PoE switch can deliver across all its ports combined; exceeding it can prevent additional devices from powering on even if individual ports are PoE-capable."
+      },
+      {
+        "term": "provisioning server",
+        "definition": "The server a device contacts on first boot, or periodically, to download its configuration automatically, identified typically by MAC address."
+      },
+      {
+        "term": "DHCP option 66/160",
+        "definition": "DHCP options used to deliver a provisioning server address (TFTP or HTTP/HTTPS) to a device during the DHCP lease process, enabling zero-touch provisioning."
+      },
+      {
+        "term": "NAT traversal",
+        "definition": "Techniques such as STUN, SIP ALG, or manual config used to ensure SIP signaling and RTP media work correctly when one or both endpoints are behind network address translation."
+      }
+    ],
+    "commonIssues": [
+      {
+        "problem": "A new phone won't register after being plugged in",
+        "cause": "DHCP isn't delivering provisioning info, or the device's MAC address isn't yet registered in the provisioning system or admin portal.",
+        "solution": "Verify the phone gets a valid IP via the device network status menu. Check DHCP server logs for the lease and confirm provisioning options are being sent. Confirm the device's MAC address has a corresponding config entry in the 1COM admin portal.",
+        "tags": [
+          "registration",
+          "provisioning"
+        ]
+      },
+      {
+        "problem": "Call connects but there's no audio in one or both directions",
+        "cause": "RTP media path issue, almost always related to NAT, where the device or PBX is advertising an unreachable internal IP for media.",
+        "solution": "Check the PBX's NAT handling configuration and the device's own NAT/STUN settings. Verify firewall rules permit the RTP port range, separate from the SIP signaling port, bidirectionally.",
+        "tags": [
+          "audio",
+          "nat",
+          "rtp"
+        ]
+      },
+      {
+        "problem": "Intercom call connects with audio but the door doesn't unlock",
+        "cause": "DTMF relay method mismatch between the PBX/answering device and the intercom, for example one side uses RFC 2833 and the other expects in-band or SIP INFO.",
+        "solution": "Standardize on RFC 2833 DTMF relay across the PBX and intercom configuration. Verify the configured unlock digit/sequence on the intercom matches what's actually being sent.",
+        "tags": [
+          "intercom",
+          "dtmf",
+          "door-relay"
+        ]
+      },
+      {
+        "problem": "A PoE phone or intercom has no power and won't boot",
+        "cause": "Switch PoE budget exceeded, faulty cable, or a port-level fault, not necessarily the device itself.",
+        "solution": "Check the switch's PoE port status page for power delivery status. Check total budget usage across the switch. Swap to a known-good port and cable to isolate the fault before replacing the device.",
+        "tags": [
+          "poe",
+          "power"
+        ]
+      },
+      {
+        "problem": "A badge holder can't open a door they should have access to",
+        "cause": "Credential isn't actually provisioned or active in the access control system, even though the badge physically exists.",
+        "solution": "Check the credential's status in the access control admin system to confirm it's assigned, active, and tied to the correct door/zone permissions, not just physically issued.",
+        "tags": [
+          "access-control",
+          "badge"
+        ]
+      },
+      {
+        "problem": "Extension exists in the portal but the phone still won't register",
+        "cause": "SIP credentials on the device don't match what the PBX expects, often after a password or config regeneration.",
+        "solution": "Re-pull the provisioning config for the device, forcing a re-provision from the admin portal if available, so the device receives current credentials rather than manually editing them on the device.",
+        "tags": [
+          "registration",
+          "sip-credentials"
+        ]
+      },
+      {
+        "problem": "Customer reports a call just didn't go through with no other symptoms",
+        "cause": "Could be routing (dial plan), trunk capacity, or a carrier-side issue, needing the CDR to narrow down.",
+        "solution": "Pull the CDR for the relevant time window in the admin portal. The CDR will show whether the call reached the platform, how it was routed, and the termination reason such as busy, no-answer, or failed routing.",
+        "tags": [
+          "cdr",
+          "call-routing"
+        ]
+      },
+      {
+        "problem": "Provisioning works for some phones at a site but not others",
+        "cause": "VLAN or firewall segmentation is blocking provisioning server access for devices on a different network segment than expected.",
+        "solution": "Confirm which VLAN the failing devices are on and verify firewall rules permit access to the provisioning server, and DHCP relay if applicable, from that segment.",
+        "tags": [
+          "provisioning",
+          "vlan",
+          "firewall"
+        ]
+      },
+      {
+        "problem": "Access control logs show gaps and events aren't appearing centrally",
+        "cause": "Connectivity between the door controller and the central access control system was interrupted; controllers often buffer locally but stop syncing.",
+        "solution": "Check network connectivity to the affected door controller and confirm it has reconnected and is syncing buffered events. Investigate the underlying connectivity interruption such as switch port, cable, or upstream network issue.",
+        "tags": [
+          "access-control",
+          "connectivity",
+          "logs"
+        ]
+      },
+      {
+        "problem": "Re-provisioning a device after a config change doesn't take effect",
+        "cause": "The device hasn't checked in with the provisioning server again, or wasn't rebooted or triggered to re-provision.",
+        "solution": "Trigger a manual re-provision or reboot from the admin portal if supported, or physically reboot the device. Confirm the device's check-in schedule if relying on automatic periodic re-provisioning rather than an immediate push.",
+        "tags": [
+          "provisioning",
+          "config-update"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "Wireshark filter: sip",
+        "description": "Capture and filter only SIP signaling traffic to debug registration and call setup",
+        "example": "sip",
+        "platform": "both",
+        "tags": [
+          "wireshark",
+          "sip"
+        ]
+      },
+      {
+        "command": "Wireshark filter: rtp",
+        "description": "Filter for RTP media traffic to debug audio or one-way audio issues",
+        "example": "rtp",
+        "platform": "both",
+        "tags": [
+          "wireshark",
+          "rtp"
+        ]
+      },
+      {
+        "command": "Wireshark filter: sip.Status-Code == 401",
+        "description": "Isolate SIP authentication challenge responses, useful for registration credential issues",
+        "example": "sip.Status-Code == 401",
+        "platform": "both",
+        "tags": [
+          "wireshark",
+          "sip",
+          "auth"
+        ]
+      },
+      {
+        "command": "nc -zuv host 5060",
+        "description": "Test whether the SIP signaling port is reachable from a given network location",
+        "example": "nc -zuv pbx.example.com 5060",
+        "platform": "linux",
+        "tags": [
+          "sip",
+          "connectivity"
+        ]
+      },
+      {
+        "command": "ss -tulpn | grep 5060",
+        "description": "Check whether a local SIP service is listening on the standard SIP port",
+        "example": "ss -tulpn | grep 5060",
+        "platform": "linux",
+        "tags": [
+          "sip",
+          "networking"
+        ]
+      }
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "telecom"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "1COM is a B2B telecom hardware company (also known as Netvill) specializing in VoIP/SIP phones, IP intercoms, access control, PoE networking, and a cloud PBX platform.",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

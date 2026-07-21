@@ -1,0 +1,165 @@
+{
+  "id": "kb-cybersecurity",
+  "name": "Cybersecurity Fundamentals",
+  "version": "2.0",
+  "format": "json",
+  "domain": "security",
+  "tags": [
+    "security",
+    "encryption",
+    "authentication",
+    "threats",
+    "hardening",
+    "incident-response"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:12:20.270950Z",
+  "updatedAt": "2026-07-17T00:00:00.000000Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
+  "knowledgeBase": {
+    "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
+    "lastWebVerified": null,
+    "webSources": [],
+    "sections": [
+      {
+        "id": "security-fundamentals",
+        "title": "Security Fundamentals",
+        "content": "The CIA triad (Confidentiality, Integrity, Availability) is the foundation every security control maps back to: confidentiality prevents unauthorized disclosure, integrity prevents unauthorized modification, availability keeps systems usable for legitimate users. A control that improves one can weaken another (e.g. aggressive lockout policies improve confidentiality but hurt availability), so trade-offs must be explicit.\n\nCore principles applied daily:\nLeast privilege — every account, service, and process gets only the access it needs, nothing more. Audit permissions periodically; access accumulates over time (\"privilege creep\") as roles change.\nDefense in depth — no single control is trusted alone. A compromised firewall shouldn't mean a compromised database; layer network, host, application, and data controls.\nZero trust — never trust based on network location alone (\"inside the LAN\" is not a security boundary). Every request is authenticated and authorized regardless of origin.\nFail secure — when a control fails, it should fail to the safe state (e.g. a failed auth check denies access, a failed firewall rule blocks rather than allows).\n\nRisk is commonly expressed as Risk = Likelihood x Impact. Practical triage: rank findings by exploitability and business impact, not just CVSS score alone — an internal, low-CVSS misconfiguration exposing customer data can matter more than a high-CVSS bug on an isolated dev box.\n\nSecurity is a process, not a product: patching, monitoring, and reviewing access are ongoing operational duties, not one-time deployments.",
+        "subsections": [],
+        "tags": ["fundamentals", "cia-triad", "zero-trust", "least-privilege"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "threat-landscape",
+        "title": "Threat Landscape",
+        "content": "Phishing remains the most common initial-access vector. Variants: spear phishing (targeted, researched), whaling (targets executives), smishing/vishing (SMS/voice), and business email compromise (BEC — impersonating a vendor or executive to redirect payments). Defense is layered: email filtering, DMARC/SPF/DKIM, user training, and MFA so a stolen password alone isn't enough.\n\nRansomware typically arrives via phishing, exposed RDP, or a vulnerable public-facing service, then moves laterally (often via SMB admin shares or stolen domain admin credentials) before encrypting and exfiltrating data for double-extortion. Segmented networks and offline/immutable backups are the main mitigations — backups reachable from the same compromised domain are not real backups.\n\nSupply chain attacks compromise a trusted upstream component (a library, an update mechanism, an MSP) to reach many downstream victims at once — verify package integrity (checksums, lockfiles) and limit third-party access scope.\n\nInsider threats (malicious or negligent) are mitigated by least privilege, access logging, and separation of duties rather than pure perimeter defense.\n\nSocial engineering exploits human trust rather than technical flaws — pretexting, tailgating into secure areas, or a fake IT support call requesting a password reset. No technical control fully substitutes for trained, skeptical staff.\n\nOther common patterns: credential stuffing (reused passwords tried against many services), exploitation of unpatched CVEs within days of public disclosure, and misconfigured cloud storage (public S3 buckets, open blob containers) as a leading cause of large data exposures.",
+        "subsections": [],
+        "tags": ["phishing", "ransomware", "supply-chain", "social-engineering"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "authentication-mfa",
+        "title": "Authentication & MFA",
+        "content": "Authentication factors: something you know (password), something you have (token, phone), something you are (biometric). MFA requires two or more distinct factor categories — a password plus a security question is NOT MFA (both are \"something you know\").\n\nMFA methods, weakest to strongest: SMS OTP (vulnerable to SIM-swap), authenticator app TOTP (RFC 6238, e.g. Google/Microsoft Authenticator), push notification (convenient but vulnerable to \"MFA fatigue\" — attacker spams approval requests until the user taps accept), and FIDO2/WebAuthn hardware keys (phishing-resistant — the cryptographic challenge is bound to the origin domain, so a fake login page can't relay it).\n\nSingle Sign-On (SSO) via SAML or OIDC centralizes authentication — one strong credential (ideally with FIDO2 MFA) instead of many weak ones, and centralizes revocation when an employee leaves.\n\nPassword policy guidance has shifted (NIST SP 800-63B): prioritize length over forced complexity/rotation, check new passwords against known-breached password lists, and don't force periodic changes for passwords not known to be compromised — forced rotation historically pushed users toward predictable patterns (Password1!, Password2!).\n\nDirectory/auth protocols an IT professional will hit: LDAP (directory queries), Kerberos (ticket-based auth in AD environments — watch for \"Golden Ticket\"/\"Kerberoasting\" attacks against service accounts with weak passwords), and RADIUS (network device / VPN authentication).\n\nCredential stuffing defense: rate limiting, CAPTCHA on repeated failures, and mandatory MFA — since the credentials being tried are often valid (reused from another breach), password strength alone doesn't help.",
+        "subsections": [],
+        "tags": ["mfa", "authentication", "sso", "passwords"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "encryption-basics",
+        "title": "Encryption Basics",
+        "content": "Symmetric encryption (AES-256 is the current standard) uses one shared key for both encryption and decryption — fast, used for bulk data, but the key must be distributed securely. Asymmetric encryption (RSA, ECC) uses a public/private key pair — slower, used for key exchange and digital signatures, not bulk data encryption.\n\nTLS combines both: asymmetric crypto negotiates a shared session key during the handshake, then symmetric crypto encrypts the actual traffic. TLS 1.2 is still common; TLS 1.3 is preferred (faster handshake, removed weak cipher support). Always verify with:\nopenssl s_client -connect host:443 -tls1_3          # test TLS 1.3 support\nopenssl x509 -in cert.pem -noout -dates -subject     # check cert validity/expiry\ncurl -vI https://example.com 2>&1 | grep -i 'ssl\\|tls'\n\nHashing (SHA-256, SHA-3) is one-way — used for integrity checks and password storage, never for \"encrypting\" something you need back. Passwords must never be stored as raw hashes — use a slow, salted algorithm designed for it: bcrypt, scrypt, or Argon2 (Argon2id is the current recommendation), which resist GPU-accelerated brute force.\nsha256sum file.iso                    # verify file integrity against a published hash\necho -n \"text\" | openssl dgst -sha256   # quick hash of a string\n\nPKI (Public Key Infrastructure): a Certificate Authority (CA) signs certificates binding a public key to an identity (domain, org). Chain of trust: root CA -> intermediate CA -> leaf certificate. A browser trusts a leaf cert because it trusts the root, and the intermediate links them.\n\nEncryption at rest (disk/database encryption, e.g. LUKS, BitLocker, cloud KMS-managed keys) protects data if storage media is stolen; encryption in transit (TLS, IPsec) protects data crossing a network. Both are needed — neither substitutes for the other.",
+        "subsections": [],
+        "tags": ["encryption", "tls", "pki", "hashing", "openssl"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "network-security",
+        "title": "Network Security",
+        "content": "Network segmentation limits blast radius: separate VLANs for user workstations, servers, VoIP/telephony, guest Wi-Fi, and management/OOB access, with a firewall or ACL controlling traffic between segments. A compromised guest Wi-Fi device should never be able to reach the internal domain controller.\n\nA DMZ (demilitarized zone) hosts internet-facing services (web servers, mail relays, reverse proxies) in a segment isolated from the internal LAN — if the public-facing box is compromised, the attacker still has to cross another boundary to reach internal systems.\n\nNetwork Access Control (NAC) — 802.1X — authenticates a device before it gets network access at the switch port level, commonly using RADIUS against a directory service. Without it, plugging any device into an open switch port grants LAN access.\n\nPort security on switches restricts which MAC addresses may connect to a given port and can shut the port down on violation — a basic mitigation against rogue devices and MAC spoofing.\n\nMonitoring: NetFlow/sFlow for traffic patterns, an IDS/IPS (Snort/Suricata) for signature and anomaly-based detection, and centralized logging (syslog to a SIEM) so an incident can be reconstructed after the fact — a network with no logs is a network you can't investigate.\n\nCommon quick checks:\nnmap -sV -p- target                   # full port scan with service detection (authorized targets only)\nss -tulpn                              # what's listening locally\ntcpdump -i eth0 port 443 -w capture.pcap   # capture traffic for later analysis in Wireshark",
+        "subsections": [],
+        "tags": ["segmentation", "dmz", "nac", "monitoring", "ids"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "endpoint-security",
+        "title": "Endpoint Security",
+        "content": "Traditional antivirus (signature-based) catches known malware but misses novel/fileless attacks. EDR (Endpoint Detection and Response — CrowdStrike, Microsoft Defender for Endpoint, SentinelOne) adds behavioral monitoring, process-tree visibility, and remote response (isolate host, kill process, roll back changes) — the modern baseline for endpoint defense.\n\nPatch management is the single highest-leverage endpoint control: most breaches exploit vulnerabilities that had a patch available for weeks or months. Prioritize by exploitability (is it in CISA's Known Exploited Vulnerabilities catalog?) over CVSS score alone, and track patch compliance, not just patch availability.\n\nApplication whitelisting/allowlisting (Windows AppLocker, macOS Gatekeeper policies) blocks unapproved executables from running at all — far stronger than blacklisting known-bad files, since it doesn't depend on already knowing about a threat.\n\nDevice control: disable or restrict USB mass storage on sensitive endpoints (a classic data-exfiltration and malware-introduction vector); BitLocker/FileVault full-disk encryption protects data if a laptop is lost or stolen.\n\nHardening basics for any endpoint: disable unused local services, remove local admin rights from standard users (the biggest single reduction in malware's ability to persist/spread), enable host-based firewall, and ensure the endpoint reports into central logging/EDR so an incident on it is visible, not silent.\n\nMobile Device Management (MDM/Intune, Jamf) extends the same principles — enforced encryption, remote wipe, compliance policies — to phones and tablets accessing corporate resources.",
+        "subsections": [],
+        "tags": ["edr", "patching", "endpoint", "mdm"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "incident-response",
+        "title": "Incident Response",
+        "content": "Standard IR lifecycle (NIST SP 800-61): Preparation (playbooks, contact lists, tooling in place before an incident), Detection & Analysis (confirm it's real, scope it), Containment (short-term: isolate affected hosts; long-term: patch/rotate credentials while investigation continues), Eradication (remove the actual malware/backdoor/access), Recovery (restore from clean backups, monitor closely), and Lessons Learned (post-incident review — what let it happen, what would have caught it sooner).\n\nFirst response priorities on a suspected-compromised host: don't power it off (destroys volatile memory evidence) unless actively destructive (e.g. ransomware still encrypting) — isolate it from the network instead (pull the cable / disable the switch port / isolate via EDR) while preserving state.\nTriage commands (Linux):\nlast -20                          # recent logins\nw                                  # who's logged in now\nps auxf                            # process tree, look for unexpected parents\nnetstat -tulpn / ss -tulpn         # unexpected listening ports\nfind / -mtime -1 -type f 2>/dev/null   # files modified in the last 24h\n\nChain of custody matters even in internal investigations — document who accessed what evidence and when, in case findings ever need to support HR action, legal proceedings, or law enforcement referral.\n\nCommunication discipline: use an out-of-band channel (not the potentially-compromised email/chat system) to coordinate the response, and follow a pre-agreed disclosure process — notifying affected parties/regulators has legal timelines in many jurisdictions (e.g. GDPR's 72-hour breach notification window).\n\nAlways run a post-incident review even for near-misses — the goal is a system/process fix, not blame.",
+        "subsections": [],
+        "tags": ["incident-response", "forensics", "triage"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "security-hardening-checklists",
+        "title": "Security Hardening Checklists",
+        "content": "CIS Benchmarks (Center for Internet Security) are the industry-standard hardening baselines for OSes, cloud platforms, and common applications — free to download, mapped to specific config settings with automated scoring tools (CIS-CAT).\n\nQuick Linux server checklist: disable root SSH login (PermitRootLogin no), key-based auth only (PasswordAuthentication no), unattended-upgrades for security patches, ufw/firewalld enabled with a default-deny policy, fail2ban against brute force, remove unused packages/services, and centralized log shipping so this box isn't a blind spot.\n\nQuick Windows server checklist: disable SMBv1, enforce LAPS (Local Administrator Password Solution) for unique local admin passwords per machine, enable Windows Defender/EDR, restrict RDP to VPN-only or a jump host with MFA, and apply the Microsoft Security Baseline via Group Policy.\n\nNetwork device checklist: change default credentials immediately, disable unused services (Telnet, HTTP management — use SSH/HTTPS only), restrict management access to a dedicated management VLAN, and keep firmware patched — network gear is frequently the most neglected patch surface in an environment.\n\nCloud hardening basics: no public storage buckets by default, MFA enforced on all cloud console accounts (especially root/owner accounts), least-privilege IAM roles instead of broad admin grants, and cloud-native logging (CloudTrail, Azure Activity Log) enabled and shipped to a retained location outside the account being audited.\n\nA hardening checklist is a floor, not a ceiling — treat it as the minimum baseline before any environment-specific controls.",
+        "subsections": [],
+        "tags": ["hardening", "cis-benchmarks", "checklist"],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      }
+    ],
+    "glossary": [
+      {"term": "CIA Triad", "definition": "Confidentiality, Integrity, Availability — the three properties security controls aim to protect."},
+      {"term": "Zero Trust", "definition": "Security model that never trusts a request based on network location alone; every request is authenticated and authorized."},
+      {"term": "MFA", "definition": "Multi-Factor Authentication — requiring two or more distinct proof-of-identity categories."},
+      {"term": "TOTP", "definition": "Time-based One-Time Password (RFC 6238) — the algorithm behind authenticator apps."},
+      {"term": "FIDO2/WebAuthn", "definition": "Phishing-resistant authentication standard using hardware or platform keys bound to the origin domain."},
+      {"term": "PKI", "definition": "Public Key Infrastructure — the system of CAs, certificates, and keys that establishes trust for TLS and signing."},
+      {"term": "CVE", "definition": "Common Vulnerabilities and Exposures — a public identifier for a specific known vulnerability."},
+      {"term": "CVSS", "definition": "Common Vulnerability Scoring System — a 0-10 severity score for a vulnerability."},
+      {"term": "EDR", "definition": "Endpoint Detection and Response — behavioral endpoint security with remote investigation/response capability."},
+      {"term": "SIEM", "definition": "Security Information and Event Management — centralized log collection, correlation, and alerting."},
+      {"term": "IOC", "definition": "Indicator of Compromise — an artifact (hash, IP, domain) suggesting a system has been breached."},
+      {"term": "Zero-day", "definition": "A vulnerability being exploited before a patch is available."},
+      {"term": "Least Privilege", "definition": "Granting only the minimum access needed to perform a function."},
+      {"term": "Defense in Depth", "definition": "Layering multiple independent security controls so no single failure causes full compromise."},
+      {"term": "Lateral Movement", "definition": "An attacker's technique of moving from an initial compromised host to other systems within a network."}
+    ],
+    "commonIssues": [
+      {"problem": "User approves an unexpected MFA push notification", "cause": "Attacker has valid stolen credentials and spams push requests until the user taps accept out of habit or annoyance (MFA fatigue)", "solution": "Switch to number-matching push or FIDO2 hardware keys; investigate and force password reset + session revocation immediately after any accidental approval", "tags": ["mfa", "phishing"]},
+      {"problem": "Same password reused across multiple services gets compromised", "cause": "Password reuse means a breach at any one service exposes accounts elsewhere (credential stuffing)", "solution": "Enforce unique passwords via a password manager, check new passwords against breached-password lists, and require MFA everywhere so a leaked password alone isn't enough", "tags": ["passwords", "credential-stuffing"]},
+      {"problem": "Public-facing service exploited via a CVE that had a patch available for months", "cause": "Patch management gap — patch existed but wasn't prioritized or deployed", "solution": "Cross-reference vulnerabilities against CISA's Known Exploited Vulnerabilities catalog and patch those first regardless of CVSS score; track compliance, not just patch release", "tags": ["patching", "cve"]},
+      {"problem": "Employee clicks a phishing link and enters credentials on a fake login page", "cause": "Convincing spoofed page, lack of FIDO2/phishing-resistant MFA, insufficient email filtering (SPF/DKIM/DMARC gaps)", "solution": "Force password reset + revoke sessions immediately, review for lateral movement, and move toward FIDO2/WebAuthn which is cryptographically bound to the real origin", "tags": ["phishing", "mfa"]},
+      {"problem": "Exposed RDP port gets brute-forced and used as initial access for ransomware", "cause": "RDP directly reachable from the internet with only a password for protection", "solution": "Never expose RDP directly — require VPN or a jump host with MFA in front of it, and enable account lockout/rate limiting as defense in depth", "tags": ["rdp", "ransomware"]},
+      {"problem": "Cloud storage bucket found publicly readable, exposing customer data", "cause": "Misconfigured access policy — default-open bucket or overly broad IAM permission", "solution": "Audit storage ACLs regularly with cloud security posture tools, default to private, and require an explicit, reviewed change to make anything public", "tags": ["cloud", "misconfiguration"]},
+      {"problem": "Ransomware encrypts file shares across multiple servers within minutes", "cause": "Attacker obtained domain admin or a highly-privileged service account and moved laterally via SMB admin shares before detonating", "solution": "Segment networks, restrict admin share access, monitor for unusual SMB/authentication activity, and maintain offline/immutable backups untouched by the compromised domain", "tags": ["ransomware", "lateral-movement"]},
+      {"problem": "Security incident investigation has no useful logs to reconstruct what happened", "cause": "Logging disabled or retained too briefly, or logs stored only on the compromised host itself", "solution": "Ship logs centrally (SIEM/syslog) with retention long enough to cover realistic dwell time, and treat 'logging enabled and shipped off-host' as a baseline control, not optional", "tags": ["logging", "incident-response"]},
+      {"problem": "Former employee's account still has active access weeks after departure", "cause": "No automated offboarding tied to HR system; manual deprovisioning was missed", "solution": "Tie account deactivation to HR offboarding workflows automatically, and periodically audit active accounts against current employee/contractor lists", "tags": ["access-control", "offboarding"]},
+      {"problem": "TLS certificate expires unexpectedly and breaks a production service", "cause": "No automated renewal/monitoring for certificate expiry", "solution": "Use automated renewal (ACME/Let's Encrypt or an internal PKI with auto-renewal) and monitor expiry dates with alerting well before the deadline", "tags": ["tls", "certificates"]}
+    ],
+    "commands": [
+      {"command": "openssl s_client -connect host:443 -tls1_3", "description": "Test whether a host supports TLS 1.3", "platform": "both"},
+      {"command": "openssl x509 -in cert.pem -noout -dates -subject", "description": "Check a certificate's validity dates and subject", "platform": "both"},
+      {"command": "sha256sum file.iso", "description": "Compute SHA-256 hash of a file to verify integrity", "platform": "linux"},
+      {"command": "echo -n \"text\" | openssl dgst -sha256", "description": "Hash a string with SHA-256", "platform": "both"},
+      {"command": "nmap -sV -p- target", "description": "Full TCP port scan with service version detection (authorized targets only)", "platform": "both"},
+      {"command": "tcpdump -i eth0 port 443 -w capture.pcap", "description": "Capture traffic on a port to a file for later analysis in Wireshark", "platform": "linux"},
+      {"command": "last -20", "description": "Show the last 20 login sessions", "platform": "linux"},
+      {"command": "ps auxf", "description": "Show a process tree — useful for spotting an unexpected parent process during triage", "platform": "linux"},
+      {"command": "find / -mtime -1 -type f 2>/dev/null", "description": "Find files modified in the last 24 hours, useful during incident triage", "platform": "linux"},
+      {"command": "ss -tulpn", "description": "List listening TCP/UDP sockets with owning process", "platform": "linux"}
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "security"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "Cybersecurity reference for an IT professional doing daily security-adjacent work in a B2B telecom/networking environment — practical, operational security rather than academic theory.",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

@@ -1,0 +1,558 @@
+{
+  "id": "kb-firewall",
+  "name": "Firewall & Network Security",
+  "version": "2.0",
+  "format": "json",
+  "domain": "security",
+  "tags": [
+    "firewall",
+    "iptables",
+    "ufw",
+    "pfsense",
+    "acl",
+    "ids",
+    "ips"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:11:22.689273Z",
+  "updatedAt": "2026-07-20T07:50:27.563777Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-firewall.json",
+  "knowledgeBase": {
+    "summary": "Practical firewall reference covering core concepts, iptables/nftables, ufw, pfSense, ACL design, zone-based firewalls, IDS/IPS basics, and a real-world troubleshooting workflow for diagnosing blocked or leaking traffic.",
+    "lastWebVerified": "2026-07-17T16:56:14.133617Z",
+    "webSources": [],
+    "sections": [
+      {
+        "id": "firewall-concepts",
+        "title": "Firewall Concepts",
+        "content": "A firewall enforces a traffic policy at a boundary — deciding what's allowed to cross based on rules. Default-deny (block everything, explicitly allow what's needed) is the standard secure posture; default-allow (block only known-bad) is easier to set up but leaves unknown gaps open.\n\nStateful vs stateless: a stateless firewall evaluates each packet independently against rules (fast, but you must write separate rules for both directions of a connection). A stateful firewall tracks connection state (NEW, ESTABLISHED, RELATED) so a rule allowing outbound traffic automatically permits the matching inbound reply — this is how nearly all modern firewalls (iptables conntrack, pfSense, hardware NGFWs) operate by default.\n\nPacket filtering happens at Layer 3/4 (IP/port); a Next-Generation Firewall (NGFW — FortiGate, Palo Alto, Check Point) adds Layer 7 application awareness (identifying \"this is actually Zoom traffic on port 443\", not just \"TCP 443\"), plus IDS/IPS, and TLS inspection.\n\nRule ordering matters: firewalls generally evaluate rules top-to-bottom and stop at first match, so a broad ALLOW rule placed above a specific DENY rule makes the DENY unreachable. Always place more specific rules first, and end the chain with an explicit default policy (DROP/REJECT) rather than relying on an implicit default.\n\nDROP vs REJECT: DROP silently discards the packet (attacker gets no response, useful against reconnaissance); REJECT sends back an explicit refusal (ICMP port unreachable / TCP RST) — more diagnosis-friendly and \"polite\" for internal networks, DROP is generally preferred at the internet-facing edge.",
+        "subsections": [],
+        "tags": [
+          "concepts",
+          "stateful",
+          "ngfw"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "iptables",
+        "title": "iptables",
+        "content": "iptables (Linux's traditional packet filter, being superseded by nftables but still ubiquitous) organizes rules into tables (filter, nat, mangle) and chains (INPUT, OUTPUT, FORWARD).\n\nViewing rules:\niptables -L -n -v --line-numbers        # list filter table with packet counts and line numbers\niptables -t nat -L -n -v                 # list NAT table\n\nBasic filter rules:\niptables -A INPUT -p tcp --dport 22 -j ACCEPT               # allow inbound SSH\niptables -A INPUT -s 192.168.1.0/24 -j ACCEPT                 # allow a whole subnet\niptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT   # allow return traffic\niptables -A INPUT -j DROP                                     # default-deny, placed last\n\nDeleting/inserting:\niptables -D INPUT 3                # delete rule at line 3\niptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT   # insert at the top (position 1)\n\nNAT (masquerade for outbound internet sharing):\niptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE\niptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 10.0.0.5:80   # port forward\n\nPersistence: rules are in-memory only until saved.\nDebian/Ubuntu: iptables-save > /etc/iptables/rules.v4 (or use the iptables-persistent package)\nRHEL/CentOS: service iptables save (older) or migrate to firewalld/nftables\n\nLogging dropped packets for troubleshooting:\niptables -A INPUT -j LOG --log-prefix \"IPT-DROP: \" --log-level 4\nThen check dmesg or /var/log/kern.log for the LOG entries just before the drop.",
+        "subsections": [],
+        "tags": [
+          "iptables",
+          "linux",
+          "nat"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "ufw",
+        "title": "ufw",
+        "content": "ufw (Uncomplicated Firewall) is a friendlier front-end over iptables/nftables, the default on Ubuntu.\n\nBasic usage:\nsudo ufw status verbose             # check status and default policies\nsudo ufw enable                      # turn on (careful over SSH — allow SSH first!)\nsudo ufw allow 22/tcp                 # allow inbound SSH\nsudo ufw allow ssh                    # same thing, using the /etc/services name\nsudo ufw allow from 192.168.1.0/24     # allow a whole subnet, any port\nsudo ufw allow from 192.168.1.10 to any port 3306   # allow a specific host to a specific port\nsudo ufw deny 23                       # explicitly deny telnet\n\nDefault policies:\nsudo ufw default deny incoming\nsudo ufw default allow outgoing\n\nApplication profiles (pre-defined port groups for known services, in /etc/ufw/applications.d/):\nsudo ufw app list\nsudo ufw allow 'Nginx Full'             # opens both HTTP and HTTPS\n\nManaging rules:\nsudo ufw status numbered                # list with index numbers\nsudo ufw delete 3                        # delete rule #3\nsudo ufw reset                           # wipe all rules back to defaults (use with care)\n\nLogging:\nsudo ufw logging on                      # log blocked/allowed traffic to /var/log/ufw.log\n\nThe golden rule before enabling ufw on a remote box: always allow SSH first (sudo ufw allow OpenSSH) — enabling a default-deny firewall without an SSH allow rule locks you out immediately.",
+        "subsections": [],
+        "tags": [
+          "ufw",
+          "ubuntu"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "pfsense",
+        "title": "pfSense",
+        "content": "pfSense is a FreeBSD-based open-source firewall/router distribution, commonly deployed as a dedicated appliance or VM at the network edge, using a web GUI (Firewall > Rules) rather than a command-line rule syntax.\n\nRule evaluation: pfSense evaluates rules top-to-bottom per interface, and (unlike some firewalls) the LAST matching rule wins rather than the first — a common source of confusion for admins coming from iptables. There's also an implicit \"block all\" at the bottom of every interface's ruleset unless overridden.\n\nInterface-based rules: rules are defined per-interface and apply to traffic entering that interface (e.g. a rule on the WAN tab governs traffic coming IN from the internet; a rule on the LAN tab governs traffic coming in from the internal network). This trips up admins expecting a single global ruleset.\n\nAliases group IPs/networks/ports under a reusable name (Firewall > Aliases) so a rule set can be updated in one place instead of edited across many rules.\n\nNAT: pfSense auto-creates outbound NAT rules in \"Automatic\" mode; switch to \"Hybrid\" or \"Manual\" mode when you need fine control (e.g. a specific internal IP that must NOT be NATed, or 1:1 NAT for a DMZ host).\n\nCommon operational tasks: Diagnostics > States shows the live state table (useful to confirm whether a connection is even reaching the firewall); Status > System Logs > Firewall shows blocked traffic with the matching rule; Diagnostics > Packet Capture is pfSense's built-in tcpdump front-end for on-box packet capture without SSH.\n\npfSense also runs Suricata or Snort as installable packages for IDS/IPS directly on the firewall, and OpenVPN/IPsec/WireGuard packages for VPN termination.",
+        "subsections": [],
+        "tags": [
+          "pfsense",
+          "freebsd",
+          "appliance"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "acls-rules",
+        "title": "ACLs & Rules",
+        "content": "An Access Control List (ACL) is an ordered set of permit/deny statements matched against traffic attributes (source/destination IP, port, protocol). Router/switch ACLs (Cisco-style) and firewall rule sets follow the same first-match logic described in Firewall Concepts.\n\nCisco standard ACL (matches source IP only, applied close to the destination since it can't filter by port):\naccess-list 10 permit 192.168.1.0 0.0.0.31\naccess-list 10 deny any\n\nCisco extended ACL (matches source, destination, protocol, port — applied close to the source to filter earliest):\naccess-list 110 permit tcp 192.168.1.0 0.0.0.255 any eq 443\naccess-list 110 deny ip any any log\n\nNote the wildcard mask (inverse of a subnet mask) in Cisco ACLs — 0.0.0.255 matches a /24, which is the opposite convention from a normal subnet mask and a common source of misconfiguration.\n\nDesign principles: write the most specific rules first, always end with an explicit deny (many platforms have an implicit deny-all at the end, but writing it explicitly with logging makes troubleshooting much easier), and document the business reason for each rule inline — a stale, undocumented ACL entry is a standing risk nobody wants to remove because nobody remembers why it's there.\n\nRegularly audit ACLs for rules that are never hit (candidates for removal) and overly broad rules (any-any-any entries) that likely represent a shortcut taken under time pressure rather than an intentional design decision. Most platforms (iptables, pfSense, NGFWs) show per-rule hit counters specifically to support this kind of audit.",
+        "subsections": [],
+        "tags": [
+          "acl",
+          "cisco",
+          "rule-design"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "zone-based-firewalls",
+        "title": "Zone-Based Firewalls",
+        "content": "Zone-Based Firewalls (Cisco ZBFW, and the model most NGFWs including FortiGate and Check Point use conceptually) group interfaces into named zones (e.g. INSIDE, OUTSIDE, DMZ, GUEST) and define policy between zone pairs, rather than per-interface — this scales much better once you have more than a couple of interfaces, since policy is expressed as \"what can DMZ reach in INSIDE\" rather than repeated per physical port.\n\nDefault behavior: intra-zone traffic (same zone to same zone) is typically allowed by default; inter-zone traffic is denied by default until an explicit zone-pair policy permits it. This default-deny-between-zones posture is the main security benefit over a flat interface-based ruleset.\n\nZone-pair policy example (conceptual): a policy from GUEST to OUTSIDE might allow HTTP/HTTPS only; a policy from DMZ to INSIDE would typically be denied entirely (a public-facing box should never need to initiate connections into the internal network — if it does, that's usually a sign of compromise or bad architecture).\n\nSelf zone: traffic destined to/from the firewall device itself (e.g. SSH management, routing protocol traffic) is handled by a special \"self\" zone with its own policy, distinct from transit traffic passing through the device.\n\nOn FortiGate specifically, zones can group multiple physical/VLAN interfaces, and policies reference source/destination zone (or interface), address objects, and service objects — the same underlying zone-pair-policy model as ZBFW, just with a more feature-rich policy object (application control, web filtering, IPS profile) attached to each rule.\n\nPractical benefit: when adding a new segment, you write one new zone-pair policy instead of a rule against every existing interface — much easier to reason about and audit at scale.",
+        "subsections": [],
+        "tags": [
+          "zone-based",
+          "fortigate",
+          "cisco-zbfw"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "idsips-basics",
+        "title": "IDS/IPS Basics",
+        "content": "An IDS (Intrusion Detection System) monitors traffic and alerts on suspicious patterns but doesn't block anything itself — it's a visibility tool, typically fed a copy of traffic via a SPAN/mirror port so it can't affect the live path. An IPS (Intrusion Prevention System) sits inline and can actively drop malicious traffic — same detection engine, but now in the traffic's actual path, which means a false positive can break legitimate traffic.\n\nDetection approaches: signature-based (matches known attack patterns — fast, low false-positive rate, but blind to novel/zero-day attacks) and anomaly-based (baselines \"normal\" traffic and flags deviations — can catch unknown attacks but has a higher false-positive rate that needs tuning).\n\nSnort and Suricata are the two dominant open-source engines (Suricata adds multi-threading and native protocol/file extraction). Both use a rule syntax like:\nalert tcp any any -> $HOME_NET 22 (msg:\"SSH brute force attempt\"; flow:to_server; threshold:type threshold, track by_src, count 5, seconds 60; sid:1000001;)\nThis alerts if 5+ SSH connection attempts from the same source hit the home network within 60 seconds.\n\nDeployment position matters: place the IDS/IPS sensor where it can see the traffic you actually care about — at the internet edge for external threats, and optionally on internal segments (east-west) to catch lateral movement that never crosses the perimeter at all.\n\nTuning is not optional: an out-of-the-box ruleset generates significant noise; disable/adjust rules that don't apply to your environment (e.g. rules for a database engine you don't run) and whitelist known-good but unusually-shaped internal traffic, or analysts will start ignoring alerts entirely (alert fatigue) — which defeats the tool's purpose.",
+        "subsections": [],
+        "tags": [
+          "ids",
+          "ips",
+          "snort",
+          "suricata"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "firewall-troubleshooting",
+        "title": "Firewall Troubleshooting",
+        "content": "Systematic approach when traffic is unexpectedly blocked: confirm the traffic is actually reaching the firewall (packet capture at the interface), confirm which rule is matching it (most platforms show a hit counter or a matched-rule field in logs), and confirm the direction — is this the initial packet or the stateful return packet being blocked by an asymmetric routing path?\n\nLinux (iptables):\niptables -L -n -v --line-numbers          # check hit counters per rule — a rule with 0 packets is never matching\ntcpdump -i eth0 host 10.0.0.5 -n            # confirm the traffic actually arrives at this interface\nconntrack -L | grep 10.0.0.5                 # check connection tracking state\n\npfSense: Status > System Logs > Firewall shows the exact rule that blocked a packet by rule ID — click through to jump straight to that rule for editing. Diagnostics > States confirms whether a connection has an active state entry (no entry usually means the SYN never got a reply, which points elsewhere — routing, not the firewall).\n\nCommon root causes:\nAsymmetric routing — return traffic takes a different path than outbound traffic and hits a stateful firewall with no matching connection state, so it's dropped as \"invalid\". Fix: ensure symmetric routing, or add a static/policy route.\nRule ordering — a broad ALLOW above a specific DENY (or vice versa depending on platform's first/last-match semantics) makes the intended rule unreachable.\nMTU/fragmentation issues masquerading as \"firewall blocking a specific service\" — large packets get silently dropped due to fragmentation/PMTUD failure; test with ping -M do -s 1472 host (Linux, tests exact MTU) rather than assuming it's rule logic.\nNAT ordering — DNAT applied before the filter rules see the *original* destination on some platforms, causing filter rules written against the pre-NAT address to never match.\n\nAlways change one variable at a time, and keep a saved baseline of the ruleset before making live changes — 'it worked before I touched the firewall' is the fastest way to identify what to revert.",
+        "subsections": [],
+        "tags": [
+          "troubleshooting",
+          "tcpdump",
+          "conntrack"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": []
+      },
+      {
+        "id": "pfsense-ce-28-new-features-and-upgrade-notes",
+        "title": "pfSense CE 2.8 new features and upgrade notes",
+        "content": "### pfSense CE 2.8 New Features and Upgrade Notes\n\npfSense CE 2.8.x (current stable: 2.8.1) represents a significant architectural shift, moving to a newer FreeBSD base (15.x) and introducing enterprise-grade features previously reserved for pfSense Plus.\n\n#### Key Technical Features\n*   **Kernel-Based PPPoE (`if_pppoe`):** Introduces a high-performance, kernel-mode PPPoE driver. This reduces CPU overhead significantly for multi-gigabit fiber WAN connections.\n    *   *Configuration:* Navigate to **System > Advanced > Networking** to toggle the driver. Note that legacy `mpd`-based PPPoE remains for compatibility with MLPPP.\n*   **Kea DHCP Integration:** Replaces the aging ISC DHCP daemon with ISC Kea.\n    *   *Capabilities:* Supports native High Availability (HA) with state synchronization, dynamic DNS updates to Unbound without service restarts, and advanced JSON-based configuration snippets for complex deployments.\n*   **NAT64 Support:** Native implementation for IPv6-only environments. Includes `PREF64` support in Router Advertisements and integrated DNS64 via the DNS Resolver.\n*   **Gateway Fail-Back Enhancements:** Improved logic for traffic recovery to preferred gateways, reducing flapping in multi-WAN environments.\n\n#### Upgrade Strategy for Enterprise Environments\nDue to major changes in the PHP interpreter and the underlying FreeBSD base, the upgrade path requires strict adherence to the following workflow to prevent configuration corruption or package-induced boot loops.\n\n1.  **Pre-Upgrade Preparation:**\n    *   **Package Removal:** Uninstall all third-party packages (e.g., `pfBlockerNG`, `Snort`, `Suricata`) before initiating the upgrade. Package settings are retained in the `config.xml` and will be restored upon reinstallation.\n    *   **Backup:** Perform a full `config.xml` backup. Store it off-box.\n2.  **Execution:**\n    *   Use the **System > Update** dashboard.\n    *   If the system fails to boot or exhibits \"Another instance\" errors post-upgrade, perform a hard refresh of the WebGUI or clear browser cache/cookies.\n3.  **Post-Upgrade Verification:**\n    *   **Boot Loader:** The upgrade process updates the boot loader automatically. If you utilize multi-disk setups or custom EFI partitions, verify the boot order in the BIOS/UEFI to ensure the system is not booting from an older, stale partition.\n    *   **Service Validation:** Reinstall packages one by one. Validate service status via `Status > Services` and check `Status > System Logs` for any dependency errors related to the new PHP version.\n\n#### Administrative Best Practices\n*   **Rule Ordering:** Maintain the \"First Match Wins\" principle. Ensure anti-lockout rules remain at the top of the LAN interface.\n*   **Management Hardening:** Disable root access to the WebGUI and restrict administrative access to specific management VLANs or VPN-only sources.\n*   **State Policy:** Leverage the updated system aliases and state policy settings to tighten security posture, particularly when migrating from zone-based NGFW environments (e.g., FortiGate/Cisco) where interface-to-interface policy mapping is standard.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-17T15:15:52.017678Z",
+        "sources": [
+          {
+            "title": "youtube.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFPyQhbECZoMPMhX_fjYLZRv1Q8Ip0a0hwgTaI7wmZcPvZoSJ_L3SjkJcUlrfFLzyTPSLVFMfimS8gjeFpPCspYImEm92iJx6yVh20P6Z2o6Wy3GQUCyWqeyPZrc_wJN0aA"
+          },
+          {
+            "title": "securenetworks.gr",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE2otMZAPtyYBLYFPiMoDTnUx8mKVuQFEHP83juF_RBlJMsHhWmTYtmRq6zYM_fCp3x4mkfi5b8Dp-yAxkBq6aL8a0ZO5LXUl0U7KRwPBh-aOb467TMqoVNlRh3mBC1Afk7OR4knfu-YYNj0ft3VcZI8jyYhk0="
+          },
+          {
+            "title": "reddit.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFQCLADSqvunTPDeloynXIJQi9cyonv9BdK9JS-01uDmD7ExQPBh36MbYihs2gxoq622T_ToJfrvYxUn4XRKJMr_Niw8KKwlG50juFOkzj-cicB_Qm7mUrFr3p-GVVC6cBi6khiCkRFS-NEJCC9eV-uMY_SZlzOzEU904JdFTC2ZHzeCcCcax8YFwVhsQ=="
+          },
+          {
+            "title": "youtube.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbDuRrKrL9xbegV0nLceaGJ8qKH6-WYUODq9zx-SWlFEp_WnII9NaHNaHXlHgSJKauvV-gPTpGYFFOM2NYwMm9yuSXdqn23GprU_WSSUz4-NsJp1GzdSj_fZReSgW1Mi61"
+          },
+          {
+            "title": "netgate.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH-qMIkuhLV79djOp3lXHTmBig86eNI-3M504vJ9l91l53amPtfQaFBMRCd1Esn759Uj8xURdYR-6nUo8QvUXlTZeW1rEJjWCaPJ7AUlDW2dBvuB7G_jpourae0L_WSv6-XVb6pK8vVs9--cTdVDrebmbhj_w=="
+          },
+          {
+            "title": "lawrencesystems.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEIVL2Z2FHgoNnnuNVGzKslLpWzXlQD9X1zofPAttTA7A5CVqc94Q7I3pu3Fh_Jp7_98CRklsTcpDU0YGph3y6iNYY4xPPdD7KKoM7gtUnk2Vw2d3RZK80HqJOKr_RY9IP48HeEewthKLrBgiGuZ5KnM1nrkE9Nm7ohKrnzLMpoUQ_YapA0AhUzDA=="
+          },
+          {
+            "title": "netgate.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHWRrYMWCIZUgMgzfMVssdsgEjo0gYbxvoXhp84lgySTQ7wHujddBpkCJ850J-tPN8b9eADs7ltQuPbKGlw9x4v75jXn8w0HNUGLakJHXkMJ_HXommHkToffwYwl0sUQ8eiVK55ZU2aMWNfPeAB1Sz-3y0FBUekSV3_-mrq3-yArPFxOhQ="
+          },
+          {
+            "title": "zenarmor.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFxlI3Y-wtdzrHJZyXzkzr-5Jmoz7t0bhWsPTbg_E-bxePbFEBtGmBVLNdUK6WWw00iXy_AxKWeN035Vt_55F2NEvzVDcj1F2Rz-6OLj-3lJBkb_gsA60dFQLDGBlMyFwKjy-GB-TnbJhsskejXyv3cU81zYwinMDrAgwbs575CnLR2h3HNuRlpgXyXxrCJy1pbiE1INwJoCh5Af45eNmD6mA=="
+          },
+          {
+            "title": "reddit.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH18IaeSRyCR_6U7XoMUhT-h3Ley7ELsfEEvYkWVFYC98sCpdMnEc-YLV4ttQOzBqLVNE_4wQUTBJyGY83UOCFxjuqmtJpij6trOUq1XqjpIfrVw4OYSkJeQDU9bZ0F9adALSkpryBIvYE3tT-CF7el1G-7aEVMQp5qFMlztpWM8Dsj1Tg3LBBSDR5TcA=="
+          },
+          {
+            "title": "apsl.net",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEzDF4G2a3OHMhGko-2tKmuHg3ocF5o4WeBSUfEEzt_q9nZtQKvYxwGe-ypib_VwKQuE8yf3Vyzuks28sRek9QarrKTRaAQUuThciICCjL42Xf10TXIOiXbDDyMvZh4sn2_xU8oeCKk2meEGyAUukoK2cqUo7989atEBqqaaFOTWIl-TljOMbNHJKmHLE6jVkVRQg8="
+          },
+          {
+            "title": "opennix.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHGd0TuXxSWyQlZMPHqJu4oYyL_fDRUtjpIpdEIFVamsRLB7K5yVupZjzyGkbNICj1eIcT1fXdO2XBTW7N-gHYTBpX4c2HmsEwz5LrFXPe_pEtNGu5RwI4tH2yCfZ-VpmZBbTaHKJK70LWuce29rGgbUs5miYgGHmwOw4eJv453niNT9w=="
+          },
+          {
+            "title": "alpha3cloud.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEgvxaXUzZ-1rgbFSKF_F1pDczpm_mm3gyM9NsTHtc8lP3uG2PQTtZlZp9FQCLrtXI_YubX0GoOHK9Ko2hWnBaiVfQIRXhHTje_RGOyDoy8hXFpc-DOtFx5mXsyWUs5Q8lOPcrAqpNI2cVoSRvRVdrWgvvdVb-Baww_DP0A1L4_LgzKWI3I-8EwXQ=="
+          }
+        ],
+        "dateAdded": "2026-07-17T15:15:52.017692Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "palo-alto-pan-os-zone-and-dos-protection",
+        "title": "Palo Alto PAN-OS Zone and DoS Protection",
+        "content": "### Palo Alto PAN-OS Zone and DoS Protection\n\nIn PAN-OS, security is enforced via a zone-based model where interfaces are assigned to logical zones. Unlike traditional `iptables` chains or interface-based ACLs, policies are evaluated based on the source and destination zone, regardless of the physical or logical interface.\n\n#### 1. Zone Protection Profiles\nZone Protection Profiles act as the first line of defense at the ingress point of a zone. They are applied directly to the zone configuration and are designed to drop malformed packets, reconnaissance traffic, and volumetric floods before they reach the session processing engine.\n\n*   **Scope:** Applied per zone (one profile per zone).\n*   **Key Protections:**\n    *   **Flood Protection:** Mitigates SYN, ICMP, UDP, and other floods using `Alarm`, `Activate`, and `Maximum` thresholds.\n    *   **Reconnaissance Protection:** Detects and blocks port scans and host sweeps.\n    *   **Packet-Based Attacks:** Drops malformed packets (e.g., overlapping fragments, TCP split handshakes).\n*   **Best Practice:** Enable **Packet Buffer Protection** on all zones to prevent buffer exhaustion during high-latency or high-load events.\n\n#### 2. DoS Protection Profiles and Policies\nWhile Zone Protection is a \"blunt\" tool for perimeter defense, DoS Protection provides granular, resource-aware mitigation for specific critical assets (e.g., public-facing web/database servers).\n\n*   **Aggregate Profiles:** Apply thresholds to a group of devices; triggers when the *combined* traffic exceeds the limit.\n*   **Classified Profiles:** Apply thresholds to *each individual* source IP; allows for hardware-level blocking of specific offending IPs.\n*   **Implementation:** Unlike Zone Protection, DoS Protection requires a **DoS Policy Rule** to match traffic and apply the profile.\n\n#### 3. Configuration & Tuning\nTo avoid false positives, establish a baseline of your environment's normal traffic patterns before enforcing `Block` actions.\n\n**Baseline Measurement (CLI):**\nUse the following to monitor current connections-per-second (CPS) and packet rates:\n```bash\n# View current session and packet statistics\nshow session info\nshow counter global filter severity drop | match \"dos|flood\"\n```\n\n**Configuration Workflow:**\n1.  **Define Thresholds:** Set `Activate` thresholds 15–20% above your observed peak baseline.\n2.  **Apply Zone Protection:**\n    *   *GUI:* `Network` > `Zones` > Select Zone > `Zone Protection Profile`.\n3.  **Configure DoS Policy:**\n    *   *GUI:* `Policies` > `DoS Protection` > `Add`.\n    *   Define the `Source` and `Destination` zones/addresses.\n    *   Attach a `DoS Protection Profile` (Aggregate or Classified).\n\n**Key Distinction:**\n| Feature | Zone Protection | DoS Protection |\n| :--- | :--- | :--- |\n| **Scope** | Entire Zone | Specific Host/Subnet |\n| **Mechanism** | Ingress interface drop | Policy-based match |\n| **Granularity** | Low (Flood/Scan) | High (Per-IP/Per-Asset) |\n| **Primary Use** | Perimeter/Infrastructure | Critical Asset Protection |",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-17T16:56:14.133602Z",
+        "sources": [
+          {
+            "title": "thenetworkdna.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH7hl7zNoZ5qDBcI_wFTwlTyYl3mI2_PKXhZjiFRx00hUvZ05QcAOCfmQtCsvIf2VXXWGpdGA--7yEUBcXcmhSTXme2_vCSgphBxKEDKFbAV6-cp0dZVhk86tXsp19IzLPQEbRvbnFYy56VdT7D_lXTrVvMJWqj-q-03XnFOVQzdPwp7-lGjw-S"
+          },
+          {
+            "title": "youtube.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHSIrdRhPvUIDdxA8hhPMCj-sSP5to6Kn_SvJcoyTVMKY7Y5Ac4n_D_WRWWt09nUORUc0hht-EsxURBs3fOU0pt9JWKSVfkg8VtFpvSdIb77p5Yvec76T7Xdv7PW0fZbTAb"
+          },
+          {
+            "title": "networkershome.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFAZv3-21oCQu-o5t8A4V1-9gA3oZgPU50KSFQqo1DKzSlIOZ5FuvekS6V3Jhulb3NP3nCztpDFqsWwpZO-eNwdOLo0c1LWj5eTAwxMpiWjzydS76w4ZS-yWC6OHd2vH_JmZknloER3j6xwh1DJQx5q6UD198ebKtRBNC5kKbqUH4lhbwQM2g1KluWSmSCNa5Tq0D4V9tcI2jAbMiPRP46wpQ=="
+          },
+          {
+            "title": "youtube.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGfB-SqEfp7XGIV3XiccydTCk7duTB647rdaonSDBCDUSsmf6iF2W1dylQKs4VcA3ETakzP00XcuOiawqoJAz87AmIuqH_8WAH0UjPWUceDodREiOVjM6rH_g_6J8yff_N0"
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH-o_MYEA1_Pk_Zp97yNH-dct7JyL6N8S-aY4E4MP78Alp6NPoHhD814dAb_SObLzTQjGTVQ_28gACtR2KRxygHdGEfNj__0qJJmalTA51p5iM2VA4-qoIi3MnIfFaTPRQKJohSXs2lXE1WYpzpHbMHKj9Js9v6g8jDncroxg32DKhYlMx-Hwklq92GA87Y"
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFBv0mbqSLbkUH1PxqESVcr08jy4M80DduoT7Rn1enBuDmTMykodkF9RQsmf31S52pT50IIRbkxJsgWMe9Emm1nKFQOBLiFcE_qchdbqOpHzL53LhkJdJD8NwdbBuCviJyq5LwpioFiE1ODp4qC-tmEtegPz3mg7j6l809WJx6cKuSrkB5MPer8Vl0dRfcrUs07F5hltKZqqhPfL6uxdBNBB9HRwB4Ev8nBbxHOoAna7fOa834="
+          },
+          {
+            "title": "reddit.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH3dby_UhRjZ5BlTsTr2VzO9CDAqazvs_Wpwl0uKzxky7a9RSTO_yPchUVw6MZBGTeLV_T8Zg6z8aydODTJu1dCwWyT7OpQfMPrghNPoPNd71wBss86uhszTxwO1tsAd3K9UfjbWp7svA90cDq9V75SUGrPmOXPI5vERjSNGRuQ5rZ_050TS2Bj__84pJod5YeCPVfQP4xsKuNibyvPAnU6pME="
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHOJb9_NNXQNvIPVTFHB4k321QH7RY5J-iFcBrb7MZAHfPENMwAa-pHvt2y5y275l7rRh_TGgL6zPMpxT0ElC_0HFZvVaqWrB3lPy8QutfpYRXUn0U_hx5PgPainvPLsNFof_gKtgpsI9o-bYzetaZ_sjeL1bMSzrAhWGfGF7b5vAXEW1GT7JO55RaJUlSRSDbdgBOrb6TXHtxthheMS2doPz4es-20Y0GPCBhIjTn3emyXbS4s"
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1kFXmVrZVdNysMhNZWoyEAYzKEq1I56GkiatYh_VZfzvsiXu79W4SLVlky1kaAF7ko4fHlOqx_VYWYPJXvcZLvadoEOnMTbP0pfMU99Nc1wYRgOivp-TazQLayG-nVq4LAQb-qe5VElGLoVXjiOPIpl1ZRhn-59KhtL9JgvcMiIy80wynAzxd4tKu88c="
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFIyXK10CuA4desfkNLskU6xjtEFDbGdyF5H5Ckqlr-qnp-Zf5UF1K9VL5FvgOFo0wLFzQqGD86gw52YXlgM1FRLSwdWzmtG2PtFksjk2UxOfZ3nkqwLivRwxrhqBXT6Gner9mQGvf6PewyyrEzKDqcWKNnrbHNLfmcTgIdIpMBFrcRhDdoAtiWUL1IHIn7sT1nCE4n_p-JuAuIpjqMMTOCl17znN2oRVXIJ1Nn9h-ezLn0kNhCqErDwQ1pWeskEbIbFIJDgQ=="
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGBoIBrFttZXmZO_AJX0akcFNANIUENTmFYQT-vzXFPeGoPP1QTbwrp3JL-xFJueu4JrnSMtB89T9M_A6ZtuTRjjJ4Ffylkr-T-5o0jAOLPF6E-oIWhMGpxEM166qtHeReTCemRtshmtASWiqlye1odiy-sD-4wKgdoa_pyRR3KL_HsK74VzyjdAQUnjD56PtETlAT372jCPoSyceVdtTspk05dLSlYECv6BU7uomrDEnOUmINVNSejg9ul9rxvWXibrNuefhO8l2LB3pZtKY4i9HMuMMzJdQZ-P4ZGPnYxoE4og3FiY882dg=="
+          },
+          {
+            "title": "paloaltonetworks.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH9TMQDNXTR1aY-MPc97i2hVT6lZesSRMbpXVY9VGxiwzODKo0inOs7f1BqV1KST6-rjJJPqyZwLgzdSDxjPQzeRLYa6EKeHCWSPBsmtIaOXq8XRrEY1N5aEkyofNIctg6UDCyXLbd1DcqzdUClhybkdXRGazaFodlzxD2dCjqm-9hIbxUHj1aa2m75mSDYYoq_7ZLFT3G580moA1DQtnG50CV25NO6LPWGgsKxJcjfiAyPmjXWM1hFjobhXw0GCyPpPRlfD0O2VSsIz6Q_2AP0phE1ay9xjTwaFPwMGLqzjReCwC-Iqsdw"
+          },
+          {
+            "title": "brainly.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHg0W2hLNkWLmBgvSADN9g4NPtQEsDzDlVZe10bhfkUR-xwf_7Pfd0-QtOF3ScD24hEXgcanEWbCgWp6Zc4MpiFNGg8snlTBflK234zuNc9RQrinS8mHfSWmVm4"
+          }
+        ],
+        "dateAdded": "2026-07-17T16:56:14.133617Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "firewall-change-management-and-audit-procedures",
+        "title": "Firewall Change Management and Audit Procedures",
+        "content": "### Firewall Change Management and Audit Procedures\n\nIn high-availability B2B telecom environments, firewall changes must follow a strict **Request-Implement-Verify-Audit (RIVA)** lifecycle to prevent outages and compliance drift.\n\n#### 1. Change Management Workflow\nAll modifications must be tied to a unique Change Request (CR) ID.\n*   **Pre-Change:** Validate syntax/logic in a staging environment or via dry-run commands.\n*   **Implementation:** Use automation (Ansible/Terraform) where possible to ensure idempotency.\n*   **Verification:** Confirm traffic flow via `tcpdump` or platform-specific flow monitors.\n*   **Rollback:** Always maintain a \"known-good\" configuration snapshot.\n\n#### 2. Platform-Specific Implementation & Audit\n\n##### Linux (iptables/ufw)\nFor `iptables`, avoid manual rule insertion. Use `iptables-restore` for atomic updates.\n*   **Audit Command:** `iptables -nvL --line-numbers` (Verify packet counters).\n*   **Atomic Update:**\n    ```bash\n    iptables-save > /etc/iptables/rules.v4.bak\n    # Edit rules file, then apply\n    iptables-restore < /etc/iptables/rules.v4\n    ```\n*   **UFW:** Use `ufw status numbered` to identify rule indices for deletion (`ufw delete <index>`).\n\n##### pfSense (FreeBSD/pf)\npfSense utilizes `pf` (Packet Filter). Changes should be managed via the GUI or `pfctl`.\n*   **Syntax Check:** `pfctl -nf /tmp/rules.test`\n*   **Load Rules:** `pfctl -f /etc/pf.conf`\n*   **Audit:** `pfctl -sr` (Show rules) or `pfctl -ss` (Show state table). Monitor state exhaustion in high-traffic B2B links.\n\n##### Enterprise NGFW (FortiGate/Check Point/Cisco)\nThese platforms utilize **Zone-Based Policy Models**. Policies must be defined by `Source Zone` -> `Destination Zone`, never by interface alone.\n\n*   **FortiGate (FortiOS):**\n    *   **Audit:** `show firewall policy <id>`\n    *   **Verification:** `diagnose debug flow filter daddr <IP>`, `diagnose debug flow trace start 10`\n*   **Check Point (Gaia):**\n    *   **Audit:** Use `fw monitor` to capture traffic at different inspection points (pre/post-inbound/outbound).\n    *   **Command:** `fw monitor -e \"accept src=<IP> or dst=<IP>;\"`\n*   **Cisco (FTD/ASA):**\n    *   **Audit:** `show access-list <name>`\n    *   **Verification:** `packet-tracer input <zone> <proto> <src_ip> <src_port> <dst_ip> <dst_port>`\n\n#### 3. Audit and Compliance Requirements\nTo maintain PCI-DSS/SOC2 compliance in telecom infrastructure:\n1.  **Rule Expiration:** Tag all temporary rules with an expiry date in the comment field.\n2.  **Shadow Rule Analysis:** Quarterly, run automated scripts to identify shadowed or redundant rules.\n    *   *Logic:* If Rule A covers the same traffic as Rule B but sits higher in the chain, Rule B is dead code.\n3.  **Logging:** Ensure all `deny` actions are logged to a centralized SIEM (e.g., Splunk, ELK).\n4.  **Configuration Backups:** Automated daily backups of running configurations must be stored in a version-controlled repository (Git). Never rely on local flash storage for recovery.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-20T07:50:27.563725Z",
+        "sources": [],
+        "dateAdded": "2026-07-20T07:50:27.563740Z",
+        "addedBy": "discover"
+      }
+    ],
+    "glossary": [
+      {
+        "term": "Default-Deny",
+        "definition": "A security posture that blocks all traffic except what is explicitly allowed."
+      },
+      {
+        "term": "Stateful Firewall",
+        "definition": "A firewall that tracks connection state so return traffic for an allowed connection is automatically permitted."
+      },
+      {
+        "term": "NGFW",
+        "definition": "Next-Generation Firewall — adds Layer 7 application awareness, IPS, and TLS inspection to traditional packet filtering."
+      },
+      {
+        "term": "DMZ",
+        "definition": "Demilitarized zone — an isolated network segment hosting internet-facing services."
+      },
+      {
+        "term": "ACL",
+        "definition": "Access Control List — an ordered set of permit/deny rules matched against traffic attributes."
+      },
+      {
+        "term": "Zone-Based Firewall",
+        "definition": "A firewall model that groups interfaces into zones and applies policy between zone pairs rather than per-interface."
+      },
+      {
+        "term": "IDS",
+        "definition": "Intrusion Detection System — monitors and alerts on suspicious traffic without blocking it."
+      },
+      {
+        "term": "IPS",
+        "definition": "Intrusion Prevention System — an inline IDS variant that can actively block malicious traffic."
+      },
+      {
+        "term": "Conntrack",
+        "definition": "Linux's connection tracking subsystem, used by iptables/nftables to implement stateful filtering."
+      },
+      {
+        "term": "NAT",
+        "definition": "Network Address Translation — rewriting source/destination addresses, commonly used to share a public IP or forward specific ports inward."
+      },
+      {
+        "term": "Asymmetric Routing",
+        "definition": "When outbound and return traffic for a connection take different network paths, often breaking stateful firewalls."
+      },
+      {
+        "term": "MASQUERADE",
+        "definition": "An iptables NAT target that dynamically uses the outgoing interface's IP — used for outbound internet sharing."
+      }
+    ],
+    "commonIssues": [
+      {
+        "problem": "New iptables rule doesn't seem to take effect",
+        "cause": "A broader rule earlier in the chain already matched the traffic (iptables is first-match, top to bottom)",
+        "solution": "Use iptables -L -n -v --line-numbers to check hit counters and reorder or insert the new rule above the conflicting one with iptables -I",
+        "tags": [
+          "iptables",
+          "rule-order"
+        ]
+      },
+      {
+        "problem": "Enabling ufw over SSH locks the admin out of the server",
+        "cause": "Default-deny was enabled before an explicit allow rule for SSH was added",
+        "solution": "Always run sudo ufw allow OpenSSH (or the equivalent port) before sudo ufw enable, and keep a console/OOB access path as a fallback",
+        "tags": [
+          "ufw",
+          "lockout"
+        ]
+      },
+      {
+        "problem": "pfSense rule appears correct but traffic is still blocked",
+        "cause": "pfSense uses last-match-wins per interface, unlike iptables' first-match — a later, broader rule is overriding the intended one, or the rule was placed on the wrong interface tab",
+        "solution": "Check Status > System Logs > Firewall for the actual rule ID that blocked the packet, and confirm rule placement matches the traffic's actual ingress interface",
+        "tags": [
+          "pfsense",
+          "rule-order"
+        ]
+      },
+      {
+        "problem": "A stateful connection works one direction but the reply never arrives",
+        "cause": "Asymmetric routing sends the return path through a different device than the one tracking connection state",
+        "solution": "Ensure symmetric routing for that traffic or add a policy/static route so return traffic transits the same stateful firewall",
+        "tags": [
+          "asymmetric-routing",
+          "troubleshooting"
+        ]
+      },
+      {
+        "problem": "A specific application works over most networks but fails intermittently through the firewall",
+        "cause": "MTU/fragmentation issue rather than a rule problem — large packets are silently dropped",
+        "solution": "Test with ping -M do -s <size> to find the working MTU, and adjust MSS clamping or MTU settings rather than chasing rule logic",
+        "tags": [
+          "mtu",
+          "troubleshooting"
+        ]
+      },
+      {
+        "problem": "DNAT port-forward rule never seems to match in the filter table",
+        "cause": "NAT (PREROUTING) is applied before filter rules see the packet on some platforms, so filter rules written against the original destination address never match the post-NAT address",
+        "solution": "Write filter rules against the translated (post-NAT) destination, or use the platform's NAT-aware rule ordering",
+        "tags": [
+          "nat",
+          "dnat"
+        ]
+      },
+      {
+        "problem": "IDS/IPS generates so many alerts that analysts stop reviewing them",
+        "cause": "Default ruleset enabled without tuning for the actual environment, producing high false-positive volume",
+        "solution": "Disable rules irrelevant to your stack, whitelist known-good but unusual internal traffic, and periodically review rule hit rates to keep signal-to-noise usable",
+        "tags": [
+          "ids",
+          "alert-fatigue"
+        ]
+      },
+      {
+        "problem": "Firewall rule audit finds several any-any-any allow rules with no documentation",
+        "cause": "Rules were added under time pressure to unblock something quickly and never revisited",
+        "solution": "Treat undocumented broad rules as a standing risk; require a business justification comment on every new rule and schedule periodic ACL reviews using hit counters to find unused entries",
+        "tags": [
+          "acl",
+          "audit"
+        ]
+      },
+      {
+        "problem": "A newly added zone-pair policy doesn't seem to apply",
+        "cause": "Traffic is actually intra-zone (same-zone) which is typically allowed by default and bypasses zone-pair policy entirely, or the interface was never assigned to the intended zone",
+        "solution": "Confirm the interface-to-zone assignment and confirm which zones the traffic is actually crossing before troubleshooting the policy itself",
+        "tags": [
+          "zone-based",
+          "fortigate"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "iptables -L -n -v --line-numbers",
+        "description": "List filter rules with packet/byte counters and line numbers",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT",
+        "description": "Allow return traffic for already-established connections",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE",
+        "description": "Enable outbound NAT (internet sharing) via a given interface",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo ufw allow from 192.168.1.10 to any port 3306",
+        "description": "Allow a specific host to reach a specific port through ufw",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo ufw status numbered",
+        "description": "List ufw rules with index numbers for deletion",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -i eth0 host 10.0.0.5 -n",
+        "description": "Capture and inspect traffic to/from a specific host on an interface",
+        "platform": "linux"
+      },
+      {
+        "command": "conntrack -L | grep 10.0.0.5",
+        "description": "Inspect the Linux connection tracking table for a given host",
+        "platform": "linux"
+      },
+      {
+        "command": "ping -M do -s 1472 host",
+        "description": "Test the largest MTU that passes without fragmentation (Linux)",
+        "platform": "linux"
+      },
+      {
+        "command": "show session info",
+        "description": "View current session statistics",
+        "platform": "both"
+      },
+      {
+        "command": "show counter global filter severity drop | match \"dos|flood\"",
+        "description": "Monitor packet rates and drop statistics related to DoS or flood events",
+        "platform": "both"
+      },
+      {
+        "command": "tcpdump",
+        "description": "Confirm traffic flow",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -nvL --line-numbers",
+        "description": "Verify packet counters",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables-save > /etc/iptables/rules.v4.bak",
+        "description": "Backup iptables rules",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables-restore < /etc/iptables/rules.v4",
+        "description": "Apply atomic updates to iptables",
+        "platform": "linux"
+      },
+      {
+        "command": "ufw status numbered",
+        "description": "Identify rule indices for deletion",
+        "platform": "linux"
+      },
+      {
+        "command": "ufw delete <index>",
+        "description": "Delete a UFW rule by index",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -nf /tmp/rules.test",
+        "description": "Check pf syntax",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -f /etc/pf.conf",
+        "description": "Load pf rules",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -sr",
+        "description": "Show pf rules",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -ss",
+        "description": "Show pf state table",
+        "platform": "linux"
+      },
+      {
+        "command": "show firewall policy <id>",
+        "description": "Audit FortiGate firewall policy",
+        "platform": "linux"
+      },
+      {
+        "command": "diagnose debug flow filter daddr <IP>",
+        "description": "Filter FortiGate debug flow by destination IP",
+        "platform": "linux"
+      },
+      {
+        "command": "diagnose debug flow trace start 10",
+        "description": "Start FortiGate debug flow trace",
+        "platform": "linux"
+      },
+      {
+        "command": "fw monitor -e \"accept src=<IP> or dst=<IP>;\"",
+        "description": "Capture traffic at inspection points",
+        "platform": "linux"
+      },
+      {
+        "command": "show access-list <name>",
+        "description": "Audit Cisco access list",
+        "platform": "linux"
+      },
+      {
+        "command": "packet-tracer input <zone> <proto> <src_ip> <src_port> <dst_ip> <dst_port>",
+        "description": "Verify Cisco packet path",
+        "platform": "linux"
+      }
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "security",
+      "networking"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "Firewall administration reference for an IT professional handling Linux (iptables/ufw), pfSense, and enterprise NGFW concepts (zone-based policy models used by FortiGate/Check Point/Cisco) in a networking-heavy B2B telecom environment.",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

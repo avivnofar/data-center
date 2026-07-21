@@ -1,0 +1,425 @@
+{
+  "id": "kb-bash",
+  "name": "Bash Scripting",
+  "version": "2.0",
+  "format": "json",
+  "domain": "linux",
+  "tags": [
+    "bash",
+    "scripting",
+    "shell",
+    "automation",
+    "linux",
+    "cron"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:11:43.918509Z",
+  "updatedAt": "2026-07-17T18:59:22.082295Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-bash.json",
+  "knowledgeBase": {
+    "summary": "Practical bash scripting reference covering syntax, variables, control flow, functions, string manipulation, file operations, process control, networking commands, and battle-tested one-liners for daily automation and troubleshooting.",
+    "lastWebVerified": null,
+    "webSources": [],
+    "sections": [
+      {
+        "id": "bash-basics",
+        "title": "Bash Basics",
+        "content": "Every bash script should start with a shebang line: #!/bin/bash\n\nMaking a script executable and running it:\nchmod +x script.sh\n./script.sh\nbash script.sh          # alternative, doesn't require execute bit\n\nComments use #:\n# this is a comment\n\nExit codes — 0 means success, non-zero means failure:\nexit 0                  # success\nexit 1                  # generic failure\necho $?                  # check the exit code of the last command\n\nRunning multiple commands:\ncmd1; cmd2               # run sequentially regardless of result\ncmd1 && cmd2              # run cmd2 only if cmd1 succeeds\ncmd1 || cmd2               # run cmd2 only if cmd1 fails\n\nQuoting rules: double quotes allow variable expansion (\"$VAR\"), single quotes are literal ('$VAR' prints literally), backticks or $() capture command output: result=$(ls -la).\n\nStrict mode for safer scripts (catches errors early):\nset -euo pipefail\n# -e: exit on any error\n# -u: error on undefined variables\n# -o pipefail: catch errors in piped commands, not just the last one",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "basics",
+          "shebang",
+          "exit-codes"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "variables-arrays",
+        "title": "Variables & Arrays",
+        "content": "No spaces around = when assigning:\nNAME=\"value\"\nNUM=42\n\nUsing variables:\necho \"$NAME\"\necho \"${NAME}_suffix\"     # braces needed when concatenating\n\nDefault values:\necho \"${VAR:-default}\"    # use 'default' if VAR is unset or empty\necho \"${VAR:=default}\"    # same, but also assigns default to VAR\n\nArrays:\nARR=(\"apple\" \"banana\" \"cherry\")\necho \"${ARR[0]}\"           # first element\necho \"${ARR[@]}\"           # all elements\necho \"${#ARR[@]}\"          # array length\nARR+=(\"date\")               # append an element\n\nLooping over an array:\nfor item in \"${ARR[@]}\"; do\n  echo \"$item\"\ndone\n\nAssociative arrays (bash 4+):\ndeclare -A MAP\nMAP[key1]=\"value1\"\nMAP[key2]=\"value2\"\necho \"${MAP[key1]}\"\nfor key in \"${!MAP[@]}\"; do\n  echo \"$key => ${MAP[$key]}\"\ndone\n\nEnvironment vs local variables: export VAR=value makes it available to child processes; without export it's local to the current shell.",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "variables",
+          "arrays"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "control-flow",
+        "title": "Control Flow",
+        "content": "If statements:\nif [ \"$VAR\" = \"value\" ]; then\n  echo \"match\"\nelif [ \"$VAR\" = \"other\" ]; then\n  echo \"other match\"\nelse\n  echo \"no match\"\nfi\n\nCommon test conditions:\n[ -f file.txt ]      # file exists\n[ -d /path ]          # directory exists\n[ -z \"$VAR\" ]          # string is empty\n[ -n \"$VAR\" ]          # string is not empty\n[ \"$A\" -eq \"$B\" ]       # numeric equal\n[ \"$A\" -gt \"$B\" ]       # numeric greater than\n[ \"$A\" = \"$B\" ]          # string equal\n\nFor loops:\nfor i in 1 2 3; do echo $i; done\nfor i in $(seq 1 10); do echo $i; done\nfor file in *.txt; do echo \"$file\"; done\n\nWhile loops:\nwhile [ $i -lt 10 ]; do\n  echo $i\n  i=$((i+1))\ndone\n\nReading lines from a file safely:\nwhile IFS= read -r line; do\n  echo \"$line\"\ndone < file.txt\n\nCase statements:\ncase \"$VAR\" in\n  start) echo \"starting\" ;;\n  stop) echo \"stopping\" ;;\n  *) echo \"unknown\" ;;\nesac\n\nBreak and continue work inside loops as expected: break exits the loop, continue skips to the next iteration.",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "if",
+          "for",
+          "while",
+          "case"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "functions",
+        "title": "Functions",
+        "content": "Defining a function:\nmy_function() {\n  echo \"Hello, $1\"\n  return 0\n}\nmy_function \"World\"\n\nArguments inside a function: $1, $2, etc are positional arguments. $@ is all arguments as separate words, $# is the argument count.\n\nReturning values: bash functions don't return strings directly through return (that's only for exit codes 0-255). Use echo and capture it:\nget_value() {\n  echo \"some result\"\n}\nRESULT=$(get_value)\n\nLocal variables inside functions (prevents leaking into global scope):\nmy_function() {\n  local temp=\"only visible here\"\n}\n\nDefault parameter handling:\nmy_function() {\n  local name=\"${1:-default_name}\"\n  echo \"$name\"\n}\n\nChecking argument count and erroring out:\nmy_function() {\n  if [ $# -lt 2 ]; then\n    echo \"Usage: my_function arg1 arg2\" >&2\n    return 1\n  fi\n}",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "functions"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "string-manipulation",
+        "title": "String Manipulation",
+        "content": "Length:\necho \"${#VAR}\"\n\nSubstring extraction:\necho \"${VAR:0:5}\"          # first 5 characters\necho \"${VAR: -5}\"          # last 5 characters (space before - matters)\n\nReplace:\necho \"${VAR/old/new}\"      # replace first occurrence\necho \"${VAR//old/new}\"     # replace all occurrences\n\nRemove prefix/suffix:\necho \"${VAR#prefix}\"        # remove shortest matching prefix\necho \"${VAR##prefix}\"       # remove longest matching prefix\necho \"${VAR%suffix}\"        # remove shortest matching suffix\necho \"${VAR%%suffix}\"       # remove longest matching suffix\n\nUppercase/lowercase (bash 4+):\necho \"${VAR^^}\"             # uppercase\necho \"${VAR,,}\"             # lowercase\n\nSplitting a string into an array:\nIFS=',' read -ra PARTS <<< \"a,b,c\"\necho \"${PARTS[1]}\"           # b\n\nString contains check:\nif [[ \"$VAR\" == *\"substring\"* ]]; then echo \"contains it\"; fi\n\nTrimming whitespace:\nVAR=$(echo \"$VAR\" | xargs)    # quick trim using xargs side-effect\n\nUsing sed for replacements in text:\necho \"$VAR\" | sed 's/old/new/g'",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "strings",
+          "sed"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "file-operations",
+        "title": "File Operations",
+        "content": "Reading a file line by line (safe method, preserves whitespace):\nwhile IFS= read -r line; do\n  echo \"$line\"\ndone < input.txt\n\nWriting to a file:\necho \"text\" > file.txt        # overwrite\necho \"text\" >> file.txt        # append\ncat <<EOF > file.txt            # heredoc, multi-line write\nline 1\nline 2\nEOF\n\nChecking file existence and type:\n[ -e path ]    # exists (file or directory)\n[ -f path ]    # is a regular file\n[ -d path ]    # is a directory\n[ -r path ]    # is readable\n[ -w path ]    # is writable\n[ -x path ]    # is executable\n\nFile age and size checks:\n[ -f file.txt ] && [ $(find file.txt -mmin +60) ]    # modified more than 60 min ago\nstat -c%s file.txt                                     # file size in bytes\n\nTemp files safely:\nTMPFILE=$(mktemp)\ntrap 'rm -f \"$TMPFILE\"' EXIT      # ensures cleanup even if script errors out\n\nBackup before overwriting:\ncp file.txt file.txt.bak.$(date +%Y%m%d)",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "files",
+          "io"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "process-control",
+        "title": "Process Control",
+        "content": "Running in background and waiting:\nlong_task &\nPID=$!\nwait $PID\necho \"task finished\"\n\nRunning multiple background tasks and waiting for all:\ntask1 & task2 & task3 &\nwait\necho \"all tasks finished\"\n\nTrapping signals for cleanup (very useful in scripts that create temp resources):\ntrap 'echo \"cleaning up\"; rm -f /tmp/lockfile' EXIT INT TERM\n\nSimple lockfile pattern to prevent concurrent script runs:\nLOCKFILE=/tmp/myscript.lock\nif [ -f \"$LOCKFILE\" ]; then\n  echo \"already running\"\n  exit 1\nfi\ntouch \"$LOCKFILE\"\ntrap 'rm -f \"$LOCKFILE\"' EXIT\n\nTimeout on a command:\ntimeout 10s long_running_command\n\nChecking if a command exists before using it:\nif ! command -v jq &> /dev/null; then\n  echo \"jq is not installed\"\n  exit 1\nfi\n\nSubshells vs current shell: (command) runs in a subshell (variables don't leak back), { command; } runs in the current shell.",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "process",
+          "trap",
+          "background"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "networking-commands",
+        "title": "Networking Commands",
+        "content": "Quick connectivity check in a script:\nif ping -c 1 -W 2 8.8.8.8 &> /dev/null; then\n  echo \"network is up\"\nelse\n  echo \"network is down\"\nfi\n\nWaiting for a service to become available (common in deploy scripts):\nuntil curl -sf http://localhost:8080/health > /dev/null; do\n  echo \"waiting for service...\"\n  sleep 2\ndone\n\nDownloading and checking exit code:\nif curl -fsSL -o file.tar.gz https://example.com/file.tar.gz; then\n  echo \"download succeeded\"\nelse\n  echo \"download failed\" >&2\n  exit 1\nfi\n\nExtracting JSON fields from an API response using jq:\nRESPONSE=$(curl -s https://api.example.com/data)\nVALUE=$(echo \"$RESPONSE\" | jq -r '.field.subfield')\n\nSimple port check inside a script:\nif nc -z -w 2 host 5432; then\n  echo \"port open\"\nfi\n\nGetting your own external IP:\ncurl -s ifconfig.me\ncurl -s ipinfo.io/ip",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "networking",
+          "curl",
+          "jq"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "script-best-practices",
+        "title": "Script Best Practices",
+        "content": "Always start scripts with strict mode:\n#!/bin/bash\nset -euo pipefail\nIFS=$'\\n\\t'\n\nQuote your variables — unquoted variables break on spaces and glob-expand unexpectedly:\n# Bad:  rm $FILE\n# Good: rm \"$FILE\"\n\nUse [[ ]] instead of [ ] for conditionals in bash specifically (more features, fewer footguns with empty variables):\nif [[ -z \"$VAR\" ]]; then ...\n\nAlways validate input arguments at the top of a script:\nif [ $# -eq 0 ]; then\n  echo \"Usage: $0 <arg>\" >&2\n  exit 1\nfi\n\nUse readonly for constants:\nreadonly MAX_RETRIES=3\n\nLog with timestamps for easier debugging later:\nlog() { echo \"[$(date '+%Y-%m-%d %H:%M:%S')] $*\"; }\nlog \"starting process\"\n\nPrefer $() over backticks for command substitution — nests more cleanly.\n\nCheck scripts with shellcheck before deploying — catches a huge class of quoting and logic bugs:\nshellcheck script.sh\n\nMake scripts idempotent where possible — running twice should be safe (check before creating, use mkdir -p, etc).",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "best-practices",
+          "shellcheck"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "common-one-liners",
+        "title": "Common One-Liners",
+        "content": "Find and kill a process on a port:\nlsof -ti:8080 | xargs kill -9\n\nCount lines in a file:\nwc -l file.txt\n\nFind the 10 largest files in a directory tree:\nfind . -type f -exec du -h {} + | sort -rh | head -10\n\nReplace text in all files in a directory:\nfind . -name \"*.txt\" -exec sed -i 's/old/new/g' {} +\n\nMonitor a log file and trigger on a pattern:\ntail -f app.log | grep --line-buffered \"ERROR\"\n\nGet the size of all subdirectories sorted:\ndu -h --max-depth=1 | sort -rh\n\nCount occurrences of each unique line:\nsort file.txt | uniq -c | sort -rn\n\nBackup a directory with timestamp:\ntar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz /path/to/dir\n\nFind files modified in the last hour:\nfind . -mmin -60 -type f\n\nGenerate a random password:\nopenssl rand -base64 16\n\nCheck disk usage and alert if over threshold (useful in cron):\nUSAGE=$(df / | tail -1 | awk '{print $5}' | tr -d '%')\n[ \"$USAGE\" -gt 90 ] && echo \"Disk usage critical: ${USAGE}%\"\n\nParallel execution of a command over a list:\ncat hosts.txt | xargs -P 4 -I {} ssh {} 'uptime'",
+        "subsections": [],
+        "tags": [
+          "bash",
+          "one-liners",
+          "automation"
+        ],
+        "lastUpdated": "2026-06-30T00:00:00.000Z",
+        "sources": []
+      },
+      {
+        "id": "signal-handling-and-cleanup-logic",
+        "title": "Signal Handling and Cleanup Logic",
+        "content": "Bash scripts often interact with external processes or create temporary files that require cleanup upon termination. Relying on scripts to finish naturally is insufficient for robust applications. The `trap` command allows scripts to intercept signals and execute cleanup functions, ensuring a consistent state regardless of how the script exits.\n\n### Core Concept\nThe syntax for `trap` is `trap 'command' signal_list`. The `signal_list` includes standard POSIX signals. The most critical signals for script lifecycle management are:\n- `EXIT`: Triggered when the shell exits (includes normal completion, `exit` commands, or failures).\n- `INT` (SIGINT): Triggered by `Ctrl+C`.\n- `TERM` (SIGTERM): The default signal sent by `kill` to request termination.\n- `ERR`: Triggered when a command returns a non-zero exit status (requires `set -E` to inherit traps in functions).\n\n### Implementation Pattern\nTo handle cleanup effectively, define a dedicated function and trap it at the start of the script. Using a function ensures that the cleanup logic remains centralized and maintainable.\n\n```bash\n#!/bin/bash\n\ncleanup() {\n  local exit_code=$?\n  # Remove temporary files\n  rm -f \"$TEMP_FILE\"\n  # Kill background processes\n  kill \"$PID\" 2>/dev/null\n  echo \"Cleanup complete. Exiting with status $exit_code\"\n  exit \"$exit_code\"\n}\n\n# Trap signals: EXIT, INT, TERM\ntrap cleanup EXIT INT TERM\n\n# Script logic here\nTEMP_FILE=$(mktemp)\n```\n\n### Best Practices\n1. **Use `EXIT` for Catch-All**: Trapping `EXIT` is the most powerful method because it triggers regardless of whether the script finished successfully or was terminated by a signal. However, if you trap `EXIT`, ensure your cleanup function calls `exit` explicitly if needed, or it will continue execution based on the last command's status.\n2. **Avoid Complexity in Traps**: Keep cleanup functions lightweight. If a trap function fails or hangs, it can leave the system in an inconsistent state. Avoid complex logic or long-running operations inside the trap.\n3. **Signal Propagation**: When using `trap`, the signal is caught by the shell. If you need the script to actually terminate after cleanup, you must explicitly call `exit` or send the signal to the process group. Using `trap - EXIT` inside the cleanup function can prevent infinite loops if the cleanup function itself triggers an exit.\n4. **Non-Maskable Signals**: Note that `SIGKILL` (signal 9) cannot be caught or ignored. If a process is sent `SIGKILL`, the trap will not execute. Always design scripts to handle `SIGTERM` gracefully, as this is the standard signal sent by orchestrators like systemd or Kubernetes when stopping services.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-17T18:59:22.082072Z",
+        "sources": [],
+        "dateAdded": "2026-07-17T18:59:22.082072Z",
+        "addedBy": "ai-fill"
+      }
+    ],
+    "glossary": [
+      {
+        "term": "shebang",
+        "definition": "The #! line at the top of a script that tells the OS which interpreter to use to run it."
+      },
+      {
+        "term": "exit code",
+        "definition": "A numeric value (0-255) a process returns on completion; 0 conventionally means success."
+      },
+      {
+        "term": "subshell",
+        "definition": "A child shell spawned by parentheses (command), where variable changes don't affect the parent shell."
+      },
+      {
+        "term": "heredoc",
+        "definition": "A multi-line string literal syntax using <<EOF ... EOF, useful for writing multi-line content to a file or command."
+      },
+      {
+        "term": "IFS",
+        "definition": "Internal Field Separator — the character(s) bash uses to split words, commonly changed to handle CSV or tab-delimited data safely."
+      },
+      {
+        "term": "trap",
+        "definition": "A bash builtin that runs a command when the script receives a specified signal (e.g. EXIT, INT, TERM), commonly used for cleanup."
+      },
+      {
+        "term": "positional parameter",
+        "definition": "Arguments passed to a script or function, accessed as $1, $2, etc, with $@ for all and $# for the count."
+      },
+      {
+        "term": "command substitution",
+        "definition": "Capturing the output of a command into a variable, written as $(command) or the older backtick syntax."
+      },
+      {
+        "term": "globbing",
+        "definition": "Shell wildcard expansion, e.g. *.txt expanding to all matching filenames before the command runs."
+      },
+      {
+        "term": "idempotent",
+        "definition": "A script or operation that produces the same result no matter how many times it's run."
+      }
+    ],
+    "commonIssues": [
+      {
+        "problem": "Script works when run manually but fails when run via cron",
+        "cause": "Cron uses a minimal environment without the user's full PATH or shell profile.",
+        "solution": "Use absolute paths for all commands and files in the script. Explicitly set PATH at the top. Source any needed profile explicitly if required: source /etc/profile.",
+        "tags": [
+          "cron",
+          "environment"
+        ]
+      },
+      {
+        "problem": "Variable with spaces breaks the script (word splitting)",
+        "cause": "The variable wasn't quoted, so bash split it on whitespace and glob-expanded it.",
+        "solution": "Always quote variable expansions: use \"$VAR\" instead of $VAR, especially in test conditions and command arguments.",
+        "tags": [
+          "quoting",
+          "variables"
+        ]
+      },
+      {
+        "problem": "Script silently continues after a command fails",
+        "cause": "Bash doesn't exit on error by default — it just moves to the next line.",
+        "solution": "Add set -e at the top of the script to exit immediately on any non-zero exit code. Combine with set -uo pipefail for more comprehensive error catching.",
+        "tags": [
+          "error-handling",
+          "strict-mode"
+        ]
+      },
+      {
+        "problem": "Comparing numbers with = instead of -eq gives wrong results",
+        "cause": "= and == do string comparison; -eq, -gt, -lt etc are for numeric comparison.",
+        "solution": "Use [ \"$A\" -eq \"$B\" ] for numbers, [ \"$A\" = \"$B\" ] for strings. Inside [[ ]], you can also use == for strings.",
+        "tags": [
+          "comparison",
+          "syntax"
+        ]
+      },
+      {
+        "problem": "Reading a file with read loses leading/trailing whitespace or backslashes",
+        "cause": "Default read mangles whitespace and interprets backslashes unless IFS is cleared and -r is used.",
+        "solution": "Use: while IFS= read -r line; do ... done < file.txt — this preserves the line exactly as written.",
+        "tags": [
+          "file-reading",
+          "read"
+        ]
+      },
+      {
+        "problem": "Script hangs waiting for input unexpectedly",
+        "cause": "A command inside the script (often a piped command) is reading from stdin and the script's stdin wasn't redirected away.",
+        "solution": "Redirect stdin explicitly where not needed: command < /dev/null, or ensure loops reading files use < file.txt rather than accidentally reading from the terminal.",
+        "tags": [
+          "stdin",
+          "hanging"
+        ]
+      },
+      {
+        "problem": "Background process is killed when the script or terminal exits",
+        "cause": "Child processes receive SIGHUP when the parent shell exits unless explicitly detached.",
+        "solution": "Use nohup command & or disown after backgrounding the process to detach it from the parent shell's lifecycle.",
+        "tags": [
+          "background",
+          "nohup"
+        ]
+      },
+      {
+        "problem": "Array or loop behaves unexpectedly with filenames containing spaces",
+        "cause": "Using unquoted globs or word-splitting-based iteration breaks on filenames with spaces.",
+        "solution": "Use for file in *.txt; do (the glob itself, not a quoted string) and always quote \"$file\" inside the loop body.",
+        "tags": [
+          "arrays",
+          "filenames"
+        ]
+      },
+      {
+        "problem": "shellcheck flags SC2086 (double quote to prevent globbing/word splitting)",
+        "cause": "An unquoted variable is being used where word splitting or glob expansion could cause unintended behavior.",
+        "solution": "Wrap the variable in double quotes: \"$VAR\" instead of $VAR. This is one of the most common and important shellcheck warnings to fix.",
+        "tags": [
+          "shellcheck",
+          "quoting"
+        ]
+      },
+      {
+        "problem": "Script that worked on one server fails on another with the same OS",
+        "cause": "Different shell is set as /bin/sh (dash vs bash) — dash doesn't support bash-specific syntax like arrays or [[ ]].",
+        "solution": "Ensure the shebang is #!/bin/bash, not #!/bin/sh, if using any bash-specific features. Run the script explicitly with bash script.sh to bypass shebang ambiguity while debugging.",
+        "tags": [
+          "portability",
+          "shebang"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "set -euo pipefail",
+        "description": "Enable strict mode: exit on error, undefined variables, and pipe failures",
+        "example": "#!/bin/bash\\nset -euo pipefail",
+        "platform": "linux",
+        "tags": [
+          "strict-mode"
+        ]
+      },
+      {
+        "command": "$(command)",
+        "description": "Capture the output of a command into a variable",
+        "example": "RESULT=$(ls -la)",
+        "platform": "both",
+        "tags": [
+          "substitution"
+        ]
+      },
+      {
+        "command": "${VAR:-default}",
+        "description": "Use a default value if the variable is unset or empty",
+        "example": "echo \"${NAME:-anonymous}\"",
+        "platform": "both",
+        "tags": [
+          "variables"
+        ]
+      },
+      {
+        "command": "while IFS= read -r line; do ... done < file",
+        "description": "Safely read a file line by line, preserving whitespace",
+        "example": "while IFS= read -r line; do echo \"$line\"; done < input.txt",
+        "platform": "linux",
+        "tags": [
+          "file-reading"
+        ]
+      },
+      {
+        "command": "trap 'cmd' EXIT",
+        "description": "Run a cleanup command automatically when the script exits",
+        "example": "trap 'rm -f \"$TMPFILE\"' EXIT",
+        "platform": "linux",
+        "tags": [
+          "cleanup",
+          "signals"
+        ]
+      },
+      {
+        "command": "lsof -ti:PORT | xargs kill -9",
+        "description": "Find and kill whatever process is using a port",
+        "example": "lsof -ti:8080 | xargs kill -9",
+        "platform": "linux",
+        "tags": [
+          "process",
+          "ports"
+        ]
+      },
+      {
+        "command": "find . -mmin -N -type f",
+        "description": "Find files modified within the last N minutes",
+        "example": "find . -mmin -60 -type f",
+        "platform": "linux",
+        "tags": [
+          "find"
+        ]
+      },
+      {
+        "command": "command -v NAME &> /dev/null",
+        "description": "Check if a command/binary exists before using it",
+        "example": "if ! command -v jq &> /dev/null; then echo missing; fi",
+        "platform": "linux",
+        "tags": [
+          "checks"
+        ]
+      },
+      {
+        "command": "shellcheck script.sh",
+        "description": "Lint a bash script for common bugs and quoting issues",
+        "example": "shellcheck deploy.sh",
+        "platform": "linux",
+        "tags": [
+          "linting"
+        ]
+      },
+      {
+        "command": "sort file.txt | uniq -c | sort -rn",
+        "description": "Count occurrences of each unique line, sorted by frequency",
+        "example": "sort access.log | uniq -c | sort -rn | head",
+        "platform": "linux",
+        "tags": [
+          "text-processing"
+        ]
+      }
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "linux"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}

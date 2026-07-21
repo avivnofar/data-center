@@ -1,0 +1,278 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-07-17T18:59:51.722290Z",
+  "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
+  "dataCenter": {
+    "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
+    "indexUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/_index-public.json"
+  },
+  "notebooks": [
+    {
+      "id": "kb-1com",
+      "name": "1COM Products & Platform",
+      "domain": "telecom",
+      "tags": [
+        "1com",
+        "netvill",
+        "cloud-pbx",
+        "ip-phone",
+        "ip-intercom",
+        "poe",
+        "access-control"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-1com.json",
+      "summary": "Reference for 1COM (also known as Netvill), a B2B telecom hardware company specializing in VoIP/SIP telephony, IP intercom, access control, PoE networking, and the 1COM cloud PBX platform — covering the product line, the cloud PBX platform, provisioning, and the tools the IT support team uses daily.",
+      "sectionCount": 9,
+      "commandCount": 5,
+      "issueCount": 10,
+      "glossaryCount": 15,
+      "updatedAt": "2026-07-10T08:16:59.179987Z"
+    },
+    {
+      "id": "kb-ai-tools",
+      "name": "AI Tools & Workflows",
+      "domain": "ai",
+      "tags": [
+        "ai",
+        "claude",
+        "gemini",
+        "prompt-engineering",
+        "notebooklm",
+        "agents",
+        "automation"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-ai-tools.json",
+      "summary": "Practical reference for using AI tools day-to-day: prompt engineering fundamentals, Claude and Gemini usage patterns, how NotebookLM-style tools (including this project, Notebook-X) work, common AI agent design patterns, and where AI genuinely helps versus hurts in IT support work.",
+      "sectionCount": 7,
+      "commandCount": 0,
+      "issueCount": 8,
+      "glossaryCount": 12,
+      "updatedAt": "2026-07-17T00:00:00.000000Z"
+    },
+    {
+      "id": "kb-bash",
+      "name": "Bash Scripting",
+      "domain": "linux",
+      "tags": [
+        "bash",
+        "scripting",
+        "shell",
+        "automation",
+        "linux",
+        "cron"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-bash.json",
+      "summary": "Practical bash scripting reference covering syntax, variables, control flow, functions, string manipulation, file operations, process control, networking commands, and battle-tested one-liners for daily automation and troubleshooting.",
+      "sectionCount": 10,
+      "commandCount": 10,
+      "issueCount": 10,
+      "glossaryCount": 10,
+      "updatedAt": "2026-07-10T08:17:06.046254Z"
+    },
+    {
+      "id": "kb-cloud-devops",
+      "name": "Cloud & DevOps Basics",
+      "domain": "devops",
+      "tags": [
+        "cloud",
+        "docker",
+        "ci-cd",
+        "github-actions",
+        "vercel",
+        "render",
+        "monitoring",
+        "cloudflare",
+        "google-cloud"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cloud-devops.json",
+      "summary": "This notebook provides a foundational overview of modern infrastructure and automation, covering essential cloud concepts, Docker containerization, and robust CI/CD workflows powered by GitHub Actions. It further explores best practices for environment management, system monitoring, and streamlined deployment patterns for platforms like Vercel and Render to ensure scalable and reliable application delivery.",
+      "sectionCount": 9,
+      "commandCount": 47,
+      "issueCount": 12,
+      "glossaryCount": 14,
+      "updatedAt": "2026-07-17T00:00:00.000000Z"
+    },
+    {
+      "id": "kb-cybersecurity",
+      "name": "Cybersecurity Fundamentals",
+      "domain": "security",
+      "tags": [
+        "security",
+        "encryption",
+        "authentication",
+        "threats",
+        "hardening",
+        "incident-response"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
+      "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
+      "sectionCount": 8,
+      "commandCount": 10,
+      "issueCount": 10,
+      "glossaryCount": 15,
+      "updatedAt": "2026-07-17T00:00:00.000000Z"
+    },
+    {
+      "id": "kb-firewall",
+      "name": "Firewall & Network Security",
+      "domain": "security",
+      "tags": [
+        "firewall",
+        "iptables",
+        "ufw",
+        "pfsense",
+        "acl",
+        "ids",
+        "ips"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-firewall.json",
+      "summary": "Practical firewall reference covering core concepts, iptables/nftables, ufw, pfSense, ACL design, zone-based firewalls, IDS/IPS basics, and a real-world troubleshooting workflow for diagnosing blocked or leaking traffic.",
+      "sectionCount": 10,
+      "commandCount": 10,
+      "issueCount": 9,
+      "glossaryCount": 12,
+      "updatedAt": "2026-07-17T16:56:14.133617Z"
+    },
+    {
+      "id": "kb-linux",
+      "name": "Linux Administration",
+      "domain": "linux",
+      "tags": [
+        "linux",
+        "ubuntu",
+        "debian",
+        "systemd",
+        "ssh",
+        "permissions",
+        "cron"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
+      "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
+      "sectionCount": 10,
+      "commandCount": 15,
+      "issueCount": 10,
+      "glossaryCount": 12,
+      "updatedAt": "2026-07-10T08:17:14.616101Z"
+    },
+    {
+      "id": "kb-mirtapbx",
+      "name": "MirtaPBX Reference",
+      "domain": "pbx",
+      "tags": [
+        "mirtapbx",
+        "pbx",
+        "asterisk",
+        "sip",
+        "extensions",
+        "trunks",
+        "dialplan"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-mirtapbx.json",
+      "summary": "The MirtaPBX Reference notebook serves as a comprehensive technical guide covering the system's core architecture, including essential configurations for extensions, trunks, dialplans, IVR menus, and ring groups. It further provides advanced troubleshooting resources via the Asterisk CLI, solutions for common operational issues, and documentation for seamless integration with 1COM services.",
+      "sectionCount": 8,
+      "commandCount": 79,
+      "issueCount": 9,
+      "glossaryCount": 15,
+      "updatedAt": "2026-07-10T08:17:22.072440Z"
+    },
+    {
+      "id": "kb-networking",
+      "name": "Networking Fundamentals",
+      "domain": "networking",
+      "tags": [
+        "networking",
+        "tcp-ip",
+        "dns",
+        "dhcp",
+        "routing",
+        "vlans",
+        "wireshark"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-networking.json",
+      "summary": "Authoritative networking reference covering OSI/TCP-IP layers, IP addressing, subnetting, routing, switching, DNS, DHCP, and packet-analysis workflows for incident response and day-to-day administration.",
+      "sectionCount": 7,
+      "commandCount": 8,
+      "issueCount": 5,
+      "glossaryCount": 10,
+      "updatedAt": "2026-07-17T18:59:49.906633Z"
+    },
+    {
+      "id": "kb-remote-access",
+      "name": "Remote Access & Monitoring Tools",
+      "domain": "it-support",
+      "tags": [
+        "teamviewer",
+        "anydesk",
+        "rustdesk",
+        "remote-desktop",
+        "remote-support",
+        "network-watcher",
+        "azure"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-remote-access.json",
+      "summary": "Practical reference for remote-support desktop tools (TeamViewer, AnyDesk, RustDesk) — setup, unattended access, and security considerations — plus Azure Network Watcher for diagnosing cloud network connectivity, grouped together as the day-to-day remote-access and remote-diagnostics toolset for IT support work.",
+      "sectionCount": 6,
+      "commandCount": 6,
+      "issueCount": 8,
+      "glossaryCount": 10,
+      "updatedAt": "2026-07-17T00:00:00.000000Z"
+    },
+    {
+      "id": "kb-voip-sip",
+      "name": "VoIP & SIP Telephony",
+      "domain": "telecom",
+      "tags": [
+        "voip",
+        "sip",
+        "rtp",
+        "nat",
+        "codecs",
+        "sip-trunk",
+        "dtmf",
+        "microsip",
+        "portsip"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-voip-sip.json",
+      "summary": "This knowledge base provides a comprehensive overview of VoIP and SIP telephony, covering essential concepts ranging from fundamental signaling protocols and media transport to advanced technical configurations. It serves as a practical guide for managing SIP trunking, optimizing codecs, resolving NAT traversal challenges, and troubleshooting call quality issues to ensure reliable voice communications.",
+      "sectionCount": 9,
+      "commandCount": 50,
+      "issueCount": 10,
+      "glossaryCount": 14,
+      "updatedAt": "2026-07-17T00:00:00.000000Z"
+    },
+    {
+      "id": "kb-vpn",
+      "name": "VPN & Tunneling",
+      "domain": "networking/security",
+      "tags": [
+        "vpn",
+        "ipsec",
+        "openvpn",
+        "wireguard",
+        "tunneling",
+        "ssl-vpn",
+        "forticlient",
+        "checkpoint"
+      ],
+      "dataQuality": "complete",
+      "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-vpn.json",
+      "summary": "Practical VPN knowledge base covering architecture, IPsec, WireGuard, OpenVPN, SSL/TLS remote access, split tunneling, and the most common deployment and troubleshooting failures.",
+      "sectionCount": 10,
+      "commandCount": 13,
+      "issueCount": 7,
+      "glossaryCount": 13,
+      "updatedAt": "2026-07-17T16:19:04.331209Z"
+    }
+  ]
+}

@@ -1,0 +1,502 @@
+{
+  "id": "kb-vpn",
+  "name": "VPN & Tunneling",
+  "version": "2.0",
+  "format": "json",
+  "domain": "networking/security",
+  "tags": [
+    "vpn",
+    "ipsec",
+    "openvpn",
+    "wireguard",
+    "tunneling",
+    "ssl-vpn",
+    "forticlient",
+    "checkpoint"
+  ],
+  "description": "",
+  "language": "en",
+  "createdAt": "2026-06-30T16:11:15.346877Z",
+  "updatedAt": "2026-07-17T16:19:04.331241Z",
+  "generatedBy": "system",
+  "pinned": true,
+  "relatedNotebooks": [],
+  "relatedProjects": [
+    "data-center"
+  ],
+  "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-vpn.json",
+  "knowledgeBase": {
+    "summary": "Practical VPN knowledge base covering architecture, IPsec, WireGuard, OpenVPN, SSL/TLS remote access, split tunneling, and the most common deployment and troubleshooting failures.",
+    "lastWebVerified": "2026-07-17T16:19:04.331209Z",
+    "webSources": [
+      "https://www.rfc-editor.org/rfc/rfc4301.html",
+      "https://www.wireguard.com/quickstart/",
+      "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/",
+      "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-devices"
+    ],
+    "sections": [
+      {
+        "id": "vpn-architectures",
+        "title": "VPN Architectures",
+        "content": "Remote-access and site-to-site VPNs solve different operational problems. Remote-access VPNs let users connect individually to internal resources, while site-to-site VPNs connect networks and usually carry corporate traffic between offices or branches. Both can be implemented as IPsec, WireGuard, OpenVPN, or SSL/TLS remote-access gateways, but the design tradeoffs differ: IPsec is deeply standardized and common in enterprise edge devices, WireGuard is lightweight and modern, and SSL/TLS VPNs are popular for browser-based or client-based remote access.",
+        "tags": [
+          "architecture",
+          "site-to-site",
+          "remote-access"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://www.rfc-editor.org/rfc/rfc4301.html",
+          "https://www.wireguard.com/quickstart/"
+        ]
+      },
+      {
+        "id": "ipsec-and-ike",
+        "title": "IPsec and IKE",
+        "content": "IPsec protects traffic with ESP and AH, while IKE negotiates the security associations used by the tunnel. In practice, most deployments use ESP in tunnel mode with strong algorithms and perfect forward secrecy. The IKE exchange establishes the control channel, negotiates proposals, and authenticates peers using pre-shared keys, certificates, or EAP-based methods. For troubleshooting, verify that both ends propose mutually acceptable algorithms, that network time is synchronized for certificate validation, and that the firewall permits UDP/500, UDP/4500, and the ESP protocol.",
+        "tags": [
+          "ipsec",
+          "ike",
+          "esp",
+          "pfs"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://www.rfc-editor.org/rfc/rfc4301.html",
+          "https://www.rfc-editor.org/rfc/rfc5996.html"
+        ]
+      },
+      {
+        "id": "wireguard",
+        "title": "WireGuard",
+        "content": "WireGuard uses modern cryptography and a simple peer model: each peer has a public key, a private key, and a set of allowed IPs. The handshake is lightweight, and the tunnel is often easier to reason about than traditional IPsec topologies. A typical deployment creates one or more peers for each gateway, adds the remote endpoint and allowed subnets, and then uses routing policy to determine which traffic is sent through the tunnel.",
+        "tags": [
+          "wireguard",
+          "cryptokey",
+          "allowedips"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://www.wireguard.com/quickstart/",
+          "https://www.wireguard.com/papers/wireguard.pdf"
+        ]
+      },
+      {
+        "id": "openvpn",
+        "title": "OpenVPN",
+        "content": "OpenVPN is a flexible VPN implementation that can run over UDP or TCP and supports both routed and bridged modes. Its configuration model is more verbose than WireGuard, but it offers a large feature set for enterprise networking, including TLS-based authentication, certificate management, and optional static key modes. In production, the main concerns are certificate validity, cipher selection, and whether the tunnel should operate in tun mode for routed traffic or tap mode for Ethernet bridging.",
+        "tags": [
+          "openvpn",
+          "tls",
+          "tun",
+          "tap"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/",
+          "https://openvpn.net/community-resources/openvpn-2-6-manpage/"
+        ]
+      },
+      {
+        "id": "ssl-tls-vpns",
+        "title": "SSL/TLS VPNs",
+        "content": "SSL/TLS-based VPNs often provide remote access through a web portal or a client that establishes a TLS session to an edge gateway. They are common when the requirement is secure access to internal applications rather than full network bridging. Their advantages include broad compatibility with firewalls and the ability to enforce MFA or conditional access policies. Their challenges include application-specific routing, endpoint posture checks, and the need to ensure that the TLS gateway itself is not exposed to abuse or misconfiguration.",
+        "tags": [
+          "ssl",
+          "tls",
+          "mfa",
+          "gateway"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-devices",
+          "https://www.cisco.com/c/en/us/support/security/anyconnect-secure-mobility-client/series.html"
+        ]
+      },
+      {
+        "id": "split-tunneling-and-routing",
+        "title": "Split Tunneling and Routing",
+        "content": "Split tunneling determines whether all traffic or only selected destinations are sent through the VPN. Full tunnel mode increases centralized control but increases bandwidth and can add latency; split tunneling keeps local traffic on the user network and only sends internal destinations through the tunnel. The tradeoff is between the convenience of local internet breakout and the control and inspection benefits of centralizing all traffic. Routing policy must therefore be clear, especially when both the local network and the remote network have overlapping subnets.",
+        "tags": [
+          "split-tunneling",
+          "routing",
+          "policy"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-devices",
+          "https://www.rfc-editor.org/rfc/rfc4301.html"
+        ]
+      },
+      {
+        "id": "forticlient-checkpoint-remote-vpn",
+        "title": "FortiClient & Check Point Remote VPN",
+        "content": "FortiClient is Fortinet's endpoint agent for connecting to a FortiGate firewall's VPN service, supporting two remote-access modes: SSL VPN (TLS-based, typically port TCP/443, tunnel mode gives full network access while web mode exposes only bookmarked internal web apps) and IPsec VPN (using IKEv1/IKEv2, typically UDP/500 and UDP/4500 for NAT-T). Which mode is used is a FortiGate-side policy decision (Security Fabric > VPN settings) — the client itself just presents whichever the profile/portal offers. FortiClient also supports Zero Trust Network Access (ZTNA) posture checks (AV status, OS patch level, disk encryption) before allowing a connection, configurable per-policy on the FortiGate.\n\nCommon FortiClient connection profile fields: Remote Gateway (the FortiGate's public IP/FQDN), Port (default 443 for SSL VPN), Authentication (local, LDAP/AD via the FortiGate, RADIUS, or SAML for SSO), and a client certificate if the profile requires mutual TLS. Split tunneling vs full tunnel is again a FortiGate-side portal setting (see Split Tunneling and Routing).\n\nCheck Point's client (Check Point Endpoint Security VPN, or the lighter Check Point Capsule Connect for mobile) connects to a Check Point Security Gateway, most commonly using IKEv2 IPsec or Check Point's own Office Mode for address assignment. Authentication typically uses a Check Point-issued certificate, username/password against the gateway's user database or an external LDAP/AD, or SecurID/RADIUS for token-based MFA. The Endpoint Security client bundles VPN with other endpoint agents (firewall, compliance/posture check, anti-malware) under one management console (SmartEndpoint) — a VPN connection failure can sometimes actually be a compliance/posture check failure blocking the tunnel, not a networking issue.\n\nBoth vendors require the client and gateway to agree on IKE/cipher proposals just like any IPsec deployment (see IPsec and IKE) — a version/firmware mismatch after a client or gateway update is one of the more common causes of a previously-working profile suddenly failing to negotiate.",
+        "tags": [
+          "forticlient",
+          "fortigate",
+          "checkpoint",
+          "ztna",
+          "ipsec",
+          "ssl-vpn"
+        ],
+        "lastUpdated": "2026-07-17T00:00:00.000000Z",
+        "sources": [
+          "https://docs.fortinet.com/document/forticlient/",
+          "https://sc1.checkpoint.com/documents/latest/endpoint_security_client/"
+        ]
+      },
+      {
+        "id": "vpn-troubleshooting",
+        "title": "VPN Troubleshooting",
+        "content": "VPN failures are usually caused by one of five classes of issues: authentication failure, routing failure, path MTU problems, time synchronization problems, or NAT traversal issues. The fastest way to isolate the problem is to verify the tunnel state, confirm the remote peer is reachable, check logs on both ends, and inspect whether the tunnel endpoints agree on a common set of parameters. Packet capture on the tunnel interface and on the external interface often pinpoints whether the problem is inside the tunnel or before the tunnel is established.",
+        "tags": [
+          "troubleshooting",
+          "mtu",
+          "nat",
+          "certificates"
+        ],
+        "lastUpdated": "2026-07-04T00:00:00.000Z",
+        "sources": [
+          "https://www.wireguard.com/quickstart/",
+          "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/"
+        ]
+      },
+      {
+        "id": "openvpn-versioning-and-release-lifecycle",
+        "title": "OpenVPN Versioning and Release Lifecycle",
+        "content": "OpenVPN Community Edition follows a structured release lifecycle designed to balance feature innovation with long-term stability. Understanding these branches is critical for maintaining secure, compliant network infrastructure.\n\n### Versioning and Support Tiers\nOpenVPN categorizes releases into specific support levels:\n\n*   **Full Stable Support:** The current primary release branch (e.g., 2.7.x). Receives full security patches and bug fixes. This tier remains supported for a minimum of 6 months after the subsequent major release.\n*   **Old Stable Support:** The previous major branch (e.g., 2.6.x). Receives security and critical bug fixes only. Support typically lasts for a minimum of 12 months after the transition to \"Old Stable\" status.\n*   **Unsupported/EOL:** Branches that have reached their End-of-Life (e.g., 2.5.x and older). These versions receive no further updates and should be decommissioned immediately to mitigate security risks.\n\n### Current Release Status (As of July 2026)\n| Branch | Status | Notes |\n| :--- | :--- | :--- |\n| **2.7.x** | Current Stable | Recommended for all new deployments. |\n| **2.6.x** | Old Stable | Security/Critical fixes only; EOL scheduled for August 2028. |\n| **2.5.x** | EOL | No longer supported. |\n\n### Operational Commands\nTo verify the version and build details of your current OpenVPN installation, use the following command:\n\n```bash\nopenvpn --version\n```\n\n**Interpreting Output:**\nThe output provides the version number, supported cryptographic libraries (e.g., OpenSSL, mbedTLS), and enabled features (e.g., DCO support). If the version is outdated, prioritize upgrading via your distribution’s package manager:\n\n*   **Debian/Ubuntu:** `sudo apt update && sudo apt install --only-upgrade openvpn`\n*   **General Maintenance:** Always consult the [OpenVPN Community Wiki](https://community.openvpn.net/) for specific migration notes, as major version upgrades may deprecate legacy configuration options (e.g., older ciphers or protocol flags).\n\n### Best Practices\n1.  **Avoid EOL Versions:** Never deploy versions marked as \"unsupported.\" They lack protection against modern vulnerabilities.\n2.  **Monitor Deprecations:** Before upgrading, review the [Deprecated Options](https://community.openvpn.net/openvpn/wiki/DeprecatedOptions) wiki page. OpenVPN periodically removes insecure ciphers and flags; failure to update configurations can result in service failure upon upgrade.\n3.  **Kernel Compatibility:** For Linux environments, verify if your kernel supports Data Channel Offload (DCO). OpenVPN 2.7+ integrates natively with newer kernels, providing significant performance gains over user-space processing.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-17T16:18:53.780787Z",
+        "sources": [
+          {
+            "title": "openvpn.net",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHe5gPpGlhrGPQlvRcdRC7t0qQbqhSQLLTI62qXO5SqsiJrfAeL8QTxm77Zu_EGk9-OMe8u82hePicWpBliXYgI5S6wviOUG1iWcM3T4aa5a9yoRaMgBWWSCh8A5roZk9D3wblPKJeixQIOTgOrVg=="
+          },
+          {
+            "title": "hostsailor.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFzRSh0inRUUxkOyeHL8BmZHkjH_fHE3OqbafLMlyjNJ_hl7_VeBepUdzT4TrJdokFeXrdlxE5wRozid_mQcOqMDRRgILZO8YO0Mx0xtlncHX8us-T6GTSRL8Z686K6nJaKViiMP_JzHH9cXrfw0w=="
+          },
+          {
+            "title": "eosl.date",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlsvERMb_54zODPG_emzxhgUD6uNvPohz_YLGE0gydioocJpG8npVqtmT4-rEHV5sO0KY0xGAhvRa1sMSASVPTN5WB9-VJbe1QUILfBXXAg9W_z8q3qsSfkjZtpg=="
+          },
+          {
+            "title": "endoflife.date",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEPNMUFuv6wQBEMx0bIxW1mZOONZ0G2_5rBEA6n1xTneWLBBxMSsEoYpy55pb4xXB3-YSOz6sSbvuSjR_CW5SJ40V-SEKndlwHMrj1GzgPSXXihM1M="
+          },
+          {
+            "title": "openvpn.net",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEGRFnmJWcNLho7wwrngEcVGXHeJvlp90EfzUxyHpe-v93RFXMLn07ysdGN_k-TfmO7W7PYee9DxqCp9Z5cK1yeCGtPE9Jshvgbzpp-SWfUdUxUWNQ2-0QHpKiX9GTTMZXbepxnKzPfoxtPG8Ce9w=="
+          },
+          {
+            "title": "openvpn.net",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG2B1X60nr_u0-a2Zl-E149jmpEMY0rnQxkazgzHJYMQwkV7GNAKHYwKcjbw7nwwpjn40N5UQw0oFn_uKA1g1K4xP-c5w191TDUMzq6MwPC6mYxev5Z30urrqStp7n627q0AG-v5vFKDbd-uzNBmKO9GQ=="
+          },
+          {
+            "title": "openvpn.net",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEMNlHOvfpXet9g45eZaPml1x6iWR6-_itaXA95B-GqjoWhO6IwaWNn2bCKHWeSp9RrPApRjgFtzadwrJY5ynaHsFNoTOnnDipV-xvG-zrudO1pVTNZkqgReSqPxN2Rgtm2HifiDhMtU74oZX5TV-Yfv_JQ8A=="
+          }
+        ],
+        "dateAdded": "2026-07-17T16:18:53.780803Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "wireguard-versioning-and-release-history",
+        "title": "WireGuard Versioning and Release History",
+        "content": "WireGuard utilizes a unique versioning scheme that prioritizes stability and protocol consistency over traditional semantic versioning. Since its integration into the Linux kernel in March 2020 (version 5.6), the project has maintained a high bar for stability, with the protocol itself remaining intentionally minimalist and resistant to \"cipher agility\" to prevent downgrade attacks.\n\n### Versioning Scheme\nWireGuard releases typically follow a `1.0.YYYYMMDD` format for the `wireguard-tools` userspace utilities. This date-based versioning reflects the snapshot-based development model where the focus is on continuous security and performance improvements rather than breaking API changes.\n\n*   **Stable Releases:** The core protocol is stable and widely considered production-ready.\n*   **Kernel Integration:** On Linux, WireGuard is a first-class citizen of the kernel. Updates are often tied to kernel releases rather than standalone package versions.\n*   **Userspace Implementations:** Implementations like `wireguard-go` or the Windows client may have independent versioning (e.g., `1.1`). Note that while the protocol remains consistent, specific platform clients may receive updates at different cadences.\n\n### Verifying Versions\nTo ensure you are running a supported version, use the following commands based on your environment:\n\n**Linux (Command Line)**\nTo check the version of the installed `wireguard-tools`:\n```bash\nwg --version\n```\n*Output example:* `wireguard-tools v1.0.20260223`\n\n**Checking Status and Configuration**\nBecause WireGuard is \"silent-by-default,\" it does not maintain a traditional \"connected\" state. Use `wg show` to verify the active configuration and the timestamp of the latest handshake, which serves as the primary indicator of a functional tunnel:\n```bash\n# View status for all interfaces\nsudo wg show\n\n# View status for a specific interface\nsudo wg show wg0\n```\n\n### Release History Context\n*   **Pre-2020:** WireGuard was explicitly labeled as \"experimental\" and \"not yet complete\". Users were warned against relying on it for production environments.\n*   **2020–Present:** Following the 1.0 stable release and Linux kernel integration, the project shifted to a maintenance-heavy phase. While some users have noted slower update cadences for specific GUI clients (e.g., Windows), the core kernel-space implementation remains actively maintained and is considered the industry standard for secure, high-performance VPN tunneling.\n\nWhen troubleshooting, always confirm the kernel module version if using Linux, as the userspace `wg` tool version may differ from the underlying kernel module's capabilities.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-07-17T16:19:04.331195Z",
+        "sources": [
+          {
+            "title": "wikipedia.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEuNJ-doZy2Ot2s3aQyyEWE93_SuspbZxUY2gmfAnGAmOxvB1TAoQTt19N4Lw081DT9T7e0BHt56Bv6Z7WJerMB5fGqbtMI9mFKWG2VYMv-XfCNwWbLnxzUFqz7gmY="
+          },
+          {
+            "title": "surfshark.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZj15hZrC5gJjb3y3xcL5HFbwYxOOH2TWM9Ku7YAH1DTVw15lXKUJjyIfuCB--v3uvjX9Svp26u0oifCZXhL6An_dxbjtBhX2l5QnxrYTQ3N_sYXQ2RQuJfQcdbtL7mfKn_w=="
+          },
+          {
+            "title": "debian.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFH-IDbShnRKyo24bYXfZElKCy2YS23kzrr0HROmdxV7cc6ZJIsGvTLR_GE-OJUI_-H6wKtAb9pV6XLYWwVWUWDfXF2Bn61NM6C3apgJFajUYj6N1Jqm690Rbg="
+          },
+          {
+            "title": "blogspot.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH9O1r_yEcBLZT_sKzOSlOvYJ7Cok_G2CXw7_noshYyGrW2c6sJBMNNjzn7Ljita_bFoVjgQibNyJTcjlj-RkG2egp85h1yTZSXIRA4Zfvwjh1HT46m7IuQHZnqroLF6I9BNRJrln-QLtFELDF5IjXPTZ14AURpa6KFSlqBlxUji9g="
+          },
+          {
+            "title": "thomas-krenn.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGcEVw6y4gIngcixf_ogxJG2ZSlNNlpzPaCRXAwxbqfjK1f9WKKSlTOUXZPEmZxdMPiNhERuQjX3BtS_CxrCyQ0La40nitnVgyTQehAu90rGFzL9RtrCjCZUJfC2rVBClvGGSPrag1-iAvIIQ=="
+          },
+          {
+            "title": "allaboutcookies.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFEFPAUVaCNqz29fk8XED8XoTMG5gZHkgE20mD2iSPz_gf-byDNlfUnpYsoyL9KM6X8vfrXVRZ8xz4wtAXGi5v1k0JIrOjaWgoquZCX_exUck26-Ip5PRJUYXi_ApLGUhQ_odpv4pl7CQ=="
+          },
+          {
+            "title": "reddit.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHJl6tYfwcjgbFu81n3omJ3yl0dXYId2zWPY_V2rNhDWV6kr5QHzZ7LekQFnxzWsMXbEkductgRk-TkrpZr4-dS78Vq_Evwsw6odEZMbQ1JN_EWJ2W5eIKdOnqSGcHIRQ5Vw0OCCzEIVNsEd7fORBaTdyAzHt4ivuhZ3Ak7IOWp93z44GQuq5S9hPkBeKWJ"
+          },
+          {
+            "title": "versio.io",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHknT5CWNAubydiYh2hzSjqomq1FdMRg6pGXbjCZRnXSITEzY6EP8y2YKY7mC2BTTE95Om0cOQglnH1b0ysmEFW4LKaSGMcnVXgbD4P3qU8kxqr66hmN66c2e1O4gl6wjxY9yH5yHi7OkeUWkyxLqjOC5Aql5A_a2qBPloIcjPA39A5MjW5ZlLcW3tMeZpzAA=="
+          },
+          {
+            "title": "reddit.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGMeX01OvRjvFg2HC08s2M_THHdUrLDWv2DzM---bIc2aahZeldMdV2Bs_GfszztUUjSHuoWUobUimTyzAV01uYCww_ZnPY0I6yKhu12ZMluELt1Ic4t-u9KZao3PVbAgwNKDB486d4UkR8qorV2s3HHbSimAdDk4RwC0bM5vykpGbleyyRAI28mvpwpMKR-g-ij-CbTW5O"
+          },
+          {
+            "title": "procustodibus.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFrj_-6iULrC4DPF_KeI9cCOxmcL2Xbt11yJwTx4-swNTQqpDzMh20YnE_WoMJPUqAHxERjZ81T48yHOVq4M109kGX7IuUqtDS-VCxpLT9EgMqV1LXL87Ey2rGtP1tRhJqIoCDUUk0Ng8ooITUvfoXisGl57fHI4-rqjfJX4VyidtxLzw=="
+          },
+          {
+            "title": "quora.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEPOVqeiZCNIGF2kMhrilLiFW1apFnqPtgVmoTF1B9yiXZUNrTja20V7aHFKnutiOQ0nCslghDaRFe7Xp3TORtu-oCuarQ7lfGCLjqGTjHNgnPzaZIIPF_MudGt0z51ntZAthVPc50lxikww-XfRrFzbCNvTQW8J_42UR9eRkTjjmyGhLiYmu86MPfE7YMQJgPW_uY_4HA5VOr20Dq-eF9JCZbosqvB3Onq5Po36L5JdoEtvHpRhORSIkxtpBasGig_yOTI6tp1XQAHBzf-LhAvovoruIfwCre5NhWBu-lBDPogdo12D1QsBTY="
+          }
+        ],
+        "dateAdded": "2026-07-17T16:19:04.331209Z",
+        "addedBy": "discover"
+      }
+    ],
+    "glossary": [
+      {
+        "term": "IKE",
+        "definition": "Internet Key Exchange, the protocol that negotiates the IPsec security associations and encryption parameters."
+      },
+      {
+        "term": "ESP",
+        "definition": "Encapsulating Security Payload, the IPsec protocol used to encrypt and authenticate tunnel traffic."
+      },
+      {
+        "term": "Perfect forward secrecy",
+        "definition": "A property where compromise of a long-term key does not reveal earlier session keys."
+      },
+      {
+        "term": "Allowed IPs",
+        "definition": "The destination prefixes that a WireGuard peer is authorized to route through the tunnel."
+      },
+      {
+        "term": "NAT traversal",
+        "definition": "A method that allows VPN traffic to cross network address translation devices that would otherwise block direct peer-to-peer communication."
+      },
+      {
+        "term": "Peer",
+        "definition": "The remote tunnel endpoint to which a VPN gateway sends encrypted traffic."
+      },
+      {
+        "term": "Tunnel interface",
+        "definition": "A virtual network interface that carries encrypted traffic between endpoints."
+      },
+      {
+        "term": "Certificate authority",
+        "definition": "The trust anchor that issues and validates digital certificates used for VPN authentication."
+      },
+      {
+        "term": "Split tunnel",
+        "definition": "A design where only selected destinations traverse the VPN while other traffic uses the local network path."
+      },
+      {
+        "term": "MFA",
+        "definition": "Multi-factor authentication, often enforced by SSL/TLS VPN or identity-based remote access gateways."
+      },
+      {
+        "term": "ZTNA",
+        "definition": "Zero Trust Network Access — grants per-application access after verifying device/user posture, rather than full network-level VPN access."
+      },
+      {
+        "term": "Office Mode",
+        "definition": "Check Point's mechanism for assigning a remote-access client an internal IP address for the duration of the VPN session."
+      },
+      {
+        "term": "NAT-T",
+        "definition": "NAT Traversal — encapsulating IPsec/IKE traffic (typically over UDP/4500) so it can cross a NAT device between client and gateway."
+      }
+    ],
+    "commonIssues": [
+      {
+        "problem": "Tunnel comes up but no traffic passes",
+        "cause": "Routing or policy settings are wrong, or the remote subnet is not included in the allowed prefixes.",
+        "solution": "Verify the peer routes, update the allowed IPs or policy routes, and test with ping and traceroute across the tunnel interface. Review whether the local firewall or remote gateway is blocking the expected traffic.",
+        "tags": [
+          "routing",
+          "connectivity"
+        ]
+      },
+      {
+        "problem": "Authentication fails even though credentials look correct",
+        "cause": "The client and server disagree about certificates, PSK, or identity values.",
+        "solution": "Check certificate validity, timestamps, and the remote identity configured on both ends. For IPsec, verify the proposals and for OpenVPN, inspect the TLS handshake state and CA trust chain.",
+        "tags": [
+          "authentication",
+          "certificates"
+        ]
+      },
+      {
+        "problem": "Tunnel works until large packets are sent",
+        "cause": "Path MTU is too small or a firewall is fragmenting traffic incorrectly.",
+        "solution": "Lower the tunnel MTU or MSS, verify PMTU discovery works, and inspect the transport path for fragmentation or packet drops.",
+        "tags": [
+          "mtu",
+          "fragmentation"
+        ]
+      },
+      {
+        "problem": "Remote clients lose DNS resolution over the VPN",
+        "cause": "DNS servers are unreachable or the tunnel is not carrying the expected DNS traffic.",
+        "solution": "Validate the DNS server assignments pushed to clients, verify the DNS traffic can reach the internal resolvers, and test resolution from the client while the tunnel is active.",
+        "tags": [
+          "dns",
+          "client"
+        ]
+      },
+      {
+        "problem": "VPN disconnects intermittently",
+        "cause": "NAT, idle timeouts, or certificate renewal issues are breaking the session.",
+        "solution": "Inspect NAT traversal settings, confirm the gateway is not timing out sessions too aggressively, and verify that certificates or tokens are not expiring during the session.",
+        "tags": [
+          "stability",
+          "nat"
+        ]
+      },
+      {
+        "problem": "FortiClient shows 'Unable to logon to the server' when connecting to SSL VPN",
+        "cause": "Wrong port/gateway address, an expired or untrusted server certificate, or a FortiClient version mismatch against a recently upgraded FortiGate",
+        "solution": "Confirm the remote gateway address and port match the FortiGate's current SSL VPN settings, verify the certificate is trusted (or accept a known-good self-signed cert once), and update FortiClient to a version compatible with the FortiGate's FortiOS release",
+        "tags": [
+          "forticlient",
+          "fortigate"
+        ]
+      },
+      {
+        "problem": "Check Point Endpoint Security VPN connects but the session is immediately dropped",
+        "cause": "A compliance/posture check (endpoint compliance blade) failed silently — e.g. antivirus out of date or disk encryption not enabled — and the gateway is enforcing that policy",
+        "solution": "Check the Endpoint Security client's compliance status tab for the specific failed check, and remediate it (update AV definitions, enable required posture) rather than assuming it's a network/authentication problem",
+        "tags": [
+          "checkpoint",
+          "compliance"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "wg show",
+        "description": "Display WireGuard interface state and peer information",
+        "example": "wg show",
+        "platform": "linux",
+        "tags": [
+          "wireguard"
+        ]
+      },
+      {
+        "command": "wg-quick up WG0",
+        "description": "Bring up a WireGuard tunnel",
+        "example": "wg-quick up wg0",
+        "platform": "linux",
+        "tags": [
+          "wireguard"
+        ]
+      },
+      {
+        "command": "ipsec status",
+        "description": "Show the status of IPsec tunnels",
+        "example": "ipsec status",
+        "platform": "linux",
+        "tags": [
+          "ipsec"
+        ]
+      },
+      {
+        "command": "openssl s_client -connect HOST:443",
+        "description": "Test TLS reachability to a VPN endpoint",
+        "example": "openssl s_client -connect vpn.example.com:443",
+        "platform": "linux",
+        "tags": [
+          "tls"
+        ]
+      },
+      {
+        "command": "tcpdump -ni any host REMOTE_IP",
+        "description": "Capture traffic to or from a tunnel peer",
+        "example": "tcpdump -ni any host 203.0.113.10",
+        "platform": "linux",
+        "tags": [
+          "capture"
+        ]
+      },
+      {
+        "command": "ip route",
+        "description": "Verify routing policy for VPN subnets",
+        "example": "ip route | grep 10.10.0.0/16",
+        "platform": "linux",
+        "tags": [
+          "routing"
+        ]
+      },
+      {
+        "command": "systemctl status strongswan",
+        "description": "Check the IPsec service health",
+        "example": "systemctl status strongswan",
+        "platform": "linux",
+        "tags": [
+          "ipsec",
+          "service"
+        ]
+      },
+      {
+        "command": "ss -tulpn | grep 4500",
+        "description": "Confirm NAT traversal ports are listening",
+        "example": "ss -tulpn | grep 4500",
+        "platform": "linux",
+        "tags": [
+          "nat"
+        ]
+      },
+      {
+        "command": "openvpn --version",
+        "description": "Verify the version and build details of the current OpenVPN installation.",
+        "platform": "both"
+      },
+      {
+        "command": "sudo apt update && sudo apt install --only-upgrade openvpn",
+        "description": "Upgrade OpenVPN via the Debian/Ubuntu package manager.",
+        "platform": "linux"
+      },
+      {
+        "command": "wg --version",
+        "description": "Check the version of the installed wireguard-tools",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo wg show",
+        "description": "View status for all interfaces",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo wg show wg0",
+        "description": "View status for a specific interface",
+        "platform": "linux"
+      }
+    ]
+  },
+  "fileMemory": {
+    "note": "Advanced feature — populate later",
+    "files": []
+  },
+  "busSync": {
+    "lastPushedToBus": null,
+    "lastPulledFromBus": null,
+    "busTopics": [
+      "networking",
+      "security"
+    ]
+  },
+  "metadata": {
+    "aiPersona": "precise",
+    "aiContext": "",
+    "accessLevel": "public",
+    "dataQuality": "complete"
+  },
+  "files": [],
+  "messages": []
+}
