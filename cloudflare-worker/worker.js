@@ -62,44 +62,20 @@ function isRateLimited(ip) {
   return entry.count > RATE_LIMIT_MAX;
 }
 
-/**
- * Fetch the Notebook-X public index and return a short context string
- * listing complete/partial notebooks for injection into the system prompt.
- * Fails gracefully — returns "" if GitHub is unreachable.
- */
-async function getNotebookXContext() {
-  const indexUrl =
-    'https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/_index-public.json';
-  try {
-    const res = await fetch(indexUrl, { cf: { cacheTtl: 300, cacheEverything: true } });
-    if (!res.ok) return '';
-    const index = await res.json();
-    const notebooks = (index.notebooks || []).filter(
-      (n) => n.dataQuality === 'complete' || n.dataQuality === 'partial' || n.dataQuality === 'verified'
-    );
-    if (!notebooks.length) return '';
-    const lines = notebooks
-      .map((n) => `- ${n.name} (${n.domain}): ${n.summary}`)
-      .join('\n');
-    return (
-      '\n\nNOTEBOOK-X REFERENCE NOTEBOOKS:\n' +
-      'The following in-depth knowledge notebooks are maintained in Notebook-X. ' +
-      'When a user question falls squarely in one of these domains and would benefit ' +
-      'from specific commands or step-by-step procedures beyond what the local DB covers, ' +
-      'mention that more detailed reference material exists:\n' +
-      lines
-    );
-  } catch (_) {
-    return '';
-  }
-}
+// Notebook-X content is a static mirror synced weekly into data/notebooks/
+// (see .github/workflows/notebook-sync.yml) and selected client-side
+// (matchNotebooks()/buildNotebookContext() in index.html) — the Worker stays
+// a dumb proxy: no fetching, no KV, no GitHub credentials here. It only
+// receives an already-built notebook_context string in the request body.
+const NOTEBOOK_CONTEXT_MAX_CHARS = 20000; // defense in depth against a modified client
 
 /**
  * Build the system prompt based on mode (search/diagnose), language (en/he),
  * the local DB context string injected by the frontend, CLI Mode, and an
- * optional Notebook-X context string injected at request time.
+ * optional Notebook-X reference context string (client-selected, mirrored
+ * content — see notebookContext above).
  */
-function systemPrompt(mode, language, dbContext, cliMode, notebookXContext) {
+function systemPrompt(mode, language, dbContext, cliMode, notebookContext) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
   let prompt = `You are an expert IT support assistant with broad, deep knowledge
@@ -276,8 +252,12 @@ the exact screen, settings page, or error shown and give precise instructions.`;
     prompt += `\n\n${dbContext.trim()}`;
   }
 
-  if (notebookXContext && notebookXContext.trim()) {
-    prompt += notebookXContext;
+  if (notebookContext && notebookContext.trim()) {
+    prompt += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old):\n` +
+      `The following is supplementary reference material selected from Notebook-X ` +
+      `knowledge notebooks based on the user's question. Cite it when used, but it ` +
+      `may not cover everything — web_search remains available for anything it doesn't cover.\n\n` +
+      notebookContext.trim();
   }
 
   prompt += `
@@ -389,7 +369,7 @@ export default {
       return jsonResponse({ error: 'general', message: 'Invalid JSON body' }, 400, origin);
     }
 
-    const { messages, mode, language, db_context, cli_mode, images } = body;
+    const { messages, mode, language, db_context, notebook_context, cli_mode, images } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ error: 'general', message: '"messages" must be a non-empty array' }, 400, origin);
@@ -405,6 +385,7 @@ export default {
       language: body.language || 'he',
       has_images: !!(body.images && body.images.length),
       db_context_chars: (body.db_context || '').length,
+      notebook_context_chars: (body.notebook_context || '').length,
     }));
 
     const today = new Date().toISOString().split('T')[0];
@@ -419,8 +400,10 @@ export default {
       }));
     }
 
-    const notebookXContext = await getNotebookXContext();
-    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode, notebookXContext);
+    const trimmedNotebookContext = typeof notebook_context === 'string'
+      ? notebook_context.slice(0, NOTEBOOK_CONTEXT_MAX_CHARS)
+      : '';
+    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode, trimmedNotebookContext);
 
     // If images are attached, inject them into the last user message as
     // vision content blocks (max 3 images, base64 encoded).
