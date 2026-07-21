@@ -182,3 +182,120 @@ per this file's own rule to never overwrite prior sections.
   `git push origin master` by the owner (see above).
 
 ---
+
+## 2026-07-21 — Daily Audit (Run 2 / Auditor, STEP 2)
+
+**1. Code/data health**
+
+- `node .github/scripts/validate-json.js` — clean, all 7 files valid (13
+  modules; linux 42, cmd 25, network 30, 1com 17, mirtapbx 11,
+  troubleshoot 23 entries). Re-run independently, post this run's TODO-014
+  merge.
+- `node .github/scripts/health-check.js` — clean, all critical checks
+  passed (148 total entries; source_url coverage/domain allowlist, no
+  Hebrew in `cmd` fields, no identical `desc_he`/`desc_en` pairs, Hebrew
+  quality checks).
+- `node .github/scripts/check-links.js --summary` — 105 unique URLs
+  checked (up from 96 pre-TODO-014), exit 0; 6 pre-existing broken (404)
+  URLs and 5 bot-blocked (429) warnings, none new.
+- **`CURRENT-SPEC.md` drift spot-check** — 3 concrete claims re-verified
+  against actual code on `master` (post-merge):
+  - **#16 "Expandable cards + copy buttons" — DRIFT FOUND.**
+    `CURRENT-SPEC.md`'s "Partially Built" table still lists this as
+    missing ("command-card `usage-cmd` rows have no copy button"). This is
+    now stale: TODO-003 shipped this (merged 2026-07-20 via commit
+    `b3451b1` as an isolated cherry-pick, then moved to `TODO_LIST.md`'s
+    `## Completed` via commit `6b0c1c0`) — confirmed in code:
+    `copyUsageCmd()` (`index.html:2517`) and
+    `<button class="usage-copy-btn" ... onclick="copyUsageCmd(this)">`
+    (`index.html:1977`) both exist and are wired into `renderCard()`. Per
+    this audit's read-only mandate, **not fixed here** — flagging for the
+    owner or a future session to move item #16 into the "Fully Working"
+    section of `CURRENT-SPEC.md`.
+  - #20 "Bookmark system" (browse/remove UI) → confirmed accurate, no new
+    drift: `CURRENT-SPEC.md` now correctly describes the full browse/
+    remove panel (this was the drift flagged in the previous audit entry
+    above — it has since been corrected in the doc, matching code).
+  - `.github/scripts/check-links.js` `FILES` coverage (CLAUDE.md doesn't
+    make a specific claim here, checked as a direct code fact instead) →
+    confirmed `FILES` now includes `1com.json`/`mirtapbx.json`
+    (`check-links.js:13`), matching this run's own TODO-014 merge.
+  - No other drift found in the 3 checked claims.
+
+**2. Self-audit of prior automation runs**
+
+- Reviewed the last two days of `DATA_CENTER_RUN_LOG.md`
+  (2026-07-20 and 2026-07-21) against actual repo state:
+  - TODO-004 `merged` (2026-07-20): confirmed merge commit `ab196ac` is
+    present in `origin/master`'s history (not just local) — the 7
+    previously-unpushed commits flagged in the prior audit entry (test-rail
+    push refusal) were subsequently pushed to `origin` by the owner between
+    2026-07-20 and today; `git status` at the start of this session showed
+    local `master` already up to date with `origin/master`. That carried-
+    forward item is now resolved.
+  - TODO-003: the `needs-review` branch (`dc-auto-2026-07-20_125410`) was
+    never merged as a whole (correctly, per its checklist failure) — instead
+    resolved via an owner-directed isolated cherry-pick of just the
+    `index.html` change (commit `b3451b1`), documented in
+    `NEEDS_YOUR_REVIEW.md`'s 2026-07-20 entry as **RESOLVED**, and
+    `TODO_LIST.md` shows the full entry moved to `## Completed`. Confirmed
+    consistent — that carried-forward item is now resolved too.
+  - TODO-014 (this run's own STEP 1, above): re-verified as documented —
+    merge commit `7ef66de` and doc/state commit `8564c24` both exist on
+    `master` and were both successfully pushed to `origin/master`
+    (`0600c7e..8564c24`).
+  - Between 2026-07-20's second audit pass and today, several non-
+    automation commits also landed on `master`
+    (`7bed14b`/`3749db9`/`cafdda6`/`0600c7e` — Workflows self-hosting
+    migration and TODO-019–025 backlog additions): these carry no
+    `dc-auto-*` branch merge marker and read as ordinary owner/manual
+    session work, not automation output, so the Push-Authorization
+    Checklist (which governs Auditor-run merges specifically) does not
+    apply to them — noted for completeness, not flagged as a violation.
+- **Was anything pushed to master that shouldn't have been?** No —
+  today's only Auditor-initiated pushes are the TODO-014 merge (`7ef66de`)
+  and its doc/state companion commit (`8564c24`), both per STEP 1.5 of a
+  passing checklist run.
+- **Stale/unpushed branches:**
+  - `dc-auto-2026-07-20_125410` (TODO-003) — still exists, correctly
+    undeleted; its `needs-review` state is superseded by the cherry-pick
+    resolution above, so no owner action remains outstanding on it.
+  - `dc-auto-2026-07-20_151157` (TODO-004, merged) and
+    `dc-auto-2026-07-21_023811` (TODO-014, merged this run) — both exist,
+    correctly undeleted per the hard constraints.
+  - `session-connect-notebook-x-integration` (local only, never pushed to
+    `origin`) — still present, unchanged since first noted in the
+    2026-07-20 audit entries as pre-dating this automation system and out
+    of scope. Newly confirmed this run: its one unique commit (`7761e13`,
+    "inject Notebook-X knowledge index into system prompt") is a byte-for-
+    byte duplicate diff of `455a087`, which is **already** on `master`
+    (both documented as duplicate/merge artifacts of the same change in
+    `NEEDS_YOUR_REVIEW.md`'s Part-A investigation). This branch appears to
+    carry no content not already on `master` — flagging for the owner as a
+    candidate for manual cleanup (deletion), not acted on here since
+    automation never deletes branches.
+  - `origin/cloudflare/workers-autoconfig` — remote-only, pre-dates this
+    automation system, outside this run's scope, unchanged.
+
+**Carried forward (not yet resolved):**
+- Notebook-X integration architecture decision — still undecided (owner +
+  architect).
+- GitHub write-credential decision (blocks TODO-001/TODO-002 Issue-filing
+  half) — still undecided.
+- TODO-005–011 — still paused pending the Notebook-X decision.
+- **New this run:** `CURRENT-SPEC.md` #16 (copy-to-clipboard buttons) is
+  now stale documentation following the TODO-003 cherry-pick — needs a doc
+  update (not a code change) in a future session.
+- **New this run (informational, not a defect):** `session-connect-notebook-x-integration`
+  local branch looks safe to delete manually (owner's call) — its only
+  commit duplicates content already on `master`.
+
+**Resolved since last entry:**
+- The 7-unpushed-commits condition (test-rail push refusal, 2026-07-20) —
+  resolved, all commits now on `origin/master`.
+- TODO-003 `needs-review` — resolved via cherry-pick merge, moved to
+  `TODO_LIST.md`'s `## Completed`.
+- `CURRENT-SPEC.md` #20 (bookmark browsing UI) drift — resolved, doc now
+  matches code.
+
+---
