@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-20T12:31:35Z",
+  "last_run": "2026-07-20T23:40:11Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -32,6 +32,14 @@
       "run": "auditor",
       "date": "2026-07-20",
       "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was index.html only plus the standard run-log/state-file companions, no NEEDS_YOUR_REVIEW.md/TODO_LIST.md creep like the TODO-003 branch had; (b) zero source_url changes; (c) no data/*.json, workflow, wrangler, or credential-adjacent files touched; (d) validate-json.js and health-check.js both re-run clean pre- and post-merge; (e) index.html diff matches TODO-004's Definition of Done (visible/removable bookmarks, bilingual empty state, no new localStorage keys, no network calls). Merged --no-ff into master (commit ab196ac25e4df2be42a8cdcd81c687b4536c38d9). `git push origin master` was attempted exactly as instructed and was refused at the tool-permission level (operator-added disallowedTools rail for this run only) -- merge commit and this doc/state commit remain local on master, unpushed, pending manual push by the owner."
+    },
+    {
+      "id": "TODO-014",
+      "status": "done",
+      "branch": "dc-auto-2026-07-21_023811",
+      "run": "builder",
+      "date": "2026-07-20",
+      "note": "Added '1com.json' and 'mirtapbx.json' to check-links.js's FILES array — the daily link-check job was silently skipping source_url values in both active PBX modules (28 entries combined). One-line change; verified locally that unique-URL count checked rose from 96 to 105 and no new broken/warn entries were introduced (the 6 pre-existing broken links and 5 rate-limit warnings all belong to linux.json/cmd.json/network.json entries unrelated to this change). validate-json.js passed; no data/*.json touched so health-check.js not required."
     }
   ]
 }
