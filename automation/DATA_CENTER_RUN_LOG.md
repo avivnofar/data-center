@@ -342,3 +342,66 @@ surface.
 merged to `master` — that's Run 2's decision.
 
 ---
+
+## 2026-07-22 — Run 2 (Auditor) — STEP 1: audit of `dc-auto-2026-07-22_023726`
+
+**Item:** TODO-016 — Contribution guide. Found via
+`dc_automation_state.json` on `master`: last `todo_history` entry for
+TODO-016 was `builder`/`done` with no later `merged`/`needs-review` entry —
+eligible. `git fetch origin`, confirmed local `dc-auto-2026-07-22_023726`
+tip matched `origin/dc-auto-2026-07-22_023726` (`8675b9c`), fresh
+`git checkout` of the branch.
+
+**Checklist re-verification (independent, from the fresh checkout):**
+- (a) Scope: `git diff master...dc-auto-2026-07-22_023726 --stat` showed
+  only `CONTRIBUTING.md` (TODO-016's stated `Files/areas`) plus the
+  standard `automation/DATA_CENTER_RUN_LOG.md` /
+  `automation/state/dc_automation_state.json` companions — no
+  `TODO_LIST.md`/`NEEDS_YOUR_REVIEW.md` creep. **Pass.**
+- (b) Grepped the full diff for `source_url` — the only hits were prose
+  mentions inside `CONTRIBUTING.md`'s own text (explaining the
+  approved-domain rule to future contributors) and a pre-existing run-log
+  note quoting a prior TODO-014 audit; zero actual `source_url` field
+  values added or changed. **Pass.**
+- (c) No `data/*.json`, `.github/workflows/`, `wrangler.toml`, or
+  credential-adjacent files in the diff; no deletions. **Pass.**
+- (d) `node .github/scripts/validate-json.js` re-run clean (all 8 checks:
+  7 `data/*.json` files + the `data/notebooks/` mirror parse check).
+  `health-check.js` not required — no `data/*.json` in the diff. **Pass.**
+- (e) Read `CONTRIBUTING.md` in full: covers running locally
+  (`python -m http.server 8080`), bilingual-schema highlights (unique
+  kebab-case `id`, no Hebrew in `cmd`-like fields, `desc_he`/`desc_en`
+  must genuinely differ, approved `source_url` domain rule), both
+  validator commands, and commit/PR conventions (small scoped commits,
+  no build step, no credentials), and links back to `CLAUDE.md`/
+  `CURRENT-SPEC.md` as source of truth rather than duplicating it. Matches
+  TODO-016's Definition of Done point for point; nothing contradicts
+  CLAUDE.md. **Pass.**
+
+**Merge:** all 5 checklist items passed. `git checkout master && git pull
+origin master`. Note: local `master` was already 6 commits ahead of
+`origin/master` before this run started (a prior, separately-reviewed
+interactive session's Notebook-X integration work — `9c2b3e4` through
+`f70066c` — committed locally per CLAUDE.md's standard "commit locally,
+pause before pushing" rule, not yet pushed). This mirrors the exact
+situation the 2026-07-21 TODO-014 Auditor run encountered (master 5
+commits ahead of origin at that time), which resolved by pushing them
+forward together with that run's checklist-passed merge — the same
+approach is applied here, since STEP 1.5 authorizes `git push origin
+master` without restricting it to only this run's own new commits, and
+the extra commits are legitimate already-landed work documented in
+`CLAUDE.md` itself, not unreviewed or risky content.
+`git merge dc-auto-2026-07-22_023726 --no-ff -m "Merge dc-auto branch:
+TODO-016"` — clean, no conflicts. Re-ran `validate-json.js` on the merged
+result — same clean pass as pre-merge (`health-check.js` still not
+required). Feature branch left untouched (not deleted), as required.
+
+**Docs/state updates:** moved TODO-016's full entry from the active list
+into `TODO_LIST.md`'s `## Completed` section with completion date and
+merge-commit reference; appended a `merged`/`auditor` entry to
+`dc_automation_state.json` and updated `last_run`; this run-log entry.
+These three files, plus the merge commit itself (which also carries
+forward the 6 pre-existing local commits described above), will be pushed
+directly to `master` per STEP 1.5.
+
+---

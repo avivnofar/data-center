@@ -270,24 +270,6 @@ connection" degraded state) before implementing.
 
 ---
 
-### TODO-016 — Contribution guide
-
-**Description:** No `CONTRIBUTING.md` exists. Low priority per CLAUDE.md.
-When picked up: write a short guide covering running locally
-(`python -m http.server 8080`), the bilingual schema, the two validator
-commands, and commit/PR conventions already implicit in CLAUDE.md's rules —
-this should distill CLAUDE.md for contributors, not introduce new policy or
-duplicate its full content.
-
-**Files/areas:** new `CONTRIBUTING.md`.
-
-**Definition of done:** doc exists, doesn't contradict CLAUDE.md, links to it
-as the source of truth for rules.
-
-**Complexity:** S
-
----
-
 ### TODO-017 — Accessibility: no `aria-live` region on streaming AI chat
 
 **Description:** `#ai-chat-messages` (`index.html:2510`) has no `aria-live`
@@ -444,6 +426,33 @@ has a non-empty, Hebrew-free `example`.
 **Complexity:** M
 
 **Dependency:** TODO-019
+
+---
+
+### TODO-016 — Contribution guide
+
+**Description:** No `CONTRIBUTING.md` exists. Low priority per CLAUDE.md.
+When picked up: write a short guide covering running locally
+(`python -m http.server 8080`), the bilingual schema, the two validator
+commands, and commit/PR conventions already implicit in CLAUDE.md's rules —
+this should distill CLAUDE.md for contributors, not introduce new policy or
+duplicate its full content.
+
+**Files/areas:** new `CONTRIBUTING.md`.
+
+**Definition of done:** doc exists, doesn't contradict CLAUDE.md, links to it
+as the source of truth for rules.
+
+**Complexity:** S
+
+**Completed:** 2026-07-22, branch `dc-auto-2026-07-22_023726`, merged into
+`master` via merge commit "Merge dc-auto branch: TODO-016" by the Run 2
+(Auditor) session. Independently re-verified: diff scope was `CONTRIBUTING.md`
+only plus the standard run-log/state-file companions; zero `source_url`
+values added or changed; no `data/*.json`/workflow/wrangler/credential-
+adjacent files touched; `validate-json.js` re-run clean pre- and post-merge;
+content matches CLAUDE.md's running-locally, bilingual-schema, validator, and
+commit-convention rules and links back to CLAUDE.md as source of truth.
 
 ---
 
