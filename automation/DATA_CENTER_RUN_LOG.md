@@ -303,3 +303,42 @@ These three files will be committed together directly to `master` per
 STEP 1.5, immediately after this entry is written.
 
 ---
+
+## 2026-07-22 — Run 1 (Builder) — `dc-auto-2026-07-22_023726`
+
+**Item selected:** TODO-016 — Contribution guide. Selection process:
+TODO-003, TODO-004, and TODO-014 are all already in `TODO_LIST.md`'s
+`## Completed` section (hard skip per step 1.4). TODO-001/TODO-002 have
+their filing/write halves blocked in `NEEDS_YOUR_REVIEW.md` (only
+TODO-001's UI/parser half is open, and it sits later in the priority
+order); TODO-005 through TODO-011 are paused pending the Notebook-X
+architecture decision; TODO-010 and TODO-018 are excluded unconditionally.
+TODO-016 had no prior `todo_history` entry and is not blocked anywhere —
+next in the priority order (step 1.5) after TODO-003/004/014. Picked it.
+
+**What changed and why:** no `CONTRIBUTING.md` existed (confirmed via
+glob). Added a short bilingual-project contributor guide distilling
+CLAUDE.md's "Running Locally", "Bilingual Schema", validator-command, and
+implicit commit-convention rules, per TODO-016's Definition of Done — it
+does not introduce new policy or duplicate CLAUDE.md's full content, and
+links back to CLAUDE.md/CURRENT-SPEC.md as the sources of truth for
+anything not covered.
+
+**Files touched:** `CONTRIBUTING.md` (new) only — exactly TODO-016's
+stated `Files/areas`. No `data/*.json` or `index.html` touched.
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 8
+checks passed (7 `data/*.json` files + the `data/notebooks/` mirror parse
+check). `health-check.js` not run — not required since no `data/*.json`
+changed.
+
+**Manual verification still needed:** none beyond a human skim of the new
+doc for tone/accuracy — it's a static markdown file with no runtime
+surface.
+
+**Possible future item (not done, noted only):** none identified this run.
+
+**Branch:** `dc-auto-2026-07-22_023726`, to be pushed to origin. Not
+merged to `master` — that's Run 2's decision.
+
+---
