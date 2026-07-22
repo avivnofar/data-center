@@ -299,3 +299,112 @@ per this file's own rule to never overwrite prior sections.
   matches code.
 
 ---
+
+## 2026-07-22 — Daily Audit (Run 2 / Auditor, STEP 2)
+
+**1. Code/data health**
+
+- `node .github/scripts/validate-json.js` — clean, all 8 checks (7
+  `data/*.json` files + the `data/notebooks/` mirror parse check): linux
+  42, cmd 25, network 30, 1com 17, mirtapbx 11, troubleshoot 23, 13
+  modules, 13 notebook-mirror files. Re-run independently, post this run's
+  TODO-016 merge.
+- `node .github/scripts/health-check.js` — clean, all critical checks
+  passed (148 total command/troubleshoot entries; source_url
+  coverage/domain allowlist, no Hebrew in `cmd` fields, no identical
+  `desc_he`/`desc_en` pairs, Hebrew quality checks). Not required by
+  procedure (TODO-016's diff touched no `data/*.json`) but run anyway as
+  part of this standing pass.
+- **`CURRENT-SPEC.md` drift spot-check** — 3 concrete claims re-verified
+  against actual code on `master`:
+  - **#16 "Expandable cards + copy buttons" — DRIFT, still unresolved
+    (carried forward from 2026-07-21).** `CURRENT-SPEC.md` lines 105, 162,
+    and 231 still describe command-card usage-row copy buttons as missing
+    ("Partially Built"). Code on `master` still has them fully implemented:
+    `copyUsageCmd()` (`index.html:2632`), `.usage-copy-btn` CSS
+    (`index.html:489`), and the button markup wired into `renderCard()`
+    (`index.html:1987`) all confirmed present. Not fixed here per this
+    audit's read-only mandate — same doc-update-only item flagged
+    yesterday, still open.
+  - Notebook-X mirror notebook count → `CURRENT-SPEC.md` (lines 129, 173)
+    states 12 notebooks mirrored into `data/notebooks/`. Confirmed by
+    listing the directory: 13 files total = `_index-public.json` + 12
+    `kb-*.json` notebooks. Matches, no drift.
+  - #20 "Bookmark system" (browse/remove UI) → still accurate, no new
+    drift: doc and code remain in sync (unchanged since the 2026-07-20
+    correction).
+  - No other drift found in the 3 checked claims.
+
+**2. Self-audit of prior automation runs**
+
+- Reviewed `DATA_CENTER_RUN_LOG.md` for 2026-07-21 and 2026-07-22 against
+  actual repo state:
+  - 2026-07-21 Builder (`dc-auto-2026-07-21_023811`, TODO-014) → 2026-07-21
+    Auditor STEP 1 merge (`7ef66de`) → 2026-07-21 Daily Audit STEP 2 — all
+    already independently reviewed and confirmed accurate in yesterday's
+    audit entry above; nothing new to add.
+  - 2026-07-22 Builder (`dc-auto-2026-07-22_023726`, TODO-016): confirmed
+    `CONTRIBUTING.md` exists on `master` post-merge, matches the branch's
+    stated content, no `data/*.json`/`index.html` touched — matches the
+    Builder's own run-log claim.
+  - 2026-07-22 Auditor STEP 1 (this session, above): re-verified fresh —
+    merge commit for TODO-016 present on `master`
+    (`git log --grep="Merge dc-auto branch: TODO-016"`), `TODO_LIST.md`
+    entry moved to `## Completed`, `dc_automation_state.json` has a new
+    `merged`/`auditor` entry alongside (not replacing) the original
+    `builder`/`done` entry, branch `dc-auto-2026-07-22_023726` not deleted.
+    All 5 Push-Authorization Checklist items were independently checked
+    (scope, `source_url`, schema/credential, validators, Definition of
+    Done) before merging — see this run's own `DATA_CENTER_RUN_LOG.md`
+    entry for the itemized breakdown.
+- **Was anything pushed to master that shouldn't have been?** No new
+  finding beyond what this run's own STEP 1 already did deliberately: at
+  session start, local `master` was 6 commits ahead of `origin/master`
+  (`9c2b3e4`..`f70066c` — a prior, separately-reviewed interactive
+  session's Notebook-X integration work, committed locally per CLAUDE.md's
+  standard "commit locally, pause before pushing" rule and never pushed).
+  This run's `git push origin master` (as part of the checklist-passed
+  TODO-016 merge, per STEP 1.5) carried those 6 pre-existing commits
+  forward along with the merge and doc/state commit — the same resolution
+  pattern the 2026-07-21 TODO-014 Auditor run used for an identical
+  "master ahead of origin" situation that day. `origin/master` now matches
+  local `master` exactly (`c4cde58`). Nothing outside STEP 1.5's authorized
+  scope (the TODO-016 merge plus its doc/state companions) was pushed as a
+  *new* change by this run — the pre-existing commits were already-landed,
+  already-reviewed content, not something this session authored or
+  altered.
+- **Crashed/interrupted prior attempt today:** `automation/automation_logs/dc_run_2026-07-22_073540.log`
+  shows an earlier Auditor invocation today (07:35:40) that only reached
+  "Auditor session started" and produced no further output, no run-log
+  entry, no state update, no repo changes — same pattern as the
+  2026-07-20_125902 crashed attempt noted previously. Flagging for
+  visibility only, not as a defect: this current session is the one that
+  actually completed today's Auditor work.
+- **Branch hygiene:** `dc-auto-2026-07-20_125410` (TODO-003, resolved via
+  cherry-pick, correctly undeleted), `dc-auto-2026-07-20_151157` (TODO-004,
+  merged), `dc-auto-2026-07-21_023811` (TODO-014, merged), and
+  `dc-auto-2026-07-22_023726` (TODO-016, merged this run) all still exist,
+  correctly undeleted per the hard constraints. `session-connect-notebook-x-integration`
+  (local-only) is still present, unchanged since first flagged 2026-07-21
+  as a safe-to-delete candidate (owner's call, not acted on here).
+  `origin/cloudflare/workers-autoconfig` remains outside this automation
+  system's scope, unchanged.
+
+**Carried forward (not yet resolved):**
+- GitHub write-credential decision (blocks TODO-001/TODO-002 Issue-filing
+  half) — still undecided.
+- TODO-005–011 — per CLAUDE.md's "Future Vision" section, the Notebook-X
+  architecture decision itself resolved 2026-07-21, but TODO-005–011 stay
+  paused until the owner explicitly un-pauses them (not automatic) — this
+  is working as designed, not a stale/incorrect gate.
+- `CURRENT-SPEC.md` #16 (copy-to-clipboard buttons) stale documentation —
+  still unresolved since 2026-07-21; needs a doc update (not a code
+  change) in a future session.
+- `session-connect-notebook-x-integration` local branch — still a
+  safe-to-delete candidate (owner's call), unchanged.
+
+**Resolved since last entry:** none new this run beyond what STEP 1 above
+already addressed (TODO-016 merge; the 6-commits-ahead-of-origin condition
+found at session start).
+
+---
