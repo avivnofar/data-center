@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-21T07:58:03Z",
+  "last_run": "2026-07-22T04:28:53Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -48,6 +48,14 @@
       "run": "auditor",
       "date": "2026-07-21",
       "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was .github/scripts/check-links.js only plus the standard run-log/state-file companions, no NEEDS_YOUR_REVIEW.md/TODO_LIST.md creep; (b) zero source_url values added or changed (grepped the full diff); (c) no data/*.json, workflow, wrangler, or credential-adjacent files touched; (d) validate-json.js re-run clean pre- and post-merge (health-check.js not required, no data/*.json touched); (e) diff matches TODO-014's Definition of Done — ran check-links.js --summary and confirmed 105 unique URLs checked (up from 96), exit 0, same 6 pre-existing broken links and 5 bot-blocked warnings, none new. Merged --no-ff into master (commit 7ef66de), pushed to origin/master successfully."
+    },
+    {
+      "id": "TODO-016",
+      "status": "done",
+      "branch": "dc-auto-2026-07-22_023726",
+      "run": "builder",
+      "date": "2026-07-22",
+      "note": "Added CONTRIBUTING.md distilling CLAUDE.md's running-locally, bilingual-schema, validator, and commit-convention rules for contributors; links back to CLAUDE.md as source of truth rather than duplicating it. No data/*.json or index.html touched. validate-json.js passed."
     }
   ]
 }
