@@ -2774,6 +2774,7 @@ function buildAiPanelHtml() {
         <span class="thinking-dots"><span></span><span></span><span></span></span>
       </div>
     </div>
+    <div id="ai-live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <div id="ai-related-strip">
       <span class="related-strip-label" id="ai-related-label"></span>
     </div>
@@ -3423,6 +3424,15 @@ function timeLabel() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+/* Announces a completed AI response once (not per streamed token) to the
+   #ai-live-region for screen reader users — see TODO-017. */
+function announceAiResponse(text) {
+  const region = document.getElementById('ai-live-region');
+  if (!region) return;
+  const plain = String(text || '').replace(/[`*_#>]/g, '').replace(/\s+/g, ' ').trim();
+  region.textContent = plain.slice(0, 300);
+}
+
 function createStreamingBubble() {
   const chatArea = document.getElementById('ai-chat-messages');
   if (!chatArea) return null;
@@ -3451,6 +3461,7 @@ function finalizeStreamingBubble(el, fullText) {
   if (bubble) bubble.innerHTML = html || '&nbsp;';
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
   renderBookmarkBars(el, fullText);
+  announceAiResponse(fullText);
 }
 
 /* ── Bookmark recommendations (localStorage only — no external writes) ──────
@@ -3671,7 +3682,10 @@ function appendMessageBubble(role, content) {
   chatArea.appendChild(div);
 
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
-  if (!isUser) renderBookmarkBars(div, content);
+  if (!isUser) {
+    renderBookmarkBars(div, content);
+    announceAiResponse(content);
+  }
   updateConversationUiState();
 }
 
@@ -3682,6 +3696,7 @@ function appendErrorMessage(msg) {
   div.className = 'ai-message claude';
   div.innerHTML = `<div class="ai-bubble" style="border-color:#3a1515;background:#1a0f0f;color:var(--danger)">⚠ ${escHtml(msg)}</div>`;
   chatArea.appendChild(div);
+  announceAiResponse(msg);
   scrollChatToBottom();
 }
 
