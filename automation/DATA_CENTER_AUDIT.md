@@ -408,3 +408,111 @@ already addressed (TODO-016 merge; the 6-commits-ahead-of-origin condition
 found at session start).
 
 ---
+
+## 2026-07-23 — Daily Audit (Run 2 / Auditor, STEP 2)
+
+**1. Code/data health**
+
+- `node .github/scripts/validate-json.js` — clean, all 8 checks (7
+  `data/*.json` files + the `data/notebooks/` mirror parse check): linux
+  42, cmd 25, network 30, 1com 17, mirtapbx 11, troubleshoot 23, 13
+  modules, 13 notebook-mirror files. Re-run independently, post this run's
+  TODO-017 merge.
+- `node .github/scripts/health-check.js` — clean, all critical checks
+  passed (148 total command/troubleshoot entries; source_url
+  coverage/domain allowlist, no Hebrew in `cmd` fields, no identical
+  `desc_he`/`desc_en` pairs, Hebrew quality checks). Not required by
+  procedure (TODO-017's diff touched no `data/*.json`) but run anyway as
+  part of this standing pass.
+- **`CURRENT-SPEC.md` drift spot-check** — 3 concrete claims re-verified
+  against actual code on `master`:
+  - **#16 "Expandable cards + copy buttons" — DRIFT, still unresolved
+    (carried forward from 2026-07-21/2026-07-22).** `CURRENT-SPEC.md`
+    lines 105, 162, and 231 still describe command-card usage-row copy
+    buttons as missing ("Partially Built"). Code on `master` still has
+    them fully implemented: `copyUsageCmd()` (`index.html:2632`),
+    `.usage-copy-btn` CSS (`index.html:480`), and the button markup wired
+    into `renderCard()` (`index.html:1986-1987`) all confirmed present.
+    Not fixed here per this audit's read-only mandate — same doc-update-
+    only item flagged on 2026-07-21 and 2026-07-22, still open.
+  - `worker.js` model claim (CLAUDE.md "AI Backend", `MODEL` constant is
+    `claude-sonnet-5`) → confirmed unchanged, matches.
+  - CONTRIBUTING.md / TODO-017's aria-live region are **not yet mentioned**
+    anywhere in `CURRENT-SPEC.md` (grepped for both terms — zero hits).
+    Not treated as "drift" in the contradiction sense (the doc makes no
+    claim about either that current code disproves), but both are real,
+    merged features (TODO-016 2026-07-22, TODO-017 this run) missing from
+    `CURRENT-SPEC.md`'s "Fully Working" table and file-structure listing.
+    Flagging as a documentation gap alongside the #16 item, for a future
+    doc-update session — not fixed here, read-only mandate.
+  - No other drift found in the 3 checked claims.
+
+**2. Self-audit of prior automation runs**
+
+- Reviewed `DATA_CENTER_RUN_LOG.md` for 2026-07-22 and 2026-07-23 against
+  actual repo state:
+  - 2026-07-22 Builder/Auditor (TODO-016) — already independently reviewed
+    and confirmed accurate in yesterday's audit entry; nothing new to add.
+  - 2026-07-23 Builder (`dc-auto-2026-07-23_023736`, TODO-017): confirmed
+    the branch's own run-log/state entries matched its actual diff — read
+    the full `index.html` diff myself before merging (see this run's
+    `DATA_CENTER_RUN_LOG.md` STEP 1 entry for the itemized checklist
+    breakdown) rather than trusting the Builder's "done" claim at face
+    value.
+  - 2026-07-23 Auditor STEP 1 (this session, above): the state-file entry
+    the Builder appended for TODO-017 (`builder`/`done`) existed only on
+    the branch, not yet on `master` — this is the expected, by-design
+    pattern (Run 1 never pushes to `master`), same as every prior
+    Builder→Auditor handoff, not a defect. Re-verified fresh after
+    merging: merge commit for TODO-017 present on `master`
+    (`git log --grep="Merge dc-auto branch: TODO-017"`), `TODO_LIST.md`
+    entry moved to `## Completed`, `dc_automation_state.json` has a new
+    `merged`/`auditor` entry alongside (not replacing) the original
+    `builder`/`done` entry, branch `dc-auto-2026-07-23_023736` not
+    deleted. All 5 Push-Authorization Checklist items were independently
+    checked (scope, `source_url`, schema/credential, validators,
+    Definition of Done) before merging.
+- **Was anything pushed to master that shouldn't have been?** No — this
+  run's only pushes are the TODO-017 merge (`f913e83`) and its doc/state
+  companion commit (`f381c52`), both per STEP 1.5 of a passing checklist
+  run. `origin/master` confirmed to match local `master` exactly
+  (`f381c52`) after both pushes, no stray commits.
+- **Crashed/interrupted prior attempt today:**
+  `automation/automation_logs/dc_run_2026-07-23_073559.log` (476 bytes)
+  shows an earlier Auditor invocation today (07:36:00) that only reached
+  "Auditor session started" and produced no further output, no run-log
+  entry, no state update, no repo changes — same pattern as the
+  2026-07-20_125902 and 2026-07-22_073540 crashed attempts noted in prior
+  audits. Flagging for visibility only, not as a defect: this current
+  session is the one that actually completed today's Auditor work (STEP 1
+  + STEP 2).
+- **Branch hygiene:** `dc-auto-2026-07-20_125410` (TODO-003, resolved via
+  cherry-pick), `dc-auto-2026-07-20_151157` (TODO-004, merged),
+  `dc-auto-2026-07-21_023811` (TODO-014, merged), `dc-auto-2026-07-22_023726`
+  (TODO-016, merged), and `dc-auto-2026-07-23_023736` (TODO-017, merged
+  this run) all still exist, correctly undeleted per the hard constraints.
+  `session-connect-notebook-x-integration` (local-only) and
+  `origin/cloudflare/workers-autoconfig` (remote-only) remain unchanged,
+  still outside this automation system's scope — same safe-to-delete
+  candidate status as previously noted for the former (owner's call, not
+  acted on here).
+
+**Carried forward (not yet resolved):**
+- GitHub write-credential decision (blocks TODO-001/TODO-002 Issue-filing
+  half) — still undecided.
+- TODO-005–011 — still paused pending explicit owner un-pause (working as
+  designed).
+- `CURRENT-SPEC.md` #16 (copy-to-clipboard buttons) stale documentation —
+  still unresolved since 2026-07-21; needs a doc update (not a code
+  change) in a future session.
+- **New this run:** `CURRENT-SPEC.md` is also missing any mention of
+  CONTRIBUTING.md (TODO-016) and the new aria-live accessibility region
+  (TODO-017) — a documentation gap, not a contradiction; bundle with the
+  #16 fix in a future doc-update session.
+- `session-connect-notebook-x-integration` local branch — still a
+  safe-to-delete candidate (owner's call), unchanged.
+
+**Resolved since last entry:** none new this run beyond what STEP 1 above
+already addressed (TODO-017 merge).
+
+---
