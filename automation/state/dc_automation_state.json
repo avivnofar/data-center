@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-22T09:45:58Z",
+  "last_run": "2026-07-23T04:30:14Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -64,6 +64,14 @@
       "run": "auditor",
       "date": "2026-07-22",
       "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was CONTRIBUTING.md (TODO-016's stated Files/areas) plus the standard automation/DATA_CENTER_RUN_LOG.md and automation/state/dc_automation_state.json companions, no TODO_LIST.md/NEEDS_YOUR_REVIEW.md creep; (b) grepped the full diff for source_url — only prose mentions inside CONTRIBUTING.md's text and a pre-existing run-log note, zero actual source_url field values added or changed; (c) no data/*.json, .github/workflows/, wrangler.toml, or credential-adjacent files touched, no deletions; (d) validate-json.js re-run clean pre- and post-merge (health-check.js not required, no data/*.json touched); (e) read CONTRIBUTING.md in full — covers running locally, bilingual schema highlights, both validator commands, and commit/PR conventions, links back to CLAUDE.md as source of truth, does not contradict it. Matches TODO-016's Definition of Done. Merged --no-ff into master (merge commit \"Merge dc-auto branch: TODO-016\"), pushed to origin/master."
+    },
+    {
+      "id": "TODO-017",
+      "status": "done",
+      "branch": "dc-auto-2026-07-23_023736",
+      "run": "builder",
+      "date": "2026-07-23",
+      "note": "Added a visually-hidden #ai-live-region (aria-live=polite, role=status) inside #ai-tab-container, plus announceAiResponse() which strips basic markdown and writes a truncated (300-char) plain-text summary into it exactly once per completed AI response. Wired into finalizeStreamingBubble() (streamed responses — called once after the stream ends, never per-token delta), appendMessageBubble() (CLI-instant assistant replies), and appendErrorMessage() (connection/API errors). index.html only, no data/*.json touched. validate-json.js passed. Manual screen-reader (NVDA/VoiceOver) verification still needed per TODO-017's own Definition of Done — noted for a human to confirm before this branch is considered fully done."
     }
   ]
 }

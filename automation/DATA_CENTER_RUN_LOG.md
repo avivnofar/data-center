@@ -405,3 +405,60 @@ forward the 6 pre-existing local commits described above), will be pushed
 directly to `master` per STEP 1.5.
 
 ---
+
+## 2026-07-23 — Run 1 (Builder) — TODO-017
+
+**Item selected:** TODO-017 — Accessibility: no `aria-live` region on
+streaming AI chat. Selection process: read `automation/TODO_LIST.md`,
+`automation/NEEDS_YOUR_REVIEW.md`, and
+`automation/state/dc_automation_state.json`. Walking the priority order —
+TODO-003 (most recent `todo_history` entry is `needs-review`, hard skip),
+TODO-004/TODO-014/TODO-016 (most recent entries are `merged`, already in
+`TODO_LIST.md`'s `## Completed` section, skip) — left TODO-017 as the
+first eligible item (no `todo_history` entry at all, not blocked in
+`NEEDS_YOUR_REVIEW.md`, not one of the paused TODO-005–011 content
+modules).
+
+**What changed and why:** `#ai-chat-messages` had no live region, and the
+adjacent `#status-bar` is explicitly `aria-live="off"` — confirmed via
+grep before starting, matching the TODO's description exactly. Screen
+reader users got no signal when a new AI response finished streaming in.
+Added:
+- A visually-hidden `#ai-live-region` (`aria-live="polite"`,
+  `role="status"`, `aria-atomic="true"`, reusing the pre-existing
+  `.sr-only` CSS class which was defined but unused anywhere in the file)
+  as a sibling of `#ai-chat-messages` inside `#ai-tab-container` — placed
+  outside `#ai-chat-messages` itself so it survives `startNewAiSession()`/
+  `switchSession()`'s `.ai-message` element removal untouched.
+- `announceAiResponse(text)` — strips basic markdown characters, collapses
+  whitespace, truncates to 300 chars, and writes the result into the live
+  region's `textContent`.
+- Wired `announceAiResponse()` into three call sites, each firing exactly
+  once per completed response (never per streamed token/delta):
+  `finalizeStreamingBubble()` (the actual streaming path — called once
+  after `streamFromWorker()`'s loop exits, not from `updateStreamingBubble()`
+  which fires per-delta), `appendMessageBubble()` for non-user messages
+  (covers CLI Mode's instant, non-streamed assistant replies), and
+  `appendErrorMessage()` (connection/API errors — same live region, so a
+  screen reader user isn't left silently waiting when a request fails).
+
+**Files touched:** `index.html` only (matches TODO-017's stated
+`Files/areas`).
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 8
+checks pass (7 `data/*.json` files + `data/notebooks/` mirror parse
+check). `data/*.json` was not touched, so `health-check.js` was not run
+per the Builder procedure's step 3.
+
+**Manual verification still needed:** per TODO-017's own Definition of
+Done, a human should confirm with an actual screen reader (NVDA/VoiceOver)
+that a completed AI response is announced once, not per-token, before
+this branch is considered fully done — not possible in this
+headless-session environment. Also worth a quick `python -m http.server
+8080` sanity load per the Builder procedure's step 3 note for any
+`index.html`-touching run (no headless browser available here either).
+
+**Branch:** `dc-auto-2026-07-23_023736`, pushed to `origin`. Not merged to
+`master` — that is Run 2's decision.
+
+---
