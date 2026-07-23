@@ -462,3 +462,66 @@ headless-session environment. Also worth a quick `python -m http.server
 `master` — that is Run 2's decision.
 
 ---
+
+## 2026-07-23 — Run 2 (Auditor) — STEP 1: audit of `dc-auto-2026-07-23_023736`
+
+**Item:** TODO-017 — Accessibility: no `aria-live` region on streaming AI
+chat. Found via `automation/state/dc_automation_state.json`: no entry for
+TODO-017 existed yet on `master`'s copy of the state file (the Builder's
+own state/run-log update lives only on its branch until merged, same
+pattern as the TODO-014/TODO-016 audits). Confirmed via
+`git branch -r --list "*dc-auto*"` that `origin/dc-auto-2026-07-23_023736`
+exists and checking out that branch's own copy of the state file showed a
+`builder`/`done` entry for TODO-017 with no later `merged`/`needs-review`
+entry — eligible. `git fetch origin`, confirmed local
+`dc-auto-2026-07-23_023736` tip (`7cd4ff2`) matched
+`origin/dc-auto-2026-07-23_023736` exactly — fresh state, no stale local
+branch reused.
+
+**Checklist re-verification (independent, from the fresh checkout):**
+- (a) Scope: `git diff master...dc-auto-2026-07-23_023736 --stat` showed
+  `index.html` (TODO-017's stated `Files/areas`) plus the standard
+  `automation/DATA_CENTER_RUN_LOG.md` / `automation/state/dc_automation_state.json`
+  companions — no `TODO_LIST.md`/`NEEDS_YOUR_REVIEW.md` creep. **Pass.**
+- (b) Grepped the full `index.html` diff for `source_url` — zero hits.
+  **Pass.**
+- (c) No `data/*.json`, `.github/workflows/`, `wrangler.toml`, or
+  credential-adjacent files in the diff; no deletions (diff was
+  insertions plus two in-place line edits, not entry removals). **Pass.**
+- (d) `node .github/scripts/validate-json.js` re-run clean (all 8 checks:
+  7 `data/*.json` files + the `data/notebooks/` mirror parse check).
+  `health-check.js` not required — no `data/*.json` in the diff. **Pass.**
+- (e) Read the full `index.html` diff: adds a visually-hidden
+  `#ai-live-region` (`aria-live="polite"`, `role="status"`,
+  `aria-atomic="true"`, reusing the pre-existing `.sr-only` CSS class —
+  confirmed it exists at `index.html:61` and uses the standard
+  clip-rect/absolute-position technique, not `display:none`) and
+  `announceAiResponse()` (strips markdown punctuation, collapses
+  whitespace, truncates to 300 chars). Confirmed by reading call sites
+  that `updateStreamingBubble()` (the per-token streaming-delta path)
+  does **not** call `announceAiResponse()`, and only
+  `finalizeStreamingBubble()` (called once, after the stream loop exits),
+  `appendMessageBubble()` (non-streamed CLI-instant replies), and
+  `appendErrorMessage()` do — structurally satisfies TODO-017's
+  Definition of Done ("announced once, not per-token"). The DoD's actual
+  NVDA/VoiceOver manual test is a human-only step not available in this
+  headless session; noted as an outstanding follow-up rather than treated
+  as a checklist failure, consistent with how prior runs handled
+  TODO-003/TODO-004's own manual-browser-verification notes. **Pass.**
+
+**Merge:** all 5 checklist items passed. `git checkout master && git pull
+origin master` (already up to date). `git merge dc-auto-2026-07-23_023736
+--no-ff -m "Merge dc-auto branch: TODO-017"` — clean, no conflicts.
+Re-ran `validate-json.js` on the merged result — same clean pass as
+pre-merge (`health-check.js` still not required). `git push origin
+master` succeeded (`de5dd6d..f913e83`). Feature branch left untouched
+(not deleted), as required.
+
+**Docs/state updates:** moved TODO-017's full entry from the active list
+into `TODO_LIST.md`'s `## Completed` section with completion date and
+merge-commit reference; appended a `merged`/`auditor` entry to
+`dc_automation_state.json` and updated `last_run`; this run-log entry.
+These three files will be committed and pushed directly to `master` in a
+small separate commit per STEP 1.5.
+
+---

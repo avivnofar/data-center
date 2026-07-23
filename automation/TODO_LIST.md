@@ -270,27 +270,6 @@ connection" degraded state) before implementing.
 
 ---
 
-### TODO-017 — Accessibility: no `aria-live` region on streaming AI chat
-
-**Description:** `#ai-chat-messages` (`index.html:2510`) has no `aria-live`
-attribute, and the adjacent `#status-bar` (`index.html:1469`) is explicitly
-`aria-live="off"` — confirmed via grep. Screen reader users get no
-announcement when a new AI response streams in. Add an `aria-live="polite"`
-live region (likely a small visually-hidden element updated once streaming
-completes, not on every token delta — announcing every delta would be
-unusable) so a completed response is announced.
-
-**Files/areas:** `index.html` (new/updated live region near
-`#ai-chat-messages`, streaming-completion handling around the
-`sendAiMessage()` flow, `index.html:2808` area).
-
-**Definition of done:** manual test with a screen reader (NVDA/VoiceOver)
-confirms a new AI response is announced once, not per-token.
-
-**Complexity:** S
-
----
-
 ### TODO-018 — Notebook-X integration: BLOCKED placeholder — RESOLVED 2026-07-21
 
 **Resolution:** the architecture decision landed (repo mirror + client-side
@@ -489,6 +468,39 @@ Items move here in full (not struck out in place) once merged to `master`
 by an Auditor run, per `automation/DATA_CENTER_AUTOMATION_SPEC.md` §7.
 Each entry keeps its original description and appends date completed plus
 the branch/commit reference.
+
+### TODO-017 — Accessibility: no `aria-live` region on streaming AI chat
+
+**Description:** `#ai-chat-messages` (`index.html:2510`) has no `aria-live`
+attribute, and the adjacent `#status-bar` (`index.html:1469`) is explicitly
+`aria-live="off"` — confirmed via grep. Screen reader users get no
+announcement when a new AI response streams in. Add an `aria-live="polite"`
+live region (likely a small visually-hidden element updated once streaming
+completes, not on every token delta — announcing every delta would be
+unusable) so a completed response is announced.
+
+**Files/areas:** `index.html` (new/updated live region near
+`#ai-chat-messages`, streaming-completion handling around the
+`sendAiMessage()` flow, `index.html:2808` area).
+
+**Definition of done:** manual test with a screen reader (NVDA/VoiceOver)
+confirms a new AI response is announced once, not per-token.
+
+**Complexity:** S
+
+**Completed:** 2026-07-23, branch `dc-auto-2026-07-23_023736`, merged into
+`master` via merge commit "Merge dc-auto branch: TODO-017" by the Run 2
+(Auditor) session. Independently re-verified: diff scope was `index.html`
+only (plus the standard run-log/state-file companions); zero `source_url`
+values added or changed; no `data/*.json`/workflow/wrangler/credential-
+adjacent files touched, no deletions; `validate-json.js` re-run clean
+pre- and post-merge. Adds a visually-hidden `#ai-live-region`
+(`aria-live="polite"`, `role="status"`) and `announceAiResponse()`, wired
+into `finalizeStreamingBubble()` (once per completed stream, confirmed
+`updateStreamingBubble()` — the per-delta path — does not call it),
+`appendMessageBubble()`, and `appendErrorMessage()`. Matches TODO-017's
+Definition of Done structurally; actual NVDA/VoiceOver manual confirmation
+still needs a human (not possible in this headless session).
 
 ### TODO-014 — Fix `check-links.js` blind spot on 1COM/MirtaPBX source URLs
 
