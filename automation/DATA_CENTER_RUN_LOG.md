@@ -599,3 +599,78 @@ from a synthetic check).
 `master` — that is Run 2's decision.
 
 ---
+
+## 2026-07-24 — Run 2 (Auditor) — STEP 1: audit of `dc-auto-2026-07-24_023859`
+
+**Item:** TODO-001 — client-side parser + UI for
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks. Found via
+`automation/state/dc_automation_state.json` on the branch itself (no entry
+existed yet on `master`'s copy — same pattern as the TODO-014/016/017
+audits): a `builder`/`done` entry for TODO-001 with no later
+`merged`/`needs-review` entry — eligible. `git fetch origin`, confirmed
+local `dc-auto-2026-07-24_023859` tip (`411ea6e`) matched
+`origin/dc-auto-2026-07-24_023859` exactly — fresh checkout, no stale
+local branch reused.
+
+**Checklist re-verification (independent, from the fresh checkout):**
+- (a) Scope: `git diff master...dc-auto-2026-07-24_023859 --stat` showed
+  `index.html` (TODO-001's stated `Files/areas`) plus the standard
+  `automation/DATA_CENTER_RUN_LOG.md` / `automation/state/dc_automation_state.json`
+  companions — no `TODO_LIST.md`/`NEEDS_YOUR_REVIEW.md` creep. **Pass.**
+- (b) Grepped the full diff for `source_url` — the only hit was a prose
+  mention inside a pre-existing run-log note quoting a prior TODO-017
+  audit entry; zero actual `source_url` field values added or changed.
+  **Pass.**
+- (c) No `data/*.json`, `.github/workflows/`, `wrangler.toml`, or
+  credential-adjacent files in the diff; no deletions (diff was additions
+  plus small in-place edits to existing function signatures/return
+  values, not entry removals). **Pass.**
+- (d) `node .github/scripts/validate-json.js` re-run clean (all 8 checks:
+  7 `data/*.json` files + the `data/notebooks/` mirror parse check).
+  `health-check.js` not required — no `data/*.json` in the diff. **Pass.**
+- (e) Read the full `index.html` diff: `parseSuggestionBlocks(text)`
+  matches the trailing `---` + `CAPABILITY_SUGGESTION`/`LEARNED_SOURCE`
+  JSON block, strips it from the returned `body` before it reaches
+  `renderMarkdown()`'s HTML output, and returns parsed `suggestions`
+  (malformed JSON from the model is caught and skipped, not thrown).
+  `renderSuggestionCards()` is modeled directly on the existing
+  `renderBookmarkBars()` pattern and passes every suggestion field
+  (`summary`, `proposed_change`, `affected_files`, `url`,
+  `proposed_field`, `reason`) through `escHtml()` before insertion —
+  confirmed no raw interpolation into `innerHTML`. `fileSuggestion()`
+  only calls `navigator.clipboard.writeText()` and flips the button to a
+  disabled "Copied — not wired up yet" state for 3 seconds; confirmed by
+  reading the function body that it makes no `fetch()`/network call and
+  no GitHub API reference anywhere. Both `finalizeStreamingBubble()`
+  (streamed responses) and `appendMessageBubble()` (non-streamed CLI
+  replies) call `renderSuggestionCards()` alongside the existing
+  `renderBookmarkBars()` call. Matches TODO-001's Definition of Done: raw
+  block text is stripped before render, the card shows parsed fields, and
+  "File this" falls back to copy-to-clipboard with a "not wired up yet"
+  state rather than calling GitHub directly. Additionally ran an
+  independent syntax check — extracted the page's single `<script>` block
+  and passed it through `new Function()` — no errors. The DoD's own
+  "confirm a test message with a mock block renders correctly" via a real
+  browser is a human-only step not available in this headless session;
+  noted as an outstanding follow-up rather than a checklist failure,
+  consistent with how prior branches' manual-verification notes were
+  handled. **Pass.**
+
+**Merge:** all 5 checklist items passed. `git checkout master && git pull
+origin master` (already up to date). `git merge dc-auto-2026-07-24_023859
+--no-ff -m "Merge dc-auto branch: TODO-001"` — clean, no conflicts.
+Re-ran `validate-json.js` on the merged result — same clean pass as
+pre-merge (`health-check.js` still not required). `git push origin
+master` succeeded (`182ac94..d37943d`). Feature branch left untouched
+(not deleted), as required.
+
+**Docs/state updates:** moved TODO-001's full entry from the active list
+into `TODO_LIST.md`'s `## Completed` section with completion date and
+merge-commit reference (noting the Completed entry covers only the
+unblocked parser/UI half — TODO-002's GitHub-write filing half remains
+open and blocked); appended a `merged`/`auditor` entry to
+`dc_automation_state.json` and updated `last_run`; this run-log entry.
+These three files will be committed and pushed directly to `master` in a
+small separate commit per STEP 1.5.
+
+---

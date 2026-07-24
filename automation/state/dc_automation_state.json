@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-24T04:31:29Z",
+  "last_run": "2026-07-24T09:54:30Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -88,6 +88,14 @@
       "run": "builder",
       "date": "2026-07-24",
       "note": "Built the parser/UI half only (filing half stays blocked on the GitHub write-credential decision, per TODO-001's own dependency note). Added parseSuggestionBlocks() in index.html, called from renderMarkdown(), which strips the optional trailing '---' + CAPABILITY_SUGGESTION/LEARNED_SOURCE JSON lines (worker.js's system prompt, lines ~277-289) from the visible bubble text and returns them as parsed suggestions. Added renderSuggestionCards() (modeled on renderBookmarkBars()) rendering a small dismissible bilingual card per suggestion with a 'File this' button that copies the suggestion JSON to the clipboard and shows a 'not wired up yet' state (no GitHub call from the browser) plus a plain Dismiss button. Wired into both finalizeStreamingBubble() and appendMessageBubble() (the two AI-response render paths) alongside the existing renderBookmarkBars() call. New CSS for .suggestion-card added near the existing .bookmark-bar rules. index.html only, no data/*.json touched. validate-json.js passed; node --check on the extracted <script> block passed (no headless browser available in this session — a human should do a final visual check via `python -m http.server 8080` with a mock AI response containing a CAPABILITY_SUGGESTION/LEARNED_SOURCE block before considering this branch fully done)."
+    },
+    {
+      "id": "TODO-001",
+      "status": "merged",
+      "branch": "dc-auto-2026-07-24_023859",
+      "run": "auditor",
+      "date": "2026-07-24",
+      "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was index.html only (plus the standard automation/DATA_CENTER_RUN_LOG.md and automation/state/dc_automation_state.json companions), matching TODO-001's stated Files/areas; (b) grepped the full diff for source_url — only a prose mention inside a pre-existing run-log note quoting a prior TODO-017 audit, zero actual source_url field values added or changed; (c) no data/*.json, .github/workflows/, wrangler.toml, or credential-adjacent files touched, no deletions; (d) validate-json.js re-run clean pre- and post-merge (health-check.js not required, no data/*.json touched); (e) read the index.html diff in full — adds parseSuggestionBlocks() (strips the trailing '---' + CAPABILITY_SUGGESTION/LEARNED_SOURCE JSON block from the visible bubble body), renderSuggestionCards() (modeled on renderBookmarkBars(), all fields passed through escHtml()), and fileSuggestion() (clipboard-copy only, disabled 'not wired up yet' button state, confirmed no navigator calls to GitHub or any network request) — matches TODO-001's Definition of Done point for point. Independently re-ran a Node syntax check (new Function() over the extracted <script> block) — passed clean. Manual visual/clipboard confirmation in a real browser still needs a human (not possible in this headless session), noted as a follow-up rather than a merge blocker. Merged --no-ff into master (merge commit \"Merge dc-auto branch: TODO-001\", d37943d), pushed to origin/master successfully."
     }
   ]
 }

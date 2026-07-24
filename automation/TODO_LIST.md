@@ -9,40 +9,6 @@ to `master` — commit locally and stop.
 
 ---
 
-### TODO-001 — Client-side parser + UI for CAPABILITY_SUGGESTION / LEARNED_SOURCE blocks
-
-**Description:** `worker.js`'s system prompt (lines 297-306) instructs Claude
-to append optional `CAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}`
-JSON lines after a `---` separator in AI Search / Solve-a-Case responses.
-Confirmed via grep: zero client-side handling exists anywhere in `index.html`
-— these blocks currently render as raw visible text at the end of chat
-messages. Build a parser (in `renderMarkdown()`, `index.html:2325`, or a
-post-processing pass on the streamed message) that: (1) detects the
-`---\nCAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}` pattern, (2)
-strips it from the visible bubble text, (3) renders a small dismissible card
-(model it on `renderBookmarkBars()`, `index.html:3220`) showing the parsed
-summary/reason and a "File this" button.
-
-**Files/areas:** `index.html` (new parser function, new card markup + CSS
-near the `.bookmark-bar` styles).
-
-**Definition of done:** the raw block text never appears in a chat bubble;
-the card renders with the parsed fields; the "File this" button is present
-but may show a "not wired up yet" state or fall back to copy-to-clipboard
-until the credential decision below lands — do not call GitHub directly from
-the browser. No `data/*.json` touched, so `validate-json.js`/`health-check.js`
-are unaffected — just confirm `index.html` still loads locally
-(`python -m http.server 8080`) and a test message with a mock block renders
-correctly.
-
-**Complexity:** M
-
-**Dependency:** The actual Issue-filing/GitHub-write action is blocked on
-`NEEDS_YOUR_REVIEW.md` → "GitHub write-credential decision". The parser + UI
-half is not blocked and can be shipped independently.
-
----
-
 ### TODO-002 — Route AI-suggested URLs into `flagged/pending-review.md`
 
 **Description:** `flagged/pending-review.md` is currently an empty table —
@@ -468,6 +434,62 @@ Items move here in full (not struck out in place) once merged to `master`
 by an Auditor run, per `automation/DATA_CENTER_AUTOMATION_SPEC.md` §7.
 Each entry keeps its original description and appends date completed plus
 the branch/commit reference.
+
+### TODO-001 — Client-side parser + UI for CAPABILITY_SUGGESTION / LEARNED_SOURCE blocks
+
+**Description:** `worker.js`'s system prompt (lines 297-306) instructs Claude
+to append optional `CAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}`
+JSON lines after a `---` separator in AI Search / Solve-a-Case responses.
+Confirmed via grep: zero client-side handling exists anywhere in `index.html`
+— these blocks currently render as raw visible text at the end of chat
+messages. Build a parser (in `renderMarkdown()`, `index.html:2325`, or a
+post-processing pass on the streamed message) that: (1) detects the
+`---\nCAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}` pattern, (2)
+strips it from the visible bubble text, (3) renders a small dismissible card
+(model it on `renderBookmarkBars()`, `index.html:3220`) showing the parsed
+summary/reason and a "File this" button.
+
+**Files/areas:** `index.html` (new parser function, new card markup + CSS
+near the `.bookmark-bar` styles).
+
+**Definition of done:** the raw block text never appears in a chat bubble;
+the card renders with the parsed fields; the "File this" button is present
+but may show a "not wired up yet" state or fall back to copy-to-clipboard
+until the credential decision below lands — do not call GitHub directly from
+the browser. No `data/*.json` touched, so `validate-json.js`/`health-check.js`
+are unaffected — just confirm `index.html` still loads locally
+(`python -m http.server 8080`) and a test message with a mock block renders
+correctly.
+
+**Complexity:** M
+
+**Dependency:** The actual Issue-filing/GitHub-write action is blocked on
+`NEEDS_YOUR_REVIEW.md` → "GitHub write-credential decision". The parser + UI
+half is not blocked and can be shipped independently (this Completed entry
+covers only that unblocked parser/UI half — TODO-002's filing half remains
+open).
+
+**Completed:** 2026-07-24, branch `dc-auto-2026-07-24_023859`, merged into
+`master` via merge commit "Merge dc-auto branch: TODO-001" by the Run 2
+(Auditor) session. Independently re-verified: diff scope was `index.html`
+only (plus the standard automation/DATA_CENTER_RUN_LOG.md and
+automation/state/dc_automation_state.json companions), matching TODO-001's
+stated Files/areas; zero `source_url` values added or changed; no
+`data/*.json`/workflow/wrangler/credential-adjacent files touched, no
+deletions; `validate-json.js` re-run clean pre- and post-merge
+(`health-check.js` not required, no `data/*.json` touched); independently
+ran `node --check`-equivalent syntax verification on the extracted
+`<script>` block (passed). Read the `index.html` diff in full: adds
+`parseSuggestionBlocks()` (strips the trailing `---` +
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` JSON block from the visible body),
+`renderSuggestionCards()` (modeled on `renderBookmarkBars()`, escapes all
+suggestion fields via `escHtml()`), and `fileSuggestion()` (copies JSON to
+clipboard, shows a disabled "not wired up yet" state, makes no GitHub call
+from the browser) — matches TODO-001's Definition of Done point for point.
+Manual visual/clipboard confirmation in a real browser still needs a human
+(not possible in this headless session), noted as a follow-up rather than a
+merge blocker, consistent with how prior branches' own manual-verification
+notes were handled.
 
 ### TODO-017 — Accessibility: no `aria-live` region on streaming AI chat
 
