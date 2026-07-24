@@ -1323,6 +1323,37 @@
     .bookmark-bar button:hover { border-color: var(--accent2); color: var(--accent2); }
     .bookmark-bar .bm-saved { color: var(--accent); }
 
+    /* ── Capability-suggestion / learned-source card ─────────────────────────
+       Renders CAPABILITY_SUGGESTION / LEARNED_SOURCE blocks parsed out of AI
+       responses by parseSuggestionBlocks() (see renderMarkdown()). */
+    .suggestion-card {
+      background: var(--surface2);
+      border: 1px dashed var(--accent2);
+      border-radius: 8px;
+      font-size: 0.78rem;
+      margin-top: 6px;
+      max-width: 82%;
+      padding: 8px 10px;
+    }
+    .suggestion-card .sc-head { align-items: center; display: flex; font-weight: 600; gap: 6px; margin-bottom: 4px; }
+    .suggestion-card .sc-body { color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+    .suggestion-card .sc-line { line-height: 1.4; }
+    .suggestion-card .sc-url, .suggestion-card .sc-files { font-family: var(--mono); unicode-bidi: isolate; word-break: break-all; }
+    .suggestion-card .sc-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .suggestion-card .sc-actions button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      padding: 3px 9px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .suggestion-card .sc-actions button:hover { border-color: var(--accent2); color: var(--accent2); }
+    .suggestion-card .sc-actions button:disabled { cursor: default; opacity: 0.7; }
+
     /* ── My Bookmarks panel ──────────────────────────────────────────────────
        Reads/writes only the existing dc-bookmarks / dc-dismissed-bookmarks
        localStorage keys (see BOOKMARK_SAVED_KEY above) — no new keys, no
@@ -2556,9 +2587,30 @@ function wrapLtrTerms(segment) {
   return segment.replace(re, (m) => `<span dir="ltr" style="unicode-bidi:isolate">${m}</span>`);
 }
 
+// Parses the optional trailing "---\nCAPABILITY_SUGGESTION: {...}" /
+// "LEARNED_SOURCE: {...}" block worker.js's system prompt may append (see
+// cloudflare-worker/worker.js CAPABILITIES section). Returns the visible
+// text with the block removed, plus any parsed suggestions.
+function parseSuggestionBlocks(text) {
+  const suggestions = [];
+  const blockRe = /\n?---[ \t]*\n((?:(?:CAPABILITY_SUGGESTION|LEARNED_SOURCE):[ \t]*\{.*\}[ \t]*\n?)+)\s*$/;
+  const match = text.match(blockRe);
+  if (!match) return { body: text, suggestions };
+  const body = text.slice(0, match.index).trimEnd();
+  const lineRe = /(CAPABILITY_SUGGESTION|LEARNED_SOURCE):[ \t]*(\{.*\})/g;
+  let m;
+  while ((m = lineRe.exec(match[1]))) {
+    try {
+      suggestions.push({ type: m[1], data: JSON.parse(m[2]) });
+    } catch (e) { /* malformed JSON from the model — skip silently */ }
+  }
+  return { body, suggestions };
+}
+
 function renderMarkdown(text) {
+  const { body: strippedText, suggestions } = parseSuggestionBlocks(text);
   let relatedCmds = [];
-  let body = text.replace(/RELATED_COMMANDS:\s*\[([^\]]*)\]/i, (_, list) => {
+  let body = strippedText.replace(/RELATED_COMMANDS:\s*\[([^\]]*)\]/i, (_, list) => {
     relatedCmds = list.split(',').map(s => s.trim()).filter(Boolean);
     return '';
   }).trim();
@@ -2616,7 +2668,7 @@ function renderMarkdown(text) {
   html = html.replace(/<br>(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)/g, '$1');
   html = html.replace(/(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)<br>/g, '$1');
 
-  return { html, relatedCmds };
+  return { html, relatedCmds, suggestions };
 }
 
 function copyAiCode(btn) {
@@ -3456,11 +3508,12 @@ function updateStreamingBubble(el, text) {
 
 function finalizeStreamingBubble(el, fullText) {
   if (!el) return;
-  const { html, relatedCmds } = renderMarkdown(fullText);
+  const { html, relatedCmds, suggestions } = renderMarkdown(fullText);
   const bubble = el.querySelector('.ai-bubble');
   if (bubble) bubble.innerHTML = html || '&nbsp;';
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
   renderBookmarkBars(el, fullText);
+  renderSuggestionCards(el, suggestions);
   announceAiResponse(fullText);
 }
 
@@ -3536,6 +3589,62 @@ function dismissBookmark(btn, encodedUrl) {
   }
   const bar = btn.closest('.bookmark-bar');
   if (bar) bar.remove();
+}
+
+/* ── Capability-suggestion / learned-source cards (TODO-001) ─────────────────
+   Renders the CAPABILITY_SUGGESTION / LEARNED_SOURCE blocks parsed out of AI
+   responses by parseSuggestionBlocks(). "File this" has no GitHub-write
+   backend yet (blocked on NEEDS_YOUR_REVIEW.md's credential decision) — it
+   copies the suggestion JSON to the clipboard instead of calling GitHub
+   directly from the browser. */
+function renderSuggestionCards(container, suggestions) {
+  if (!suggestions || !suggestions.length) return;
+  suggestions.forEach(s => {
+    const d = s.data || {};
+    const isCapability = s.type === 'CAPABILITY_SUGGESTION';
+    const icon = isCapability ? '💡' : '📚';
+    const label = isCapability
+      ? (LANG === 'he' ? 'הצעה להרחבת מאגר הידע' : 'Knowledge-base gap detected')
+      : (LANG === 'he' ? 'מקור חדש שנמצא' : 'New source found');
+    const fileLabel = LANG === 'he' ? 'הגש להעברה' : 'File this';
+    const dismissLabel = LANG === 'he' ? 'התעלם' : 'Dismiss';
+
+    let detailsHtml = '';
+    if (isCapability) {
+      if (d.summary) detailsHtml += `<div class="sc-line">${escHtml(d.summary)}</div>`;
+      if (d.proposed_change) detailsHtml += `<div class="sc-line"><b>${LANG === 'he' ? 'שינוי מוצע' : 'Proposed change'}:</b> ${escHtml(d.proposed_change)}</div>`;
+      if (Array.isArray(d.affected_files) && d.affected_files.length) {
+        detailsHtml += `<div class="sc-line sc-files" dir="ltr">${escHtml(d.affected_files.join(', '))}</div>`;
+      }
+    } else {
+      if (d.url) detailsHtml += `<div class="sc-line sc-url" dir="ltr">${escHtml(d.url)}</div>`;
+      if (d.proposed_field) detailsHtml += `<div class="sc-line"><b>${LANG === 'he' ? 'שדה מוצע' : 'Proposed field'}:</b> <span dir="ltr">${escHtml(d.proposed_field)}</span></div>`;
+      if (d.reason) detailsHtml += `<div class="sc-line">${escHtml(d.reason)}</div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'suggestion-card';
+    const encoded = encodeURIComponent(JSON.stringify(d));
+    card.innerHTML = `
+      <div class="sc-head"><span>${icon}</span><span>${escHtml(label)}</span></div>
+      <div class="sc-body">${detailsHtml}</div>
+      <div class="sc-actions">
+        <button onclick="fileSuggestion(this, '${encoded}')">${escHtml(fileLabel)}</button>
+        <button onclick="this.closest('.suggestion-card').remove()">${escHtml(dismissLabel)}</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function fileSuggestion(btn, encodedData) {
+  let data = {};
+  try { data = JSON.parse(decodeURIComponent(encodedData)); } catch (e) { /* ignore */ }
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
+    const original = btn.textContent;
+    btn.textContent = LANG === 'he' ? '📋 הועתק — טרם מחובר להגשה אוטומטית' : '📋 Copied — not wired up yet';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 3000);
+  });
 }
 
 /* ── My Bookmarks panel (view/remove saved bookmarks) ────────────────────── */
@@ -3667,6 +3776,7 @@ function appendMessageBubble(role, content) {
 
   let bubbleHtml;
   let relatedCmds = [];
+  let suggestions = [];
   let bubbleDir = 'auto';
   if (isUser) {
     bubbleHtml = escHtml(content).replace(/\n/g, '<br>');
@@ -3674,6 +3784,7 @@ function appendMessageBubble(role, content) {
     const rendered = renderMarkdown(content);
     bubbleHtml = rendered.html;
     relatedCmds = rendered.relatedCmds;
+    suggestions = rendered.suggestions;
     bubbleDir = LANG === 'he' ? 'rtl' : 'ltr';
   }
 
@@ -3684,6 +3795,7 @@ function appendMessageBubble(role, content) {
   if (relatedCmds.length) showRelatedCommands(relatedCmds);
   if (!isUser) {
     renderBookmarkBars(div, content);
+    renderSuggestionCards(div, suggestions);
     announceAiResponse(content);
   }
   updateConversationUiState();
