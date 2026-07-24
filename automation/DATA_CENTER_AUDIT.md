@@ -516,3 +516,129 @@ found at session start).
 already addressed (TODO-017 merge).
 
 ---
+
+## 2026-07-24 — Daily Audit (Run 2 / Auditor, STEP 2)
+
+**1. Code/data health**
+
+- `node .github/scripts/validate-json.js` — clean, all 8 checks (7
+  `data/*.json` files + the `data/notebooks/` mirror parse check): linux
+  42, cmd 25, network 30, 1com 17, mirtapbx 11, troubleshoot 23, 13
+  modules, 13 notebook-mirror files. Re-run independently, post this run's
+  TODO-001 merge.
+- `node .github/scripts/health-check.js` — clean, all critical checks
+  passed (148 total command/troubleshoot entries; source_url
+  coverage/domain allowlist, no Hebrew in `cmd` fields, no identical
+  `desc_he`/`desc_en` pairs, Hebrew quality checks). Not required by
+  procedure (TODO-001's diff touched no `data/*.json`) but run anyway as
+  part of this standing pass.
+- **`CURRENT-SPEC.md` drift spot-check** — 3 concrete claims re-verified
+  against actual code on `master`:
+  - **#7 "Self-education (LEARNED_SOURCE)" — NEW DRIFT FOUND.**
+    `CURRENT-SPEC.md`'s "Partially Built" table (and the "Known Issues"
+    section) still state "No client-side code detects the block — it
+    renders as visible text in the chat." This is now stale following
+    this run's TODO-001 merge: `parseSuggestionBlocks()`
+    (`index.html:2594`) and `renderSuggestionCards()` (`index.html:3600`)
+    both confirmed present and wired into `finalizeStreamingBubble()` and
+    `appendMessageBubble()` — the raw block text is stripped and rendered
+    as a dismissible card instead. Note the claim isn't *fully* resolved
+    either: the "File this" action still only copies to clipboard (no
+    Issue-filing/`pending-review.md` write), which is correct per
+    TODO-001's own scope (the GitHub write-credential decision is still
+    open, see below) — so #7/#9/#10 move from "nothing built" to "parser/UI
+    built, filing still not," not all the way to "Fully Working." Per this
+    audit's read-only mandate, **not fixed here** — flagging for the owner
+    or a future session to update `CURRENT-SPEC.md` items #7, #9, #10.
+  - **#16 "Expandable cards + copy buttons" — DRIFT, still unresolved
+    (carried forward from 2026-07-21/22/23).** `CURRENT-SPEC.md` still
+    describes command-card usage-row copy buttons as missing. Code still
+    has them fully implemented (`copyUsageCmd()`, confirmed present again
+    this run). Not fixed here, same open doc-update item.
+  - CONTRIBUTING.md / TODO-017's `#ai-live-region` — re-checked, still zero
+    mentions anywhere in `CURRENT-SPEC.md` (grepped both terms). Same
+    documentation gap flagged 2026-07-23, still unresolved, now joined by
+    the new #7 gap above — all three are doc-update-only items for a
+    future session, not code defects.
+  - No other drift found in the 3 checked claims.
+
+**2. Self-audit of prior automation runs**
+
+- Reviewed `DATA_CENTER_RUN_LOG.md` for 2026-07-23 and 2026-07-24 against
+  actual repo state:
+  - 2026-07-23 Builder/Auditor (TODO-017) — already independently reviewed
+    and confirmed accurate in yesterday's audit entry; nothing new to add.
+  - 2026-07-24 Builder (`dc-auto-2026-07-24_023859`, TODO-001): confirmed
+    the branch's own state-file entry (`builder`/`done`, no later
+    `merged`/`needs-review`) matched what a fresh checkout actually
+    contained — read the full `index.html` diff myself (not the Builder's
+    summary) before merging; see this run's own `DATA_CENTER_RUN_LOG.md`
+    STEP 1 entry for the itemized Push-Authorization Checklist breakdown
+    (all 5 items independently re-verified: scope, `source_url`,
+    schema/credential, validators pre- and post-merge, and Definition of
+    Done — including specifically confirming `fileSuggestion()` makes no
+    network call and no GitHub reference, and that all suggestion fields
+    pass through `escHtml()` before `innerHTML` insertion).
+  - 2026-07-24 Auditor STEP 1 (this session, above): merge commit for
+    TODO-001 present on `master` (`git log --grep="Merge dc-auto branch:
+    TODO-001"`), `TODO_LIST.md` entry moved to `## Completed` (noting the
+    entry explicitly scopes itself to the unblocked parser/UI half, since
+    TODO-002's filing half is separately tracked and still blocked),
+    `dc_automation_state.json` has a new `merged`/`auditor` entry alongside
+    (not replacing) the original `builder`/`done` entry, branch
+    `dc-auto-2026-07-24_023859` not deleted.
+- **Was anything pushed to master that shouldn't have been?** No — this
+  run's only pushes are the TODO-001 merge (`d37943d`) and its doc/state
+  companion commit (`f984801`), both per STEP 1.5 of a passing checklist
+  run. `git fetch origin` + `git rev-parse master origin/master` confirmed
+  both point at the identical commit (`f984801`) after the pushes, no
+  stray commits either direction.
+- **Crashed/interrupted prior attempt today:**
+  `automation/automation_logs/dc_run_2026-07-24_073544.log` shows an
+  earlier scheduled Auditor invocation today (07:35:44) that failed before
+  even completing its initial `git fetch` — `fatal: unable to access
+  '...': Recv failure: Connection was reset` — a transient network failure,
+  not a logic bug, and distinct from the "reached 'session started' then
+  silently stopped" pattern seen on 2026-07-20/22/23 (this one didn't even
+  get that far on its first attempt within the log, though the same log
+  file shows a second "Auditor session started: 12:52:34.80" entry
+  immediately after — that second start is this current session, which
+  went on to complete both STEP 1 and STEP 2 normally). No repo side
+  effects from the failed 07:35 attempt: no run-log entry, no state
+  update, nothing to clean up.
+- **Branch hygiene:** `dc-auto-2026-07-20_125410` (TODO-003, resolved via
+  cherry-pick), `dc-auto-2026-07-20_151157` (TODO-004, merged),
+  `dc-auto-2026-07-21_023811` (TODO-014, merged), `dc-auto-2026-07-22_023726`
+  (TODO-016, merged), `dc-auto-2026-07-23_023736` (TODO-017, merged), and
+  `dc-auto-2026-07-24_023859` (TODO-001, merged this run) all still exist,
+  correctly undeleted per the hard constraints. `session-connect-notebook-x-integration`
+  (local-only) and `origin/cloudflare/workers-autoconfig` (remote-only)
+  remain unchanged, still outside this automation system's scope — same
+  safe-to-delete candidate status as previously noted for the former
+  (owner's call, not acted on here).
+
+**Carried forward (not yet resolved):**
+- GitHub write-credential decision (blocks TODO-002's filing half, and the
+  remaining "File an Issue"/"append to pending-review.md" half of
+  TODO-001/#7/#9/#10) — still undecided. Note: this run's TODO-001 merge
+  narrows the scope of what's blocked — the parser/UI half is done, only
+  the actual write-to-GitHub action remains gated on this decision.
+- TODO-005–011 — still paused pending explicit owner un-pause (working as
+  designed).
+- `CURRENT-SPEC.md` #16 (copy-to-clipboard buttons) stale documentation —
+  still unresolved since 2026-07-21; needs a doc update (not a code
+  change) in a future session.
+- `CURRENT-SPEC.md` missing CONTRIBUTING.md (TODO-016) / aria-live
+  (TODO-017) mentions — still unresolved since 2026-07-23; same doc-update
+  bucket.
+- **New this run:** `CURRENT-SPEC.md` #7/#9/#10 (self-education blocks) are
+  now stale following the TODO-001 merge — needs a doc update (not a code
+  change) bundling with the #16/CONTRIBUTING.md/aria-live items above in a
+  future doc-update session.
+- `session-connect-notebook-x-integration` local branch — still a
+  safe-to-delete candidate (owner's call), unchanged.
+
+**Resolved since last entry:** none new this run beyond what STEP 1 above
+already addressed (TODO-001 merge).
+
+---
