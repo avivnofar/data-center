@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-24T09:54:30Z",
+  "last_run": "2026-07-24T23:32:03Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -96,6 +96,14 @@
       "run": "auditor",
       "date": "2026-07-24",
       "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was index.html only (plus the standard automation/DATA_CENTER_RUN_LOG.md and automation/state/dc_automation_state.json companions), matching TODO-001's stated Files/areas; (b) grepped the full diff for source_url — only a prose mention inside a pre-existing run-log note quoting a prior TODO-017 audit, zero actual source_url field values added or changed; (c) no data/*.json, .github/workflows/, wrangler.toml, or credential-adjacent files touched, no deletions; (d) validate-json.js re-run clean pre- and post-merge (health-check.js not required, no data/*.json touched); (e) read the index.html diff in full — adds parseSuggestionBlocks() (strips the trailing '---' + CAPABILITY_SUGGESTION/LEARNED_SOURCE JSON block from the visible bubble body), renderSuggestionCards() (modeled on renderBookmarkBars(), all fields passed through escHtml()), and fileSuggestion() (clipboard-copy only, disabled 'not wired up yet' button state, confirmed no navigator calls to GitHub or any network request) — matches TODO-001's Definition of Done point for point. Independently re-ran a Node syntax check (new Function() over the extracted <script> block) — passed clean. Manual visual/clipboard confirmation in a real browser still needs a human (not possible in this headless session), noted as a follow-up rather than a merge blocker. Merged --no-ff into master (merge commit \"Merge dc-auto branch: TODO-001\", d37943d), pushed to origin/master successfully."
+    },
+    {
+      "id": "TODO-012",
+      "status": "needs-review",
+      "branch": "dc-auto-2026-07-25_023002",
+      "run": "builder",
+      "date": "2026-07-25",
+      "note": "Scoping-only item (no code, per its own Definition of Done). Produced automation/recommendations/TODO-012-presentation-slides.md: conditional go, narrowly scoped to Workflow docs only (not command-cards, no native .pptx export, no third-party slide library) — extend the existing Workflows PDF-export pattern (window.print() + @media print, index.html:1502-1506/2780) with a heading-split (<h2>) slide view instead of building a new content pipeline. Sized into two new follow-up TODOs added to automation/TODO_LIST.md: TODO-026 (Present slide view, screen-only) and TODO-027 (page-break-per-slide print/PDF export, depends on TODO-026). No data/*.json or index.html touched by this run. validate-json.js passed. Marked needs-review (not done) because per DATA_CENTER_AUTOMATION_SPEC.md's own note on TODO-012/013/015, a recommendation doc almost never satisfies the Push-Authorization Checklist's 'matches Definition of Done' auto-merge bar and is expected to land in the owner's review queue rather than auto-merge."
     }
   ]
 }
