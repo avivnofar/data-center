@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-07-23T09:11:08Z",
+  "last_run": "2026-07-24T04:31:29Z",
   "todo_history": [
     {
       "id": "TODO-003",
@@ -80,6 +80,14 @@
       "run": "auditor",
       "date": "2026-07-23",
       "note": "Push-Authorization Checklist re-verified independently, all 5 items passed: (a) diff scope was index.html only (plus the standard automation/DATA_CENTER_RUN_LOG.md and automation/state/dc_automation_state.json companions), matching TODO-017's stated Files/areas; (b) grepped the full diff for source_url — zero hits, no values added or changed; (c) no data/*.json, .github/workflows/, wrangler.toml, or credential-adjacent files touched, no deletions; (d) validate-json.js re-run clean pre- and post-merge (health-check.js not required, no data/*.json touched); (e) read the index.html diff in full — adds a visually-hidden #ai-live-region (aria-live=polite, role=status, reusing the pre-existing .sr-only CSS class) and announceAiResponse(), confirmed updateStreamingBubble() (the per-delta streaming path) does NOT call it and only finalizeStreamingBubble() (post-stream), appendMessageBubble(), and appendErrorMessage() do — matches the Definition of Done's 'announced once, not per-token' requirement structurally. Actual NVDA/VoiceOver manual confirmation is a human-only step not possible in this headless session, noted as a follow-up rather than a merge blocker (consistent with how TODO-003/TODO-004's own manual-browser-verification notes were handled). Merged --no-ff into master (merge commit \"Merge dc-auto branch: TODO-017\"), pushed to origin/master successfully."
+    },
+    {
+      "id": "TODO-001",
+      "status": "done",
+      "branch": "dc-auto-2026-07-24_023859",
+      "run": "builder",
+      "date": "2026-07-24",
+      "note": "Built the parser/UI half only (filing half stays blocked on the GitHub write-credential decision, per TODO-001's own dependency note). Added parseSuggestionBlocks() in index.html, called from renderMarkdown(), which strips the optional trailing '---' + CAPABILITY_SUGGESTION/LEARNED_SOURCE JSON lines (worker.js's system prompt, lines ~277-289) from the visible bubble text and returns them as parsed suggestions. Added renderSuggestionCards() (modeled on renderBookmarkBars()) rendering a small dismissible bilingual card per suggestion with a 'File this' button that copies the suggestion JSON to the clipboard and shows a 'not wired up yet' state (no GitHub call from the browser) plus a plain Dismiss button. Wired into both finalizeStreamingBubble() and appendMessageBubble() (the two AI-response render paths) alongside the existing renderBookmarkBars() call. New CSS for .suggestion-card added near the existing .bookmark-bar rules. index.html only, no data/*.json touched. validate-json.js passed; node --check on the extracted <script> block passed (no headless browser available in this session — a human should do a final visual check via `python -m http.server 8080` with a mock AI response containing a CAPABILITY_SUGGESTION/LEARNED_SOURCE block before considering this branch fully done)."
     }
   ]
 }

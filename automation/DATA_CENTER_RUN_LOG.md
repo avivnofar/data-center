@@ -525,3 +525,77 @@ These three files will be committed and pushed directly to `master` in a
 small separate commit per STEP 1.5.
 
 ---
+
+## 2026-07-24 — Run 1 (Builder) — TODO-001
+
+**Item selected:** TODO-001 — client-side parser + UI for
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` blocks (UI/parser half only, per
+the Builder priority order — the GitHub-write filing half stays blocked
+on `NEEDS_YOUR_REVIEW.md`'s "GitHub write-credential decision"). Selection
+process: read `automation/TODO_LIST.md`, `automation/NEEDS_YOUR_REVIEW.md`,
+and `automation/state/dc_automation_state.json`. Walking the priority
+order — TODO-003 (most recent `todo_history` entry is `needs-review`, hard
+skip, no `cleared-for-retry` entry since), TODO-004/TODO-014/TODO-016/
+TODO-017 (most recent entries are all `merged`, already in
+`TODO_LIST.md`'s `## Completed` section, skip) — left TODO-001 as the
+first eligible item: not in `todo_history` at all, and
+`NEEDS_YOUR_REVIEW.md` explicitly confirms "the parser/UI half of TODO-001
+can still be built and shipped without this decision."
+
+**What changed and why:** `worker.js`'s system prompt (lines ~277-289)
+instructs Claude to append an optional `---` line followed by
+`CAPABILITY_SUGGESTION: {...}` and/or `LEARNED_SOURCE: {...}` JSON lines
+after AI Search/Solve-a-Case responses. Confirmed via grep before starting
+that zero client-side handling existed anywhere in `index.html` — these
+blocks rendered as raw visible JSON text at the end of chat bubbles. Added:
+- `parseSuggestionBlocks(text)` — matches the trailing `---` line plus one
+  or more `CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` JSON lines through the
+  end of the text, strips it from the visible body, and returns the parsed
+  suggestions (malformed JSON from the model is skipped silently rather
+  than breaking rendering). Verified against four cases with a standalone
+  Node script (capability-only, source-only, both together, and no block
+  present) before wiring it in.
+- Called from `renderMarkdown()`, which now also returns `suggestions`
+  alongside the existing `html`/`relatedCmds`.
+- `renderSuggestionCards(container, suggestions)` — modeled directly on
+  the existing `renderBookmarkBars()` pattern — renders one small
+  dismissible bilingual card per suggestion (different fields shown for
+  `CAPABILITY_SUGGESTION` vs `LEARNED_SOURCE`), with a "File this" button
+  and a "Dismiss" button.
+- `fileSuggestion(btn, encodedData)` — since the GitHub-write decision is
+  still open, this does **not** call GitHub from the browser (per
+  CLAUDE.md and TODO-001's own Definition of Done). It copies the
+  suggestion JSON to the clipboard and flips the button to a disabled
+  "Copied — not wired up yet" state for 3 seconds.
+- New `.suggestion-card` CSS block added next to the existing
+  `.bookmark-bar` rules.
+- Wired `renderSuggestionCards()` into both AI-response render paths:
+  `finalizeStreamingBubble()` and `appendMessageBubble()` (non-streamed
+  replies), alongside the existing `renderBookmarkBars()` calls. The
+  Workflows-tab markdown renderer (`renderMarkdown(md).html` call site)
+  only destructures `.html` and is unaffected.
+
+**Files touched:** `index.html` only (matches TODO-001's stated
+`Files/areas`).
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 8
+checks pass (7 `data/*.json` files + `data/notebooks/` mirror parse
+check). `data/*.json` was not touched, so `health-check.js` was not run
+per the Builder procedure's step 3. Additionally ran `node --check` on the
+extracted `<script>` block to catch syntax errors (no headless browser
+available in this session) — passed clean.
+
+**Manual verification still needed:** per TODO-001's own Definition of
+Done, a human should do a final visual check via `python -m http.server
+8080`, send/inject a test AI message containing a mock
+`CAPABILITY_SUGGESTION`/`LEARNED_SOURCE` block, and confirm the raw block
+text never appears in the bubble and the card renders correctly in both
+`LANG` states — not possible in this headless-session environment. The
+"File this" button's clipboard-copy fallback should also be manually
+confirmed in a real browser (`navigator.clipboard` behavior can differ
+from a synthetic check).
+
+**Branch:** `dc-auto-2026-07-24_023859`, pushed to `origin`. Not merged to
+`master` — that is Run 2's decision.
+
+---
