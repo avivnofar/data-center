@@ -215,6 +215,43 @@ architecture). Recommend a direction.
 **Dependency:** if the "in-app editor commits directly" direction is chosen,
 that implementation is blocked on a new `NEEDS_YOUR_REVIEW.md` credential item.
 
+**Resolution:** go, scoped narrowly to a client-side markdown template/
+preview tool (no commits, no GitHub write credentials) — full
+recommendation in
+`automation/recommendations/TODO-013-workflow-generation.md`. Sized into
+TODO-028 below. The "in-app editor commits directly" direction remains
+explicitly not recommended and stays blocked on a `NEEDS_YOUR_REVIEW.md`
+credential decision if ever pursued.
+
+---
+
+### TODO-028 — Workflow markdown template/scaffold generator
+
+**Description:** Per TODO-013's recommendation
+(`automation/recommendations/TODO-013-workflow-generation.md`), add a
+small modal (title/description form + a checklist of the standard
+sections used by the 3 existing workflow docs — Overview, Installation,
+Essential Commands, Troubleshooting, Real-World Scenarios, Security,
+Automation, Approved Resources, Recent Changes) that assembles a
+correctly-shaped markdown string client-side, renders it live through the
+existing `renderMarkdown()` as a preview, and offers it as a downloadable
+`.md` file (`Blob` + `URL.createObjectURL()`, no new dependency) alongside
+a copy-pastable `data/workflows.json` entry snippet. The user still
+commits both by hand — no GitHub write call of any kind.
+
+**Files/areas:** `index.html` (new modal markup/CSS, template-assembly
+function, one new trigger button on the Workflows tab).
+
+**Definition of done:** the modal produces a markdown document matching
+the existing docs' metadata-header + TOC + numbered-section shape; the
+live preview renders through the same `renderMarkdown()` used by
+`openWorkflow()`; the download and the `data/workflows.json` snippet both
+work; no network call, no `data/*.json` touched by the tool itself.
+
+**Complexity:** S
+
+**Dependency:** none.
+
 ---
 
 ### TODO-015 — PWA/offline support: scoping (not code yet)
