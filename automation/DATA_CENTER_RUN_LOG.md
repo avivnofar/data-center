@@ -674,3 +674,37 @@ These three files will be committed and pushed directly to `master` in a
 small separate commit per STEP 1.5.
 
 ---
+
+## 2026-07-25 — Run 2 (Auditor) — STEP 1: no builder branch to audit this run
+
+Read `automation/state/dc_automation_state.json`'s `todo_history` in array
+order looking for the most recent entry with `"run": "builder"` and
+`"status": "done"` not already followed by a later `merged`/`needs-review`
+entry for the same ID. The last entry in the array is `TODO-012` /
+`"status": "needs-review"` / `"run": "builder"`, dated 2026-07-25, branch
+`dc-auto-2026-07-25_023002` — this does **not** match the eligibility
+criteria (`run: builder` **and** `status: done`), since its status is
+`needs-review`, not `done`. Confirmed via `instructions_builder.txt` §5:
+Builder runs mark scoping-only items (TODO-012/013/015) `needs-review`
+directly themselves, since a written recommendation doc can never satisfy
+the Push-Authorization Checklist's "matches Definition of Done" bar for a
+code-diff auto-merge — these are designed to skip the audit-and-decline
+cycle entirely and land straight in the owner's review queue. No other
+branch in `git branch -a` has an eligible `builder`/`done` entry (all of
+TODO-003/004/014/016/017/001 already show a later `merged` or
+`needs-review` entry). **Result: no eligible builder branch this run** —
+per §1.1, logging this and skipping to STEP 2, as instructed.
+
+For the record (read-only, not an audit action): `dc-auto-2026-07-25_023002`
+contains only `automation/recommendations/TODO-012-presentation-slides.md`
+(new) and `automation/TODO_LIST.md` additions (TODO-012 resolution note +
+new TODO-026/TODO-027 entries), no `index.html`/`data/*.json` changes. Read
+the recommendation doc in full: conditional go, scoped to Workflow markdown
+docs only, reuses the existing `window.print()`/`@media print` pattern
+(`index.html`) rather than a new slide library, matches
+`instructions_builder.txt`'s own description of the TODO-012 work. This
+branch is left completely untouched (not merged, not deleted), consistent
+with it never having been an eligible audit target — noted again in STEP 2
+below so it isn't silently unaccounted for.
+
+---
