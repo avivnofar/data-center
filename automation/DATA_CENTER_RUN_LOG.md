@@ -708,3 +708,55 @@ with it never having been an eligible audit target — noted again in STEP 2
 below so it isn't silently unaccounted for.
 
 ---
+
+## 2026-07-26 — Run 2 (Auditor) — STEP 1: no builder branch to audit this run
+
+Read `automation/state/dc_automation_state.json`'s `todo_history` in array
+order (master's own copy ends at the `TODO-001`/`merged`/`auditor` entry
+from 2026-07-24 — no `todo_history` entries for TODO-012/TODO-013 exist on
+`master` yet, same pattern as every prior Builder branch: those updates
+live only on the branch itself until merged). Checked the branches created
+since the last audit via `git branch -a --sort=-committerdate`:
+`dc-auto-2026-07-25_023002` (TODO-012) and `dc-auto-2026-07-26_023002`
+(TODO-013), both already accounted for as **not** eligible:
+
+- `dc-auto-2026-07-25_023002` / TODO-012 — already covered by the prior
+  Auditor run's 2026-07-25 STEP 1 entry above (not eligible then, nothing
+  has changed about it since — still `needs-review`/`builder`, still
+  untouched, still sitting in the owner's review queue).
+- `dc-auto-2026-07-26_023002` / TODO-013 — read the branch's own copy of
+  `automation/state/dc_automation_state.json`: its last entry is
+  `"id": "TODO-013"`, `"status": "needs-review"`, `"run": "builder"`,
+  dated 2026-07-26. Per `instructions_builder.txt` §1.5 and the identical
+  TODO-012 precedent from yesterday, scoping-only recommendation items are
+  marked `needs-review` directly by the Builder itself (a written
+  recommendation doc can never satisfy the Push-Authorization Checklist's
+  "matches Definition of Done" bar for a code-diff auto-merge), so this
+  entry does not match the eligibility criteria (`run: builder` **and**
+  `status: done`) — there is no preceding `builder`/`done` entry for
+  TODO-013 that this one could be a later disposition of; the Builder went
+  straight to `needs-review`.
+
+No other branch in `git branch -a` has an eligible `builder`/`done` entry
+(TODO-003/004/014/016/017/001 all already show a later `merged` or
+`needs-review` entry, none of which have changed). **Result: no eligible
+builder branch this run** — per §1.1, logging this and skipping to STEP 2,
+as instructed.
+
+For the record (read-only, not an audit action): `dc-auto-2026-07-26_023002`
+contains only `automation/recommendations/TODO-013-workflow-generation.md`
+(new) and `automation/TODO_LIST.md` additions (TODO-013 resolution note +
+a new TODO-028 entry), no `index.html`/`data/*.json` changes — read in
+full: recommends against an in-app editor that commits directly to
+`workflows/` (would need a new GitHub write credential, the same open
+question already parked in `NEEDS_YOUR_REVIEW.md` for TODO-001/TODO-002)
+and in favor of a client-side markdown template/preview tool (form ->
+assembled markdown -> live preview via the existing `renderMarkdown()` ->
+Blob download, no commits, no new credentials), matching the branch's own
+state-file note. This branch, and `dc-auto-2026-07-25_023002` (TODO-012),
+are both left completely untouched (not merged, not deleted) — neither was
+ever an eligible audit target, both remain in the owner's review queue
+exactly as the prior run left `dc-auto-2026-07-25_023002`, noted again in
+STEP 2 below so neither is silently unaccounted for.
+
+---
