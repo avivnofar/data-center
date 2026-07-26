@@ -781,3 +781,155 @@ already addressed (TODO-001 merge).
 branch to merge.
 
 ---
+
+## 2026-07-26 — Daily Audit (Run 2 / Auditor, STEP 2)
+
+**1. Code/data health**
+
+- `node .github/scripts/validate-json.js` — clean, all 8 checks (7
+  `data/*.json` files + the `data/notebooks/` mirror parse check): linux
+  42, cmd 25, network 30, 1com 17, mirtapbx 11, troubleshoot 23, 13
+  modules, 13 notebook-mirror files. No STEP 1 merge happened this run
+  (see below), so this is a fresh re-run against unchanged `master`.
+- `node .github/scripts/health-check.js` — clean, all critical checks
+  passed (148 total command/troubleshoot entries; source_url
+  coverage/domain allowlist, no Hebrew in `cmd` fields, no identical
+  `desc_he`/`desc_en` pairs, Hebrew quality checks).
+- **`CURRENT-SPEC.md` drift spot-check** — same 2 items re-verified against
+  actual code on `master` (not inferred from the doc), both still stale:
+  - **#16 "Expandable cards + copy buttons" — DRIFT, still unresolved
+    (carried forward from 2026-07-21, now 6 days running).** Grepped
+    `index.html`: `copyUsageCmd()` and `.usage-copy-btn` both still present
+    and wired into `renderCard()`. `CURRENT-SPEC.md` line 105 still lists
+    this as missing. Not fixed here per this audit's read-only mandate.
+  - **#7/#9/#10 "Self-education (LEARNED_SOURCE / CAPABILITY_SUGGESTION)" —
+    DRIFT, still unresolved (carried forward from 2026-07-24, now 2 days
+    running).** `parseSuggestionBlocks()`/`renderSuggestionCards()`
+    confirmed still present and wired into both AI-response render paths.
+    `CURRENT-SPEC.md` lines 101/103/104 still say "No client-side code
+    detects the block." (Issue-filing itself genuinely still doesn't
+    exist, gated on the open GitHub write-credential decision — only the
+    "no client-side code" half of the claim is false.) Not fixed here.
+  - CONTRIBUTING.md (TODO-016) / `#ai-live-region` (TODO-017) mentions in
+    `CURRENT-SPEC.md` → re-checked, still zero matches for either term.
+    Same documentation gap first flagged 2026-07-23, still open, unchanged.
+  - No other drift found. Same 4-item doc-update backlog as yesterday
+    (#16, #7/#9/#10, CONTRIBUTING.md, aria-live) — unchanged, none newly
+    introduced or resolved this run.
+
+**2. Self-audit of prior automation runs**
+
+- Reviewed `DATA_CENTER_RUN_LOG.md` for 2026-07-25 and 2026-07-26 against
+  actual repo state:
+  - 2026-07-25 Auditor (STEP 1 "no eligible branch" + STEP 2 daily audit) —
+    already independently reviewed and confirmed accurate by that same
+    day's own audit entry above; re-confirmed here only that its commits
+    (`e3965fa` run-log entry, `7f0e940` audit entry) are both still present
+    on `master`'s history, and `7f0e940` reached `origin/master` — `git
+    rev-parse origin/master` is `7f0e940`, matching. The `e3965fa` run-log
+    commit, however, is **still unpushed** a day later (see "was anything
+    pushed" below).
+  - 2026-07-26 Builder (`dc-auto-2026-07-26_023002`, TODO-013,
+    scoping-only): read the branch's own `dc_automation_state.json` and
+    `DATA_CENTER_RUN_LOG.md` entries directly from a fresh
+    `git show dc-auto-2026-07-26_023002:...` — confirmed the branch
+    contains exactly what its own log claims:
+    `automation/recommendations/TODO-013-workflow-generation.md` (new)
+    plus `automation/TODO_LIST.md` additions (TODO-013 resolution note +
+    new TODO-028 entry), no `index.html`/`data/*.json` changes,
+    `validate-json.js` output matching what this run also gets
+    independently. The run log's own note also records that this Builder
+    run initially duplicated TODO-012's work by mistake (not knowing about
+    the prior day's unmerged `dc-auto-2026-07-25_023002` branch, since
+    `master`'s own `TODO_LIST.md`/state file never reflect an unmerged
+    branch's work) and self-corrected before pushing anything — verified
+    the final pushed branch contains only the TODO-013 work, no leftover
+    TODO-012 duplication. The Builder marked TODO-013 `needs-review` (not
+    `done`) directly, per `instructions_builder.txt` §1.5's explicit
+    instruction for scoping-only items (TODO-012/013/015) — by design, and
+    correctly meant this run's STEP 1 found no eligible `builder`/`done`
+    entry to audit (see this run's own `DATA_CENTER_RUN_LOG.md` STEP 1
+    entry). Confirmed `TODO-028` exists only on the branch, not on
+    `master` (`grep -c TODO-028 automation/TODO_LIST.md` on `master` → 0)
+    — correctly not merged.
+  - 2026-07-26 Auditor STEP 1 (this session, above): no merge attempted, so
+    nothing to re-verify there beyond confirming the "no eligible branch"
+    conclusion itself, which this self-audit just did independently above.
+- **Was anything pushed to master that shouldn't have been?** No —
+  `origin/master` (`7f0e940`) reflects only what prior audit entries
+  already verified as legitimate. This run's STEP 1 made zero merges/pushes
+  (nothing was merged). `master` is currently 2 commits ahead of
+  `origin/master`: `e3965fa` (2026-07-25's STEP 1 run-log entry — noted
+  unpushed in yesterday's audit entry, still unpushed a day later) and
+  `e645f0d` (this run's own STEP 1 run-log entry). Both are correctly
+  *not yet* pushed on their own, since neither is `DATA_CENTER_AUDIT.md`
+  nor a successful-merge companion — but per the established precedent in
+  this log (2026-07-22's TODO-016 audit, which pushed forward pre-existing
+  legitimate local-ahead commits together with that run's authorized
+  push), both will ride along when this run's own `DATA_CENTER_AUDIT.md`
+  commit is pushed below, since `git push` publishes the whole local
+  `master` history, not a single commit in isolation, and both are benign,
+  already-committed, read-only run-log content with nothing credential- or
+  schema-adjacent in them.
+- **Crashed/interrupted prior attempt today:**
+  `automation/automation_logs/dc_run_2026-07-26_072830.log` shows an
+  earlier scheduled Auditor invocation today (07:28:30) that only reached
+  "Auditor session started: 7:28:31.50" and produced no further output, no
+  run-log entry, no state update, no repo changes — same recurring crash
+  pattern noted in the 2026-07-20/22/23/24/25 entries above. Flagging for
+  visibility only, not as a defect: this current session is the one
+  actually completing today's Auditor work (STEP 1 + STEP 2).
+- **Branch hygiene:** `dc-auto-2026-07-20_125410` (TODO-003, resolved via
+  cherry-pick), `dc-auto-2026-07-20_151157` (TODO-004, merged),
+  `dc-auto-2026-07-21_023811` (TODO-014, merged), `dc-auto-2026-07-22_023726`
+  (TODO-016, merged), `dc-auto-2026-07-23_023736` (TODO-017, merged),
+  `dc-auto-2026-07-24_023859` (TODO-001, merged), `dc-auto-2026-07-25_023002`
+  (TODO-012, scoping-only, correctly left unmerged/undeleted), and (new
+  today) `dc-auto-2026-07-26_023002` (TODO-013, scoping-only, correctly
+  left unmerged/undeleted since it was never audit-eligible) all still
+  exist on `origin`, correctly undeleted per the hard constraints.
+  `session-connect-notebook-x-integration` (local-only) and
+  `origin/cloudflare/workers-autoconfig` (remote-only) remain unchanged,
+  still outside this automation system's scope — same safe-to-delete
+  candidate status as previously noted for the former (owner's call, not
+  acted on here).
+
+**Carried forward (not yet resolved):**
+- GitHub write-credential decision (blocks TODO-002's filing half, and the
+  remaining "File an Issue"/"append to pending-review.md" half of
+  TODO-001/#7/#9/#10) — still undecided.
+- TODO-005–011 — still paused pending explicit owner un-pause (working as
+  designed).
+- `CURRENT-SPEC.md` #16 (copy-to-clipboard buttons) stale documentation —
+  still unresolved since 2026-07-21 (6 days now).
+- `CURRENT-SPEC.md` missing CONTRIBUTING.md (TODO-016) / aria-live
+  (TODO-017) mentions — still unresolved since 2026-07-23.
+- `CURRENT-SPEC.md` #7/#9/#10 (self-education blocks) stale documentation —
+  still unresolved since 2026-07-24.
+- `session-connect-notebook-x-integration` local branch — still a
+  safe-to-delete candidate (owner's call), unchanged.
+- `dc-auto-2026-07-25_023002`'s recommendation doc (TODO-012 → proposed
+  TODO-026/TODO-027) — still sitting in the owner's review queue, still
+  needs an explicit owner go/no-go; unchanged since yesterday.
+- **New this run:** `dc-auto-2026-07-26_023002`'s recommendation doc
+  (TODO-013 → proposed TODO-028, a client-side workflow markdown
+  template/preview tool) is sitting in the owner's review queue by design —
+  needs an explicit owner go/no-go before TODO-028 can ever be picked up by
+  a Builder run (it doesn't exist in `master`'s `TODO_LIST.md` yet, only on
+  the branch). Not a defect, just noted so it isn't mistaken for "silently
+  sitting there."
+- **Observation (not a defect, worth owner awareness):** neither
+  `dc-auto-2026-07-25_023002`/TODO-012 nor `dc-auto-2026-07-26_023002`/
+  TODO-013's scoping recommendations are surfaced in
+  `automation/NEEDS_YOUR_REVIEW.md` — that file's own header describes
+  itself as where "items requiring explicit owner sign-off" live, but both
+  scoping branches are currently discoverable only via
+  `DATA_CENTER_RUN_LOG.md`/this audit file. Not fixed here (read-only
+  audit) — worth a future session adding pointers to
+  `NEEDS_YOUR_REVIEW.md` for scoping-only Builder outputs so they're not
+  easy to miss.
+
+**Resolved since last entry:** none this run — STEP 1 found no eligible
+branch to merge, same as yesterday.
+
+---
