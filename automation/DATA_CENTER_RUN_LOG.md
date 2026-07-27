@@ -766,6 +766,78 @@ below so it isn't silently unaccounted for.
 
 ---
 
+## 2026-07-26 — Run 1 (Builder) — TODO-013
+
+**Item selected:** TODO-013 — Workflow document generation: feasibility &
+design (scoping only). Selection process: read `automation/TODO_LIST.md`,
+`automation/NEEDS_YOUR_REVIEW.md`, and
+`automation/state/dc_automation_state.json`. Walking the priority order —
+TODO-003/004/014/016/017/001 all show a most-recent `todo_history` entry of
+`merged`, already in `TODO_LIST.md`'s `## Completed` section, skip — left
+TODO-012 as the apparent first eligible item (not present in master's
+`todo_history` at all).
+
+**Course correction:** started TODO-012's work (wrote a recommendation doc)
+before running `git branch -a`/`git log` across the other `dc-auto-*`
+branches as a sanity check, which surfaced `dc-auto-2026-07-25_023002` — a
+prior Builder run, one day earlier, that had already completed TODO-012 in
+full (recommendation doc + TODO-026/TODO-027 sizing in `TODO_LIST.md`),
+pushed to `origin`, and correctly left `needs-review`/unmerged pending owner
+review. Root cause: `automation/state/dc_automation_state.json` and
+`automation/TODO_LIST.md` only gain a Builder run's entries on `master` if
+an Auditor run later merges that branch — a `needs-review` scoping-only
+branch (TODO-012/013/015 always resolve `needs-review` by design, since a
+recommendation doc can never satisfy the Push-Authorization Checklist) never
+merges, so master's copies of those two files permanently lag behind what
+the unmerged branch actually contains. A fresh branch cut from master has no
+way to see that prior work without independently checking `git branch -a`
+across all `dc-auto-*` branches, which this run's selection step had not
+originally done. Reverted the in-progress TODO-012 duplicate (`git checkout
+--` the state-file edit, `git reset` the one recommendation-doc commit,
+deleted the untracked file via PowerShell since `rm` is disallowed for this
+run) before any of it was pushed — no trace of the duplicate work remains on
+this branch. Picked TODO-013 instead, the correct next item in the priority
+order once TODO-012 is recognized as already done.
+
+**What changed and why:** TODO-013 asks whether/how to add workflow-document
+*generation* (viewing already works, self-hosted since 2026-07-20). Wrote
+`automation/recommendations/TODO-013-workflow-generation.md`: recommends
+against an in-app editor that commits directly into `workflows/` (would need
+a new GitHub write credential — the same open question already parked in
+`NEEDS_YOUR_REVIEW.md` for TODO-001/TODO-002's Issue-filing half) and in
+favor of a client-side markdown template/preview tool: a form
+(title/description + section checklist) assembles a correctly-shaped
+markdown string matching the existing 3 docs' structure, previews it live
+through the existing `renderMarkdown()`, and offers a `Blob`-based `.md`
+download plus a copy-pastable `data/workflows.json` snippet — no commits, no
+new credentials, matching how the existing 3 docs were hand-authored and
+hand-registered, just with the boilerplate pre-filled. Sized the
+recommendation into a new `TODO-028` entry in `automation/TODO_LIST.md`
+(mirroring how the prior TODO-012 branch sized its own recommendation into
+TODO-026/TODO-027), and added a **Resolution** note to TODO-013's own entry
+pointing at the recommendation doc.
+
+**Files touched:** `automation/recommendations/TODO-013-workflow-generation.md`
+(new), `automation/TODO_LIST.md` (Resolution note on TODO-013 + new TODO-028
+entry). No `index.html`/`data/*.json` touched.
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 8
+checks pass. `data/*.json` was not touched, so `health-check.js` was not run
+per the Builder procedure's step 3.
+
+**Manual verification still needed:** none — this item produced a
+recommendation document, not a code change, so there is nothing for a human
+to exercise in a browser. The recommendation itself (and whether to greenlit
+`TODO-028`) is an owner decision.
+
+**Branch:** `dc-auto-2026-07-26_023002`, pushed to `origin`. Not merged to
+`master` — that is Run 2's decision (and, per `instructions_builder.txt`
+§5/`DATA_CENTER_AUTOMATION_SPEC.md`'s note on scoping-only items, is
+expected to land in the owner's review queue rather than auto-merge, same as
+`dc-auto-2026-07-25_023002`/TODO-012 before it).
+
+---
+
 ## 2026-07-26 — Run 2 (Auditor) — STEP 1: no builder branch to audit this run
 
 Read `automation/state/dc_automation_state.json`'s `todo_history` in array
