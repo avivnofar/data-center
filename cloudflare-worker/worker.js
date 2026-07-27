@@ -17,15 +17,53 @@ const ALLOWED_ORIGINS = [
 const RATE_LIMIT_MAX = 20; // requests per window per IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
+// ── Hard input ceilings (cost containment) ────────────────────────────────────
+// The Origin allowlist below is only enforceable against browsers; a direct
+// (non-browser) request can set any Origin header it likes, so it cannot be
+// treated as authentication. Until a real auth/attestation layer exists (see
+// TURNSTILE support at the bottom of this file), these ceilings are what
+// actually bounds the worst-case Anthropic spend per request and per day.
+const MAX_BODY_BYTES = 6 * 1024 * 1024;   // whole request body (images dominate)
+const MAX_MESSAGES = 40;                  // conversation turns per request
+const MAX_MESSAGE_CHARS = 12000;          // chars per single message
+const MAX_TOTAL_MESSAGE_CHARS = 60000;    // chars across all messages
+const DB_CONTEXT_MAX_CHARS = 20000;       // parity with NOTEBOOK_CONTEXT_MAX_CHARS
+const MAX_IMAGES = 3;                     // matches the vision injection below
+const MAX_IMAGE_B64_CHARS = 2 * 1024 * 1024; // ~1.5 MB decoded, per image
+// Global circuit breaker: total accepted requests per UTC day across this
+// isolate. Previously the daily counter was logged but never enforced.
+const DAILY_GLOBAL_MAX = 1500;
+
 const MODEL = 'claude-sonnet-5';
 // 1536 (not 1024) leaves headroom for the required "Relevant commands to
 // check:" / RELATED_COMMANDS closing section on long answers — at 1024 it
 // was frequently truncated mid-answer before reaching that line.
 const MAX_TOKENS = 1536;
 
-// In-memory rate limiter. Resets whenever the worker isolate restarts —
-// acceptable for a soft per-IP limit on the free tier.
+// In-memory rate limiter. IMPORTANT LIMITATION: Workers run many independent
+// isolates across edge locations, and each isolate has its own copy of this Map,
+// which is also wiped on cold start. So this is a per-isolate soft limit, NOT a
+// global guarantee — a distributed caller can exceed RATE_LIMIT_MAX by roughly
+// the number of isolates it reaches. Making this a real global limit requires a
+// Durable Object or KV with TTL; see cloudflare-worker/README.md.
 const ipRequests = new Map();
+// Daily global counter kept in its own Map (it used to share `ipRequests`,
+// mixing two unrelated key namespaces in one structure).
+const dailyCounts = new Map();
+
+// Neither Map had any eviction, so both grew unbounded for the isolate's
+// lifetime. Prune expired entries opportunistically.
+function pruneRateLimitState(now) {
+  if (ipRequests.size > 5000) {
+    for (const [key, entry] of ipRequests) {
+      if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS) ipRequests.delete(key);
+    }
+  }
+  if (dailyCounts.size > 7) {
+    const keys = [...dailyCounts.keys()].sort();
+    for (const key of keys.slice(0, keys.length - 2)) dailyCounts.delete(key);
+  }
+}
 
 function corsHeaders(origin) {
   const headers = {
@@ -51,6 +89,7 @@ function jsonResponse(body, status, origin) {
 
 function isRateLimited(ip) {
   const now = Date.now();
+  pruneRateLimitState(now);
   const entry = ipRequests.get(ip);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
@@ -60,6 +99,96 @@ function isRateLimited(ip) {
 
   entry.count++;
   return entry.count > RATE_LIMIT_MAX;
+}
+
+/**
+ * One-way IP digest for logs. Replaces the previous btoa(ip) — Base64 is
+ * reversible with atob(), so it provided no actual anonymization despite the
+ * field being named ip_hash. Salted with LOG_SALT when available so digests
+ * aren't reversible via a precomputed table of the IPv4 space.
+ */
+async function hashIp(ip, salt) {
+  try {
+    const data = new TextEncoder().encode(`${salt || 'data-center'}:${ip}`);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(digest)].slice(0, 6)
+      .map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch (_) {
+    return 'unavailable';
+  }
+}
+
+/**
+ * Optional Cloudflare Turnstile verification — the actual answer to "the Origin
+ * header is not authentication."
+ *
+ * DORMANT BY DEFAULT: if env.TURNSTILE_SECRET is not set, this returns null and
+ * nothing changes, so deploying this file alone cannot break the live app. Once
+ * the secret exists, a valid turnstile_token becomes mandatory on every request,
+ * which is what stops a scripted non-browser caller from spending the Anthropic
+ * budget. See cloudflare-worker/README.md for the two-step enablement.
+ */
+async function verifyTurnstile(token, secret, ip) {
+  if (!secret) return null; // feature not enabled — no behavior change
+  if (!token || typeof token !== 'string') {
+    return 'Verification required / נדרש אימות';
+  }
+  try {
+    const form = new FormData();
+    form.append('secret', secret);
+    form.append('response', token);
+    if (ip && ip !== 'unknown') form.append('remoteip', ip);
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: form,
+    });
+    const outcome = await res.json();
+    if (!outcome.success) {
+      return 'Verification failed / האימות נכשל';
+    }
+    return null;
+  } catch (_) {
+    // Fail closed: if verification is enabled it must actually gate access.
+    return 'Verification unavailable / האימות אינו זמין';
+  }
+}
+
+/**
+ * Validate the client-supplied messages array. Previously the only check was
+ * "is a non-empty array", so an unbounded conversation history (or a single
+ * enormous message) could be submitted to inflate input-token cost.
+ */
+function validateMessages(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return '"messages" must be a non-empty array';
+  }
+  if (messages.length > MAX_MESSAGES) {
+    return `"messages" exceeds the maximum of ${MAX_MESSAGES} turns`;
+  }
+  let total = 0;
+  for (const m of messages) {
+    if (!m || (m.role !== 'user' && m.role !== 'assistant')) {
+      return 'each message must have role "user" or "assistant"';
+    }
+    let chars = 0;
+    if (typeof m.content === 'string') {
+      chars = m.content.length;
+    } else if (Array.isArray(m.content)) {
+      for (const block of m.content) {
+        if (block && typeof block.text === 'string') chars += block.text.length;
+      }
+    } else {
+      return 'message content must be a string or an array of content blocks';
+    }
+    if (chars > MAX_MESSAGE_CHARS) {
+      return `a single message exceeds the maximum of ${MAX_MESSAGE_CHARS} characters`;
+    }
+    total += chars;
+  }
+  if (total > MAX_TOTAL_MESSAGE_CHARS) {
+    return `total conversation length exceeds ${MAX_TOTAL_MESSAGE_CHARS} characters`;
+  }
+  return null;
 }
 
 // Notebook-X content is a static mirror synced weekly into data/notebooks/
@@ -362,56 +491,100 @@ export default {
       }, 429, origin);
     }
 
+    // Reject oversized bodies before reading/parsing them. Content-Length is a
+    // client-supplied hint, so the actual read below is also length-checked.
+    const declaredLength = Number(request.headers.get('Content-Length') || 0);
+    if (declaredLength > MAX_BODY_BYTES) {
+      return jsonResponse({
+        error: 'general',
+        message: 'Request body too large / גוף הבקשה גדול מדי',
+      }, 413, origin);
+    }
+
     let body;
     try {
-      body = await request.json();
+      const raw = await request.text();
+      if (raw.length > MAX_BODY_BYTES) {
+        return jsonResponse({
+          error: 'general',
+          message: 'Request body too large / גוף הבקשה גדול מדי',
+        }, 413, origin);
+      }
+      body = JSON.parse(raw);
     } catch (_) {
       return jsonResponse({ error: 'general', message: 'Invalid JSON body' }, 400, origin);
     }
 
-    const { messages, mode, language, db_context, notebook_context, cli_mode, images } = body;
-
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return jsonResponse({ error: 'general', message: '"messages" must be a non-empty array' }, 400, origin);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return jsonResponse({ error: 'general', message: 'Body must be a JSON object' }, 400, origin);
     }
 
-    // Usage logging — Cloudflare Workers Logs (Observability → Logs). No
-    // user content logged, only metadata, so spikes can be attributed later.
-    console.log(JSON.stringify({
-      event: 'claude_api_call',
-      timestamp: new Date().toISOString(),
-      ip_hash: btoa(ip).slice(0, 8),
-      mode: body.mode || 'search',
-      language: body.language || 'he',
-      has_images: !!(body.images && body.images.length),
-      db_context_chars: (body.db_context || '').length,
-      notebook_context_chars: (body.notebook_context || '').length,
-    }));
+    const { messages, mode, language, db_context, notebook_context, cli_mode, images } = body;
 
-    const today = new Date().toISOString().split('T')[0];
-    const dayKey = 'day-' + today;
-    const dayCount = (ipRequests.get(dayKey) || { count: 0 }).count + 1;
-    ipRequests.set(dayKey, { count: dayCount });
-    if (dayCount % 10 === 0) {
+    const messagesError = validateMessages(messages);
+    if (messagesError) {
+      return jsonResponse({ error: 'general', message: messagesError }, 400, origin);
+    }
+
+    // Bot/attestation check (no-op unless TURNSTILE_SECRET is configured).
+    const turnstileError = await verifyTurnstile(body.turnstile_token, env.TURNSTILE_SECRET, ip);
+    if (turnstileError) {
+      return jsonResponse({ error: 'auth', message: turnstileError }, 403, origin);
+    }
+
+    // Global daily circuit breaker — enforced, not just logged. Bounds the
+    // worst-case daily spend if the endpoint is discovered and scripted against.
+    //
+    // The counter is CHECKED here (fail fast) but only INCREMENTED immediately
+    // before the Anthropic call, further down. Incrementing here instead would
+    // have turned this protection into a cheap denial-of-service: a caller
+    // could burn all DAILY_GLOBAL_MAX slots with requests that get rejected
+    // later in validation — costing them nothing, costing Anthropic nothing,
+    // and taking the site down for the rest of the day. The cap exists to
+    // bound spend, so it must count spend events, not arrivals.
+    const todayKey = new Date().toISOString().split('T')[0];
+    const dayEntry = dailyCounts.get(todayKey) || { count: 0 };
+    if (dayEntry.count >= DAILY_GLOBAL_MAX) {
       console.log(JSON.stringify({
-        event: 'daily_milestone',
-        date: today,
-        total_calls: dayCount,
+        event: 'daily_cap_reached', date: todayKey, cap: DAILY_GLOBAL_MAX,
       }));
+      return jsonResponse({
+        error: 'rate_limit',
+        message: 'Daily capacity reached. Try again tomorrow. / הגעת למכסה היומית. נסה מחר.',
+      }, 429, origin);
     }
 
     const trimmedNotebookContext = typeof notebook_context === 'string'
       ? notebook_context.slice(0, NOTEBOOK_CONTEXT_MAX_CHARS)
       : '';
-    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', db_context || '', !!cli_mode, trimmedNotebookContext);
+    // db_context is just as client-controlled as notebook_context and was
+    // previously injected into the system prompt with no length limit at all.
+    const trimmedDbContext = typeof db_context === 'string'
+      ? db_context.slice(0, DB_CONTEXT_MAX_CHARS)
+      : '';
+    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', trimmedDbContext, !!cli_mode, trimmedNotebookContext);
 
     // If images are attached, inject them into the last user message as
     // vision content blocks (max 3 images, base64 encoded).
     let apiMessages = messages;
     if (Array.isArray(images) && images.length > 0) {
+      // Previously images were passed through with no per-image size check and
+      // an arbitrary client-supplied media_type.
+      const ALLOWED_MEDIA = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+      const validImages = images
+        .filter((img) => img && typeof img.data === 'string'
+          && img.data.length <= MAX_IMAGE_B64_CHARS
+          && ALLOWED_MEDIA.includes(img.media_type || 'image/png'))
+        .slice(0, MAX_IMAGES);
+      if (validImages.length !== Math.min(images.length, MAX_IMAGES)) {
+        return jsonResponse({
+          error: 'general',
+          message: 'One or more images are too large or of an unsupported type / תמונה גדולה מדי או בפורמט שאינו נתמך',
+        }, 400, origin);
+      }
       const lastUserIdx = [...messages].map((m, i) => ({ m, i })).filter(({ m }) => m.role === 'user').pop()?.i;
       if (lastUserIdx !== undefined) {
-        const imageBlocks = images.slice(0, 3).map((img) => ({
+        const imageBlocks = validImages.map((img) => ({
           type: 'image',
           source: { type: 'base64', media_type: img.media_type || 'image/png', data: img.data },
         }));
@@ -423,6 +596,36 @@ export default {
           ...messages.slice(lastUserIdx + 1),
         ];
       }
+    }
+
+    // Commit a daily slot only now, at the point we actually spend money.
+    // Everything above this line is free to reject.
+    dayEntry.count++;
+    dailyCounts.set(todayKey, dayEntry);
+
+    // Usage logging — Cloudflare Workers Logs (Observability → Logs). No user
+    // content logged, only metadata, so spikes can be attributed later. Emitted
+    // here rather than earlier so that an event named claude_api_call always
+    // corresponds to a call that was genuinely made, and daily_count always
+    // matches the committed counter.
+    console.log(JSON.stringify({
+      event: 'claude_api_call',
+      timestamp: new Date().toISOString(),
+      ip_hash: await hashIp(ip, env.LOG_SALT),
+      mode: mode === 'diagnose' ? 'diagnose' : 'search',
+      language: language === 'he' ? 'he' : 'en',
+      has_images: !!(images && images.length),
+      db_context_chars: (db_context || '').length,
+      notebook_context_chars: (notebook_context || '').length,
+      daily_count: dayEntry.count,
+    }));
+
+    if (dayEntry.count % 10 === 0) {
+      console.log(JSON.stringify({
+        event: 'daily_milestone',
+        date: todayKey,
+        total_calls: dayEntry.count,
+      }));
     }
 
     let anthropicResponse;
