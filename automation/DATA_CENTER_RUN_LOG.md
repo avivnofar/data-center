@@ -675,6 +675,63 @@ small separate commit per STEP 1.5.
 
 ---
 
+## 2026-07-25 — Run 1 (Builder) — TODO-012 (scoping only)
+
+**Branch:** `dc-auto-2026-07-25_023002`.
+
+**Selection:** TODO-003/004/014/016/017/001 are all already in
+`TODO_LIST.md`'s `## Completed` section. TODO-005 through TODO-011 remain
+paused. Of the priority list's remaining scoping-only items (TODO-012,
+013, 015), TODO-012 is first in order and had no `todo_history` entry at
+all — eligible.
+
+**What changed and why:** TODO-012 asks for a feasibility/design
+recommendation on presentation/slide generation, not code. Reviewed the
+existing Workflows-tab PDF export (`generatePdf()` → `window.print()` +
+the `@media print` / `.print-target` block, `index.html:1502-1506` and
+`2739-2782`) as the closest existing pattern, and CLAUDE.md Rule 11
+("no build step, ever") as the hard constraint ruling out any slide
+library (reveal.js, PptxGenJS, etc.). Wrote
+`automation/recommendations/TODO-012-presentation-slides.md`: **conditional
+go**, scoped narrowly to Workflow markdown docs only (command-cards are
+reference material, not a presentation fit; native `.pptx` export and
+in-app slide authoring are both out of scope without a separate owner
+decision). The recommended approach reuses the existing render output —
+split the already-rendered workflow HTML on `<h2>` boundaries into
+full-viewport slides with prev/next navigation, and extend the existing
+`@media print` block with a per-slide `page-break-after` rule so
+`generatePdf()` keeps working unmodified for slide export. Sized the
+recommendation into two new follow-up items appended to
+`automation/TODO_LIST.md`'s active list: **TODO-026** (Present slide view,
+screen-only, no dependency) and **TODO-027** (slide print/PDF page
+breaks, depends on TODO-026).
+
+**Files touched:** `automation/recommendations/TODO-012-presentation-slides.md`
+(new), `automation/TODO_LIST.md` (TODO-012 resolution note + TODO-026/027
+entries added). No `index.html`, no `data/*.json`.
+
+**Validator results:** `node .github/scripts/validate-json.js` — all 8
+JSON files valid (unaffected, no `data/*.json` touched; `health-check.js`
+not required for the same reason).
+
+**Manual verification still needed:** none — no UI/code change in this
+run.
+
+**State/history:** appended a `TODO-012` / `needs-review` / `builder`
+entry to `dc_automation_state.json` (marked `needs-review`, not `done` —
+per `DATA_CENTER_AUTOMATION_SPEC.md`'s own note, scoping-only recommendation
+docs are expected to land in the owner's review queue rather than
+auto-merge via the Push-Authorization Checklist) and updated `last_run`.
+TODO-012's `TODO_LIST.md` entry is left in the active list (not moved to
+`## Completed`) — a "resolved with a recommendation" scoping item isn't
+the same as "merged," and moving it is Run 2's call, not this run's, per
+the Builder procedure.
+
+**Branch:** pushed to `origin/dc-auto-2026-07-25_023002`. Not merged to
+`master`.
+
+---
+
 ## 2026-07-25 — Run 2 (Auditor) — STEP 1: no builder branch to audit this run
 
 Read `automation/state/dc_automation_state.json`'s `todo_history` in array
