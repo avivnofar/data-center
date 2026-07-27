@@ -17,8 +17,20 @@ setlocal enabledelayedexpansion
 set "DC_DIR=C:\Users\97252\GITHUB\data-center"
 set "AUDITOR_INSTRUCTIONS="C:\Users\97252\GITHUB\data-center\automation\instructions_auditor.txt""
 
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "DT=%%I"
-set "STAMP=%DT:~0,4%-%DT:~4,2%-%DT:~6,2%_%DT:~8,2%%DT:~10,2%%DT:~12,2%"
+:: Timestamp. wmic is deprecated and is REMOVED from Windows 11 24H2 and later,
+:: which would silently leave DT empty and produce a branch literally named
+:: "dc-auto---_" — so use PowerShell, with wmic kept only as a fallback for
+:: older machines.
+set "STAMP="
+for /f "delims=" %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmmss"') do set "STAMP=%%I"
+if not defined STAMP (
+  for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value 2^>nul') do set "DT=%%I"
+  if defined DT set "STAMP=!DT:~0,4!-!DT:~4,2!-!DT:~6,2!_!DT:~8,2!!DT:~10,2!!DT:~12,2!"
+)
+if not defined STAMP (
+  echo FATAL: could not determine a timestamp - aborting rather than creating a malformed branch name.
+  exit /b 1
+)
 
 set "LOG_DIR=%DC_DIR%\automation\automation_logs"
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
@@ -42,7 +54,12 @@ call claude --dangerously-skip-permissions ^
   -p "You are in data-center, on master, up to date with origin. Read %AUDITOR_INSTRUCTIONS% in this repo and execute the Run 2 (Auditor) procedure defined there in full: STEP 1 (audit and merge-if-clean any pending Builder branch, per the Push-Authorization Checklist) and STEP 2 (the standing daily audit pass, always runs). Merging/pushing to master is only permitted exactly where STEP 1 of that file says it is." ^
   >> "%LOG_FILE%" 2>&1
 
-echo DC AUDITOR RUN (claude session) finished: %time% >> "%LOG_FILE%"
+set "CLAUDE_RC=%ERRORLEVEL%"
+echo DC AUDITOR RUN (claude session) finished: %time% (exit code %CLAUDE_RC%) >> "%LOG_FILE%"
+if not "%CLAUDE_RC%"=="0" (
+  echo WARNING: the claude session exited non-zero ^(%CLAUDE_RC%^). Treat this run as >> "%LOG_FILE%"
+  echo NOT having completed its audit - verify master was not left mid-merge. >> "%LOG_FILE%"
+)
 
 git checkout master >> "%LOG_FILE%" 2>&1
 git pull origin master >> "%LOG_FILE%" 2>&1

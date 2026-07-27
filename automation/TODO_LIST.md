@@ -192,6 +192,61 @@ sized into follow-up implementation TODOs if greenlit.
 
 **Complexity:** S (scoping only)
 
+**Resolution:** conditional go, scoped narrowly to Workflow docs only (not
+command-cards, not native `.pptx` export) — full recommendation in
+`automation/recommendations/TODO-012-presentation-slides.md`. Sized into
+TODO-026 and TODO-027 below.
+
+---
+
+### TODO-026 — Workflow "Present" slide view
+
+**Description:** Per TODO-012's recommendation
+(`automation/recommendations/TODO-012-presentation-slides.md`), add a
+"Present" toggle to an already-open Workflow doc
+(`#workflow-detail-content`, populated by `openWorkflow()`,
+`index.html:2739-2763`) that splits the already-rendered HTML on its
+`<h2>` boundaries into full-viewport `.slide` sections, with prev/next
+buttons and arrow-key navigation. No new data file, no new content model —
+reuses the existing `renderMarkdown()` output verbatim.
+
+**Files/areas:** `index.html` (new slide-split/navigation function, new
+`.slide`/`.slide-mode` CSS, one new toggle button near the existing PDF
+FAB).
+
+**Definition of done:** toggling "Present" on a loaded workflow shows one
+`<h2>`-bounded section at a time full-viewport; next/prev buttons and
+arrow keys navigate; toggling off returns to the normal scrolling view;
+works in both LANG states; no `data/*.json` touched.
+
+**Complexity:** S
+
+**Dependency:** none — can ship standalone even if TODO-027 isn't picked
+up yet (screen-only slide view has value without print export).
+
+---
+
+### TODO-027 — Slide print/PDF export (page-break-per-slide)
+
+**Description:** Per TODO-012's recommendation, extend the existing
+`@media print` block (`index.html:1502-1506`) with a `.slide { page-break-
+after: always; }` rule scoped under `.slide-mode` (added by TODO-026) so
+each slide prints/exports to its own PDF page. Reuses `generatePdf()` /
+`window.print()` (`index.html:2780`) verbatim — no new export mechanism.
+
+**Files/areas:** `index.html` (CSS only, inside/near the existing
+`@media print` block).
+
+**Definition of done:** with the slide view (TODO-026) active, "Generate
+PDF" produces one page per slide instead of one continuous scroll; the
+non-slide Workflow PDF export (existing `.print-target` behavior) is
+unchanged.
+
+**Complexity:** S
+
+**Dependency:** TODO-026 (needs `.slide`/`.slide-mode` markup to exist
+first).
+
 ---
 
 ### TODO-013 — Workflow document generation: feasibility & design (not code yet)
@@ -214,6 +269,43 @@ architecture). Recommend a direction.
 
 **Dependency:** if the "in-app editor commits directly" direction is chosen,
 that implementation is blocked on a new `NEEDS_YOUR_REVIEW.md` credential item.
+
+**Resolution:** go, scoped narrowly to a client-side markdown template/
+preview tool (no commits, no GitHub write credentials) — full
+recommendation in
+`automation/recommendations/TODO-013-workflow-generation.md`. Sized into
+TODO-028 below. The "in-app editor commits directly" direction remains
+explicitly not recommended and stays blocked on a `NEEDS_YOUR_REVIEW.md`
+credential decision if ever pursued.
+
+---
+
+### TODO-028 — Workflow markdown template/scaffold generator
+
+**Description:** Per TODO-013's recommendation
+(`automation/recommendations/TODO-013-workflow-generation.md`), add a
+small modal (title/description form + a checklist of the standard
+sections used by the 3 existing workflow docs — Overview, Installation,
+Essential Commands, Troubleshooting, Real-World Scenarios, Security,
+Automation, Approved Resources, Recent Changes) that assembles a
+correctly-shaped markdown string client-side, renders it live through the
+existing `renderMarkdown()` as a preview, and offers it as a downloadable
+`.md` file (`Blob` + `URL.createObjectURL()`, no new dependency) alongside
+a copy-pastable `data/workflows.json` entry snippet. The user still
+commits both by hand — no GitHub write call of any kind.
+
+**Files/areas:** `index.html` (new modal markup/CSS, template-assembly
+function, one new trigger button on the Workflows tab).
+
+**Definition of done:** the modal produces a markdown document matching
+the existing docs' metadata-header + TOC + numbered-section shape; the
+live preview renders through the same `renderMarkdown()` used by
+`openWorkflow()`; the download and the `data/workflows.json` snippet both
+work; no network call, no `data/*.json` touched by the tool itself.
+
+**Complexity:** S
+
+**Dependency:** none.
 
 ---
 

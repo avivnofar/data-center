@@ -1621,7 +1621,7 @@
   </div>
 </div>
 
-<div id="tab-nav" role="tablist" aria-label="Modules"></div>
+<div id="tab-nav" role="tablist" aria-label="Modules" aria-orientation="vertical"></div>
 
 <main id="main-content" tabindex="-1">
   <div id="tab-contents"></div>
@@ -1927,6 +1927,12 @@ function handleTabNavKeydown(e) {
   const rtl = document.documentElement.dir === 'rtl';
   let next;
   switch (e.key) {
+    // #tab-nav is laid out as a vertical column (flex-direction: column), so
+    // the ARIA tabs pattern calls for Up/Down as the primary keys. Left/Right
+    // are kept as well — they were the only supported keys before, they're
+    // harmless here, and they stay direction-aware for RTL.
+    case 'ArrowDown': next = current + 1; break;
+    case 'ArrowUp':   next = current - 1; break;
     case 'ArrowRight': next = rtl ? current - 1 : current + 1; break;
     case 'ArrowLeft':  next = rtl ? current + 1 : current - 1; break;
     case 'Home': next = 0; break;
@@ -2213,9 +2219,18 @@ function renderFaqPills() {
   const el = document.getElementById('faq-pills');
   if (!el) return;
   const pills = FAQ_PILLS[LANG] || FAQ_PILLS.he;
-  el.innerHTML = pills.map(p =>
-    `<button class="faq-pill" onclick="useFaqPill('${escHtml(p)}')">${escHtml(p)}</button>`
-  ).join('');
+  // Passed as a JS value rather than serialized into an inline on* attribute.
+  // escHtml does not escape the apostrophe, so a pill containing one (e.g.
+  // "What's wrong") would have silently broken the handler's JS syntax.
+  el.innerHTML = '';
+  pills.forEach(p => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'faq-pill';
+    btn.textContent = p;
+    btn.addEventListener('click', () => useFaqPill(p));
+    el.appendChild(btn);
+  });
 }
 
 function useFaqPill(query) {
@@ -3553,19 +3568,23 @@ function renderBookmarkBars(container, text) {
         <span class="bm-domain">${escHtml(domain)}</span>
         <span class="bm-saved">${LANG === 'he' ? '✅ נשמר לעיון' : '✅ Saved for later'}</span>`;
     } else {
-      const encoded = encodeURIComponent(url);
       bar.innerHTML = `
         <span>${LANG === 'he' ? '💾 שמור מקור שימושי?' : '💾 Bookmark this resource?'}</span>
         <span class="bm-domain">${escHtml(domain)}</span>
-        <button onclick="saveBookmark(this, '${encoded}')">${LANG === 'he' ? 'שמור' : 'Save'}</button>
-        <button onclick="dismissBookmark(this, '${encoded}')">${LANG === 'he' ? 'התעלם' : 'Dismiss'}</button>`;
+        <button type="button" class="bm-save-btn">${LANG === 'he' ? 'שמור' : 'Save'}</button>
+        <button type="button" class="bm-dismiss-btn">${LANG === 'he' ? 'התעלם' : 'Dismiss'}</button>`;
+      // SECURITY: url comes from model output — passed as a JS value, never
+      // serialized into an inline on* attribute (see renderSuggestionCards).
+      const saveBtn = bar.querySelector('.bm-save-btn');
+      if (saveBtn) saveBtn.addEventListener('click', () => saveBookmark(saveBtn, url));
+      const dismissBtn = bar.querySelector('.bm-dismiss-btn');
+      if (dismissBtn) dismissBtn.addEventListener('click', () => dismissBookmark(dismissBtn, url));
     }
     container.appendChild(bar);
   });
 }
 
-function saveBookmark(btn, encodedUrl) {
-  const url = decodeURIComponent(encodedUrl);
+function saveBookmark(btn, url) {
   const saved = getSavedBookmarks();
   if (!saved.find(b => b.url === url)) {
     saved.push({ url, dateAdded: new Date().toISOString() });
@@ -3580,8 +3599,7 @@ function saveBookmark(btn, encodedUrl) {
   bar.appendChild(span);
 }
 
-function dismissBookmark(btn, encodedUrl) {
-  const url = decodeURIComponent(encodedUrl);
+function dismissBookmark(btn, url) {
   const dismissed = getDismissedBookmarks();
   if (!dismissed.includes(url)) {
     dismissed.push(url);
@@ -3624,21 +3642,29 @@ function renderSuggestionCards(container, suggestions) {
 
     const card = document.createElement('div');
     card.className = 'suggestion-card';
-    const encoded = encodeURIComponent(JSON.stringify(d));
+    // SECURITY: the suggestion payload (`d`) originates from model output that
+    // may quote untrusted web_search content. It must never be serialized into
+    // an inline on* attribute — encodeURIComponent does NOT escape the single
+    // quote (`'`), so `onclick="fn('${encoded}')"` was breakable by any
+    // apostrophe in the payload, allowing HTML/JS injection. The payload is now
+    // passed as a live JS object via addEventListener and never touches markup.
     card.innerHTML = `
       <div class="sc-head"><span>${icon}</span><span>${escHtml(label)}</span></div>
       <div class="sc-body">${detailsHtml}</div>
       <div class="sc-actions">
-        <button onclick="fileSuggestion(this, '${encoded}')">${escHtml(fileLabel)}</button>
-        <button onclick="this.closest('.suggestion-card').remove()">${escHtml(dismissLabel)}</button>
+        <button type="button" class="sc-file-btn">${escHtml(fileLabel)}</button>
+        <button type="button" class="sc-dismiss-btn">${escHtml(dismissLabel)}</button>
       </div>`;
+    const fileBtn = card.querySelector('.sc-file-btn');
+    if (fileBtn) fileBtn.addEventListener('click', () => fileSuggestion(fileBtn, d));
+    const dismissBtn = card.querySelector('.sc-dismiss-btn');
+    if (dismissBtn) dismissBtn.addEventListener('click', () => card.remove());
     container.appendChild(card);
   });
 }
 
-function fileSuggestion(btn, encodedData) {
-  let data = {};
-  try { data = JSON.parse(decodeURIComponent(encodedData)); } catch (e) { /* ignore */ }
+function fileSuggestion(btn, data) {
+  if (!data || typeof data !== 'object') data = {};
   navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
     const original = btn.textContent;
     btn.textContent = LANG === 'he' ? '📋 הועתק — טרם מחובר להגשה אוטומטית' : '📋 Copied — not wired up yet';
@@ -3661,24 +3687,47 @@ function renderBookmarksList() {
     return;
   }
 
-  list.innerHTML = saved.map(b => {
+  list.innerHTML = '';
+  saved.forEach(b => {
     let domain;
     try { domain = new URL(b.url).hostname; } catch (e) { domain = b.url; }
     const date = new Date(b.dateAdded);
     const dateStr = isNaN(date) ? '' : date.toLocaleDateString(LANG === 'he' ? 'he-IL' : 'en-US');
-    const encoded = encodeURIComponent(b.url);
-    return `<div class="bm-row">
+
+    const row = document.createElement('div');
+    row.className = 'bm-row';
+    row.innerHTML = `
       <div class="bm-row-info">
-        <a class="bm-row-url" href="${escHtml(b.url)}" target="_blank" rel="noopener">${escHtml(domain)}</a>
+        <a class="bm-row-url" target="_blank" rel="noopener noreferrer"></a>
         <div class="bm-row-date">${escHtml(dateStr)}</div>
       </div>
-      <button class="bm-row-remove" onclick="removeBookmark('${encoded}')">${LANG === 'he' ? 'הסר' : 'Remove'}</button>
-    </div>`;
-  }).join('');
+      <button type="button" class="bm-row-remove">${LANG === 'he' ? 'הסר' : 'Remove'}</button>`;
+
+    // SECURITY: set href via property with an explicit http/https allowlist so a
+    // stored `javascript:` (or `data:`) URL can never become a clickable link,
+    // and pass the URL to the handler as a JS value rather than serializing it
+    // into an inline on* attribute (see the note in renderSuggestionCards).
+    const link = row.querySelector('.bm-row-url');
+    if (link) {
+      link.textContent = domain;
+      link.href = isSafeHttpUrl(b.url) ? b.url : '#';
+    }
+    const rm = row.querySelector('.bm-row-remove');
+    if (rm) rm.addEventListener('click', () => removeBookmark(b.url));
+    list.appendChild(row);
+  });
 }
 
-function removeBookmark(encodedUrl) {
-  const url = decodeURIComponent(encodedUrl);
+// Only http(s) is ever allowed to reach an href — blocks javascript:, data:,
+// vbscript: and friends arriving from model output or legacy localStorage.
+function isSafeHttpUrl(url) {
+  try {
+    const p = new URL(String(url)).protocol;
+    return p === 'http:' || p === 'https:';
+  } catch (e) { return false; }
+}
+
+function removeBookmark(url) {
   const saved = getSavedBookmarks().filter(b => b.url !== url);
   localStorage.setItem(BOOKMARK_SAVED_KEY, JSON.stringify(saved));
   renderBookmarksList();

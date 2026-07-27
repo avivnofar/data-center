@@ -63,6 +63,18 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
 - **Zero office-simulation coupling** since 2026-07-19 — the former
   Office/Admin UI was fully removed.
 
+> **A note on references in this document.** Claims here point at *symbol
+> names* (`copyUsageCmd()`, `parseSuggestionBlocks()`), never at line numbers.
+> Line numbers were removed on 2026-07-26 because they had already rotted —
+> `index.html:1480` and `index.html:2963` were both off by well over a hundred
+> lines, silently, since any edit above them shifts every reference below. A
+> reference that quietly becomes wrong is the exact failure mode this document
+> is supposed to prevent. Symbol names survive edits and are greppable.
+>
+> The mechanically checkable claims below are verified on every push by
+> `.github/scripts/spec-drift-check.js`. That script's registry and this file
+> must be updated together.
+
 ## Verified Feature Status (comprehensive audit, 2026-07-19)
 
 All 27 ever-requested features were checked against the actual code.
@@ -75,34 +87,34 @@ paid API calls were made.
 |---|---|---|
 | 1 | Claude streaming AI search | `worker.js`: `stream: true`, `streamAnthropicResponse()` re-streams SSE as `{"delta"}` events; client renders via the streaming bubble path. |
 | 2 | Three mutually exclusive AI modes | `AI_MODE_VALUES`; `setAiMode()` sets `AI_MODES = [mode]`; `loadAiModes()` sanitizes stored state to one valid mode. |
-| 3 | Solve a Case guided controls | `#diagnose-controls`: platform/severity chips (`selectDiagnoseChip()` → `DIAGNOSE_PLATFORM/SEVERITY`) + 5 action buttons wired to `diagnoseAction()` (index.html:2908) — `start` prefills the input with chip context; next/resolved/escalate/guide call `sendAiMessage()`. |
-| 4 | CLI Mode terminal-in-chat | `tryRunCliCommand()` (index.html:2963) → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; unmatched input falls through to Claude. |
+| 3 | Solve a Case guided controls | `#diagnose-controls`: platform/severity chips (`selectDiagnoseChip()` → `DIAGNOSE_PLATFORM/SEVERITY`) + 5 action buttons wired to `diagnoseAction()` — `start` prefills the input with chip context; next/resolved/escalate/guide call `sendAiMessage()`. |
+| 4 | CLI Mode terminal-in-chat | `tryRunCliCommand()` → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; unmatched input falls through to Claude. |
 | 5 | Image paste + upload + vision | Attach button `#ai-attach-btn` and document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64, previews, removable) → `images` in the request body; Worker injects `type:'image'` blocks (max 3). |
-| 6 | Web search tool for Claude | `worker.js:462`: `tools: [{type:'web_search_20250305', name:'web_search', max_uses:3}]` — yes, actually added; system prompt lists preferred official domains. |
+| 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20250305', name:'web_search', max_uses:3}]` — yes, actually added; system prompt lists preferred official domains. |
 | 11 | Hebrew default + English toggle | `LANG = localStorage.getItem('dc-lang') \|\| 'he'`; `applyLang()` flips `document.documentElement.dir` and re-renders. |
-| 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` (index.html:2306) intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
-| 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html:205); `toggleSidebarCollapse()` (index.html:3285) + persisted collapsed state + mobile off-canvas mode. |
+| 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
+| 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html); `toggleSidebarCollapse()` + persisted collapsed state + mobile off-canvas mode. |
 | 14 | Chat as dominant UI | `init()` ends with `switchTab('ai')` — AI Search is the default tab; the chat panel fills the entire main content area beside the 200px sidebar. |
 | 15 | Hover tooltips on commands | `showTooltip()` — 200ms delay, viewport-aware positioning, flag list from `data-flags`, keyboard focus support. |
 | 17 | Mobile responsiveness | ≤768px: 44px touch targets (`.tab-btn/.filter-btn/.faq-pill`, `.copy-btn`), 16px inputs (iOS zoom fix), off-canvas sidebars; ≤480px adjustments. |
 | 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
 | 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. |
-| 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html:3395-3452), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
+| 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
 | 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. Workflows tab itself is now self-hosted from `data/workflows.json` + `workflows/*.md` (no external repo fetch). |
 | 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
 | 25 | 1COM + MirtaPBX modules | Present and active (17 + 11 entries), rendered as normal tabs. Now specialty/vendor content within general-IT scope, not the defining boundary. |
-| 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">` (index.html:1480), `data/tools.json` registry, topbar link, CLI Mode path all intact. |
+| 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">`, `data/tools.json` registry, topbar link, CLI Mode path all intact. |
 | 27 | Data validation scripts | `validate-json.js` (schema, bilingual pairs, approved/blocked domain enforcement) + `health-check.js` (Hebrew QA) — both pass as of this audit. |
 
 ### 🔶 Partially Built / Needs Finishing (5)
 
 | # | Feature | What exists | What's missing |
 |---|---|---|---|
-| 7 | Self-education (LEARNED_SOURCE) | Worker system prompt (worker.js:301-306) instructs Claude to append a plain-text `LEARNED_SOURCE: {...}` line after `---` for good web-search sources, restricted to approved domains. | **No client-side code** detects the block — it renders as visible text in the chat. No GitHub Issue is created. To finish: parse the block in the app, offer a "file as claude-action Issue" action (via a server-side component, never a browser token). |
+| 7 | Self-education (LEARNED_SOURCE) | Worker system prompt (worker.js) instructs Claude to append a plain-text `LEARNED_SOURCE: {...}` line after `---` for good web-search sources, restricted to approved domains. **Client-side parsing now exists** (TODO-001, merge `d37943d`, 2026-07-24): `parseSuggestionBlocks()` strips the block out of the rendered body and `renderSuggestionCards()` renders it as a dismissible card with a "File this" action. | The "File this" action only copies the JSON to the clipboard — no GitHub Issue is created and nothing is written to `flagged/pending-review.md`. The filing half remains blocked on the GitHub write-credential decision in `NEEDS_YOUR_REVIEW.md`. |
 | 8 | Very-high source scrutiny | Approved/blocked domain allowlists enforced in code (`validate-json.js:18-85`, runs in CI on every push); `flagged/` pending→approved/rejected files exist; worker prompt instructs verification caution. | The quarantine flow is a documented **manual process** — `flagged/pending-review.md` is an empty table, and nothing automatically routes AI-suggested URLs into it. |
-| 9 | Auto-update KB via GitHub Issue | Prompt-side only: `CAPABILITY_SUGGESTION` covers KB gaps (worker.js:297-300). | Same gap as #7 — no code path creates an Issue anywhere in this repo. |
-| 10 | Self-extending capability | Prompt-side only: `CAPABILITY_SUGGESTION: {...}` block spec in the system prompt. | Same gap as #7/#9: no app detection, no Issue filing. Currently aspirational beyond the prompt. |
-| 16 | Expandable cards + copy buttons | Expand/collapse fully works (`toggleCard()`, `aria-expanded`, keyboard support via `handleExpandKeydown`). | **Copy-to-clipboard exists only on AI-chat code blocks** (`copyAiCode()`); command-card `usage-cmd` rows have no copy button. |
+| 9 | Auto-update KB via GitHub Issue | Prompt-side plus client-side rendering: `CAPABILITY_SUGGESTION` blocks are parsed and shown as cards (see #7). | No code path creates an Issue anywhere in this repo. Blocked on the same GitHub write-credential decision. |
+| 10 | Self-extending capability | `CAPABILITY_SUGGESTION: {...}` block spec in the system prompt, now detected and surfaced in the UI (see #7). | No Issue filing, so a suggestion still requires the owner to act on it manually. Aspirational beyond surfacing. |
+| 16 | Expandable cards + copy buttons | Expand/collapse fully works (`toggleCard()`, `aria-expanded`, keyboard support via `handleExpandKeydown`). Copy-to-clipboard now exists on both AI-chat code blocks (`copyAiCode()`) **and** command-card `usage-cmd` rows (`copyUsageCmd()`, index.html + 2684) — shipped by TODO-003, merge `b3451b1`, 2026-07-20. | Nothing outstanding — this row is retained for audit-trail continuity and should move to "Fully Working" at the next full re-audit. |
 
 ### ❌ Requested But Never Built (2)
 
@@ -155,12 +167,16 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Known Issues / Open Items
 
-- The four partially-built AI self-improvement items (#7-#10 above) share
-  one root gap: the suggestion blocks Claude emits have no client-side
-  parser and no Issue-filing path. Until built, they appear as plain text
-  at the end of some chat answers.
-- Command cards lack copy buttons on usage rows (#16). (Saved-bookmarks
-  browsing UI, formerly #20 here, shipped — see Recently Completed.)
+- The partially-built AI self-improvement items (#7-#10 above) now share a
+  narrower root gap: as of TODO-001 (2026-07-24) the suggestion blocks ARE
+  parsed client-side and rendered as dismissible cards, so they no longer
+  leak as plain text into answers. What is still missing is the filing half
+  — nothing writes to `flagged/pending-review.md` or opens an Issue — which
+  stays blocked on the GitHub write-credential decision in
+  `automation/NEEDS_YOUR_REVIEW.md`.
+- (Resolved 2026-07-20: command-card usage rows now have copy buttons —
+  TODO-003. Saved-bookmarks browsing UI, formerly #20 here, also shipped —
+  see Recently Completed.)
 - No functional bugs currently flagged. (The 2026-07-19 audit's three
   open items — Office/Admin UI, `notebooks/`, `data/resources and
   links.txt` — were all removed per owner decision on the same date.)
@@ -194,7 +210,7 @@ needed) and validated by `.github/scripts/validate-json.js`.
 - **My Bookmarks browsing/management panel** (TODO-004, merge commit
   `ab196ac2`): `#bookmarks-btn` topbar button opens a modal
   (`openBookmarksPanel()`/`renderBookmarksList()`/`removeBookmark()`,
-  index.html:3395-3452) listing saved bookmarks with per-row Remove and a
+  index.html) listing saved bookmarks with per-row Remove and a
   bilingual empty state — closes the gap noted in feature #20 above. Built
   and merged by the twice-daily unattended Builder/Auditor automation
   (`automation/DATA_CENTER_AUTOMATION_SPEC.md`), the first item it fully

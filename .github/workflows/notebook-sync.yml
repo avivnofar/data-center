@@ -28,6 +28,7 @@ jobs:
           node-version: "20"
 
       - name: Fetch + validate Notebook-X mirror
+        id: sync
         env:
           NOTEBOOKX_READ_TOKEN: ${{ secrets.NOTEBOOKX_READ_TOKEN }}
         run: node .github/scripts/sync-notebooks.js
@@ -39,3 +40,49 @@ jobs:
           git add data/notebooks/
           git diff --cached --quiet || git commit -m "chore: weekly Notebook-X mirror sync"
           git push
+
+      # Silent-failure prevention (CLAUDE.md hard rule): a failed sync must
+      # leave a visible trace, not just a red mark in the Actions tab that
+      # nobody opens. Runs only when an earlier step failed.
+      - name: Report failure into NEEDS_YOUR_REVIEW.md
+        if: failure()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -e
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -- . || true
+          git fetch origin master
+          git checkout -B master origin/master
+          FILE=automation/NEEDS_YOUR_REVIEW.md
+          # If an unresolved failure note is already present, do not stack another
+          # one — a multi-week outage should leave one live entry, not fifty.
+          if grep -q "Notebook-X sync failed" "$FILE"; then
+            echo "An unresolved sync-failure note already exists; not duplicating it."
+            exit 0
+          fi
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Notebook-X sync failed — \`data/notebooks/\` is stale"
+            echo ""
+            echo "*(written automatically by \`.github/workflows/notebook-sync.yml\` on $(date -u '+%Y-%m-%d %H:%M UTC'))*"
+            echo ""
+            echo "The weekly mirror sync failed, so \`data/notebooks/\` was not updated and"
+            echo "AI Search is serving whatever was last mirrored successfully. This entry"
+            echo "exists so the failure is not silent."
+            echo ""
+            echo "**Run log:** $RUN_URL"
+            echo ""
+            echo "**Check first:** the \`NOTEBOOKX_READ_TOKEN\` repo secret — missing,"
+            echo "expired, or lacking read-only Contents access on \`avivnofar/Notebook-X\`."
+            echo "\`sync-notebooks.js\` exits 1 with an explicit message when it is unset."
+            echo ""
+            echo "Delete this section by hand once the sync is green again; while it is"
+            echo "present, further failures will not add duplicate entries."
+          } >> "$FILE"
+          git add "$FILE"
+          git commit -m "chore: flag Notebook-X sync failure for owner review"
+          git push origin master

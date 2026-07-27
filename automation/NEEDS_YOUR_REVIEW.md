@@ -9,6 +9,62 @@ ambiguous design decisions. Autonomous sessions should skip these and work the
 
 ---
 
+## TODO-012 + TODO-013 — two recommendations awaiting your decision
+
+*(added 2026-07-26 by the CLAUDE_AUDIT review — retroactive backfill of
+entries the Builder should have written itself; the instruction gap that
+allowed this has been closed in `automation/instructions_builder.txt` §5)*
+
+Both of these ran to completion and produced a full recommendation document,
+then went invisible: for two days nothing on `master` recorded that they had
+happened. The Auditor behaved correctly in both cases (a scoping-only
+`needs-review` item is deliberately not auto-mergeable) and did note the
+branches in `DATA_CENTER_RUN_LOG.md` — but a run-log mention is not a review
+queue, and nothing escalated them here.
+
+**Both branches have since been merged to `master` (2026-07-27), so the
+documents are no longer stranded** — read them at
+`automation/recommendations/`. What is still open is the actual decision:
+whether to build either feature. Because `needs-review` is a hard skip for
+future Builder runs, neither item will be picked up again automatically.
+
+### TODO-012 — presentation/slide generation
+
+- **Branch:** `dc-auto-2026-07-25_023002` — merged 2026-07-27
+- **Deliverable:** `automation/recommendations/TODO-012-presentation-slides.md`
+- **Recommendation:** conditional go — scope it to Workflow markdown documents
+  only, and reuse the existing `window.print()` + `@media print` pattern
+  already in `index.html` rather than adding a slide library.
+- **Also on the branch:** new TODO-026 and TODO-027 entries sizing the work.
+
+### TODO-013 — workflow document generation
+
+- **Branch:** `dc-auto-2026-07-26_023002` — merged 2026-07-27
+- **Deliverable:** `automation/recommendations/TODO-013-workflow-generation.md`
+- **Recommendation:** do **not** build an in-app editor that commits straight
+  to `workflows/` — it would need a new GitHub write credential, the same
+  open question already parked in this file. Build a client-side markdown
+  template/preview tool instead: form → assembled markdown → live preview via
+  the existing `renderMarkdown()` → Blob download. No commits, no credentials.
+- **Also on the branch:** a new TODO-028 entry sizing the work.
+
+### What we need from you
+
+For each: (a) accept the recommendation and open an implementation TODO,
+(b) reject it and note why here, or (c) re-queue the scoping work with a
+`"status": "cleared-for-retry"` entry for that ID in
+`automation/state/dc_automation_state.json`.
+
+Follow-up items sized by these two runs are already in `TODO_LIST.md` as
+TODO-026, TODO-027 (from TODO-012) and TODO-028 (from TODO-013). They are
+proposals, not commitments — nothing will pick them up without your decision.
+
+**Note also:** TODO-015 (PWA/offline scoping) is the next scoping-only item in
+the queue and would have hit exactly the same dead end. With the instruction
+fix in place it will now surface here properly instead.
+
+---
+
 ## TODO-005 through TODO-011 — paused pending Notebook-X architecture decision
 
 *(added 2026-07-20, when the twice-daily unattended automation was built —
