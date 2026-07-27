@@ -371,10 +371,77 @@ if (fs.existsSync(notebooksDir)) {
   passed++;
 }
 
+/* ── Identifier charset (hard error) ─────────────────────────────────────────
+ * Several render paths still interpolate an entry `id` straight into an inline
+ * onclick attribute (toggleCard, toggleTs, openWorkflow). That is only safe as
+ * long as ids stay in a boring charset — nothing that could terminate a quoted
+ * attribute or a JS string. Today every id complies; this pins the assumption
+ * the code already relies on, instead of leaving it as folklore.
+ * ────────────────────────────────────────────────────────────────────────── */
+const ID_RE = /^[a-z0-9][a-z0-9._-]*$/;
+const idFiles = ['modules.json', 'workflows.json', 'tools.json',
+  'linux.json', 'cmd.json', 'network.json', '1com.json',
+  'mirtapbx.json', 'troubleshoot.json'];
+
+idFiles.forEach(filename => {
+  const filepath = path.join(DATA_DIR, filename);
+  if (!fs.existsSync(filepath)) return;
+  let parsed;
+  try { parsed = JSON.parse(fs.readFileSync(filepath, 'utf8')); } catch (e) { return; }
+  const items = Array.isArray(parsed)
+    ? parsed
+    : (parsed.modules || parsed.workflows || parsed.tools || []);
+  items.forEach(item => {
+    const id = item && item.id;
+    if (id === undefined) return;
+    if (!ID_RE.test(String(id))) {
+      errors.push(`[${filename}] id "${id}" must match ${ID_RE} — ids are interpolated into inline handlers`);
+    }
+  });
+});
+console.log('✓  All entry ids use the safe charset [a-z0-9._-]');
+
+/* ── Source-quality warning (non-fatal) ──────────────────────────────────────
+ * The domain allowlist proves a URL is from an approved site; it says nothing
+ * about whether the page actually backs up the specific entry. When one URL is
+ * reused across many entries it is usually a generic landing page standing in
+ * for a real citation — e.g. six MirtaPBX entries, including operational ones
+ * like SIP registration failure, all pointing at architecture.html.
+ *
+ * A warning, not an error: sometimes one page genuinely does cover several
+ * entries, and this should not block a push over a judgment call.
+ * ────────────────────────────────────────────────────────────────────────── */
+const REUSE_LIMIT = 3;
+const warnings = [];
+['linux.json', 'cmd.json', 'network.json', '1com.json',
+  'mirtapbx.json', 'troubleshoot.json'].forEach(filename => {
+  const filepath = path.join(DATA_DIR, filename);
+  if (!fs.existsSync(filepath)) return;
+  let entries;
+  try { entries = JSON.parse(fs.readFileSync(filepath, 'utf8')); } catch (e) { return; }
+  if (!Array.isArray(entries)) return;
+  const byUrl = new Map();
+  entries.forEach(e => {
+    if (!e || !e.source_url) return;
+    if (!byUrl.has(e.source_url)) byUrl.set(e.source_url, []);
+    byUrl.get(e.source_url).push(e.id);
+  });
+  byUrl.forEach((ids, url) => {
+    if (ids.length > REUSE_LIMIT) {
+      warnings.push(`[${filename}] ${ids.length} entries share one source_url — likely a generic page rather than a real citation\n      ${url}\n      ${ids.join(', ')}`);
+    }
+  });
+});
+
 if (errors.length > 0) {
   console.error(`\n✗  Validation failed with ${errors.length} error(s):\n`);
   errors.forEach(e => console.error('  ' + e));
   process.exit(1);
 } else {
   console.log(`\n✓  All ${passed} JSON files are valid. Bilingual schema and source_url domains checked.`);
+}
+
+if (warnings.length > 0) {
+  console.log(`\n⚠  ${warnings.length} source-quality warning(s) — not blocking:\n`);
+  warnings.forEach(w => console.log('  ' + w));
 }

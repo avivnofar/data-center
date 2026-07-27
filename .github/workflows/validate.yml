@@ -21,3 +21,12 @@ jobs:
 
       - name: Validate JSON syntax and schema
         run: node .github/scripts/validate-json.js
+
+      # Verify the drift checker can still detect drift before trusting its
+      # verdict — a checker that silently stopped working would otherwise report
+      # green forever, which is worse than having no checker at all.
+      - name: Self-test the spec drift checker
+        run: node .github/scripts/spec-drift-check.js --self-test
+
+      - name: Check CURRENT-SPEC.md for drift
+        run: node .github/scripts/spec-drift-check.js
