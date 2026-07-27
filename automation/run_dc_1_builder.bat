@@ -16,8 +16,20 @@ setlocal enabledelayedexpansion
 set "DC_DIR=C:\Users\97252\GITHUB\data-center"
 set "BUILDER_INSTRUCTIONS="C:\Users\97252\GITHUB\data-center\automation\instructions_builder.txt""
 
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "DT=%%I"
-set "STAMP=%DT:~0,4%-%DT:~4,2%-%DT:~6,2%_%DT:~8,2%%DT:~10,2%%DT:~12,2%"
+:: Timestamp. wmic is deprecated and is REMOVED from Windows 11 24H2 and later,
+:: which would silently leave DT empty and produce a branch literally named
+:: "dc-auto---_" — so use PowerShell, with wmic kept only as a fallback for
+:: older machines.
+set "STAMP="
+for /f "delims=" %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmmss"') do set "STAMP=%%I"
+if not defined STAMP (
+  for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value 2^>nul') do set "DT=%%I"
+  if defined DT set "STAMP=!DT:~0,4!-!DT:~4,2!-!DT:~6,2!_!DT:~8,2!!DT:~10,2!!DT:~12,2!"
+)
+if not defined STAMP (
+  echo FATAL: could not determine a timestamp - aborting rather than creating a malformed branch name.
+  exit /b 1
+)
 
 set "LOG_DIR=%DC_DIR%\automation\automation_logs"
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
@@ -37,13 +49,22 @@ echo Selecting item and branching: %time% >> "%LOG_FILE%"
 echo -------------------------------------------------- >> "%LOG_FILE%"
 
 git checkout -b dc-auto-%STAMP% >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo FATAL: could not create branch dc-auto-%STAMP% - aborting before invoking claude. >> "%LOG_FILE%"
+  exit /b 1
+)
 
 call claude --dangerously-skip-permissions ^
   --disallowedTools "Bash(rm:*)" "Bash(git push origin master*)" "Bash(git push --force*)" "Bash(git reset --hard:*)" "Bash(git merge*)" ^
   -p "You are in data-center, on a fresh branch named dc-auto-%STAMP% cut from master. Read %BUILDER_INSTRUCTIONS% in this repo and execute the Run 1 (Builder) procedure defined there in full, including selecting the item, doing the work, validating, committing in small increments, updating the state file and run log, and pushing this exact branch (dc-auto-%STAMP%) to origin. Never merge or push to master." ^
   >> "%LOG_FILE%" 2>&1
 
-echo DC BUILDER RUN (claude session) finished: %time% >> "%LOG_FILE%"
+set "CLAUDE_RC=%ERRORLEVEL%"
+echo DC BUILDER RUN (claude session) finished: %time% (exit code %CLAUDE_RC%) >> "%LOG_FILE%"
+if not "%CLAUDE_RC%"=="0" (
+  echo WARNING: the claude session exited non-zero ^(%CLAUDE_RC%^). The run may be >> "%LOG_FILE%"
+  echo incomplete - check for a missing run-log entry or an unpushed branch. >> "%LOG_FILE%"
+)
 
 git checkout master >> "%LOG_FILE%" 2>&1
 git pull origin master >> "%LOG_FILE%" 2>&1

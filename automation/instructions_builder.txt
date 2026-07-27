@@ -88,8 +88,18 @@ uncommitted, log why, and treat this run as "no eligible item" instead.
 ## 3. Validate
 
 Run `node .github/scripts/validate-json.js` always. If any `data/*.json`
-file was touched, also run `node .github/scripts/health-check.js`. If either
-fails: revert this item's changes (`git checkout -- <files>` / remove new
+file was touched, also run `node .github/scripts/health-check.js`. If you
+changed `index.html`, `cloudflare-worker/worker.js`, any `.github/workflows/`
+file, or `CURRENT-SPEC.md`, also run
+`node .github/scripts/spec-drift-check.js` — it verifies every mechanically
+checkable claim in `CURRENT-SPEC.md` against the actual code, so a change that
+silently invalidates a documented claim is caught here rather than surviving
+for weeks until a spot-check happens to sample it.
+
+If a drift check fails because your change legitimately made a claim obsolete,
+that is not a validator failure to revert — update `CURRENT-SPEC.md` AND the
+claim registry in `spec-drift-check.js` in the same commit, then re-run. If any
+validator fails: revert this item's changes (`git checkout -- <files>` / remove new
 files you added — never `git reset --hard`, never touch other branches),
 log the failure and why in `automation/DATA_CENTER_RUN_LOG.md`, update the
 state file marking this item `"status": "failed"`, and stop — do not pick a
@@ -136,6 +146,45 @@ Use `"done"` if you completed the item and validators passed (this does NOT
 mean merged — that's Run 2's decision). Use `"failed"` per step 3. Use
 `"needs-review"` if the item is scoping-only (TODO-012/013/015) or otherwise
 inherently non-mergeable-by-checklist.
+
+**MANDATORY when you write `"needs-review"`: you must ALSO append an entry to
+`automation/NEEDS_YOUR_REVIEW.md` in the same run, before you finish.**
+
+This is not optional bookkeeping — without it your work is invisible. A
+`needs-review` item is never merged by the Auditor (correct — a recommendation
+doc can't pass the Push-Authorization Checklist) *and* is a hard skip for every
+future Builder run (step 1.4). So the branch is terminal: nothing will ever
+pick it up again automatically. If you don't write it into
+`NEEDS_YOUR_REVIEW.md`, then from `master`'s point of view nothing happened at
+all — `TODO_LIST.md` still lists the item as open, the recommendation doc
+exists only on an unmerged branch, and the owner has no way to discover it
+short of manually running `git branch -r`. This has already happened twice
+(TODO-012 on 2026-07-25 and TODO-013 on 2026-07-26 both produced complete
+recommendation docs that were never surfaced anywhere on `master`).
+
+Use this format, under a new dated heading:
+
+```markdown
+## TODO-XXX — recommendation ready for your review (branch not merged)
+
+*(added YYYY-MM-DD by the Builder run)*
+
+**Branch:** `dc-auto-<STAMP>` (pushed, deliberately not merged)
+**Deliverable:** `automation/recommendations/TODO-XXX-<slug>.md` — exists only
+on that branch until you decide.
+**Recommendation in one line:** <the actual conclusion, not "see the doc">
+**What we need from you:** read the doc, then either (a) merge the branch
+yourself, (b) tell the automation to drop it, or (c) re-queue the item by
+appending a `"status": "cleared-for-retry"` entry for this ID.
+
+To read it without merging:
+```
+git show <branch>:automation/recommendations/TODO-XXX-<slug>.md
+```
+```
+
+Write the one-line recommendation properly — the owner should be able to
+decide whether to even open the branch from that line alone.
 
 ## 6. Write the run-log entry
 

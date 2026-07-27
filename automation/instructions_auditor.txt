@@ -30,12 +30,39 @@ Builder branch) and STEP 2 (the standing daily audit, always runs).
    the owner to clear per `instructions_builder.txt` step 1.4. If no
    eligible builder/done entry exists, log "no builder branch to audit
    this run" in `automation/DATA_CENTER_RUN_LOG.md` and skip to STEP 2.
+
+   **Before you skip to STEP 2, run this escalation check.** For every
+   `dc-auto-*` branch on the remote that is NOT an ancestor of `master`
+   (`git branch -r --no-merged master`), confirm that
+   `automation/NEEDS_YOUR_REVIEW.md` on `master` actually mentions that
+   branch or its TODO ID. If any unmerged branch is not mentioned there,
+   append an entry for it yourself under a new dated heading, using the
+   format in `instructions_builder.txt` §5 — read the branch's own
+   recommendation doc or diff so the one-line summary is real, not a
+   placeholder. Then commit `automation/NEEDS_YOUR_REVIEW.md` to `master`
+   as part of your STEP 2 commit.
+
+   Rationale: a run-log mention is not a review queue. A `needs-review`
+   item is never merged by you *and* is a hard skip for every future
+   Builder run, so an unescalated branch is permanently invisible work.
+   This happened to TODO-012 and TODO-013 (2026-07-25/26) before this
+   check existed. `NEEDS_YOUR_REVIEW.md` is explicitly listed below as a
+   file this run may push to `master`, so this is in scope for you.
 2. `git fetch origin`, then `git checkout <that branch>` (fresh checkout,
    don't reuse any local state from a prior session).
 3. Re-run `node .github/scripts/validate-json.js` yourself, and
    `node .github/scripts/health-check.js` if the diff touches any
-   `data/*.json`. Do not rely on the Builder run-log's claim that these
-   passed — actually run them now.
+   `data/*.json`. Also run `node .github/scripts/spec-drift-check.js`
+   (preceded by `node .github/scripts/spec-drift-check.js --self-test`, so a
+   checker that has quietly stopped detecting anything can't hand you a
+   meaningless green). Do not rely on the Builder run-log's claim that any of
+   these passed — actually run them now.
+
+   The drift checker does NOT replace your own drift spot-check in STEP 2: it
+   only settles claims decidable by grepping the repo. Claims about runtime
+   behaviour, whether a feature is actually usable, or whether a description
+   is honest still need your judgment. Treat a green drift run as "the
+   mechanical claims hold", not as "the spec is accurate".
 4. Compute the diff against `master`
    (`git diff master...<branch> --stat` and read the actual changed files,
    not just the stat summary) and check every item on the
@@ -136,8 +163,11 @@ and (if STEP 1 already updated it) is otherwise independent.
 - Never `git push --force`, never `git reset --hard`, never `rm` anything.
 - Never delete a branch, merged or not.
 - The ONLY files this run may ever push directly to `master` outside a
-  successful STEP-1 merge are `automation/DATA_CENTER_AUDIT.md` (STEP 2)
-  and the specific documentation/state files listed in STEP 1.5 as part of
-  a passing merge. Nothing else goes to `master` from this run, ever.
+  successful STEP-1 merge are `automation/DATA_CENTER_AUDIT.md` (STEP 2),
+  `automation/NEEDS_YOUR_REVIEW.md` (the STEP-1 escalation check only —
+  appending an entry for an unmerged branch that would otherwise be
+  invisible; never to remove or edit an existing entry), and the specific
+  documentation/state files listed in STEP 1.5 as part of a passing merge.
+  Nothing else goes to `master` from this run, ever.
 - If STEP 1 finds a checklist failure, do not attempt to fix it — flag and
   stop, per STEP 1.6.
