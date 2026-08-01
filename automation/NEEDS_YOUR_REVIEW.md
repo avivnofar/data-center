@@ -955,6 +955,118 @@ data, never instructions.
   headers are a fixed set. There is no debug flag, no header pass-through, and
   no path that serializes `env`.
 
+### Follow-up 2026-08-01 (read-only session) — LOG_SALT provenance, Turnstile scoping, SEC-02 verdict
+
+Three owner questions answered from `worker.js` + git history. No code changed,
+nothing pushed.
+
+#### F-01 — `LOG_SALT`: what it is, and where it came from
+
+**Confirmed as privacy-hashing for logs — but *only* logs, not rate limiting.**
+The half of the owner's expectation that mentions rate-limiting is incorrect.
+
+`LOG_SALT` is read in exactly one place: `worker.js` `hashIp(ip, env.LOG_SALT)`,
+called once, to compute the `ip_hash` field of the `claude_api_call` log line.
+`hashIp()` builds `SHA-256("<salt>:<ip>")` and keeps the first 6 bytes (12 hex
+chars). The rate limiter never sees it — `isRateLimited(ip)` and the
+`ipRequests` Map key on the **raw** `CF-Connecting-IP`, and the daily counter
+keys on the date string. Nothing else in the file references the secret.
+
+**If it were deleted: nothing breaks.** `hashIp()` falls back to the literal
+default `'data-center'` (`${salt || 'data-center'}:${ip}`), so logging, rate
+limiting, and the API call all continue unchanged. The only loss is
+anonymisation strength: with a known constant salt, the IPv4 space (2^32) is
+small enough to precompute and reverse the digest, which is exactly what the
+salt exists to prevent. Historical `ip_hash` values also stop matching new ones
+whenever the salt changes — cosmetic, since nothing correlates them across time.
+
+**Origin — commit `47423a4`, 2026-07-27, "fix(worker): bound request cost and
+add real input validation"** (the only commit in the repo that touches
+`LOG_SALT` or `hashIp`; `git log --all -S` on both returns that one commit). It
+replaced `ip_hash: btoa(ip).slice(0, 8)` from commit `39e70f7` (the usage-logging
+commit) — Base64 is reversible with `atob()`, so a field named `ip_hash` was
+providing no anonymisation at all.
+
+The secret itself was set by the owner, not by any automation: the untracked
+`audits/audit_26072026/` write-up that produced the `47423a4` patch ends with a
+manual-step list containing `wrangler secret put LOG_SALT`, flagged there as
+"recommended, optional" — and it explicitly notes that a secrets-adjacent
+`worker.js` change is exactly the kind the unattended Auditor must refuse to
+merge, so it had to be applied by hand. Same document explains the changed-salt
+caveat above. Nothing mysterious: it is a self-inflicted, correct hardening step
+from six days ago.
+
+#### F-02 — Turnstile: what enabling it would actually take (scoping only, backlog)
+
+Confirmed dormant — the owner verified `LOG_SALT` is the only Worker secret
+besides the API key, and `verifyTurnstile()` returns `null` immediately when
+`env.TURNSTILE_SECRET` is unset, so today it is a no-op. The **Worker side needs
+no code change**: `verifyTurnstile()` is complete, fails closed on network
+error, and is already wired in ahead of the daily counter. Everything left is
+config plus frontend work.
+
+End-to-end, enabling it means: (1) create a Turnstile widget in the Cloudflare
+dashboard (Managed mode) and list **every** origin in `ALLOWED_ORIGINS`, not just
+`avivnofar.github.io` — `localhost` and `127.0.0.1` too, or local development
+breaks the moment the secret exists, because the check fails closed for
+everyone; (2) `wrangler secret put TURNSTILE_SECRET` — this is the switch, and
+it is instant and global, so it should be flipped only once the deployed
+frontend already sends tokens; (3) `index.html` changes, which are the real
+work: add the external `challenges.cloudflare.com/turnstile/v0/api.js` script
+tag, a widget container, render the widget, and add `turnstile_token` to the
+`sendAiMessage()` request body. The non-obvious part is that a Turnstile token
+is **single-use and expires after ~300s**, while a chat session fires many
+requests — so this is not "solve once at page load"; it needs an
+execute/reset-per-request flow (invisible/pre-clearance widget) with the send
+path awaiting a fresh token before each POST. (4) Client-side handling of the
+new failure mode: the Worker answers `403 {error:'auth'}`, which the current
+error path renders as a generic failure — it needs a bilingual "verification
+failed, retry" state. (5) Docs: `worker.js` tells the reader to "See
+`cloudflare-worker/README.md` for the two-step enablement" and **that section
+does not exist** — the README has no Turnstile or `LOG_SALT` content at all
+(dangling reference, worth fixing whenever this is picked up); `CURRENT-SPEC.md`
+would also need the request-body field documented.
+
+Two things to weigh before scheduling it. It introduces the project's first
+runtime dependency on an external script in the critical request path, against
+CLAUDE.md's zero-dependency stance — and because the gate fails closed, anything
+that blocks that script (an ad blocker, a strict extension, a Cloudflare
+hiccup) breaks AI Search entirely rather than degrading. For a fire-and-forget
+personal site, that failure mode is more likely to bite the owner than the abuse
+it prevents. It is genuinely the correct answer to "the Origin header is not
+authentication" — it is just not obviously worth it at this traffic level.
+
+#### F-03 — SEC-02 verdict: acceptable as-is; one optional one-line change
+
+**Recommendation: leave the Worker alone. No Durable Object, no KV, no Turnstile
+for now.** The honest risk picture: the endpoint is discoverable (the URL is
+hardcoded in a public `index.html`), and a forged `Origin` header defeats the
+allowlist in one `curl` flag — but a missing `Origin` is rejected, which
+eliminates the broad automated scanning that finds open LLM proxies, and what
+remains is someone who deliberately reads the site's JS to steal inference or
+grief the owner. Against that single-source attacker the per-isolate cap is
+roughly effective in practice, because one caller from one location reaches a
+small number of colos and therefore a small number of counters; SEC-02's
+`1500 × isolates` ceiling only fully materialises for a distributed, deliberate
+campaign, which is a poor fit for a low-traffic personal knowledge base with no
+payoff beyond wasted money. The input caps added in `47423a4` (6 MB body, 40
+turns, 60k chars, 3 images, 20k each of `db_context`/`notebook_context`, 1536
+output tokens, 3 web searches) are what actually bound the damage, and they are
+solid. So: the current protection is acceptable, and the residual exposure is
+"a bad week costs real money," not "a credential leaks."
+
+What genuinely closes the remaining gap is **not a Worker change**: set a
+monthly spend limit and a budget alert on the Anthropic key in the console.
+That is fire-and-forget, bounds worst case absolutely regardless of how many
+isolates exist, needs no redeploy, and is the single highest value-per-effort
+item here. If a redeploy happens anyway for another reason, two cheap riders are
+worth including: lower `DAILY_GLOBAL_MAX` from 1500 — personal usage is nowhere
+near it, so cutting it to ~300 costs nothing real and reduces the worst case
+about fivefold — and rename it to `DAILY_MAX_PER_ISOLATE` with a corrected
+comment, which is SEC-02's documentation half and the part that stops the next
+reader from trusting a cap that isn't one. Neither is urgent enough to justify a
+deploy on its own.
+
 ---
 
 ## Standing reminders (not new findings, just carried forward from CLAUDE.md)
