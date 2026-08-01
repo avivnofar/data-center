@@ -5,4 +5,14 @@ package-lock.json
 *.log
 dist/
 .wrangler/
-audits/ 
+audits/
+
+# Wrangler local secret files. `.dev.vars` is how wrangler dev supplies Worker
+# secrets (e.g. ANTHROPIC_API_KEY) locally — it is NOT matched by `.env.*`
+# above, so without this line a local `.dev.vars` would be committable.
+# Salvaged from the retired `cloudflare/workers-autoconfig` branch, which is
+# also where the rest of that branch's .gitignore rewrite was deliberately NOT
+# taken: it was based on an older .gitignore that lacked `.env.*` and would
+# have un-ignored the local `.env.cloudflare`.
+.dev.vars*
+!.dev.vars.example

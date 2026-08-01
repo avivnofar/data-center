@@ -31,7 +31,7 @@ merely equivalent.
 | `dc-auto-2026-07-24_023859` | TODO-001 — suggestion-block parser + UI | Yes | empty | **DELETED 2026-08-01** (tip `411ea6e`) |
 | `dc-auto-2026-07-25_023002` | TODO-012 — slide-generation scoping | Yes | empty | **DELETED 2026-08-01** (tip `488ddcd`) |
 | `dc-auto-2026-07-26_023002` | TODO-013 — workflow-generation scoping | Yes | empty | **DELETED 2026-08-01** (tip `393c662`) |
-| `cloudflare/workers-autoconfig` | *(none — not automation-created)* | **No** | 2 files, +20 | **still pending** — investigated 2026-08-01, recommendation below |
+| `cloudflare/workers-autoconfig` | *(none — not automation-created)* | **No** | 2 files, +20 | **DELETED 2026-08-01** (tip `4749560`) — owner-approved; `.dev.vars*` extracted to `.gitignore` first, `wrangler.jsonc` and the `.env.*`-dropping .gitignore rewrite deliberately discarded |
 | `master` / `HEAD` | — | — | — | leave alone (`HEAD` is a symref to `master`) |
 
 **Pre-deletion re-verification (2026-08-01).** For the 7 merged branches,
@@ -790,6 +790,170 @@ branch off current `master`, validated, and merged via
 itself was never merged and remains as historical record per the branch-
 retention rule. TODO-003 is now moved to `TODO_LIST.md`'s `## Completed`
 section with the full explanation. No further action needed on this item.
+
+---
+
+## Security audit 2026-08-01 — Anthropic key end-to-end + adjacent risks
+
+Owner-directed preventive audit (no incident; console usage checked clean by
+the owner). Scope: key storage, key transit, Worker abuse surface, notebook
+mirror injection, repo settings. **Bottom line: the key cannot leak through
+the Worker today** — but it exists in a second place nobody is using, and the
+Worker's spend controls are weaker than their names suggest.
+
+**Fixed immediately this session** (no owner sign-off needed, both trivial):
+
+- `.dev.vars*` + `!.dev.vars.example` added to `.gitignore`. `.dev.vars` is how
+  `wrangler dev` supplies Worker secrets locally and was **not** matched by the
+  existing `.env.*` rule — a local `.dev.vars` holding the real key would have
+  been committable. Verified both directions: a probe `cloudflare-worker/.dev.vars`
+  is now ignored, and `.env.cloudflare` still is. No `.dev.vars` exists locally
+  and none was ever committed (`git log --all --diff-filter=A` over
+  `*.dev.vars*`: zero results).
+- `cloudflare/workers-autoconfig` deleted after extracting that one line (tip
+  recorded in the inventory table above). The rest of its `.gitignore` rewrite
+  was deliberately discarded — it was based on a pre-`.env.*` version and would
+  have **un-ignored `.env.cloudflare`**.
+
+### SEC-01 — `ANTHROPIC_API_KEY` is a GitHub Actions secret with zero consumers — **HIGH**
+
+`gh secret list` shows four repo secrets. Only `NOTEBOOKX_READ_TOKEN` is
+referenced by any workflow (`notebook-sync.yml:53`); `ANTHROPIC_API_KEY`
+(added 2026-06-16), `GOOGLE_AI_API_KEY`, and `GROQ_API_KEY` (both 2026-06-13)
+are referenced **nowhere** in `.github/workflows/`. They are leftovers from the
+retired `a779cdd` scheduled-Claude-automation era.
+
+This directly contradicts `worker.js`'s own header comment ("This worker is the
+ONLY place the Anthropic API key exists") and CLAUDE.md's AI Backend section.
+On a **public** repo, any workflow added on any branch — by the owner, by an
+automation run, or via a compromised token — can `echo` a secret into a log or
+POST it outbound. Fork PRs don't receive secrets, which bounds this, but a push
+to any branch does. The secret's value is invisible to me and to this audit;
+whether it matches the live Worker secret is unknown.
+
+**Concrete fix (owner action, ~2 minutes):**
+```
+gh secret delete ANTHROPIC_API_KEY
+gh secret delete GOOGLE_AI_API_KEY
+gh secret delete GROQ_API_KEY
+```
+Then rotate the Anthropic key in the Anthropic console and re-set it as a
+Worker secret only (`wrangler secret put ANTHROPIC_API_KEY`) — deletion removes
+future exposure but not past exposure, and the key has been sitting there since
+June. Rotation is the part that actually closes it. Left undone here because
+deleting repo secrets and rotating a production credential are both outside
+what an unattended/assisted session should do unilaterally.
+
+### SEC-02 — the "global" daily cap is per-isolate, so it is not a real ceiling — **MEDIUM**
+
+`worker.js` `DAILY_GLOBAL_MAX = 1500` is enforced against `dailyCounts`, an
+**in-memory `Map` local to each Worker isolate**. The `ipRequests` rate limiter
+(20/min/IP) carries an honest comment about exactly this limitation; the daily
+counter is described as a "Global circuit breaker" and does not. Cloudflare runs
+many isolates across many edge locations, and each gets its own fresh counter
+(also wiped on cold start), so the true ceiling is `1500 × (isolates reached)`,
+not 1500.
+
+**Concrete fix:** move both counters to a Durable Object (single-instance
+counter, strongly consistent) or KV with TTL. `cloudflare-worker/README.md`
+already names this as the fix for the rate limiter. Until then, at minimum
+rename the constant and correct the comment so the next reader isn't misled —
+a control that reads as a hard cap but isn't is worse than a documented soft one.
+Not applied: Worker changes need owner sign-off and a redeploy.
+
+### SEC-03 — what a forged `Origin` actually buys an attacker, and at what cost — **MEDIUM**
+
+Verified against code, not docs:
+
+- **Origin check**: `request.headers.get('Origin') || ''`, then
+  `ALLOWED_ORIGINS.includes(origin)`. A missing `Origin` becomes `''`, which is
+  not in the list → **403**. So plain `curl` with no headers *is* blocked — that
+  part is stronger than expected. But `curl -H "Origin: https://avivnofar.github.io"`
+  passes. The header is trivially forgeable and is not authentication; the code
+  says so itself.
+- **Request size caps — the premise that only `notebook_context` is capped is
+  outdated.** The Worker caps the whole body (6 MB), messages (40 turns, 12k
+  chars each, 60k total), `db_context` (20k chars), `notebook_context` (20k),
+  and images (3 max, 2 MB base64 each, media-type allowlisted). This surface is
+  well covered.
+- **Per-request model limits**: `MAX_TOKENS = 1536` output, `web_search` capped
+  at `max_uses: 3`.
+- **Turnstile**: implemented and fails closed, but **dormant unless
+  `TURNSTILE_SECRET` is set**. I cannot see Cloudflare secrets from here —
+  **owner should confirm whether it is set**. If it is, most of this finding
+  collapses; if not, the Origin header is the only gate.
+
+**Cost per hour, worst case.** Max-size request ≈ 45k input tokens (system
+prompt + 20k-char `db_context` + 20k-char `notebook_context` + 60k chars of
+messages + 3 high-res images) and 1536 output tokens. At `claude-sonnet-5`
+introductory pricing ($2/$10 per MTok through 2026-08-31; $3/$15 after) plus
+3 web searches at ~$10/1k searches: **≈ $0.13 per request** — roughly $0.16
+once intro pricing ends. One IP against one isolate: 20/min → ~$160/hour until
+that isolate's 1500/day cap trips (~75 min, ~$200). A distributed caller
+rotating IPs across edge locations multiplies both numbers by the isolate count
+(SEC-02), so the real daily ceiling is not bounded by anything I can compute
+from the code. **This is a finding, not a fix** — per instruction, no Worker
+changes were made.
+
+**Concrete fix, cheapest first:** (1) set `TURNSTILE_SECRET` — the code path
+already exists and is dormant, so this is config, not code; (2) fix SEC-02 so
+the daily cap is real; (3) consider trimming `MAX_IMAGES`/`MAX_IMAGE_B64_CHARS`,
+which dominate the per-request input cost.
+
+### SEC-04 — notebook mirror is unsanitized prompt input — **LOW (report only)**
+
+`notebook_context` is appended to the system prompt under a plain-text header
+(`NOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old): …`) with no
+structural delimiter, no escaping, and no sanitization anywhere in the path —
+not in `sync-notebooks.js`, not in `buildNotebookContext()`, not in the Worker.
+The mirror auto-updates weekly by committing directly to master, so a malicious
+or compromised notebook section could plausibly carry text that reads as
+instructions and redirect the assistant's behaviour or its citations. Severity
+is genuinely low today: the source repo is the owner's own private Notebook-X,
+the sync token is read-only, and the Worker exposes no dangerous tools — the
+worst realistic outcome is a wrong or attacker-chosen answer, not an action.
+Worth revisiting only if the Worker ever gains tools with side effects, or if
+notebook content ever comes from a third party. Cheap hardening if wanted:
+wrap the block in explicit delimiters and state that its content is reference
+data, never instructions.
+
+### SEC-05 — repo settings pass (read-only) — **INFORMATIONAL**
+
+- **Secret scanning: enabled. Push protection: enabled.** Good — this is the
+  control that would have blocked an accidental key commit. (`validity_checks`
+  and `non_provider_patterns` are off; `dependabot_security_updates` off, which
+  is moot with zero dependencies.)
+- **Actions are pinned to floating major tags**, not SHAs: `actions/checkout@v4`,
+  `actions/setup-node@v4`, `actions/github-script@v7`. `sha_pinning_required`
+  is `false` at the repo level. These are first-party GitHub actions, so the
+  supply-chain risk is low, but a compromised tag would execute in a workflow
+  that has `issues: write` (and `contents: write` on changelog/notebook-sync).
+  SHA pinning is the standard hardening if the owner wants it.
+- **Repo secrets**: see SEC-01. Only `NOTEBOOKX_READ_TOKEN` has a purpose
+  (read-only fine-grained PAT for the weekly notebook mirror); the other three
+  are orphaned.
+
+### Verified clean
+
+- **No `sk-ant-` key material anywhere.** Current tree: the only matches are a
+  detector regex in `spec-drift-check.js`, a deliberately fake self-test string,
+  a fake test key in the untracked `audits/` folder, and prior audit write-ups.
+  History: `git log --all -S'sk-ant'` returns exactly one commit — `0d98ed8`,
+  which *added the detector*. Confirms the earlier audits' "zero hits".
+- **`.env.cloudflare` holds only `CLOUDFLARE_API_TOKEN=paste-token-here`** — a
+  placeholder, not a real token, and not even the Anthropic key. Untracked and
+  gitignored via `.env.*`.
+- **The key cannot reach a response.** Read `worker.js` end-to-end for this
+  specifically. `env.ANTHROPIC_API_KEY` is referenced exactly once, in the
+  `x-api-key` request header to `api.anthropic.com`. Error paths checked
+  individually: the `fetch` catch returns `err.message` (a Worker-side network
+  error, never carries request headers); the `!ok` branch echoes
+  `errBody.error.message` from Anthropic's response body, which does not contain
+  the key, and 401 is replaced with the fixed string `'API key issue'` before
+  reaching the client; `console.log` emits metadata only (salted SHA-256 IP
+  digest, mode, language, counts) and no request headers or body content; CORS
+  headers are a fixed set. There is no debug flag, no header pass-through, and
+  no path that serializes `env`.
 
 ---
 
