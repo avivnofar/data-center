@@ -118,6 +118,353 @@ this is safe to delete too; nothing on `master` references it.
 
 ---
 
+## Disabled workflows + cloudflare branch — investigation
+
+*(investigated 2026-08-01 by a directed session. **Report only — nothing was
+enabled, fixed, or deleted.** Every YAML was read in full and every script it
+calls was executed locally to get real exit codes rather than inferred ones.)*
+
+`gh workflow list --all` shows 5 workflows `disabled_manually`. The question
+put to this session was whether any are office-AI-agents leftovers, and which
+are safe to re-enable given an operating reality of near-zero maintenance
+time — where "safe" means failures are visible but never urgent, and nothing
+writes code or content on its own.
+
+### Decide by reading only this table
+
+| # | Item | Classification | The one thing that decides it |
+|---|---|---|---|
+| 1 | `validate.yml` | **SAFE-AS-IS** | Read-only; blocks nothing; failures surface on the commit/PR itself, not just the Actions tab. Re-enable today. |
+| 2 | `link-check.yml` | **SAFE-AS-IS** | Read-only; already dedupes *and* auto-closes its issue. Will open one issue immediately — 2 URLs really are dead. |
+| 3 | `health.yml` | **NEEDS-SMALL-FIX-FIRST** | Missing the dedup guard its sibling has — opens a **new** issue every Monday, forever, and never closes any. |
+| 4 | `monthly-review.yml` | **NEEDS-SMALL-FIX-FIRST** | Its grep can never match the row format this repo actually uses. Silently green forever. |
+| 5 | `changelog.yml` | **NEEDS-SMALL-FIX-FIRST** | The only one of the 5 that writes to `master`. Races the twice-daily automation's pushes with no rebase or retry. |
+| 6 | `cloudflare/workers-autoconfig` | **extract-one-line-then-delete** | Superseded hosting config. Salvage `.dev.vars*` for `.gitignore`, then delete. |
+
+**Office-AI-agents residue: none, in any of the five.** This was the
+suspicion that prompted the investigation, and it does not hold up. A
+case-insensitive scan of all of `.github/` for `office`, `agent-sim`,
+`meeting`, `persona`, `runbook`, `standup`, `employee`, `colleague` returns
+exactly one hit, and it is a false positive — the word "personal" inside a
+comment in `notebook-sync.yml` (which is not one of the five and is currently
+active). Every one of the five references only data-center's own assets:
+`validate-json.js`, `spec-drift-check.js`, `health-check.js`,
+`check-links.js`, `flagged/pending-review.md`, `CHANGELOG.md`.
+
+Their creation history says the same thing: all five were authored by the
+owner on 2026-06-09/06-10 as data-center's original CI, *before* the office
+simulation's own tooling landed. They are not leftovers of a dead project;
+they are this project's CI, switched off.
+
+**Why they are off is a separate question, and the run history answers it:**
+all five were passing green when they stopped. Last successful runs —
+changelog 2026-07-01, validate 2026-07-01, monthly-review 2026-07-01, health
+2026-07-06, link-check 2026-07-07. Nothing was failing. This reads as a
+deliberate blanket switch-off around 2026-07-07, not an abandonment of broken
+jobs.
+
+**Cost, for all five combined: $0.** The repo is public, so GitHub Actions
+minutes on standard runners are free and unmetered. The only external calls
+are link-check's 105 HTTP HEAD/GET requests per day.
+
+---
+
+#### 1. `validate.yml` — SAFE-AS-IS
+
+**What it does.** Triggers on push *and* pull_request to `**` (every branch).
+Checks out, installs Node 20, then runs three steps in order: (a)
+`validate-json.js` — schema, bilingual `*_he`/`*_en` pairs, Hebrew-in-`cmd`
+rejection, approved/blocked domain enforcement; (b) `spec-drift-check.js
+--self-test`; (c) `spec-drift-check.js`.
+
+Step (b) is the interesting one and is worth keeping deliberately: it mutates
+the spec in-memory 11 ways and asserts the checker notices each, so a drift
+checker that silently stopped working can't report green forever. Verified
+locally — all three pass, in well under a second each: 11/11 mutations
+caught, 16 spec claims checked, 0 drifted.
+
+**On failure.** Visible in the right place: the run is attached to the commit
+or PR that caused it, so it shows as a red ✗ next to the commit in the GitHub
+UI and blocks nothing else. This is the one workflow whose failures find you
+rather than waiting in the Actions tab.
+
+**On success-with-problems.** Not applicable — it is pass/fail only. Note
+`validate-json.js` prints advisory warnings (e.g. "6 mirtapbx entries share
+one source_url") without failing; those are informational and stay in the log.
+
+**Why it matters more than it looks.** While this is disabled, Builder
+branches get pushed with no CI validation at all. The Auditor's
+Push-Authorization Checklist item (d) currently re-runs both validators by
+hand precisely because nothing else does. Re-enabling restores the automatic
+first line of defence.
+
+**Cost.** ~30–40s per push. No network beyond the checkout. No API calls.
+
+---
+
+#### 2. `link-check.yml` — SAFE-AS-IS
+
+**What it does.** Daily at 06:00 UTC (plus `workflow_dispatch`). Runs
+`check-links.js` over every unique `source_url` (105 today) with
+`continue-on-error: true`, always writes a summary to the run page, then: on
+failure, opens a `broken-link` issue — **but only if no open one already
+exists** (`if (issues.length > 0) return;`); on success, closes every open
+`broken-link` issue and comments "✅ Resolved — all source URLs are reachable
+again."
+
+That open/close pairing is exactly the shape unattended work wants: one issue
+at a time, self-clearing, no accumulation.
+
+**On failure.** A GitHub Issue — visible outside the Actions tab, and it
+closes itself when fixed.
+
+**On success-with-problems.** It distinguishes real breakage from bot-blocking:
+401/403/429 are reported as warnings and explicitly *not* counted as broken
+(the TODO-014 fix). So a rate-limiting site does not cause a false alarm.
+
+**Heads-up before you re-enable it: it will open an issue on the first run.**
+Executed locally this session — exit code 1, 2 genuinely dead links:
+
+- `https://linux.die.net/man/8/iotop` → 404 (used by `linux.json::iotop`)
+- `https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/net-start`
+  → 404 (used by `cmd.json::net-start-stop`)
+
+Plus 2 rate-limited-not-broken warnings on `rfc-editor.org` (429), correctly
+classified. Both 404s appeared after the workflow's last green run on
+2026-07-07 — which is the argument *for* turning it back on. Fixing the two
+URLs before re-enabling would mean the first run is green.
+
+**Cost.** ~40s and 105 outbound requests per day. Nothing metered.
+
+---
+
+#### 3. `health.yml` — NEEDS-SMALL-FIX-FIRST
+
+**What it does.** Weekly, Monday 08:00 UTC. Runs `health-check.js`
+(`continue-on-error: true`), writes a markdown table of per-module entry
+counts to the run summary, then opens a `data-quality` issue if the check
+step failed. Verified locally: passes clean today, exit 0, both plain and
+`--summary` modes.
+
+**The fix it needs, precisely.** The "Open GitHub Issue on critical failure"
+step has **no duplicate guard**. Compare `link-check.yml`, which opens with:
+
+```js
+const { data: issues } = await github.rest.issues.listForRepo({
+  owner: context.repo.owner, repo: context.repo.repo,
+  state: 'open', labels: 'broken-link',
+});
+if (issues.length > 0) return;
+```
+
+`health.yml` calls `issues.create()` with no such check, and has no
+counterpart to link-check's "Close issue if check passed" step. So a data
+quality problem that isn't fixed the same week produces a fresh issue every
+Monday indefinitely, and none of them ever close — the exact failure mode
+that turns an unattended repo's issue list into noise nobody reads.
+
+**The change:** copy link-check's dedup guard into the create step (with
+`labels: 'data-quality'`), and copy its auto-close step across as well. Both
+are lifts from a sibling file in the same repo, no new logic.
+
+**Also worth cleaning while in there (cosmetic, not blocking).** The run step
+is:
+
+```yaml
+run: |
+  node .github/scripts/health-check.js
+  echo "exit_code=$?" >> $GITHUB_OUTPUT
+```
+
+Under Actions' default `bash -e`, a non-zero exit from the first line aborts
+the step, so the `echo` never runs and `steps.health.outputs.exit_code` is
+never set. It is dead code. Harmless — the workflow correctly gates on
+`steps.health.outcome == 'failure'`, which is evaluated before
+`continue-on-error` is applied — but it misleads anyone reading the file.
+
+**On failure / on problems.** A GitHub Issue, with the duplication caveat
+above. **Cost:** ~30s weekly, no network, no API cost.
+
+---
+
+#### 4. `monthly-review.yml` — NEEDS-SMALL-FIX-FIRST
+
+**What it does.** Monthly, 1st at 08:00 UTC. No Node, no scripts — it checks
+out the repo, greps `flagged/pending-review.md` for pending rows, and opens a
+`source-review` reminder issue if it finds any (with a dedup guard, which
+this one does have).
+
+**The fix it needs, precisely — this workflow currently cannot ever fire.**
+The grep is:
+
+```bash
+if grep -qE '^\| *\[' flagged/pending-review.md; then
+```
+
+That pattern requires a table row beginning with `| [` — i.e. a URL written
+as a markdown link. But the row format this repo actually uses is a **bare
+URL**. From `flagged/approved-sources.md`:
+
+```
+| https://1com.co.il/ | `data/1com.json` (general) | 2026-06-15 — vendor's own site... |
+```
+
+A row in that format starts `| h`, not `| [`, so the pattern misses it. Ran
+the exact grep against the current file this session: `pending=false`. That
+is correct *today* only by accident — `pending-review.md` is an empty table.
+The moment a real entry is added in the repo's own format, the workflow keeps
+reporting `pending=false` and the monthly reminder silently never arrives.
+
+This is the "green forever" failure mode: no red run, no error, just a
+safeguard that quietly does nothing — the same class of bug the spec-drift
+self-test exists to prevent.
+
+**The change:** widen the pattern to match any data row, bare URL or markdown
+link, while still excluding the header and separator lines:
+
+```bash
+if grep -qE '^\|[[:space:]]*(https?://|\[)' flagged/pending-review.md; then
+```
+
+Header `| URL |` starts `| U` and separator `|-----|` starts `|-`, so neither
+matches; both real row formats do.
+
+**On failure.** Nothing meaningful can fail — worst case the checkout fails
+and the run turns red in the Actions tab, which nobody would notice. But
+there is nothing at risk either.
+
+**On success-with-problems.** Opens a `source-review` issue, deduped. No
+auto-close (it is a reminder, so this is defensible — you close it when you
+have done the review).
+
+**Cost.** ~10s once a month. No network, no Node, no API calls. The cheapest
+of the five by a wide margin.
+
+---
+
+#### 5. `changelog.yml` — NEEDS-SMALL-FIX-FIRST
+
+**Read this one against your own stated bar**, because it is the only one of
+the five that fails it as written: *"nothing writes code or content on its
+own."* This workflow writes `CHANGELOG.md` and pushes it to `master`. CLAUDE.md
+already carves it out as an accepted exception ("`changelog.yml` (`CHANGELOG.md`
+only)"), so this is not a new violation — but it is worth re-confirming
+deliberately rather than inheriting.
+
+**What it does.** On every push to `main`/`master`, with `contents: write`:
+checks out full history, collects commits between `github.event.before` and
+`github.sha`, formats them as markdown bullets with commit links, prepends a
+`## [date — sha] (branch)` section directly under the `# Changelog` header,
+then commits as `github-actions[bot]` with `[skip ci]` and pushes. The
+`[skip ci]` tag is what stops it from retriggering itself — that part is
+sound.
+
+**The fix it needs, precisely.** The final step is a bare:
+
+```bash
+git push
+```
+
+with no `git pull --rebase` beforehand, no retry, and no `concurrency:` block
+on the job. When this workflow was last active, `master` received pushes only
+from the owner. That is no longer true: the twice-daily unattended automation
+now pushes `master` (the Auditor's merges, and its unconditional daily
+`DATA_CENTER_AUDIT.md` push), and `notebook-sync.yml` pushes `data/notebooks/`
+weekly. If any of those lands while a changelog run is in flight, the push is
+rejected non-fast-forward, the run goes red in the Actions tab where nobody
+looks, and **that changelog entry is lost permanently** — there is no retry
+and the next run only covers its own `before..after` range.
+
+**The change:** add a job-level concurrency group so runs serialise —
+
+```yaml
+concurrency:
+  group: changelog-${{ github.ref }}
+  cancel-in-progress: false
+```
+
+— and make the push resilient, e.g. `git pull --rebase origin "$BRANCH"`
+before `git push`, or a short retry loop. Both are needed: concurrency stops
+changelog runs racing *each other*, the rebase handles the automation pushing
+underneath it.
+
+**Second thing to decide, separate from the fix.** Re-enabling changes what
+`CHANGELOG.md` becomes. Every Auditor run pushes `DATA_CENTER_AUDIT.md` to
+`master` daily, so the changelog will accrue a bot commit plus an audit-
+bookkeeping entry every day, and the file drifts from "what changed in the
+product" toward "what the automation did." If you want it to stay a product
+changelog, it needs a commit-message filter (e.g. skip `chore(automation):`
+and `chore: daily automation audit`) — that is a larger change than the race
+fix and should be a decision, not a default.
+
+**Also note:** `CHANGELOG.md` currently ends at 2026-07-01. Everything since —
+the whole of July, including the Notebook-X mirror, the self-hosted Workflows
+tab, the audit-session fixes, and the automation build-out — is missing.
+Re-enabling does **not** backfill it; the workflow only ever looks at the
+current push's commit range. Backfilling, if wanted, is a separate one-off.
+
+**On failure.** Red run in the Actions tab only, and silent data loss as
+described. **Cost:** ~20s per push to `master`, plus one bot commit per push.
+
+---
+
+### `cloudflare/workers-autoconfig` — recommendation: extract one line, then delete
+
+**What is actually on it.** Single commit `4749560`, 2026-06-09, authored by
+`cloudflare-workers-and-pages[bot]` — machine-generated onboarding output from
+Cloudflare's "connect a repo" flow, not written by the owner and not produced
+by this repo's automation. The complete three-dot diff is two files, +20
+lines, and that is genuinely all of it:
+
+1. **`wrangler.jsonc` (new, root, 14 lines)** — declares a Worker named
+   `data-center` with `assets.directory: "."`, `nodejs_compat`, and
+   observability enabled. It is a *static-asset* Worker serving the whole repo
+   root, which is a different and competing thing from the real
+   `cloudflare-worker/wrangler.toml` (`name = "data-center-api"`, the API
+   proxy with the Anthropic key).
+2. **`.gitignore` (+6 lines, purely additive)** — a `# wrangler files`
+   comment plus `.wrangler`, `.dev.vars*`, `!.dev.vars.example`,
+   `!.env.example`. **Nothing is removed** — see the correction above; the
+   earlier "it deletes `.env.*`" reading was a two-dot-diff artifact.
+
+**What it was trying to do.** Set the repo up to deploy as a Cloudflare
+static-assets Worker. The timing places it in the same week the owner was
+experimenting with Cloudflare deploys for the office-era agent-runner
+(`9e20080`, 2026-06-11) — so it is office-*adjacent* in origin, but its
+content is not office code: it names `data-center` and points at the repo
+root.
+
+**Is any of it unshipped work with remaining value?**
+
+- **The assets Worker: fully superseded, and was never wanted.** Hosting is
+  GitHub Pages (`pages-build-deployment` is active, the live site is
+  `avivnofar.github.io/data-center`), and CLAUDE.md fixes hosting at
+  "GitHub Pages — $0/month". Deploying the repo root as a second static site
+  on `*.workers.dev` would duplicate hosting for no benefit and add a second
+  URL to keep in sync. Nothing on `master` references `wrangler.jsonc` or an
+  assets Worker anywhere. A root `wrangler.jsonc` would also sit in the path
+  of any future `wrangler` invocation in this repo and could be picked up
+  ahead of the real `cloudflare-worker/wrangler.toml` — a small but real
+  foot-gun.
+- **One line is worth keeping: `.dev.vars*`.** `master`'s `.gitignore` covers
+  `.env`, `.env.*`, and `.wrangler/` — but **not** `.dev.vars`, which is
+  wrangler's local-secrets file. Anyone running `wrangler dev` inside
+  `cloudflare-worker/` to test the Worker would produce a
+  `cloudflare-worker/.dev.vars` holding the Anthropic API key, and nothing
+  currently stops it being committed. That is a genuine gap in a repo whose
+  first rule is never to ship credentials, and it costs one line to close.
+  (`!.env.example` / `!.dev.vars.example` are unnecessary — neither file
+  exists here.)
+
+**Recommendation: extract `.dev.vars*` into `.gitignore` on `master`, then
+delete the branch.** The extraction is a one-line commit that stands entirely
+on its own merit and does not require adopting anything else from the branch;
+the branch itself carries nothing else of value and one mild foot-gun. Not
+done in this session — the brief was report-only, and the `.gitignore` line
+should land as its own deliberate change.
+
+---
+
 ## TODO-012 + TODO-013 — two recommendations awaiting your decision
 
 *(added 2026-07-26 by the CLAUDE_AUDIT review — retroactive backfill of
