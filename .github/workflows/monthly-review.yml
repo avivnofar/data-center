@@ -19,7 +19,13 @@ jobs:
       - name: Check for pending sources
         id: check
         run: |
-          if grep -qE '^\| *\[' flagged/pending-review.md; then
+          # Match a table row whose first cell is an actual candidate URL.
+          # The repo writes rows with BARE urls ("| https://... | ... |"), so the
+          # previous pattern ('^\| *\[', a markdown link) never matched anything
+          # and this workflow could never fire. Accepting both forms keeps the
+          # markdown-link style working too. Header ("| URL |") and separator
+          # ("|-----|") rows deliberately do not match.
+          if grep -qE '^\| *(\[|https?://)' flagged/pending-review.md; then
             echo "pending=true" >> "$GITHUB_OUTPUT"
           else
             echo "pending=false" >> "$GITHUB_OUTPUT"
