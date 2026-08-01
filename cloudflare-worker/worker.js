@@ -651,7 +651,16 @@ export default {
           stream: true,
           // Server-side web search — capped per request to bound cost
           // (see CLAUDE.md "Launch Decisions" cost ceiling).
-          tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+          //
+          // _20260209 adds dynamic filtering: Claude writes and runs code that
+          // filters search results before they enter the context window, which
+          // cuts input tokens on search-heavy answers. It works by defaulting
+          // allowed_callers to ["code_execution_20260120"] — the API provisions
+          // that code execution itself, so code_execution must NOT be declared
+          // here (a second execution environment confuses the model, and there
+          // is no extra charge for the provisioned one). Left at the default
+          // deliberately. Requires a 4.6+ model; claude-sonnet-5 qualifies.
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }],
         }),
       });
     } catch (err) {
