@@ -9,6 +9,79 @@ ambiguous design decisions. Autonomous sessions should skip these and work the
 
 ---
 
+## Branch cleanup inventory — report only, nothing merged or deleted
+
+*(compiled 2026-08-01 by a directed session. Nothing on any branch was
+merged, deleted, or modified — this table exists so the cleanup decision can
+be made in the automation chat from real diff evidence rather than guesswork.)*
+
+All 10 remote refs on `origin`, checked against current `master`. "Merged"
+means `git branch -r --merged origin/master` reports the branch's tip as an
+ancestor of `master` — i.e. its diff vs `master` is genuinely empty, not
+merely equivalent.
+
+| Branch | TODO item | Merged into `master`? | Diff vs `master` | Recommendation |
+|---|---|---|---|---|
+| `dc-auto-2026-07-20_125410` | TODO-003 — copy-to-clipboard on usage rows | **No** | 5 files, +145/-1 (3-dot) | **safe-to-delete** — see note below |
+| `dc-auto-2026-07-20_151157` | TODO-004 — bookmark browsing/management panel | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-21_023811` | TODO-014 — `check-links.js` 1COM/MirtaPBX blind spot | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-22_023726` | TODO-016 — contribution guide | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-23_023736` | TODO-017 — `aria-live` on streaming AI chat | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-24_023859` | TODO-001 — suggestion-block parser + UI | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-25_023002` | TODO-012 — slide-generation scoping | Yes | empty | **safe-to-delete** |
+| `dc-auto-2026-07-26_023002` | TODO-013 — workflow-generation scoping | Yes | empty | **safe-to-delete** |
+| `cloudflare/workers-autoconfig` | *(none — not automation-created)* | **No** | 2 files, +20 | **unclear — owner call**, see below |
+| `master` / `HEAD` | — | — | — | leave alone (`HEAD` is a symref to `master`) |
+
+Seven of the eight `dc-auto-*` branches are literal ancestors of `master`
+with a genuinely empty diff. They carry zero unshipped work and exist only
+as historical markers of which Builder run produced which merge.
+
+### `dc-auto-2026-07-20_125410` (TODO-003) — stale, and merging it would be destructive
+
+This is the branch the "TODO-003 branch left for manual review" section below
+describes. Its work **was** shipped, by the isolated-patch route recorded
+there (`b3451b1`), so the branch itself was never merged and its three-dot
+diff still shows the original +145 lines. Verified this session:
+
+- `copyUsageCmd()` on the branch is **byte-identical** to `master`'s, and
+  `usage-copy-btn` markup/CSS/44px-touch-target rule are all present on
+  `master`. Nothing in the `index.html` change is unshipped.
+- Its `automation/NEEDS_YOUR_REVIEW.md` (+21) and `TODO_LIST.md` (+11)
+  additions — the TODO-005–011 pause note and the `## Completed` scaffold —
+  are both on `master` already, in a further-evolved form.
+- Its `DATA_CENTER_RUN_LOG.md` / `state/dc_automation_state.json` additions
+  are superseded by 12 days of later runs.
+
+**Do not merge it.** The branch tip is 12 days behind `master`, so a plain
+merge/`git diff master <branch>` apply would *remove* ~11,500 lines — the
+entire `data/notebooks/` mirror, `sync-notebooks.js`, `spec-drift-check.js`,
+`notebook-sync.yml`, both automation instruction files, the recommendation
+documents, `data/workflows.json` and the `workflows/*.md` files, and the
+`worker.js` Notebook-X changes. It is purely stale: safe to delete, unsafe to
+merge.
+
+### `cloudflare/workers-autoconfig` — unclear, needs an owner decision
+
+Single commit `4749560` (2026-06-09), never merged, not created by this
+repo's automation — it looks like output from a Cloudflare "connect a repo"
+integration. It adds a **root** `wrangler.jsonc` declaring
+`name: "data-center"` with `assets.directory: "."` (a static-asset Worker for
+the whole repo), which is a *different, competing* config from the real
+`cloudflare-worker/wrangler.toml` (`name = "data-center-api"`, the API proxy).
+
+Flagged rather than recommended for deletion because of one side effect worth
+seeing before deciding: its `.gitignore` change **removes** `package-lock.json`,
+`.env.*`, and `audits/`, replacing them with wrangler-specific patterns.
+Dropping `.env.*` would un-ignore the repo's existing local
+`.env.cloudflare` — a token-hygiene regression. Whatever is decided about the
+branch, that `.gitignore` change should not be adopted.
+
+Decide whether the repo ever intends to deploy as an assets Worker. If not,
+this is safe to delete too; nothing on `master` references it.
+
+---
+
 ## TODO-012 + TODO-013 — two recommendations awaiting your decision
 
 *(added 2026-07-26 by the CLAUDE_AUDIT review — retroactive backfill of
