@@ -30,9 +30,13 @@ const MAX_TOTAL_MESSAGE_CHARS = 60000;    // chars across all messages
 const DB_CONTEXT_MAX_CHARS = 20000;       // parity with NOTEBOOK_CONTEXT_MAX_CHARS
 const MAX_IMAGES = 3;                     // matches the vision injection below
 const MAX_IMAGE_B64_CHARS = 2 * 1024 * 1024; // ~1.5 MB decoded, per image
-// Global circuit breaker: total accepted requests per UTC day across this
-// isolate. Previously the daily counter was logged but never enforced.
-const DAILY_GLOBAL_MAX = 1500;
+// Circuit breaker: accepted requests per UTC day, counted PER ISOLATE.
+// This is NOT a global cap. Workers run many independent isolates across edge
+// locations and each keeps its own in-memory counter, so a distributed caller
+// can exceed this by roughly the number of isolates it reaches — see SEC-02 in
+// automation/NEEDS_YOUR_REVIEW.md. A real global ceiling needs a Durable Object
+// or KV with TTL. Previously the daily counter was logged but never enforced.
+const DAILY_MAX_PER_ISOLATE = 300;
 
 const MODEL = 'claude-sonnet-5';
 // 1536 (not 1024) leaves headroom for the required "Relevant commands to
@@ -538,15 +542,16 @@ export default {
     // The counter is CHECKED here (fail fast) but only INCREMENTED immediately
     // before the Anthropic call, further down. Incrementing here instead would
     // have turned this protection into a cheap denial-of-service: a caller
-    // could burn all DAILY_GLOBAL_MAX slots with requests that get rejected
+    // could burn all DAILY_MAX_PER_ISOLATE slots with requests that get rejected
     // later in validation — costing them nothing, costing Anthropic nothing,
     // and taking the site down for the rest of the day. The cap exists to
     // bound spend, so it must count spend events, not arrivals.
     const todayKey = new Date().toISOString().split('T')[0];
     const dayEntry = dailyCounts.get(todayKey) || { count: 0 };
-    if (dayEntry.count >= DAILY_GLOBAL_MAX) {
+    if (dayEntry.count >= DAILY_MAX_PER_ISOLATE) {
       console.log(JSON.stringify({
-        event: 'daily_cap_reached', date: todayKey, cap: DAILY_GLOBAL_MAX,
+        event: 'isolate_daily_cap_reached', date: todayKey,
+        cap_per_isolate: DAILY_MAX_PER_ISOLATE,
       }));
       return jsonResponse({
         error: 'rate_limit',
@@ -617,14 +622,14 @@ export default {
       has_images: !!(images && images.length),
       db_context_chars: (db_context || '').length,
       notebook_context_chars: (notebook_context || '').length,
-      daily_count: dayEntry.count,
+      isolate_daily_count: dayEntry.count,
     }));
 
     if (dayEntry.count % 10 === 0) {
       console.log(JSON.stringify({
-        event: 'daily_milestone',
+        event: 'isolate_daily_milestone',
         date: todayKey,
-        total_calls: dayEntry.count,
+        isolate_total_calls: dayEntry.count,
       }));
     }
 

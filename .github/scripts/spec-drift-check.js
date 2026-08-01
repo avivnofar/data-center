@@ -158,10 +158,10 @@ const claims = [
   },
   {
     id: 'worker-daily-cap-enforced',
-    claim: 'The Worker enforces a global daily request ceiling (not just logs one)',
+    claim: 'The Worker enforces a per-isolate daily request ceiling (not just logs one)',
     check: () => {
       const s = read('cloudflare-worker/worker.js');
-      return hasIdent(s, 'DAILY_GLOBAL_MAX') && /dayEntry\.count\s*>=\s*DAILY_GLOBAL_MAX/.test(s);
+      return hasIdent(s, 'DAILY_MAX_PER_ISOLATE') && /dayEntry\.count\s*>=\s*DAILY_MAX_PER_ISOLATE/.test(s);
     },
   },
   {
@@ -234,7 +234,7 @@ function selfTest() {
     ['zero-dependency-core', 'index.html', (s) => s.replace('<script>', '<script src="https://cdn.example.com/x.js"></script><script>')],
     ['no-issue-filing', 'index.html', (s) => s.replace('<script>', '<script>const u="https://api.github.com/repos/x/y/issues";')],
     ['worker-db-cap', 'cloudflare-worker/worker.js', (s) => s.replace(/DB_CONTEXT_MAX_CHARS/g, 'REMOVED_CAP')],
-    ['worker-daily-cap-enforced', 'cloudflare-worker/worker.js', (s) => s.replace(/dayEntry\.count >= DAILY_GLOBAL_MAX/, 'false')],
+    ['worker-daily-cap-enforced', 'cloudflare-worker/worker.js', (s) => s.replace(/dayEntry\.count >= DAILY_MAX_PER_ISOLATE/, 'false')],
     ['worker-key-server-side-only', 'index.html', (s) => s.replace('<script>', '<script>const k="sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAA";')],
     ['notebook-sync-failure-visible', '.github/workflows/notebook-sync.yml', (s) => s.replace('if: failure()', 'if: always()')],
   ];

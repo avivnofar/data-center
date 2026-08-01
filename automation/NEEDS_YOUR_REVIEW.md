@@ -844,22 +844,35 @@ June. Rotation is the part that actually closes it. Left undone here because
 deleting repo secrets and rotating a production credential are both outside
 what an unattended/assisted session should do unilaterally.
 
-### SEC-02 — the "global" daily cap is per-isolate, so it is not a real ceiling — **MEDIUM**
+### SEC-02 — the "global" daily cap is per-isolate, so it is not a real ceiling — **MEDIUM** — *documentation half RESOLVED 2026-08-01*
 
-`worker.js` `DAILY_GLOBAL_MAX = 1500` is enforced against `dailyCounts`, an
-**in-memory `Map` local to each Worker isolate**. The `ipRequests` rate limiter
-(20/min/IP) carries an honest comment about exactly this limitation; the daily
-counter is described as a "Global circuit breaker" and does not. Cloudflare runs
-many isolates across many edge locations, and each gets its own fresh counter
-(also wiped on cold start), so the true ceiling is `1500 × (isolates reached)`,
-not 1500.
+> **Update 2026-08-01:** the two cheap riders recommended at the end of this
+> document were applied during the `web_search_20260209` redeploy. The constant
+> is now `DAILY_MAX_PER_ISOLATE = 300` (was `DAILY_GLOBAL_MAX = 1500`), the
+> comment states the per-isolate limitation and points back here, and the log
+> fields are `isolate_daily_count` / `isolate_total_calls` /
+> `isolate_daily_cap_reached` / `cap_per_isolate`. The worst case is now
+> `300 × (isolates reached)` instead of `1500 × (isolates reached)`.
+> **Still open:** the structural fix (Durable Object or KV with TTL) and the
+> Anthropic-console spend limit, which is still the highest value-per-effort
+> item and is not a Worker change.
 
-**Concrete fix:** move both counters to a Durable Object (single-instance
-counter, strongly consistent) or KV with TTL. `cloudflare-worker/README.md`
-already names this as the fix for the rate limiter. Until then, at minimum
-rename the constant and correct the comment so the next reader isn't misled —
-a control that reads as a hard cap but isn't is worse than a documented soft one.
-Not applied: Worker changes need owner sign-off and a redeploy.
+The finding as originally written (past tense — the naming half is now fixed):
+
+The daily cap constant was named for a guarantee it did not provide, and was
+enforced against `dailyCounts`, an **in-memory `Map` local to each Worker
+isolate**. The `ipRequests` rate limiter (20/min/IP) carried an honest comment
+about exactly this limitation; the daily counter was described as a "Global
+circuit breaker" and did not. Cloudflare runs many isolates across many edge
+locations, and each gets its own fresh counter (also wiped on cold start), so
+the true ceiling was `cap × (isolates reached)`, never the bare cap.
+
+**Concrete fix — still open.** The naming half is done (see the update above);
+the structural half is not. Move both counters to a Durable Object
+(single-instance counter, strongly consistent) or KV with TTL.
+`cloudflare-worker/README.md` already names this as the fix for the rate
+limiter. The rename lowers the cost of being wrong about this, but it does not
+make the cap global — it only stops the code from claiming to be.
 
 ### SEC-03 — what a forged `Origin` actually buys an attacker, and at what cost — **MEDIUM**
 
@@ -889,11 +902,12 @@ messages + 3 high-res images) and 1536 output tokens. At `claude-sonnet-5`
 introductory pricing ($2/$10 per MTok through 2026-08-31; $3/$15 after) plus
 3 web searches at ~$10/1k searches: **≈ $0.13 per request** — roughly $0.16
 once intro pricing ends. One IP against one isolate: 20/min → ~$160/hour until
-that isolate's 1500/day cap trips (~75 min, ~$200). A distributed caller
-rotating IPs across edge locations multiplies both numbers by the isolate count
-(SEC-02), so the real daily ceiling is not bounded by anything I can compute
-from the code. **This is a finding, not a fix** — per instruction, no Worker
-changes were made.
+that isolate's daily cap trips. **Updated 2026-08-01:** with the cap lowered
+from 1500 to 300 (see SEC-02), that trip point moved from ~75 min / ~$200 to
+~15 min / ~$40 per isolate. A distributed caller rotating IPs across edge
+locations still multiplies this by the isolate count (SEC-02), so the real
+daily ceiling is still not bounded by anything computable from the code — the
+per-isolate worst case is simply 5× cheaper than it was.
 
 **Concrete fix, cheapest first:** (1) set `TURNSTILE_SECRET` — the code path
 already exists and is dormant, so this is config, not code; (2) fix SEC-02 so
@@ -1060,12 +1074,16 @@ monthly spend limit and a budget alert on the Anthropic key in the console.
 That is fire-and-forget, bounds worst case absolutely regardless of how many
 isolates exist, needs no redeploy, and is the single highest value-per-effort
 item here. If a redeploy happens anyway for another reason, two cheap riders are
-worth including: lower `DAILY_GLOBAL_MAX` from 1500 — personal usage is nowhere
+worth including: lower the daily cap from 1500 — personal usage is nowhere
 near it, so cutting it to ~300 costs nothing real and reduces the worst case
 about fivefold — and rename it to `DAILY_MAX_PER_ISOLATE` with a corrected
 comment, which is SEC-02's documentation half and the part that stops the next
 reader from trusting a cap that isn't one. Neither is urgent enough to justify a
 deploy on its own.
+
+**Both riders were applied 2026-08-01**, on exactly the occasion described here:
+a redeploy that was happening anyway (the `web_search_20260209` tool upgrade).
+The Anthropic-console spend limit above remains the open, higher-value item.
 
 ---
 
