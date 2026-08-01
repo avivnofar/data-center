@@ -795,8 +795,8 @@
     "sec": true,
     "desc_he": "מפעילה ומכבה <span class=\"ltr-term\">Windows services</span> משורת הפקודה, ומציגה רשימת services שרצים כרגע.",
     "desc_en": "Start and stop Windows services from the command line, and list services that are currently running.",
-    "source_url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/net-start",
-    "source_name": "Microsoft Docs — Windows Commands",
+    "source_url": "https://ss64.com/nt/net_service.html",
+    "source_name": "SS64 — NET START / NET STOP",
     "usage": [
       {"cmd": "net start", "cmt_he": "הצג את כל ה-services הפעילים כעת", "cmt_en": "List all services that are currently running"},
       {"cmd": "net start \"Print Spooler\"", "cmt_he": "הפעל service לפי שם — מרכאות נדרשות לשם עם רווחים", "cmt_en": "Start a service by name — quotes required for names with spaces"},

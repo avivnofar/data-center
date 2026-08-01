@@ -2008,8 +2008,8 @@
     "sec": false,
     "desc_he": "מוניטור בזמן אמת המציג אילו תהליכים צורכים הכי הרבה <span class=\"ltr-term\">disk I/O</span> — כמו <code>top</code> אך לדיסק.",
     "desc_en": "A real-time monitor showing which processes are consuming the most disk I/O — like top, but for disk activity.",
-    "source_url": "https://linux.die.net/man/8/iotop",
-    "source_name": "Linux man page (linux.die.net)",
+    "source_url": "https://man7.org/linux/man-pages/man8/iotop.8.html",
+    "source_name": "man7.org — iotop(8)",
     "usage": [
       {"cmd": "sudo iotop", "cmt_he": "תצוגה אינטראקטיבית של כל תהליכי ה-I/O, ממוינים לפי צריכה", "cmt_en": "Interactive view of all I/O-active processes, sorted by usage"},
       {"cmd": "sudo iotop -o", "cmt_he": "הצג רק תהליכים שמייצרים I/O בפועל כרגע", "cmt_en": "Show only processes actually doing I/O right now"},
