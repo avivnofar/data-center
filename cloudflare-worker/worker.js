@@ -130,7 +130,8 @@ async function hashIp(ip, salt) {
  * nothing changes, so deploying this file alone cannot break the live app. Once
  * the secret exists, a valid turnstile_token becomes mandatory on every request,
  * which is what stops a scripted non-browser caller from spending the Anthropic
- * budget. See cloudflare-worker/README.md for the two-step enablement.
+ * budget. See "Turnstile — two-step enablement" in cloudflare-worker/README.md
+ * (frontend sends tokens first, secret second — it fails closed).
  */
 async function verifyTurnstile(token, secret, ip) {
   if (!secret) return null; // feature not enabled — no behavior change
