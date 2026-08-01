@@ -9,35 +9,56 @@ ambiguous design decisions. Autonomous sessions should skip these and work the
 
 ---
 
-## Branch cleanup inventory — report only, nothing merged or deleted
+## Branch cleanup inventory — 8 branches DELETED 2026-08-01
 
-*(compiled 2026-08-01 by a directed session. Nothing on any branch was
-merged, deleted, or modified — this table exists so the cleanup decision can
-be made in the automation chat from real diff evidence rather than guesswork.)*
+*(compiled 2026-08-01 by a directed session; **executed 2026-08-01** by a
+follow-up directed session with owner + architect pre-approval. Every branch
+was re-verified against the evidence below immediately before deletion — all
+8 still matched their row exactly, so none were skipped.)*
 
 All 10 remote refs on `origin`, checked against current `master`. "Merged"
 means `git branch -r --merged origin/master` reports the branch's tip as an
 ancestor of `master` — i.e. its diff vs `master` is genuinely empty, not
 merely equivalent.
 
-| Branch | TODO item | Merged into `master`? | Diff vs `master` | Recommendation |
+| Branch | TODO item | Merged into `master`? | Diff vs `master` | Status |
 |---|---|---|---|---|
-| `dc-auto-2026-07-20_125410` | TODO-003 — copy-to-clipboard on usage rows | **No** | 5 files, +145/-1 (3-dot) | **safe-to-delete** — see note below |
-| `dc-auto-2026-07-20_151157` | TODO-004 — bookmark browsing/management panel | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-21_023811` | TODO-014 — `check-links.js` 1COM/MirtaPBX blind spot | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-22_023726` | TODO-016 — contribution guide | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-23_023736` | TODO-017 — `aria-live` on streaming AI chat | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-24_023859` | TODO-001 — suggestion-block parser + UI | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-25_023002` | TODO-012 — slide-generation scoping | Yes | empty | **safe-to-delete** |
-| `dc-auto-2026-07-26_023002` | TODO-013 — workflow-generation scoping | Yes | empty | **safe-to-delete** |
-| `cloudflare/workers-autoconfig` | *(none — not automation-created)* | **No** | 2 files, +20 | **unclear — owner call**, see below |
+| `dc-auto-2026-07-20_125410` | TODO-003 — copy-to-clipboard on usage rows | **No** | 5 files, +145/-1 (3-dot) | **DELETED 2026-08-01** (tip `a6b28bc`) — conscious exception, see note below |
+| `dc-auto-2026-07-20_151157` | TODO-004 — bookmark browsing/management panel | Yes | empty | **DELETED 2026-08-01** (tip `c31fbe8`) |
+| `dc-auto-2026-07-21_023811` | TODO-014 — `check-links.js` 1COM/MirtaPBX blind spot | Yes | empty | **DELETED 2026-08-01** (tip `8a3cde7`) |
+| `dc-auto-2026-07-22_023726` | TODO-016 — contribution guide | Yes | empty | **DELETED 2026-08-01** (tip `8675b9c`) |
+| `dc-auto-2026-07-23_023736` | TODO-017 — `aria-live` on streaming AI chat | Yes | empty | **DELETED 2026-08-01** (tip `7cd4ff2`) |
+| `dc-auto-2026-07-24_023859` | TODO-001 — suggestion-block parser + UI | Yes | empty | **DELETED 2026-08-01** (tip `411ea6e`) |
+| `dc-auto-2026-07-25_023002` | TODO-012 — slide-generation scoping | Yes | empty | **DELETED 2026-08-01** (tip `488ddcd`) |
+| `dc-auto-2026-07-26_023002` | TODO-013 — workflow-generation scoping | Yes | empty | **DELETED 2026-08-01** (tip `393c662`) |
+| `cloudflare/workers-autoconfig` | *(none — not automation-created)* | **No** | 2 files, +20 | **still pending** — investigated 2026-08-01, recommendation below |
 | `master` / `HEAD` | — | — | — | leave alone (`HEAD` is a symref to `master`) |
 
-Seven of the eight `dc-auto-*` branches are literal ancestors of `master`
-with a genuinely empty diff. They carry zero unshipped work and exist only
+**Pre-deletion re-verification (2026-08-01).** For the 7 merged branches,
+`git merge-base origin/master origin/<branch>` was confirmed equal to the
+branch tip and the 3-dot diff confirmed literally 0 lines — so each carried
+zero unshipped work. For `dc-auto-2026-07-20_125410`, the three components
+of its only substantive change were byte-compared against `master` and all
+three are identical there: `copyUsageCmd()`, the `.usage-copy-btn` CSS block
+(including the 44px mobile touch-target rule), and the `<button
+class="usage-copy-btn">` markup line. Its destructive-if-merged property was
+also re-confirmed: a naive 2-dot apply would have deleted 11,622 lines,
+including all 12 `data/notebooks/*.json` files, `sync-notebooks.js`,
+`spec-drift-check.js`, `notebook-sync.yml`, `data/workflows.json` and the
+`workflows/*.md` files.
+
+Tip SHAs are recorded above so any branch can be restored with
+`git push origin <sha>:refs/heads/<name>` while the objects remain in
+GitHub's reflog window.
+
+**Remaining remote refs after cleanup:** `master`, `HEAD`, and
+`cloudflare/workers-autoconfig`.
+
+Seven of the eight `dc-auto-*` branches were literal ancestors of `master`
+with a genuinely empty diff. They carried zero unshipped work and existed only
 as historical markers of which Builder run produced which merge.
 
-### `dc-auto-2026-07-20_125410` (TODO-003) — stale, and merging it would be destructive
+### `dc-auto-2026-07-20_125410` (TODO-003) — stale, and merging it would have been destructive
 
 This is the branch the "TODO-003 branch left for manual review" section below
 describes. Its work **was** shipped, by the isolated-patch route recorded
@@ -58,8 +79,17 @@ merge/`git diff master <branch>` apply would *remove* ~11,500 lines — the
 entire `data/notebooks/` mirror, `sync-notebooks.js`, `spec-drift-check.js`,
 `notebook-sync.yml`, both automation instruction files, the recommendation
 documents, `data/workflows.json` and the `workflows/*.md` files, and the
-`worker.js` Notebook-X changes. It is purely stale: safe to delete, unsafe to
+`worker.js` Notebook-X changes. It was purely stale: safe to delete, unsafe to
 merge.
+
+**Deleted 2026-08-01** (tip `a6b28bc`) as a deliberate, architect-approved
+exception to the branch-retention rule that the "Resolution" note further
+down this file invoked when it kept the branch as historical record. The
+exception was granted because the branch's historical value is nil (its work
+is byte-identical on `master`) while its risk is real and ongoing (a
+mistaken merge silently deletes the notebooks mirror and the sync
+infrastructure). The audit trail it represented lives on in this file and in
+`b3451b1`.
 
 ### `cloudflare/workers-autoconfig` — unclear, needs an owner decision
 
@@ -70,15 +100,21 @@ integration. It adds a **root** `wrangler.jsonc` declaring
 the whole repo), which is a *different, competing* config from the real
 `cloudflare-worker/wrangler.toml` (`name = "data-center-api"`, the API proxy).
 
-Flagged rather than recommended for deletion because of one side effect worth
-seeing before deciding: its `.gitignore` change **removes** `package-lock.json`,
-`.env.*`, and `audits/`, replacing them with wrangler-specific patterns.
-Dropping `.env.*` would un-ignore the repo's existing local
-`.env.cloudflare` — a token-hygiene regression. Whatever is decided about the
-branch, that `.gitignore` change should not be adopted.
-
 Decide whether the repo ever intends to deploy as an assets Worker. If not,
 this is safe to delete too; nothing on `master` references it.
+
+> **Correction (2026-08-01).** This section previously claimed the branch's
+> `.gitignore` change *removes* `package-lock.json`, `.env.*`, and `audits/`,
+> and that adopting it would un-ignore `.env.cloudflare` — a token-hygiene
+> regression. **That claim was wrong, and it should not influence the
+> decision.** It came from reading a two-dot diff (`git diff master
+> <branch>`), which attributes *`master`'s own later additions* to the branch
+> as deletions. The branch's real change (three-dot diff) is **purely
+> additive**: six lines of wrangler patterns and nothing removed. The
+> `.env.*` rule did not exist when the branch was cut on 2026-06-09 — it was
+> added to `master` two days later by `9e20080` (2026-06-11). A genuine
+> `git merge` would three-way merge against that base and preserve `.env.*`
+> intact. See the full investigation below for the corrected recommendation.
 
 ---
 
