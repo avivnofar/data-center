@@ -383,7 +383,7 @@ For all AI-suggested sources (AI Search, `LEARNED_SOURCE` blocks):
 | `link-check.yml` | daily 06:00 UTC | Checks every `source_url` is reachable (`check-links.js`); opens/closes a `broken-link` issue |
 | `health.yml` | weekly, Mon 08:00 UTC | Data quality + Hebrew QA (`health-check.js`); opens a `data-quality` issue on critical failure |
 | `monthly-review.yml` | monthly, 1st @ 08:00 UTC | Opens a `source-review` issue if `flagged/pending-review.md` has unreviewed entries |
-| `notebook-sync.yml` | weekly, Sun 05:00 UTC | Mirrors Notebook-X's index + notebooks into `data/notebooks/` (`sync-notebooks.js`); commits directly to master only if content actually changed |
+| `notebook-sync.yml` | weekly, Mon 05:00 UTC | Mirrors Notebook-X's index + notebooks into `data/notebooks/` (`sync-notebooks.js`); commits directly to master only if content actually changed |
 | `changelog.yml` | on push to master | Auto-generates `CHANGELOG.md` |
 
 All scheduled workflows also support `workflow_dispatch`. All require only

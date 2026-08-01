@@ -7,9 +7,29 @@ name: Notebook-X Mirror Sync
 # it manually under Settings → Secrets and variables → Actions — this
 # workflow never requests or handles the token value itself.
 
+#
+# Deliberately NOT checked here: index staleness ("_index-public.json's
+# updatedAt is older than N weeks"). Considered and rejected as
+# over-engineering, 2026-08-01 — reasoning recorded so it isn't re-litigated:
+#   * Every failure mode this sync actually has — missing/expired token,
+#     upstream schema change, rate limit, unparseable JSON — already makes
+#     sync-notebooks.js exit non-zero, which the failure step below surfaces
+#     into NEEDS_YOUR_REVIEW.md. A staleness check adds no coverage there.
+#   * The only gap it would cover is "sync succeeds, but Notebook-X itself
+#     stopped being updated" — which is not a fault and not this repo's
+#     problem. Notebook-X is a personal knowledge base; quiet weeks are
+#     normal, expected behaviour.
+#   * It would fire on healthy data today: the mirrored index's updatedAt is
+#     2026-07-17, already ~2 weeks old with nothing wrong. An alarm that
+#     cries wolf on a healthy mirror trains the owner to ignore the same
+#     file where real sync failures are reported — it would actively make
+#     failure visibility worse, not better.
+# Revisit only if a failure mode is ever observed that exits 0 while leaving
+# data/notebooks/ stale.
+#
 on:
   schedule:
-    - cron: "0 5 * * 0"   # Every Sunday at 05:00 UTC
+    - cron: "0 5 * * 1"   # Every Monday at 05:00 UTC (quiet hour, owner preference)
   workflow_dispatch:        # Allow manual trigger
 
 jobs:
