@@ -18,7 +18,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:22.590915Z",
-  "updatedAt": "2026-07-17T00:00:00.000000Z",
+  "updatedAt": "2026-08-03T08:19:54.187877Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -99,7 +99,13 @@
         "title": "Cloudflare",
         "content": "### Cloudflare\n\nCloudflare sits in front of a site/app as a reverse proxy, CDN, and edge platform — DNS for a domain is delegated to Cloudflare's nameservers, and traffic to the origin is proxied (orange-cloud icon in the DNS dashboard) rather than pointing directly at the origin IP.\n\n#### DNS & Proxy Modes\nA DNS record can be **Proxied** (orange cloud — traffic routes through Cloudflare's edge, hides the origin IP, enables CDN/WAF/DDoS protection) or **DNS only** (grey cloud — plain DNS resolution, origin IP exposed directly, no edge features). Records needed for direct server access (e.g. SSH, a mail server's MX-pointed A record) are typically kept DNS-only; web traffic is proxied.\n\n#### SSL/TLS Modes (SSL/TLS > Overview)\n*   **Off:** No encryption — avoid.\n*   **Flexible:** Encrypts browser-to-Cloudflare only; Cloudflare-to-origin is plain HTTP. Common cause of redirect loops if the origin also tries to force HTTPS.\n*   **Full:** Encrypts both hops; origin can use a self-signed cert.\n*   **Full (strict):** Encrypts both hops and validates the origin's certificate is valid/trusted — the recommended production setting.\n\n#### WAF & Firewall Rules\nCloudflare's WAF (Security > WAF) applies managed rulesets (OWASP core ruleset, Cloudflare managed rules) plus custom rules matched on request fields (IP, ASN, country, User-Agent, URI path). Rate limiting rules throttle by IP/path — useful against credential-stuffing or scraping without needing app-level rate limiting.\n\n#### Cloudflare Tunnel (cloudflared)\nExposes an internal service to the internet without opening any inbound firewall port — a lightweight `cloudflared` daemon runs next to the service and establishes an outbound-only connection to Cloudflare's edge.\n```bash\ncloudflared tunnel login                         # authenticate, links to your Cloudflare account\ncloudflared tunnel create mytunnel                # create a named tunnel\ncloudflared tunnel route dns mytunnel app.example.com   # bind a hostname to the tunnel\ncloudflared tunnel run mytunnel                    # start the tunnel\n```\n\n#### Page Rules / Cache\nCache behavior can be tuned per-URL pattern (Rules > Page Rules, or the newer Cache Rules) — e.g. \"Cache Everything\" for static assets, or \"Bypass Cache\" for an API path. A common gotcha: purging cache (Caching > Configuration > Purge Everything) is sometimes needed after a deploy if stale content persists at the edge longer than expected.\n\n#### Common operational checks\n`dig +short example.com` to confirm the resolved IP is a Cloudflare edge IP (proxied) vs the real origin (DNS-only); Cloudflare's dashboard Analytics tab for traffic/threat volume; SSL/TLS mode mismatch is the single most common cause of a Cloudflare-fronted site returning redirect loops or 521/522/525 errors — 521/522 typically mean Cloudflare can't reach the origin at all (origin down or firewall blocking Cloudflare's IP ranges), 525 means an SSL handshake failure between Cloudflare and the origin.",
         "subsections": [],
-        "tags": ["cloudflare", "cdn", "dns", "waf", "tunnel"],
+        "tags": [
+          "cloudflare",
+          "cdn",
+          "dns",
+          "waf",
+          "tunnel"
+        ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
         "sources": []
       },
@@ -108,9 +114,24 @@
         "title": "Google Cloud Console & Developer Tools",
         "content": "### Google Cloud Console & Developer Tools\n\nGoogle Cloud (GCP) organizes resources hierarchically: Organization > Folders > Projects > Resources. A **Project** is the base container for billing, APIs, and IAM — almost everything (a VM, a bucket, an API key) belongs to exactly one project.\n\n#### Console Navigation Basics\nThe Cloud Console's left-hand nav groups services by category (Compute, Storage, Networking, AI/ML, etc.). The top search bar (press `/`) is the fastest way to jump to a specific service or resource by name rather than navigating menus. **IAM & Admin > IAM** is where per-project role bindings (who can do what) are managed — a common early mistake is granting broad roles like `Editor`/`Owner` instead of a narrower predefined or custom role.\n\n#### gcloud CLI (the primary developer tool)\n```bash\ngcloud auth login                              # authenticate an interactive user\ngcloud auth application-default login           # credentials for local app/SDK use\ngcloud config set project PROJECT_ID             # set the active project for subsequent commands\ngcloud projects list                              # list accessible projects\ngcloud compute instances list                      # list Compute Engine VMs\ngcloud services enable run.googleapis.com           # enable an API for the current project\ngcloud auth list                                     # show authenticated accounts and the active one\n```\n\n#### Common developer-facing services\n**Cloud Run** — deploy a container without managing servers, scales to zero: `gcloud run deploy SERVICE --image IMAGE_URL --region REGION`.\n**Cloud Storage (gsutil / gcloud storage)** — object storage: `gcloud storage cp file.txt gs://bucket-name/` and `gcloud storage ls gs://bucket-name/`.\n**Cloud Build** — CI pipeline defined in `cloudbuild.yaml`, triggered on a repo push via a configured trigger.\n**Secret Manager** — store credentials/API keys outside source code: `gcloud secrets versions access latest --secret=my-secret`.\n**Service Accounts** — non-human identities for apps/services to call GCP APIs; keep their IAM roles as narrow as the workload actually needs, and prefer Workload Identity Federation over long-lived downloaded JSON key files where possible.\n\n#### Billing & quota basics\nBilling > Budgets & alerts lets you set a spend threshold with email alerts — worth configuring on any project doing generative-AI API calls (e.g. this project's Gemini usage) since usage-based costs can spike quickly without a hard cap. IAM & Admin > Quotas shows per-API rate/usage limits, relevant when a script starts hitting 429 responses from a GCP API.\n\n#### Common pitfalls\nForgetting to run `gcloud config set project` and accidentally acting against the wrong project's resources; an API call failing with a permissions error because the necessary API wasn't enabled for the project yet (`gcloud services enable ...` fixes this); and downloaded service-account JSON keys being committed to a repo by mistake — treat them exactly like a password.",
         "subsections": [],
-        "tags": ["google-cloud", "gcp", "gcloud-cli"],
+        "tags": [
+          "google-cloud",
+          "gcp",
+          "gcloud-cli"
+        ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
         "sources": []
+      },
+      {
+        "id": "strategies-for-managing-environment-specific-configurations",
+        "title": "Strategies for Managing Environment-Specific Configurations",
+        "content": "### Strategies for Managing Environment-Specific Configurations\n\nEffective configuration management requires decoupling application code from environment-specific parameters. Avoid hardcoding values; instead, utilize hierarchical configuration patterns and secret injection.\n\n#### 1. The Twelve-Factor Methodology: Environment Variables\nAdhere to the [Twelve-Factor App](https://12factor.net/config) principle of storing configuration in the environment. For containerized workloads (Kubernetes/Docker), inject configurations via `ConfigMaps` and `Secrets`.\n\n**Kubernetes Implementation:**\nMount configurations as environment variables or files to maintain immutability.\n\n```yaml\n# deployment.yaml\nspec:\n  containers:\n  - name: app\n    envFrom:\n    - configMapRef:\n        name: app-config-prod\n    env:\n    - name: DB_PASSWORD\n      valueFrom:\n        secretKeyRef:\n          name: db-secrets\n          key: password\n```\n\n#### 2. Hierarchical Configuration with Overrides\nUse a layered approach where base configurations are overridden by environment-specific files. Tools like **Helm** (for K8s) or **Kustomize** are industry standards for this.\n\n**Kustomize Pattern:**\nDefine a `base` directory for common settings and `overlays` for environment-specific patches.\n\n```text\n├── base/\n│   ├── deployment.yaml\n│   └── kustomization.yaml\n└── overlays/\n    ├── dev/\n    │   └── kustomization.yaml (patches: replicas: 1)\n    └── prod/\n        └── kustomization.yaml (patches: replicas: 5)\n```\n\n#### 3. Secret Management\nNever commit secrets to version control. Use a dedicated secret manager (e.g., HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault).\n\n*   **Injection Pattern:** Use a sidecar container or a CSI driver to mount secrets as ephemeral volumes.\n*   **Command Example (Vault Agent Injector):**\n    Annotate your deployment to trigger automatic secret injection:\n\n```yaml\nmetadata:\n  annotations:\n    vault.hashicorp.com/agent-inject: \"true\"\n    vault.hashicorp.com/role: \"app-role\"\n    vault.hashicorp.com/agent-inject-secret-config.json: \"secret/data/app/config\"\n```\n\n#### 4. Configuration Templating\nFor non-containerized environments, use templating engines (Jinja2, Helm, or Ansible `template` module) to generate configuration files dynamically during deployment.\n\n**Ansible Example:**\n```yaml\n- name: Deploy config\n  template:\n    src: app.conf.j2\n    dest: /etc/app/app.conf\n  vars:\n    db_host: \"{{ lookup('env', 'DB_HOST') }}\"\n```\n\n#### Best Practices for Precision\n*   **Validation:** Use JSON Schema or Kubeval to validate configuration files against a schema before deployment.\n*   **Immutability:** Treat configurations as immutable artifacts. If a configuration changes, trigger a rolling restart of the service rather than modifying running processes.\n*   **Drift Detection:** Use GitOps controllers (e.g., ArgoCD, Flux) to continuously reconcile the live state with the desired state defined in Git. If manual changes occur, the controller will automatically revert them to the source of truth.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:19:54.187802Z",
+        "sources": [],
+        "dateAdded": "2026-08-03T08:19:54.187840Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -515,6 +536,26 @@
       {
         "command": "gcloud secrets versions access latest --secret=my-secret",
         "description": "Retrieve the latest version of a secret from Google Cloud Secret Manager",
+        "platform": "both"
+      },
+      {
+        "command": "spec:\n  containers:\n  - name: app\n    envFrom:\n    - configMapRef:\n        name: app-config-prod\n    env:\n    - name: DB_PASSWORD\n      valueFrom:\n        secretKeyRef:\n          name: db-secrets\n          key: password",
+        "description": "Kubernetes deployment configuration for environment variables and secrets.",
+        "platform": "both"
+      },
+      {
+        "command": "├── base/\n│   ├── deployment.yaml\n│   └── kustomization.yaml\n└── overlays/\n    ├── dev/\n    │   └── kustomization.yaml (patches: replicas: 1)\n    └── prod/\n        └── kustomization.yaml (patches: replicas: 5)",
+        "description": "Kustomize directory structure for hierarchical configuration overrides.",
+        "platform": "both"
+      },
+      {
+        "command": "metadata:\n  annotations:\n    vault.hashicorp.com/agent-inject: \"true\"\n    vault.hashicorp.com/role: \"app-role\"\n    vault.hashicorp.com/agent-inject-secret-config.json: \"secret/data/app/config\"",
+        "description": "Kubernetes annotations for HashiCorp Vault secret injection.",
+        "platform": "both"
+      },
+      {
+        "command": "- name: Deploy config\n  template:\n    src: app.conf.j2\n    dest: /etc/app/app.conf\n  vars:\n    db_host: \"{{ lookup('env', 'DB_HOST') }}\"",
+        "description": "Ansible task for templating configuration files.",
         "platform": "both"
       }
     ]

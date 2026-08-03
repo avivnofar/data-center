@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-07-10T08:17:14.616101Z",
+  "updatedAt": "2026-08-03T08:19:10.005480Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -170,6 +170,28 @@
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
         "sources": []
+      },
+      {
+        "id": "log-management-and-log-rotation",
+        "title": "Log Management and Log Rotation",
+        "content": "Effective log management prevents disk exhaustion and ensures system observability. Linux environments typically utilize two primary systems: `logrotate` for traditional flat-file logs and `systemd-journald` for binary-indexed system logs.\n\n### Logrotate\n`logrotate` automates the rotation, compression, and removal of log files. It is typically executed daily via a systemd timer or cron job.\n\n*   **Configuration:**\n    *   Global settings: `/etc/logrotate.conf`\n    *   Service-specific rules: `/etc/logrotate.d/`\n*   **Key Directives:**\n    *   `rotate <count>`: Number of rotated files to retain.\n    *   `size <size>`: Rotate if the log exceeds this size (e.g., `100M`).\n    *   `compress`: Gzip rotated logs.\n    *   `copytruncate`: Truncate the original log file in place after creating a copy (essential for services that cannot close/reopen log files).\n    *   `postrotate` / `endscript`: Commands to run after rotation (e.g., `systemctl reload nginx`).\n\n**Example Configuration (`/etc/logrotate.d/myapp`):**\n```text\n/var/log/myapp/*.log {\n    daily\n    rotate 7\n    compress\n    delaycompress\n    missingok\n    notifempty\n    create 0640 myapp myapp\n    postrotate\n        /usr/bin/systemctl reload myapp > /dev/null 2>&1 || true\n    endscript\n}\n```\n*   **Validation:** Test configurations without performing rotation using the debug flag:\n    `logrotate -d /etc/logrotate.d/myapp`\n*   **Force Rotation:** Manually trigger rotation for testing:\n    `logrotate -f /etc/logrotate.d/myapp`\n\n### Systemd Journal\n`journald` captures logs from the kernel, initrd, and services. Logs are stored in a binary format, providing structured, searchable data.\n\n*   **Persistence:** By default, logs may be volatile. To ensure persistence across reboots, ensure the storage directory exists:\n    `mkdir -p /var/log/journal`\n    Then, set `Storage=persistent` in `/etc/systemd/journald.conf` and restart the service: `systemctl restart systemd-journald`.\n*   **Querying (`journalctl`):**\n    *   View all logs: `journalctl`\n    *   Follow logs in real-time: `journalctl -f`\n    *   Filter by service: `journalctl -u <service_name>`\n    *   Filter by time: `journalctl --since \"1 hour ago\"` or `journalctl --until \"2026-08-01\"`\n    *   Filter by priority: `journalctl -p err` (0: emerg, 3: err, 4: warn, 6: info).\n*   **Retention:** Manage disk usage by limiting the journal size in `/etc/systemd/journald.conf`:\n    *   `SystemMaxUse=500M`\n    *   `MaxRetentionSec=1month`\n    *   Apply changes by restarting the service or using `journalctl --vacuum-size=500M` to manually clear old entries.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:18:58.918118Z",
+        "sources": [],
+        "dateAdded": "2026-08-03T08:18:58.918135Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "configuring-log-rotation-and-retention",
+        "title": "Configuring Log Rotation and Retention",
+        "content": "Log rotation is managed via the `logrotate` utility, which automates the archiving, compression, and removal of log files to prevent storage exhaustion.\n\n### Configuration Structure\n*   **Global Configuration:** `/etc/logrotate.conf` defines system-wide defaults.\n*   **Service-Specific Configuration:** Files located in `/etc/logrotate.d/` override global settings. Always create new files here rather than editing the global configuration to ensure maintainability and package compatibility.\n\n### Syntax and Directives\nConfiguration files use a block-based syntax. Directives within the braces apply to the specified log path(s).\n\n```text\n/var/log/myapp/*.log {\n    daily\n    rotate 14\n    compress\n    delaycompress\n    missingok\n    notifempty\n    create 0640 root adm\n    copytruncate\n}\n```\n\n#### Key Directives\n*   **Rotation Triggers:**\n    *   `daily`, `weekly`, `monthly`, `yearly`: Time-based rotation intervals.\n    *   `size <size>`: Rotates when the log exceeds the specified size (e.g., `100M`).\n    *   `maxsize <size>`: Forces rotation if the log exceeds the size, regardless of the time interval.\n*   **Retention and Management:**\n    *   `rotate <count>`: Number of rotated log files to retain before deletion.\n    *   `compress`: Gzip-compresses rotated logs.\n    *   `delaycompress`: Defers compression of the most recent rotated file until the next cycle (useful if a service keeps the file open).\n*   **File Handling:**\n    *   `copytruncate`: Copies the log file and then truncates the original to zero size. Essential for services that cannot close their log file handles.\n    *   `create <mode> <owner> <group>`: Creates a new, empty log file after rotation with specified permissions.\n    *   `missingok`: Prevents errors if the log file is missing.\n    *   `notifempty`: Skips rotation if the log file is empty.\n*   **Execution Hooks:**\n    *   `prerotate` / `postrotate`: Scripts executed before or after the rotation process (must be enclosed in `endscript`).\n\n### Verification and Testing\nTo validate configuration changes without affecting production logs, use the debug flag. This performs a \"dry run\" and outputs the actions `logrotate` would take.\n\n*   **Dry Run:**\n    `logrotate --debug /etc/logrotate.conf`\n*   **Force Rotation:**\n    To test a specific configuration file immediately, bypassing time-based triggers:\n    `logrotate -f /etc/logrotate.d/<service_name>`\n*   **Verbose Execution:**\n    `logrotate -v /etc/logrotate.d/<service_name>`\n\n### Operational Notes\n*   **Permissions:** Ensure the user running `logrotate` has write access to the log directory. If the service runs as a non-root user, use the `su <user> <group>` directive within the configuration block to ensure the new log file is created with correct ownership.\n*   **Scheduling:** `logrotate` is typically invoked by a systemd timer (`logrotate.timer`) or a cron job (`/etc/cron.daily/logrotate`). If using `hourly` rotation, ensure the system scheduler is configured to trigger the utility at that frequency.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:19:10.005425Z",
+        "sources": [],
+        "dateAdded": "2026-08-03T08:19:10.005441Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -456,6 +478,81 @@
         "tags": [
           "users"
         ]
+      },
+      {
+        "command": "logrotate -d /etc/logrotate.d/myapp",
+        "description": "Test logrotate configurations without performing rotation",
+        "platform": "linux"
+      },
+      {
+        "command": "logrotate -f /etc/logrotate.d/myapp",
+        "description": "Manually trigger log rotation",
+        "platform": "linux"
+      },
+      {
+        "command": "mkdir -p /var/log/journal",
+        "description": "Create directory for persistent journal logs",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl restart systemd-journald",
+        "description": "Restart the journald service",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl",
+        "description": "View all systemd journal logs",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl -f",
+        "description": "Follow journal logs in real-time",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl -u <service_name>",
+        "description": "Filter journal logs by service name",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl --since \"1 hour ago\"",
+        "description": "Filter journal logs by time (since 1 hour ago)",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl --until \"2026-08-01\"",
+        "description": "Filter journal logs by time (until specific date)",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl -p err",
+        "description": "Filter journal logs by priority",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl --vacuum-size=500M",
+        "description": "Manually clear old journal entries to limit size",
+        "platform": "linux"
+      },
+      {
+        "command": "/var/log/myapp/*.log {\n    daily\n    rotate 14\n    compress\n    delaycompress\n    missingok\n    notifempty\n    create 0640 root adm\n    copytruncate\n}",
+        "description": "Example logrotate configuration block for a specific log path.",
+        "platform": "linux"
+      },
+      {
+        "command": "logrotate --debug /etc/logrotate.conf",
+        "description": "Performs a dry run to validate configuration changes without affecting production logs.",
+        "platform": "linux"
+      },
+      {
+        "command": "logrotate -f /etc/logrotate.d/<service_name>",
+        "description": "Forces rotation of a specific configuration file, bypassing time-based triggers.",
+        "platform": "linux"
+      },
+      {
+        "command": "logrotate -v /etc/logrotate.d/<service_name>",
+        "description": "Executes logrotate in verbose mode.",
+        "platform": "linux"
       }
     ]
   },

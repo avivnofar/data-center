@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-07-17T18:59:51.722290Z",
+  "updatedAt": "2026-08-03T08:19:56.465490Z",
   "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
   "dataCenter": {
     "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
@@ -90,11 +90,11 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cloud-devops.json",
       "summary": "This notebook provides a foundational overview of modern infrastructure and automation, covering essential cloud concepts, Docker containerization, and robust CI/CD workflows powered by GitHub Actions. It further explores best practices for environment management, system monitoring, and streamlined deployment patterns for platforms like Vercel and Render to ensure scalable and reliable application delivery.",
-      "sectionCount": 9,
-      "commandCount": 47,
+      "sectionCount": 10,
+      "commandCount": 51,
       "issueCount": 12,
       "glossaryCount": 14,
-      "updatedAt": "2026-07-17T00:00:00.000000Z"
+      "updatedAt": "2026-08-03T08:19:54.187840Z"
     },
     {
       "id": "kb-cybersecurity",
@@ -155,11 +155,11 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
       "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
-      "sectionCount": 10,
-      "commandCount": 15,
+      "sectionCount": 12,
+      "commandCount": 30,
       "issueCount": 10,
       "glossaryCount": 12,
-      "updatedAt": "2026-07-10T08:17:14.616101Z"
+      "updatedAt": "2026-08-03T08:19:10.005441Z"
     },
     {
       "id": "kb-mirtapbx",
@@ -245,11 +245,11 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-voip-sip.json",
       "summary": "This knowledge base provides a comprehensive overview of VoIP and SIP telephony, covering essential concepts ranging from fundamental signaling protocols and media transport to advanced technical configurations. It serves as a practical guide for managing SIP trunking, optimizing codecs, resolving NAT traversal challenges, and troubleshooting call quality issues to ensure reliable voice communications.",
-      "sectionCount": 9,
-      "commandCount": 50,
+      "sectionCount": 11,
+      "commandCount": 56,
       "issueCount": 10,
       "glossaryCount": 14,
-      "updatedAt": "2026-07-17T00:00:00.000000Z"
+      "updatedAt": "2026-08-03T08:19:33.207190Z"
     },
     {
       "id": "kb-vpn",

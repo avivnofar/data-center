@@ -18,7 +18,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:50.820357Z",
-  "updatedAt": "2026-07-17T00:00:00.000000Z",
+  "updatedAt": "2026-08-03T08:19:33.207223Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -28,7 +28,7 @@
   "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-voip-sip.json",
   "knowledgeBase": {
     "summary": "This knowledge base provides a comprehensive overview of VoIP and SIP telephony, covering essential concepts ranging from fundamental signaling protocols and media transport to advanced technical configurations. It serves as a practical guide for managing SIP trunking, optimizing codecs, resolving NAT traversal challenges, and troubleshooting call quality issues to ensure reliable voice communications.",
-    "lastWebVerified": null,
+    "lastWebVerified": "2026-08-03T08:19:33.207190Z",
     "webSources": [],
     "sections": [
       {
@@ -99,7 +99,12 @@
         "title": "SIP Softphone Clients (MicroSIP & PortSIP)",
         "content": "### SIP Softphone Clients\n\nA softphone is a SIP UA (user agent) running as desktop/mobile software instead of dedicated hardware. Two common clients in day-to-day IT support are MicroSIP and PortSIP.\n\n#### MicroSIP\nMicroSIP is a free, lightweight, open-source (pjsip-based) Windows softphone popular for its small footprint and simple configuration — a common choice for quick extension testing or as a low-cost desk client.\n\n**Core account settings (Menu > Account > Add account):**\n```text\nAccount name:  any label\nSIP server:    pbx.example.com[:5060]\nSIP proxy:     (optional, usually same as server)\nUsername:      extension number, e.g. 1001\nDomain:        usually same as SIP server\nLogin:         SIP auth username (may differ from display username)\nPassword:      SIP auth password\nTransport:     UDP / TCP / TLS\n```\nCommon adjustments: Menu > Account > Edit account > Voice codecs to reorder/enable G.711 (u-law/a-law), G.729, Opus; Menu > Settings > Audio to select the correct input/output device (a wrong default device is the most frequent \"no audio\" cause after registration succeeds); Menu > Account > Edit account > NAT traversal for STUN server if the client sits behind a NAT firewall.\n\nRegistration status (bottom of the window) should show \"Ready\" — anything else (\"Failed\", \"Trying\", a 4xx/5xx code) points to a signaling problem, not a media one; check that first before troubleshooting audio.\n\n#### PortSIP\nPortSIP is a commercial-grade softphone (and the PortSIP SDK, used to build custom softphone apps) with a broader enterprise feature set than MicroSIP: presence/BLF (busy lamp field), video calling, IM, call recording, and multi-line support — a more typical fit when a business wants a polished branded client or is building phone functionality into its own app.\n\n**Core account settings (mirror the same underlying SIP concepts as MicroSIP):**\n```text\nDisplay name:   any label\nSIP server:     pbx.example.com\nSIP server port: 5060 (5061 for TLS)\nUser name / Auth name / Password: from PBX extension config\nTransport:      UDP / TCP / TLS\n```\nPortSIP additionally supports registering multiple lines/accounts within one client instance and configuring codec priority, video codec (H.264/VP8), and STUN/TURN for NAT traversal per-account rather than globally — useful when different extensions on the same machine need different NAT handling (e.g. one registering to a cloud PBX, another to an on-prem PBX behind a different firewall).\n\n#### Common configuration pitfalls (both clients)\nWrong SIP port when the PBX uses a non-standard port (many hosted PBX/1COM-style deployments do) — registration fails silently or with a generic timeout rather than an obvious \"wrong port\" error.\nAuth username vs display/extension number mismatch — many PBXs use a separate SIP auth ID distinct from the dialable extension number; entering the extension number in the Login/Auth field when the PBX expects a different auth ID produces a 401/403 on every registration attempt.\nTransport mismatch — a client configured for UDP against a PBX account provisioned for TLS-only (or vice versa) will fail to register even with fully correct credentials.\nCodec mismatch causing registration to succeed but calls to fail to establish media — see Codecs and NAT Traversal sections for the underlying mechanics.",
         "subsections": [],
-        "tags": ["microsip", "portsip", "softphone", "sip-client"],
+        "tags": [
+          "microsip",
+          "portsip",
+          "softphone",
+          "sip-client"
+        ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
         "sources": []
       },
@@ -111,6 +116,65 @@
         "tags": [],
         "lastUpdated": "2026-07-09T20:33:40.524Z",
         "sources": []
+      },
+      {
+        "id": "sip-trunking-diagnostic-and-troubleshooting-framework",
+        "title": "SIP Trunking Diagnostic and Troubleshooting Framework",
+        "content": "### SIP Trunking Diagnostic and Troubleshooting Framework\n\nThis framework provides a systematic methodology for isolating and resolving SIP trunking failures.\n\n#### 1. Layer 1-3 Connectivity Verification\nBefore analyzing SIP signaling, validate the underlying transport path.\n*   **Path MTU Discovery:** SIP packets (especially with SDP) can exceed standard MTU sizes, causing fragmentation or drops.\n    *   *Command (Linux/Cisco):* `ping -s 1472 -M do <SIP_Provider_IP>`\n*   **Latency/Jitter:** High latency (>150ms) or jitter (>30ms) triggers RTP degradation. Use `mtr` for path analysis.\n    *   *Command:* `mtr -rw <SIP_Provider_IP>`\n\n#### 2. Signaling Analysis (SIP Ladder)\nCapture traffic at the Session Border Controller (SBC) or PBX interface to identify handshake failures.\n*   **Capture Syntax (tcpdump):**\n    `tcpdump -ni any port 5060 or 5061 -s 0 -w sip_trace.pcap`\n*   **Key Response Codes:**\n    *   **401/407 Unauthorized:** Authentication failure. Verify `nonce`, `realm`, and `HA1` hash alignment.\n    *   **403 Forbidden:** IP ACL mismatch or incorrect `From`/`Contact` headers.\n    *   **408 Request Timeout:** No response from the provider. Check firewall stateful inspection (SIP ALG must be **disabled**).\n    *   **488 Not Acceptable Here:** Codec mismatch. Ensure the SDP offer matches the provider’s supported list (typically G.711u/a or G.729).\n\n#### 3. Configuration Validation\nEnsure the SIP profile adheres to provider-specific requirements.\n\n**Standard SIP Header Requirements:**\n*   **P-Asserted-Identity (PAI):** Used for Caller ID presentation.\n*   **Diversion Header:** Required for call forwarding scenarios.\n\n**Example: Asterisk/PJSIP Endpoint Configuration Snippet**\n```ini\n[provider_trunk]\ntype=endpoint\ncontext=from-trunk\ndisallow=all\nallow=ulaw,alaw\noutbound_auth=provider_auth\naors=provider_aor\nfrom_domain=sip.provider.com\nforce_rport=yes\nrtp_symmetric=yes\n```\n\n#### 4. NAT and Firewall Traversal\nSIP ALG (Application Layer Gateway) often mangles SIP headers, specifically the `Contact` and `Via` fields.\n*   **Verification:** Check if the `Contact` header IP matches the public WAN IP. If it shows a private RFC1918 address, NAT traversal is failing.\n*   **Remediation:**\n    *   Disable SIP ALG on the edge firewall.\n    *   If behind NAT, ensure `force_rport` is enabled in the SIP stack.\n    *   Use STUN/TURN servers if the PBX lacks a public IP.\n\n#### 5. RTP/Media Troubleshooting\nIf signaling succeeds but audio fails (one-way or no-way audio):\n*   **Symmetric RTP:** Ensure `rtp_symmetric=yes` is set to force the PBX to send media to the source IP/port of the incoming RTP stream.\n*   **Firewall Ports:** Verify UDP range (typically 10000–20000) is open for bidirectional traffic.\n*   **Codec Negotiation:** Check the SDP `m=audio` line in the `INVITE` to ensure the PBX is not offering unsupported codecs.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:19:21.339060Z",
+        "sources": [],
+        "dateAdded": "2026-08-03T08:19:21.339073Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "sip-registration-and-authentication-mechanisms",
+        "title": "SIP Registration and Authentication Mechanisms",
+        "content": "SIP registration is the mechanism by which a User Agent (UA) binds its Address of Record (AOR) to a specific contact IP and port, enabling the registrar to route incoming requests.\n\n### Registration Flow\nThe registration process follows a challenge-response pattern:\n\n1.  **Initial REGISTER:** The UA sends a `REGISTER` request to the registrar. This request contains the AOR in the `To` and `From` headers and the binding address in the `Contact` header.\n2.  **401 Unauthorized / 407 Proxy Authentication Required:** The server challenges the request, providing a `WWW-Authenticate` or `Proxy-Authenticate` header containing a `nonce` (a server-generated random string), `realm`, and algorithm (typically MD5).\n3.  **Authenticated REGISTER:** The UA resends the `REGISTER` request, including an `Authorization` or `Proxy-Authorization` header. This header contains the response hash, calculated using the `nonce`, `username`, `password`, and `realm`.\n4.  **200 OK:** Upon successful validation, the registrar returns a `200 OK` with an `Expires` header, confirming the binding duration.\n\n### Key Headers and Parameters\n*   **Contact:** Specifies the URI where the UA receives requests (e.g., `Contact: <sip:user@192.168.1.50:5060>`).\n*   **Expires:** Defines the registration lifetime in seconds. Default is typically 3600s. UAs should refresh at half the expiration interval.\n*   **rport:** A parameter in the `Via` header that instructs the server to send responses to the source port of the request, bypassing NAT/PAT issues.\n*   **Call-ID:** Must remain consistent across the registration transaction.\n\n### Authentication Mechanisms\n*   **Digest Authentication:** The standard mechanism (RFC 3261/RFC 8760). It provides replay protection but does not inherently provide message integrity or confidentiality.\n    *   **Note:** MD5 is the legacy default but is considered weak. Modern implementations may support stronger algorithms as defined in RFC 8760.\n*   **Basic Authentication:** Deprecated by RFC 3261. Servers must not accept or challenge with Basic authentication.\n*   **Client-Cert:** Uses X.509 certificates for mutual authentication, typically over TLS.\n\n### Troubleshooting Commands\nWhen analyzing registration failures, verify the following:\n*   **Check Expiration:** Ensure the `Expires` value is not too low, causing excessive signaling load.\n*   **Validate Nonce:** If the UA receives a `403 Forbidden` after a `401`, the `nonce` may have expired or the hash calculation is incorrect.\n*   **Packet Capture:** Use `tcpdump -ni any port 5060` or `sngrep` to inspect the `Authorization` header and confirm the `realm` matches the server's expected domain.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:19:33.207175Z",
+        "sources": [
+          {
+            "title": "connection-technologies.co.uk",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFavRfG2Gm82gvfwujzwTKDQUWcSKGD_QUjCUa7K14wdHhuC_umrnQY0OaUv-6byknbea38tHJ2j8cw5zuOFv2FvwARvmFS3_E5Tfw3BscEHUohdINjrc2NyELQxUM1RgMEXhyNQkcPAFv4-NyumhSbd_AAQR2vhMzH8o1ZKOWmgvM-XXTQ6e8YHXfARpG0aMlQCZRiavk="
+          },
+          {
+            "title": "wildix.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGXLAIb_KPQM7CIIXev8itCWHLaTm_lPoj96NXAde5t-0B2pk1jhl0oBklHsMHqLtc4QhVQZVuTqC0aaIQoqXhtewrpdg_jalc6SZtxeMGZmApXwyDVVT-8H4vkhaXu8MR3KhZe2Kr6beBbeB0="
+          },
+          {
+            "title": "ietf.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQETIG8hb5l7ouCADid0OUZH7XH64pWxAvsvwDci1-Qm2ymM5H7hUybrBrAdWwG-f3L6OLXJHfuGCdiZb9y21bQFHjritaon6hthbu7MQbZga1RBoH1EZ6_FeD5YXujHgIhrH7E="
+          },
+          {
+            "title": "voip-info.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHJrBT0bMlfxXhVLY7Ye4NMfDTnhpQlz3mlX2eeIYFU1Ec5todHEZguE1xg75_luMplbPeAlybqq11FSfg0yI4DIlprJEieaaVLcwP5F67IBbgWU4G9PbSC9RB7Q4YDI7zbOK0="
+          },
+          {
+            "title": "ecg.co",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH2TDOTgEns4cbXxwS34bli5FGsKchbdo8jyyEjSJ2J5YGP15abWkSCYddaee519dUY8-9jAEtej1JD9-K3FHKkmFTtcFamIEa-Ux_YV_snawHW4rBGEpiDV3CQ3g3pd8jhm4c0PBoMSHU4ihqzkgPHfV4RCXEKaUt3XZaRzDsRUmgPhjAzm6At_FpKpltD5l0eFUNEBTfnQA=="
+          },
+          {
+            "title": "medium.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEqHDgG33pbkRqlowdznV6OZzSeYVlXMNXXwXfZR12157P9-CYqIRA2pWxO4o2EenfG2NIoFx1OPpP3VM-1OrW_k--K3hwnHE4Rt-8KYUH6jHtIAWPSshXHbJa-LK4_GFd3Ta0FNYS91udWoqpjfoxdph0vmnZm9C2TdegEOrsESM9oRB0v4jR5LBRrvBJ2uqBsm1KzeQ9tpBHgRMI="
+          },
+          {
+            "title": "ecg.co",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFDJ5K-3vjs10-dzzIWBiqU9y0opybuSLQtHDcT2HHJ-Ia0Czn9HEXJl8Bwy0F_YBzexyqUmZwJAfoznfz2iGABNBlotaKy13qr7p5f0hc6Xb41fI6HozeyjHJhltefa1f2-4lyAV82TqLVzMX6G1YeiEtVDr07S434EH9ZgmQt6-e2cf8RRMstQ7QiKEdTbuASLDuFqg=="
+          },
+          {
+            "title": "pjsip.org",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHgp-lVGoZyzOWthsQNQDsuFIAEGCRtnaEa2Vw7rur3-iRo2sthMqMMurGz0Xmy4D-FNTf_t_EzamKu6HH3P_9CJsuvwwXHSJY2RB01yx45ulQeeQsepIxYIuXgR9xxj58vKvx-w-L5ua1JC71ubNCJgoTaY17NjqVLkcqMc0PEwQ=="
+          },
+          {
+            "title": "oracle.com",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEPYXUsKzAYmZEhCg7pj5pozYOdOcLy5Da6yXV2slFlbNgl0PReA4oZ2sbrkuQohVVocJAbud7W57njzYESZpYiRurSpn_H7pG0IJ4egnjGLKM-wR4rcDq5B_pBvCQFnyPaEa_QuaeyddqgelXCBAAeAWYC3Vq3NTykezTFSpQhr7S1pjQM-X_gKacgb1A3bVjouc4NjUINMGUJ4o54O2vebfJNw3gLFzdAIU2RmKa9xtpdapzC"
+          }
+        ],
+        "dateAdded": "2026-08-03T08:19:33.207190Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -523,6 +587,36 @@
         "command": "clock source line",
         "description": "Set the clock source for T1/E1 interfaces.",
         "platform": "both"
+      },
+      {
+        "command": "ping -s 1472 -M do <SIP_Provider_IP>",
+        "description": "Verify Path MTU to prevent fragmentation or drops.",
+        "platform": "linux"
+      },
+      {
+        "command": "mtr -rw <SIP_Provider_IP>",
+        "description": "Analyze path latency and jitter.",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -ni any port 5060 or 5061 -s 0 -w sip_trace.pcap",
+        "description": "Capture SIP traffic for signaling analysis.",
+        "platform": "linux"
+      },
+      {
+        "command": "[provider_trunk]\ntype=endpoint\ncontext=from-trunk\ndisallow=all\nallow=ulaw,alaw\noutbound_auth=provider_auth\naors=provider_aor\nfrom_domain=sip.provider.com\nforce_rport=yes\nrtp_symmetric=yes",
+        "description": "Asterisk/PJSIP endpoint configuration snippet.",
+        "platform": "both"
+      },
+      {
+        "command": "tcpdump -ni any port 5060",
+        "description": "Capture SIP traffic on port 5060 to inspect registration headers.",
+        "platform": "linux"
+      },
+      {
+        "command": "sngrep",
+        "description": "Tool to inspect SIP traffic and registration headers.",
+        "platform": "linux"
       }
     ]
   },

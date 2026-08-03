@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:58.816344Z",
-  "updatedAt": "2026-07-10T08:16:59.179987Z",
+  "updatedAt": "2026-08-03T08:19:43.843074Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -162,6 +162,17 @@
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
         "sources": []
+      },
+      {
+        "id": "troubleshooting-sip-registration-and-authentication",
+        "title": "Troubleshooting SIP Registration and Authentication",
+        "content": "### Troubleshooting SIP Registration and Authentication\n\nWhen a 1COM/Netvill endpoint fails to register with the Cloud PBX, the issue typically resides in credential mismatch, network traversal (NAT), or signaling timeouts. Follow this systematic diagnostic workflow.\n\n#### 1. Verification of SIP Signaling\nUse `sngrep` or `tcpdump` on the PBX or a mirrored switch port to capture traffic. Filter by the endpoint’s IP:\n```bash\n# Capture SIP traffic on port 5060\ntcpdump -i any udp port 5060 and host <ENDPOINT_IP> -vv -w registration.pcap\n```\nAnalyze the capture for the following response codes:\n*   **401 Unauthorized / 407 Proxy Authentication Required:** The endpoint sent a request without credentials or with an incorrect password. Verify the `Auth User` vs. `Display Name` settings in the Netvill device GUI.\n*   **403 Forbidden:** Credentials are correct, but the account is disabled, the IP is blacklisted, or the SIP domain/realm does not match the PBX configuration.\n*   **408 Request Timeout:** The endpoint is not receiving a response. This indicates a firewall blocking UDP 5060/5061 or a routing issue.\n\n#### 2. Common Configuration Pitfalls\nEnsure the following parameters are strictly aligned between the Netvill hardware and the Cloud PBX:\n\n*   **SIP Domain/Proxy:** Must match the FQDN provided in your 1COM provisioning portal. Avoid using IP addresses if the PBX utilizes SRV records.\n*   **Outbound Proxy:** If the network is behind a restrictive NAT, enable the Outbound Proxy and set it to the PBX FQDN.\n*   **Registration Expiry:** Set to **3600 seconds**. Values below 60 seconds can trigger rate-limiting (fail2ban) on the PBX, leading to intermittent registration drops.\n*   **NAT Traversal:** For devices behind NAT, ensure `Keep-Alive` (SIP OPTIONS) is enabled with an interval of 30 seconds.\n\n#### 3. Authentication Debugging (CLI)\nIf you have SSH access to the Netvill device, check the internal SIP stack logs:\n\n```bash\n# Access device shell\nssh admin@<DEVICE_IP>\n\n# Monitor SIP registration process\nlogread -f | grep -i \"sip\"\n```\n\nLook for `REGISTER` attempts. If the device sends a `REGISTER` but receives no response, check the **SIP Transport** setting. If the PBX requires TLS, ensure the device has the correct Root CA certificate uploaded.\n\n#### 4. Network Layer Diagnostics\nIf signaling is not leaving the device:\n1.  **Check PoE/Link State:** Verify the device has a valid IP via DHCP or static assignment.\n2.  **MTU Issues:** SIP packets exceeding the MTU (common with large `P-Asserted-Identity` headers) may be dropped. Reduce MTU to 1400 on the device network interface to test.\n3.  **ALG Interference:** Ensure SIP ALG is **disabled** on the local router/firewall. SIP ALG often mangles the `Contact` header, causing the PBX to send responses to an unreachable private IP.\n\n#### 5. Escalation Path\nIf logs show `403 Forbidden` despite verified credentials, check the 1COM Cloud PBX dashboard for **IP Blacklisting**. If the device attempted registration with incorrect credentials multiple times, the PBX firewall may have automatically blocked the device's public IP address.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-03T08:19:43.843031Z",
+        "sources": [],
+        "dateAdded": "2026-08-03T08:19:43.843044Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -373,6 +384,21 @@
           "sip",
           "networking"
         ]
+      },
+      {
+        "command": "tcpdump -i any udp port 5060 and host <ENDPOINT_IP> -vv -w registration.pcap",
+        "description": "Capture SIP traffic on port 5060",
+        "platform": "linux"
+      },
+      {
+        "command": "ssh admin@<DEVICE_IP>",
+        "description": "Access device shell",
+        "platform": "linux"
+      },
+      {
+        "command": "logread -f | grep -i \"sip\"",
+        "description": "Monitor SIP registration process",
+        "platform": "linux"
       }
     ]
   },
