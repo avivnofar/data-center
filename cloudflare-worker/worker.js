@@ -39,6 +39,55 @@ const MAX_IMAGE_B64_CHARS = 2 * 1024 * 1024; // ~1.5 MB decoded, per image
 const DAILY_MAX_PER_ISOLATE = 300;
 
 const MODEL = 'claude-sonnet-5';
+
+// ── Pricing, for the est_cost_usd field on the usage log line ────────────────
+// Rates in USD per token, taken from https://platform.claude.com/docs/en/about-claude/pricing
+// as read on 2026-08-04. claude-sonnet-5 is on introductory pricing through
+// 2026-08-31 and reverts to standard pricing on 2026-09-01, so BOTH rate sets
+// are encoded and selected by UTC date — otherwise every logged cost would
+// silently understate spend by ~33% from September onward.
+// Cache multipliers (1.25x write / 0.1x read) are already baked into these.
+// These figures are an ESTIMATE for trend-watching, not a billing record; the
+// Anthropic Console remains the source of truth.
+const PRICING = {
+  intro: { // through 2026-08-31
+    input: 2.00 / 1e6,
+    cache_write_5m: 2.50 / 1e6,
+    cache_read: 0.20 / 1e6,
+    output: 10.00 / 1e6,
+  },
+  standard: { // from 2026-09-01
+    input: 3.00 / 1e6,
+    cache_write_5m: 3.75 / 1e6,
+    cache_read: 0.30 / 1e6,
+    output: 15.00 / 1e6,
+  },
+  // Server-side web search: $10 per 1,000 searches, billed on top of tokens.
+  web_search_per_request: 10.00 / 1000,
+};
+const PRICING_INTRO_LAST_DAY = '2026-08-31';
+
+function priceSheet(dateKey) {
+  return dateKey <= PRICING_INTRO_LAST_DAY ? PRICING.intro : PRICING.standard;
+}
+
+/**
+ * Estimated USD cost of one Claude call from its usage object.
+ * input_tokens counts only the tokens AFTER the last cache breakpoint — the
+ * cached portion is billed separately via the two cache fields, so these three
+ * are added, never max'd.
+ */
+function estimateCostUsd(usage, dateKey) {
+  const p = priceSheet(dateKey);
+  const cost =
+    usage.input_tokens * p.input +
+    usage.cache_creation_input_tokens * p.cache_write_5m +
+    usage.cache_read_input_tokens * p.cache_read +
+    usage.output_tokens * p.output +
+    usage.web_search_requests * PRICING.web_search_per_request;
+  // 6dp: a fully-cached short answer lands around $0.0009.
+  return Math.round(cost * 1e6) / 1e6;
+}
 // 1536 (not 1024) leaves headroom for the required "Relevant commands to
 // check:" / RELATED_COMMANDS closing section on long answers — at 1024 it
 // was frequently truncated mid-answer before reaching that line.
@@ -472,11 +521,44 @@ reviews them before anything changes.`;
 /**
  * Re-stream the Anthropic SSE response into the simplified format the
  * frontend expects: data: {"delta": "..."}\n\n ... data: {"done": true}\n\n
+ *
+ * Also sniffs the usage object out of the stream on the way past. In streaming
+ * mode usage arrives in two places (per the Anthropic streaming docs):
+ *   message_start -> message.usage : input_tokens + both cache fields
+ *   message_delta -> usage         : output_tokens (cumulative), and on newer
+ *                                    API versions a repeat of the input fields
+ * Values are assigned last-wins rather than summed, because message_delta
+ * reports a running total, not a per-event increment.
+ *
+ * `onUsage` fires from flush(), i.e. once the upstream stream has ended. If the
+ * browser disconnects mid-answer the flush never runs and no usage line is
+ * logged — the claude_api_call line emitted before the fetch is what guarantees
+ * every spend event is still visible.
  */
-function streamAnthropicResponse(anthropicBody) {
+function streamAnthropicResponse(onUsage) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = '';
+
+  const usage = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 0,
+    web_search_requests: 0,
+  };
+  let sawUsage = false;
+
+  function mergeUsage(u) {
+    if (!u || typeof u !== 'object') return;
+    sawUsage = true;
+    for (const key of ['input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens']) {
+      if (typeof u[key] === 'number') usage[key] = u[key];
+    }
+    if (u.server_tool_use && typeof u.server_tool_use.web_search_requests === 'number') {
+      usage.web_search_requests = u.server_tool_use.web_search_requests;
+    }
+  }
 
   return new TransformStream({
     transform(chunk, controller) {
@@ -499,6 +581,10 @@ function streamAnthropicResponse(anthropicBody) {
         if (event.type === 'content_block_delta' && event.delta && event.delta.type === 'text_delta') {
           const payload = JSON.stringify({ delta: event.delta.text });
           controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+        } else if (event.type === 'message_start') {
+          mergeUsage(event.message && event.message.usage);
+        } else if (event.type === 'message_delta') {
+          mergeUsage(event.usage);
         } else if (event.type === 'message_stop') {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
         }
@@ -506,6 +592,11 @@ function streamAnthropicResponse(anthropicBody) {
     },
     flush(controller) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+      if (onUsage && sawUsage) {
+        try {
+          onUsage(usage);
+        } catch (_) { /* logging must never break the response */ }
+      }
     },
   });
 }
@@ -658,8 +749,13 @@ export default {
     // here rather than earlier so that an event named claude_api_call always
     // corresponds to a call that was genuinely made, and daily_count always
     // matches the committed counter.
+    // req_id correlates this line with the claude_api_usage line emitted once
+    // the response has finished streaming (usage isn't known until then).
+    const reqId = crypto.randomUUID().slice(0, 8);
+
     console.log(JSON.stringify({
       event: 'claude_api_call',
+      req_id: reqId,
       timestamp: new Date().toISOString(),
       ip_hash: await hashIp(ip, env.LOG_SALT),
       mode: mode === 'diagnose' ? 'diagnose' : 'search',
@@ -727,7 +823,24 @@ export default {
       return jsonResponse({ error: 'general', message }, anthropicResponse.status, origin);
     }
 
-    const stream = anthropicResponse.body.pipeThrough(streamAnthropicResponse());
+    const stream = anthropicResponse.body.pipeThrough(streamAnthropicResponse((usage) => {
+      const cachedIn = usage.cache_read_input_tokens + usage.cache_creation_input_tokens;
+      const totalIn = usage.input_tokens + cachedIn;
+      console.log(JSON.stringify({
+        event: 'claude_api_usage',
+        req_id: reqId,
+        timestamp: new Date().toISOString(),
+        model: MODEL,
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens,
+        cache_read_input_tokens: usage.cache_read_input_tokens,
+        // Share of input served from cache — the headline caching metric.
+        cache_hit_ratio: totalIn > 0 ? Math.round((usage.cache_read_input_tokens / totalIn) * 100) / 100 : 0,
+        web_search_requests: usage.web_search_requests,
+        est_cost_usd: estimateCostUsd(usage, todayKey),
+        pricing: todayKey <= PRICING_INTRO_LAST_DAY ? 'intro' : 'standard',
+      }));
     }));
 
     return new Response(stream, {
