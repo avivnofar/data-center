@@ -208,11 +208,39 @@ const NOTEBOOK_CONTEXT_MAX_CHARS = 20000; // defense in depth against a modified
  * the local DB context string injected by the frontend, CLI Mode, and an
  * optional Notebook-X reference context string (client-selected, mirrored
  * content — see notebookContext above).
+ *
+ * PROMPT CACHING (added 2026-08-04). Returns an ARRAY of system content blocks
+ * ordered static-first, dynamic-last, because Anthropic's cache is a prefix
+ * match: any byte that changes invalidates everything after it. Render order is
+ * tools -> system -> messages, so the tools array (static) is covered by the
+ * first system breakpoint for free.
+ *
+ *   [0] base      - static per language                    <- cache breakpoint
+ *   [1] variant   - static per (language, mode, cliMode)   <- cache breakpoint
+ *   [2] contexts  - db_context + notebook_context (per-request, NOT cached)
+ *
+ * Two breakpoints rather than one: block 0 is shared across all four
+ * mode/cliMode combinations, so a diagnose request reads the cache a search
+ * request wrote. It is NOT shared across languages — `Response language:` is
+ * interpolated mid-base, so he/en are two separate cache entries. That line was
+ * deliberately left where it is: hoisting it into block 1 would unify the two,
+ * but it would also move a behavior-shaping instruction to a different position
+ * in the prompt, which is a bigger change than a cache slot is worth. Language
+ * is sticky per user (dc-lang in localStorage), so the fork costs one extra
+ * cache write, not one per request.
+ *
+ * The prompt TEXT is unchanged from the pre-caching version — the CAPABILITIES
+ * section simply moved ahead of db_context/notebook_context so that all static
+ * text precedes all dynamic text. Nothing was reworded.
+ *
+ * Block 0 measures ~1.9k tokens, comfortably over claude-sonnet-5's 1024-token
+ * minimum cacheable prefix (below that the cache silently does nothing).
  */
-function systemPrompt(mode, language, dbContext, cliMode, notebookContext) {
+function systemBlocks(mode, language, dbContext, cliMode, notebookContext) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
-  let prompt = `You are an expert IT support assistant with broad, deep knowledge
+  // ── Block 0: universal base. Do not interpolate anything per-request here. ──
+  const base = `You are an expert IT support assistant with broad, deep knowledge
 across the entire IT field. Your expertise includes but is not limited to:
 
 CORE IT:
@@ -337,8 +365,11 @@ When a user's question matches one of these commands or scenarios, prefer citing
 the exact command names above (even if no db_context is provided below) so the
 app can cross-link to the matching card.`;
 
+  // ── Block 1: static per language/mode/cliMode. Still no per-request data. ──
+  let variant = '';
+
   if (language === 'he') {
-    prompt += `
+    variant += `
 
 Hebrew responses must be especially concise: 2-4 short paragraphs or a short
 bulleted list, maximum. Don't repeat the question and don't restate background
@@ -346,7 +377,7 @@ theory the user didn't ask for — get to the relevant commands and the fix quic
   }
 
   if (mode === 'diagnose') {
-    prompt += `
+    variant += `
 
 The user wants guided diagnosis. Be aggressive about narrowing down the problem
 fast: each turn, ask exactly ONE targeted question paired with ONE specific
@@ -356,7 +387,7 @@ multiple commands in the same turn — pick the single most likely next step.
 Once you have enough information, give the final fix as a numbered list of
 steps, each with the exact command to run.`;
   } else {
-    prompt += `
+    variant += `
 
 The user is doing a free search. Answer their question directly and completely.
 Always end your answer with a line "Relevant commands to check:" (in the response
@@ -368,33 +399,23 @@ so the frontend can highlight relevant database entries.`;
   }
 
   if (cliMode) {
-    prompt += `
+    variant += `
 
 CLI Mode is active. Prioritize exact commands and flags over prose.
 Lead with the command(s) in a code block, then at most 1-2 short lines of
 explanation. Avoid background theory unless the user explicitly asks for it.`;
   }
 
-  prompt += `
+  variant += `
 
 You can analyze screenshots and images. When a user shares a screenshot of an
 error, config page, or terminal output, describe what you see and provide
 specific troubleshooting steps. For 1COM or MirtaPBX screenshots: identify
 the exact screen, settings page, or error shown and give precise instructions.`;
 
-  if (dbContext && dbContext.trim()) {
-    prompt += `\n\n${dbContext.trim()}`;
-  }
-
-  if (notebookContext && notebookContext.trim()) {
-    prompt += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old):\n` +
-      `The following is supplementary reference material selected from Notebook-X ` +
-      `knowledge notebooks based on the user's question. Cite it when used, but it ` +
-      `may not cover everything — web_search remains available for anything it doesn't cover.\n\n` +
-      notebookContext.trim();
-  }
-
-  prompt += `
+  // CAPABILITIES moved ahead of db_context/notebook_context (2026-08-04) so the
+  // cached prefix ends here. Text itself is unchanged.
+  variant += `
 
 CAPABILITIES:
 - A web_search tool is available. Use it when your training data may be
@@ -422,7 +443,30 @@ Both suggestion blocks are optional, machine-readable hints for the app —
 omit them entirely on most responses. They are proposals only; a human
 reviews them before anything changes.`;
 
-  return prompt;
+  // ── Block 2: per-request. Everything below the last breakpoint. ──
+  let contexts = '';
+
+  if (dbContext && dbContext.trim()) {
+    contexts += `\n\n${dbContext.trim()}`;
+  }
+
+  if (notebookContext && notebookContext.trim()) {
+    contexts += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old):\n` +
+      `The following is supplementary reference material selected from Notebook-X ` +
+      `knowledge notebooks based on the user's question. Cite it when used, but it ` +
+      `may not cover everything — web_search remains available for anything it doesn't cover.\n\n` +
+      notebookContext.trim();
+  }
+
+  const blocks = [
+    { type: 'text', text: base, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: variant, cache_control: { type: 'ephemeral' } },
+  ];
+  // Only append when non-empty: a zero-length text block is rejected by the API,
+  // and an empty-but-present block would still be a distinct trailing element.
+  if (contexts) blocks.push({ type: 'text', text: contexts });
+
+  return blocks;
 }
 
 /**
@@ -568,7 +612,7 @@ export default {
     const trimmedDbContext = typeof db_context === 'string'
       ? db_context.slice(0, DB_CONTEXT_MAX_CHARS)
       : '';
-    const system = systemPrompt(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', trimmedDbContext, !!cli_mode, trimmedNotebookContext);
+    const system = systemBlocks(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', trimmedDbContext, !!cli_mode, trimmedNotebookContext);
 
     // If images are attached, inject them into the last user message as
     // vision content blocks (max 3 images, base64 encoded).
@@ -684,6 +728,7 @@ export default {
     }
 
     const stream = anthropicResponse.body.pipeThrough(streamAnthropicResponse());
+    }));
 
     return new Response(stream, {
       status: 200,
