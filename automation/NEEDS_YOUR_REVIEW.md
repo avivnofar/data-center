@@ -900,34 +900,36 @@ Verified against code, not docs:
 prompt + 20k-char `db_context` + 20k-char `notebook_context` + 60k chars of
 messages + 3 high-res images) and 1536 output tokens.
 
-**Recomputed 2026-08-04** after prompt caching + `max_uses: 3 → 2`. At
-`claude-sonnet-5` introductory pricing ($2/$10 per MTok through 2026-08-31;
-$0.20/MTok cache read) plus web search at $10/1k searches:
+**Recomputed 2026-08-04** after prompt caching + `max_uses: 3 → 2`. The cached
+prefix size is **measured, not estimated**: production logs show
+`cache_read_input_tokens = 9,812` on a warm request. At `claude-sonnet-5`
+introductory pricing ($2/$10 per MTok through 2026-08-31; $0.20/MTok cache
+read) plus web search at $10/1k searches:
 
 | | before | after |
 |---|---|---|
-| uncached input | 45,000 × $2/MTok = $0.0900 | 42,487 × $2/MTok = $0.0850 |
-| cached input | — | 2,513 × $0.20/MTok = $0.0005 |
+| uncached input | 45,000 × $2/MTok = $0.0900 | 35,188 × $2/MTok = $0.0704 |
+| cached input | — | 9,812 × $0.20/MTok = $0.0020 |
 | output | 1,536 × $10/MTok = $0.0154 | 1,536 × $10/MTok = $0.0154 |
 | web search | 3 × $0.01 = $0.0300 | 2 × $0.01 = $0.0200 |
-| **per request** | **≈ $0.135** | **≈ $0.121** |
-| per hour, 20/min uncapped | ≈ $162 | **≈ $145** |
-| per isolate per UTC day (300 cap) | ≈ $40.6 | **≈ $36.3** |
+| **per request** | **≈ $0.135** | **≈ $0.108** |
+| per hour, 20/min uncapped | ≈ $162 | **≈ $129** |
+| per isolate per UTC day (300 cap) | ≈ $40.6 | **≈ $32.3** |
 
-Once intro pricing ends (2026-09-01, $3/$15): $0.188 → **$0.171** per request,
-≈ $51 per isolate-day.
+Once intro pricing ends (2026-09-01, $3/$15): $0.188 → **$0.152** per request,
+≈ $45.5 per isolate-day.
 
-**The honest read: caching barely helps the worst case, and the earlier
-assumption that "attacker requests are cache-hits after the first" is wrong.**
-Only the *static system prefix* — ~2,513 tokens of the 45k — sits above the
-cache breakpoint. Everything an attacker actually controls (`db_context`,
-`notebook_context`, messages, images) is deliberately below it, because that
-content changes every request and caching it would invalidate the entry every
-time. So a max-size attacker gets a cache hit on ~5.6% of their input, worth
-**$0.0045/request**. Two thirds of the $0.0146 saving comes from dropping one
-web search, not from the cache. Caching is a real win for *normal* traffic,
-where the static prefix is most of the prompt — it is close to a rounding
-error against a maximum-payload attacker.
+**The honest read: caching helps less against an attacker than against normal
+traffic, and the assumption that "attacker requests are cache-hits after the
+first" is only ~22% true.** The cached prefix is 9,812 tokens — the `tools`
+array plus the static system blocks — which is 21.8% of a 45k-token
+max-payload request. Everything an attacker actually controls (`db_context`,
+`notebook_context`, messages, images) sits *below* the breakpoint by design,
+because that content changes every request and caching it would invalidate the
+entry every time. So caching is worth **$0.0177/request** against a
+max-payload caller, and dropping one web search another $0.010. Against
+*normal* traffic the same 9,812 tokens are most of the prompt, which is why an
+ordinary question halved in cost (see the measured figures in CURRENT-SPEC).
 
 One second-order effect, for completeness: an attacker rotating
 `mode`/`language`/`cli_mode` forces a cache *write* (1.25×) instead of a read

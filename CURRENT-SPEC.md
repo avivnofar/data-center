@@ -196,6 +196,28 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Recently Completed
 
+- **Cost-optimization round on the Worker (2026-08-04)** — prompt caching,
+  usage measurement, and a lower web-search cap. Verified live against
+  production, not just code-read:
+  - **Caching engages.** Two identical questions back to back:
+    request 1 `cache_creation_input_tokens = 9,812`, `cache_read = 0`,
+    **$0.0431**; request 2 `cache_creation = 0`, `cache_read = 9,812`,
+    hit ratio **0.62**, **$0.0216** — a **50% drop**, despite request 2
+    carrying a *larger* uncached portion (6,026 vs 5,205 input tokens, the
+    conversation having grown by the previous answer).
+  - **The cached prefix is 9,812 tokens**, considerably more than the ~2.5k
+    the system text alone accounts for. `tools` renders before `system`, so
+    the `web_search_20260209` tool definition — which provisions a
+    code-execution environment for dynamic filtering — is inside the cached
+    prefix and appears to dominate it. This is what makes caching pay here.
+  - **Two breakpoints cost nothing extra.** A single-breakpoint build
+    deployed as a control read the same 9,812 tokens, confirming the two
+    nested breakpoints are not double-billed; the second one is kept because
+    it lets the four mode/CLI variants share block 0.
+  - **web_search cap holds** at `max_uses: 2` (`web_search_requests = 2` on a
+    search-heavy question that previously could have run 3).
+  - Zero errors across the run: 8 requests, all `200`/`204`, no exceptions.
+
 - **Notebook-X integration: repo mirror + client-side selection (2026-07-21)**:
   resolves the architecture decision in `automation/NEEDS_YOUR_REVIEW.md`.
   `.github/workflows/notebook-sync.yml` + `.github/scripts/sync-notebooks.js`
