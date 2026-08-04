@@ -800,7 +800,11 @@ export default {
           // here (a second execution environment confuses the model, and there
           // is no extra charge for the provisioned one). Left at the default
           // deliberately. Requires a 4.6+ model; claude-sonnet-5 qualifies.
-          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }],
+          // max_uses lowered 3 -> 2 on 2026-08-04: web search bills $10/1,000
+          // searches on top of tokens, and it is the largest per-request cost
+          // multiplier an attacker controls. Two searches still covers the
+          // "check current version / recent CVE" cases this is here for.
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 2 }],
         }),
       });
     } catch (err) {

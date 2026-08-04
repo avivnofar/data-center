@@ -157,6 +157,21 @@ const claims = [
     },
   },
   {
+    id: 'worker-prompt-cache-prefix',
+    claim: 'The Worker orders the system prompt static-first and marks cache breakpoints, with the per-request contexts left uncached',
+    check: () => {
+      const s = read('cloudflare-worker/worker.js');
+      if (!hasIdent(s, 'systemBlocks') || !s.includes("cache_control: { type: 'ephemeral' }")) return false;
+      // The claim that actually matters is the ORDER: if db_context/notebook_context
+      // ever drift back above the CAPABILITIES block, the cached prefix silently
+      // stops being a prefix and caching quietly stops paying for itself.
+      const caps = s.indexOf('CAPABILITIES:');
+      const db = s.indexOf('${dbContext.trim()}');
+      const nb = s.indexOf('NOTEBOOK-X REFERENCE CONTENT');
+      return caps > 0 && db > caps && nb > caps;
+    },
+  },
+  {
     id: 'worker-daily-cap-enforced',
     claim: 'The Worker enforces a per-isolate daily request ceiling (not just logs one)',
     check: () => {
@@ -235,6 +250,10 @@ function selfTest() {
     ['no-issue-filing', 'index.html', (s) => s.replace('<script>', '<script>const u="https://api.github.com/repos/x/y/issues";')],
     ['worker-db-cap', 'cloudflare-worker/worker.js', (s) => s.replace(/DB_CONTEXT_MAX_CHARS/g, 'REMOVED_CAP')],
     ['worker-daily-cap-enforced', 'cloudflare-worker/worker.js', (s) => s.replace(/dayEntry\.count >= DAILY_MAX_PER_ISOLATE/, 'false')],
+    // Mutate the ORDER, not the identifier: moves db_context back above the
+    // CAPABILITIES block, which is exactly the regression that would silently
+    // stop the cached prefix from being a prefix.
+    ['worker-prompt-cache-prefix', 'cloudflare-worker/worker.js', (s) => s.replace('CAPABILITIES:', 'CAPABILITIES_MOVED_AFTER_${dbContext.trim()}:')],
     ['worker-key-server-side-only', 'index.html', (s) => s.replace('<script>', '<script>const k="sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAA";')],
     ['notebook-sync-failure-visible', '.github/workflows/notebook-sync.yml', (s) => s.replace('if: failure()', 'if: always()')],
   ];

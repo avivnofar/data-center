@@ -67,6 +67,54 @@ Full scoping (including the client-side error state and the zero-dependency
 implication of the external `challenges.cloudflare.com` script tag) is in
 `automation/NEEDS_YOUR_REVIEW.md` → F-02.
 
+## Usage logging (Observability → Logs)
+
+The Worker emits **two** JSON log lines per Claude call, correlated by
+`req_id`. Both are metadata-only — no message content, and no IP beyond the
+existing salted `ip_hash`.
+
+**`claude_api_call`** — emitted immediately *before* the Anthropic fetch, at
+the moment a daily slot is committed, so an event with this name always
+corresponds to a call that was genuinely made:
+
+| Field | Meaning |
+|---|---|
+| `req_id` | 8-char correlation id, shared with `claude_api_usage` |
+| `ip_hash` | Salted SHA-256 prefix (`LOG_SALT`), not reversible |
+| `mode` / `language` | `search`\|`diagnose`, `he`\|`en` |
+| `has_images` | Whether vision blocks were attached |
+| `db_context_chars` / `notebook_context_chars` | Client-supplied context sizes |
+| `isolate_daily_count` | This isolate's running count for the UTC day |
+
+**`claude_api_usage`** — emitted when the response stream ends, because usage
+does not exist until then (added 2026-08-04):
+
+| Field | Meaning |
+|---|---|
+| `req_id` | Correlates back to the `claude_api_call` line |
+| `input_tokens` | Uncached input only — tokens *after* the last cache breakpoint |
+| `output_tokens` | Cumulative output for the message |
+| `cache_creation_input_tokens` | Tokens written to cache (billed at 1.25×) |
+| `cache_read_input_tokens` | Tokens served from cache (billed at 0.1×) |
+| `cache_hit_ratio` | `cache_read / (input + cache_read + cache_creation)` |
+| `web_search_requests` | Server-side searches performed (billed $10/1,000) |
+| `est_cost_usd` | Estimated cost — see caveat below |
+| `pricing` | `intro` or `standard`, whichever rate set was applied |
+
+Two caveats worth knowing before trusting these numbers:
+
+- **`est_cost_usd` is an estimate for trend-watching, not a billing record.**
+  Rates are hardcoded from the pricing docs as read on 2026-08-04. Both the
+  `claude-sonnet-5` introductory rates ($2/$10 per MTok, through 2026-08-31)
+  and the standard rates ($3/$15) are encoded and selected by UTC date. The
+  Anthropic Console remains the source of truth.
+- **A `claude_api_call` with no matching `claude_api_usage` is normal.** The
+  usage line is written from the stream's `flush()`, which never runs if the
+  browser disconnects mid-answer. That call still cost money — which is
+  precisely why the two lines were not merged into one.
+
+To watch them live: `npx wrangler tail --format pretty`.
+
 ## Notes
 
 - **Allowed origins**: the worker only accepts requests from

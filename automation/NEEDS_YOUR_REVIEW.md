@@ -890,7 +890,7 @@ Verified against code, not docs:
   and images (3 max, 2 MB base64 each, media-type allowlisted). This surface is
   well covered.
 - **Per-request model limits**: `MAX_TOKENS = 1536` output, `web_search` capped
-  at `max_uses: 3`.
+  at `max_uses: 2` (lowered from 3 on 2026-08-04).
 - **Turnstile**: implemented and fails closed, but **dormant unless
   `TURNSTILE_SECRET` is set**. I cannot see Cloudflare secrets from here —
   **owner should confirm whether it is set**. If it is, most of this finding
@@ -898,16 +898,48 @@ Verified against code, not docs:
 
 **Cost per hour, worst case.** Max-size request ≈ 45k input tokens (system
 prompt + 20k-char `db_context` + 20k-char `notebook_context` + 60k chars of
-messages + 3 high-res images) and 1536 output tokens. At `claude-sonnet-5`
-introductory pricing ($2/$10 per MTok through 2026-08-31; $3/$15 after) plus
-3 web searches at ~$10/1k searches: **≈ $0.13 per request** — roughly $0.16
-once intro pricing ends. One IP against one isolate: 20/min → ~$160/hour until
-that isolate's daily cap trips. **Updated 2026-08-01:** with the cap lowered
-from 1500 to 300 (see SEC-02), that trip point moved from ~75 min / ~$200 to
-~15 min / ~$40 per isolate. A distributed caller rotating IPs across edge
-locations still multiplies this by the isolate count (SEC-02), so the real
-daily ceiling is still not bounded by anything computable from the code — the
-per-isolate worst case is simply 5× cheaper than it was.
+messages + 3 high-res images) and 1536 output tokens.
+
+**Recomputed 2026-08-04** after prompt caching + `max_uses: 3 → 2`. At
+`claude-sonnet-5` introductory pricing ($2/$10 per MTok through 2026-08-31;
+$0.20/MTok cache read) plus web search at $10/1k searches:
+
+| | before | after |
+|---|---|---|
+| uncached input | 45,000 × $2/MTok = $0.0900 | 42,487 × $2/MTok = $0.0850 |
+| cached input | — | 2,513 × $0.20/MTok = $0.0005 |
+| output | 1,536 × $10/MTok = $0.0154 | 1,536 × $10/MTok = $0.0154 |
+| web search | 3 × $0.01 = $0.0300 | 2 × $0.01 = $0.0200 |
+| **per request** | **≈ $0.135** | **≈ $0.121** |
+| per hour, 20/min uncapped | ≈ $162 | **≈ $145** |
+| per isolate per UTC day (300 cap) | ≈ $40.6 | **≈ $36.3** |
+
+Once intro pricing ends (2026-09-01, $3/$15): $0.188 → **$0.171** per request,
+≈ $51 per isolate-day.
+
+**The honest read: caching barely helps the worst case, and the earlier
+assumption that "attacker requests are cache-hits after the first" is wrong.**
+Only the *static system prefix* — ~2,513 tokens of the 45k — sits above the
+cache breakpoint. Everything an attacker actually controls (`db_context`,
+`notebook_context`, messages, images) is deliberately below it, because that
+content changes every request and caching it would invalidate the entry every
+time. So a max-size attacker gets a cache hit on ~5.6% of their input, worth
+**$0.0045/request**. Two thirds of the $0.0146 saving comes from dropping one
+web search, not from the cache. Caching is a real win for *normal* traffic,
+where the static prefix is most of the prompt — it is close to a rounding
+error against a maximum-payload attacker.
+
+One second-order effect, for completeness: an attacker rotating
+`mode`/`language`/`cli_mode` forces a cache *write* (1.25×) instead of a read
+on the static prefix, which costs ~$0.0013/request **more** than no caching at
+all. That is ~1% of request cost — noise, not a regression worth acting on,
+but it means caching is not a strict improvement in the adversarial case.
+
+The structural point is unchanged: a distributed caller rotating IPs across
+edge locations multiplies the per-isolate figure by the isolate count
+(SEC-02), so the real daily ceiling is still not bounded by anything
+computable from the code. `TURNSTILE_SECRET` remains the fix that actually
+closes this; the cost work narrows the blast radius, it does not gate access.
 
 **Concrete fix, cheapest first:** (1) set `TURNSTILE_SECRET` — the code path
 already exists and is dormant, so this is config, not code; (2) fix SEC-02 so

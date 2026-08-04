@@ -32,7 +32,20 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   `{messages, mode, language, db_context, notebook_context, cli_mode, images}`
   to `/api/chat`; the Worker assembles a bilingual system prompt (appending
   both context strings, `notebook_context` capped server-side at 20 KB) and
-  calls Claude with the `web_search` tool enabled.
+  calls Claude with the `web_search` tool enabled (`max_uses: 2`).
+- **Prompt caching (active since 2026-08-04)**: `systemBlocks()` returns the
+  system prompt as an *array* of content blocks ordered static → dynamic,
+  because Anthropic's cache is a prefix match. Two `cache_control: ephemeral`
+  breakpoints: one after the universal base prompt (~1.9k tokens, static per
+  language), one after the mode/CLI/CAPABILITIES section. `db_context` and
+  `notebook_context` are the last block and are deliberately **not** cached —
+  they change every request, so anything cached after them would be
+  invalidated every time. The `tools` array renders before `system`, so it is
+  covered by the first breakpoint for free. Whether it is actually engaging is
+  observable, not assumed: `cache_creation_input_tokens` /
+  `cache_read_input_tokens` on the `claude_api_usage` log line (see
+  `cloudflare-worker/README.md`). Both zero across repeated identical-prefix
+  requests means a silent invalidator crept in.
 - **Notebook-X integration (repo mirror, decided + implemented 2026-07-21)**:
   `.github/workflows/notebook-sync.yml` mirrors the Notebook-X public index
   + all 12 notebooks verbatim into `data/notebooks/` weekly (read-only
@@ -90,7 +103,7 @@ paid API calls were made.
 | 3 | Solve a Case guided controls | `#diagnose-controls`: platform/severity chips (`selectDiagnoseChip()` → `DIAGNOSE_PLATFORM/SEVERITY`) + 5 action buttons wired to `diagnoseAction()` — `start` prefills the input with chip context; next/resolved/escalate/guide call `sendAiMessage()`. |
 | 4 | CLI Mode terminal-in-chat | `tryRunCliCommand()` → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; unmatched input falls through to Claude. |
 | 5 | Image paste + upload + vision | Attach button `#ai-attach-btn` and document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64, previews, removable) → `images` in the request body; Worker injects `type:'image'` blocks (max 3). |
-| 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20260209', name:'web_search', max_uses:3}]` — yes, actually added; system prompt lists preferred official domains. Upgraded from `web_search_20250305` on 2026-08-01 for **dynamic filtering** (Claude filters results via code execution before they reach the context window, reducing input tokens on search-heavy answers). `allowed_callers` is left at its `_20260209` default of `["code_execution_20260120"]`; `code_execution` is deliberately *not* declared separately. A newer `web_search_20260318` exists, adding only `response_inclusion` (an output-token optimisation for agents that don't echo search content back) — not adopted, since this app streams answers to a browser. |
+| 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20260209', name:'web_search', max_uses:2}]` — yes, actually added; system prompt lists preferred official domains. `max_uses` lowered 3 → 2 on 2026-08-04: web search bills $10/1,000 searches on top of tokens, making it the largest per-request cost multiplier a caller controls. Upgraded from `web_search_20250305` on 2026-08-01 for **dynamic filtering** (Claude filters results via code execution before they reach the context window, reducing input tokens on search-heavy answers). `allowed_callers` is left at its `_20260209` default of `["code_execution_20260120"]`; `code_execution` is deliberately *not* declared separately. A newer `web_search_20260318` exists, adding only `response_inclusion` (an output-token optimisation for agents that don't echo search content back) — not adopted, since this app streams answers to a browser. |
 | 11 | Hebrew default + English toggle | `LANG = localStorage.getItem('dc-lang') \|\| 'he'`; `applyLang()` flips `document.documentElement.dir` and re-renders. |
 | 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
 | 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html); `toggleSidebarCollapse()` + persisted collapsed state + mobile off-canvas mode. |
