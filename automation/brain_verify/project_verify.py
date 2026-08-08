@@ -118,40 +118,151 @@ def load_sourced_skills(brain_root: Path, project: str) -> list[tuple[Path, dict
     return out
 
 
-def extract_code_pointers(skill_path: Path) -> list[str]:
+# A `Code lives at:` bullet that declares there IS no code. SPEC-0 §9.4
+# requires an author to say this out loud rather than omit the section, so a
+# checker that reports it as a broken pointer is punishing the exact honesty
+# the spec demands. 6 of the 49 published skills use this form.
+NO_CODE_RE = re.compile(r"^\W*(nowhere|nothing|none|n/a)\b", re.IGNORECASE)
+
+# A markdown code span. Everything that is not one is PROSE, and prose is
+# never a path.
+CODE_SPAN_RE = re.compile(r"`([^`\n]+)`")
+
+# Of the code spans, only the path-like ones. `_evaluate_matrix()` is a
+# symbol; `auth.py` and `src/api/backend.js` are paths.
+PATH_LIKE_RE = re.compile(r"^[\w.@+-]+(?:/[\w.@+ -]+)*$")
+
+
+def _code_lives_bullets(block: str) -> Iterator[str]:
+    """Yield the FULL text of each `Code lives at:` bullet, continuation lines
+    included.
+
+    The line-scoped original stopped at the first newline. These skill files
+    are hard-wrapped at ~78 columns, so a bullet naming two repositories
+    routinely puts the second pointer on line two and it was never read —
+    the same line-versus-paragraph scoping defect aviv-brain's own SC-10 and
+    SC-06 were fixed for on 2026-08-08. A bullet ends at a blank line or at
+    the next list item."""
+    lines = block.splitlines()
+    i = 0
+    while i < len(lines):
+        if CODE_LIVES_RE.search(lines[i]):
+            buf = [CODE_LIVES_RE.search(lines[i]).group(1)]
+            j = i + 1
+            while j < len(lines):
+                nxt = lines[j]
+                if not nxt.strip() or re.match(r"\s*(?:[-*+]|\d+\.)\s", nxt) or nxt.startswith("#"):
+                    break
+                buf.append(nxt.strip())
+                j += 1
+            yield " ".join(buf)
+            i = j
+        else:
+            i += 1
+
+
+def extract_code_pointers(skill_path: Path) -> tuple[list[str], bool, list[str]]:
+    """Returns (pointers, declares_no_code, bare_names).
+
+    REWRITTEN 2026-08-08, on Route C's first execution against real skill
+    files. The original split the text after `Code lives at:` on commas and
+    treated every fragment as a filesystem path. Against this library it
+    produced, among 19 findings, 12 false BROKEN POINTERS on strings like
+    `nothing new — this is a verification discipline`, `and its`, and
+    `**nowhere.** This skill points at no implementation` — and, because it
+    never stripped a trailing backtick, it also failed to resolve EVERY
+    genuinely correct pointer in the repo it was run in. It had a 0% true
+    accuracy rate on live input and would have opened an issue for each.
+
+    It had never been run against a real skill file. The failure was not
+    subtle; nothing had looked.
+
+    The rule now: a pointer is a markdown CODE SPAN that looks like a path.
+    Prose is prose."""
     text = skill_path.read_text(encoding="utf-8", errors="replace")
     m = re.search(r"##\s*How to rebuild.*?(?=^##\s|\Z)", text, re.MULTILINE | re.DOTALL)
     block = m.group(0) if m else text
-    pointers = []
-    for line in block.splitlines():
-        cm = CODE_LIVES_RE.search(line)
-        if cm:
-            for token in re.split(r",\s*", cm.group(1)):
-                token = token.strip().strip(".")
-                if token:
-                    pointers.append(token)
-    return pointers
+    pointers: list[str] = []
+    bare_names: list[str] = []
+    declares_no_code = False
+    for bullet in _code_lives_bullets(block):
+        if NO_CODE_RE.match(bullet.strip()):
+            declares_no_code = True
+            continue
+        for span in CODE_SPAN_RE.findall(bullet):
+            span = span.strip()
+            if not PATH_LIKE_RE.match(span):
+                continue                       # a symbol, a flag, a quoted phrase
+            if "/" in span:
+                if span not in pointers:
+                    pointers.append(span)
+            elif re.search(r"\.\w{1,5}$", span):
+                # A bare filename with no directory. It cannot be resolved
+                # without searching the tree, and a checker that searches
+                # answers a different question than the one asked ("a file
+                # by this name exists somewhere" is not "this path is
+                # correct"). Reported, never guessed at.
+                if span not in bare_names:
+                    bare_names.append(span)
+    return pointers, declares_no_code, bare_names
 
 
-def resolve_pointer(project_root: Path, pointer: str) -> tuple[bool, str]:
+def resolve_pointer(project_root: Path, pointer: str,
+                    sibling_repos: frozenset[str] = frozenset(),
+                    repo_name: str = "") -> tuple[bool | None, str]:
     """pointer is of the form '<repo>/<path>' or '<path>[, symbol]'.
     We can only verify the PATH half locally (the repo name is informational —
     this script runs inside that repo's own checkout already). Never trust
-    a line number (SPEC-4b §6): existence of the path is what's checked."""
-    # Strip a leading '<repo-name>/' segment if it matches this checkout's
-    # own directory name — SPEC-7 §4's "the producer's queue repo and code
-    # repo are one repository when they are two" pitfall, avoided by not
-    # assuming which segment is the repo name.
-    candidate = pointer.split(":", 1)[0].strip()
-    candidate = candidate.lstrip("`").rstrip("`")
+    a line number (SPEC-4b §6): existence of the path is what's checked.
+
+    Returns (True, detail) resolved, (False, detail) broken, or
+    (None, detail) NOT-ATTEMPTED — the pointer names a sibling repository
+    that this checkout is not, so this run has no evidence either way.
+
+    ADDED 2026-08-08, and it is a correctness fix, not a convenience.
+    `source:` names a PROJECT; a project can be more than one repository.
+    `smart-archive` is two — `smart-archive-app` (frontend, `api/`, `src/`)
+    and `smart-archive-backend` (FastAPI, `main.py`, `auth.py`). Without the
+    sibling declaration below, Route C running in either one reports the
+    other one's pointers as BROKEN, which is the not-attempted-versus-failed
+    confusion this whole system exists to prevent, reintroduced one layer
+    down.
+
+    Worse than the false positive is a false RESOLUTION: the
+    drop-the-leading-segment fallback would happily match
+    `smart-archive-backend/scripts/foo.py` against this repo's own
+    `scripts/foo.py` if a same-named file existed in both. Skipping BEFORE
+    the fallback is what removes that risk, so this is not merely noise
+    suppression."""
+    candidate = pointer.split(":", 1)[0].strip().strip("`")
+    head, _, tail = candidate.partition("/")
+
+    if head in sibling_repos:
+        return None, (f"not-attempted: names sibling repo '{head}', which is not this "
+                      f"checkout — Route C must run there to verify it")
+
+    if head == repo_name and tail:
+        candidate = tail          # explicitly OUR repo prefix; strip it and resolve
+    elif sibling_repos:
+        # A multi-repo project with an unprefixed pointer. It cannot be
+        # attributed to a repository, so it cannot be verified — and the
+        # dangerous outcome is not the false BROKEN, it is the false
+        # RESOLVED: `automation/lib/comms.ps1` names a real file in the
+        # sibling app repo AND, since Route C was installed here, a real
+        # `automation/` directory in this one. Guessing would have produced
+        # a green tick for a pointer nobody checked.
+        return None, (f"not-attempted: '{candidate}' carries no repository prefix and "
+                      f"'{repo_name}' is one of {1 + len(sibling_repos)} repos in this "
+                      f"project — which repo it names cannot be determined")
+
     p = project_root / candidate
     if p.exists():
         return True, f"resolved: {candidate}"
-    # try dropping a leading path component (possible repo-name prefix)
-    parts = candidate.split("/", 1)
-    if len(parts) == 2:
-        p2 = project_root / parts[1]
-        if p2.exists():
+    if not sibling_repos:
+        # Single-repo project: the historical leading-segment drop is safe
+        # here because there is no other repo for a segment to belong to.
+        parts = candidate.split("/", 1)
+        if len(parts) == 2 and (project_root / parts[1]).exists():
             return True, f"resolved after dropping leading segment: {parts[1]}"
     return False, f"does not resolve under this checkout: {candidate}"
 
@@ -195,7 +306,9 @@ def open_issue(title: str, body: str, label: str) -> None:
 
 
 def run(project: str, project_root: Path, brain_clone_dir: Path,
-        brain_repo_url: str, token_env: str, make_issues: bool) -> tuple[list[Finding], bool]:
+        brain_repo_url: str, token_env: str, make_issues: bool,
+        sibling_repos: frozenset[str] = frozenset(),
+        repo_name: str = "") -> tuple[list[Finding], bool]:
     """Returns (findings, missing_secret). missing_secret=True tells main()
     to also exit with the explicit die_missing_secret() failure — the
     finding record and the loud failure are not alternatives, both happen:
@@ -230,15 +343,38 @@ def run(project: str, project_root: Path, brain_clone_dir: Path,
 
     for skill_path, fm in sourced:
         skill_name = skill_path.parent.name
-        pointers = extract_code_pointers(skill_path)
+        pointers, declares_no_code, bare_names = extract_code_pointers(skill_path)
+        if bare_names:
+            findings.append(Finding("PV-06", f"skills/{skill_name}/SKILL.md",
+                                     f"{len(bare_names)} filename(s) cited without a directory and "
+                                     f"therefore not verifiable: {', '.join(bare_names)}",
+                                     severity="metric", extra={"reason": "unrooted-filename"}))
         if not pointers:
+            if declares_no_code:
+                # The author stated there is no code to point at, which
+                # SPEC-0 §9.4 requires them to do. Nothing to verify, and
+                # that is the correct outcome, not a defect.
+                findings.append(Finding("PV-05", f"skills/{skill_name}/SKILL.md",
+                                         "declares no code pointer (`Code lives at: nowhere`) — "
+                                         "nothing to verify, per SPEC-0 §9.4",
+                                         severity="metric", extra={"reason": "declared-no-code"}))
+                continue
             findings.append(Finding("PV-02", f"skills/{skill_name}/SKILL.md",
-                                     "sources this project but has no `Code lives at:` line to verify",
+                                     "sources this project but has no parseable `Code lives at:` "
+                                     "pointer — a path must be written as a markdown code span",
                                      severity="check-errored"))
             continue
         for pointer in pointers:
-            ok, detail = resolve_pointer(project_root, pointer)
+            ok, detail = resolve_pointer(project_root, pointer, sibling_repos, repo_name)
             if ok:
+                continue
+            if ok is None:
+                # NOT-ATTEMPTED. Emitted, never silent: an omitted pointer and
+                # a verified one look identical in an artifact, and only one of
+                # them is a gap.
+                findings.append(Finding("PV-04", f"skills/{skill_name}/SKILL.md",
+                                        detail, severity="metric",
+                                        extra={"reason": "sibling-repo", "pointer": pointer}))
                 continue
             fingerprint = f"{skill_name}:{pointer}"
             findings.append(Finding("PV-03", f"skills/{skill_name}/SKILL.md",
@@ -270,6 +406,16 @@ def main() -> int:
     ap.add_argument("--json-out", type=Path, default=None)
     ap.add_argument("--no-issues", action="store_true",
                      help="report findings only; never call `gh issue create`")
+    ap.add_argument("--sibling-repo", action="append", default=[],
+                     help="repeatable. Another repository belonging to the SAME "
+                          "`source:` project. A pointer whose leading segment names "
+                          "one is recorded not-attempted instead of broken, because "
+                          "this checkout is not that repo and has no evidence either "
+                          "way. Declare every sibling: an undeclared one produces a "
+                          "false BROKEN, and can produce a false RESOLVED.")
+    ap.add_argument("--repo-name", default="",
+                     help="this checkout's own repository name, as skill pointers spell "
+                          "it. Defaults to the project-root directory name.")
     args = ap.parse_args()
 
     findings, missing_secret = run(
@@ -279,6 +425,8 @@ def main() -> int:
         brain_repo_url=args.brain_repo_url,
         token_env=args.token_env,
         make_issues=not args.no_issues,
+        sibling_repos=frozenset(args.sibling_repo),
+        repo_name=args.repo_name or args.project_root.resolve().name,
     )
 
     out_stream = args.json_out.open("w", encoding="utf-8") if args.json_out else sys.stdout

@@ -60,6 +60,33 @@ jobs:
             echo "::warning::BRAIN_READ_TOKEN is not set on this repository. project_verify.py will record every pointer as not-attempted and this job will then fail loudly. See this file's header for setup steps."
           fi
 
+      - name: Diagnose the token BEFORE using it
+        # ADDED 2026-08-08, after Route C's first runs with a token installed.
+        # notebook-x and data-center both failed with git's generic
+        # "Invalid username or token. Password authentication is not
+        # supported for Git operations." That message cannot distinguish
+        # expired / never-granted-this-repo / wrong-token-type / typo, and
+        # `gh secret list` proves only that a NAME exists — it never shows a
+        # value, so "the secret is set" was taken as "the secret works" for
+        # a whole day. This step asks the API and prints the cause. It never
+        # prints the token.
+        if: ${{ secrets.BRAIN_READ_TOKEN != '' }}
+        env:
+          T: ${{ secrets.BRAIN_READ_TOKEN }}
+        run: |
+          code=$(curl -s -o /tmp/probe.json -w '%{http_code}' \
+            -H "Authorization: Bearer $T" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/avivnofar/aviv-brain)
+          echo "GET /repos/avivnofar/aviv-brain -> HTTP $code"
+          case "$code" in
+            200) echo "Token authenticates and can see aviv-brain." ;;
+            401) echo "::error::401 — the token is invalid, expired or revoked. Regenerate it and re-set BRAIN_READ_TOKEN in this repo." ;;
+            403) echo "::error::403 — the token authenticates but is forbidden. A fine-grained PAT needs Repository access -> Only select repositories -> avivnofar/aviv-brain, and Repository permissions -> Contents: Read-only." ;;
+            404) echo "::error::404 — the token authenticates but cannot see avivnofar/aviv-brain at all. It was almost certainly not granted access to this repository when it was created." ;;
+            *)   echo "::error::HTTP $code — unexpected." ;;
+          esac
+
       - name: Run project_verify.py
         env:
           BRAIN_READ_TOKEN: ${{ secrets.BRAIN_READ_TOKEN }}
