@@ -1,0 +1,81 @@
+# templates/project-brain-verify.yml — SPEC-4c, Route C. TEMPLATE.
+#
+# *** DO NOT PLACE THIS FILE IN aviv-brain's .github/workflows/. ***
+# Copy it, together with automation/checks/project_verify.py and
+# automation/checks/_lib.py, into the SOURCING PROJECT's own repository —
+# e.g. notebook-x, data-center — as:
+#     <project-repo>/.github/workflows/brain-verify.yml
+#     <project-repo>/automation/brain_verify/project_verify.py
+#     <project-repo>/automation/brain_verify/_lib.py
+# and adjust the `--project` value below to that project's own name.
+#
+# SPEC-4c does not run in aviv-brain (SPEC-4c §0). This workflow runs on
+# the SOURCING PROJECT's own CI, opens issues in the SOURCING PROJECT's own
+# repository, and never writes to aviv-brain.
+#
+# REQUIRED SETUP, before this workflow will do anything but fail loudly:
+#   1. A fine-grained, read-only GitHub PAT scoped to aviv-brain (it is
+#      private; this workflow needs read access to clone it).
+#   2. Add it to THIS project repo's Actions secrets as BRAIN_READ_TOKEN.
+#   3. Adjust `project`, `brain-repo-url` and the schedule below.
+# If step 1-2 has not been done, the job fails with an explicit message
+# naming the missing secret — see project_verify.py's die_missing_secret().
+
+name: Brain pointer verification (SPEC-4c)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      # Re-run when the code a brain skill might point at changes. Adjust
+      # to this project's actual layout — this is intentionally broad.
+      - "**"
+  schedule:
+    - cron: "0 7 * * 1"   # weekly, offset an hour after aviv-brain's own weekly run
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Announce the token state (does NOT gate the run)
+        # Deliberately does not exit here. project_verify.py itself records a
+        # not-attempted Finding for a missing secret AND exits non-zero, so
+        # the uploaded artifact explains why nothing was checked rather than
+        # being empty. An empty artifact is indistinguishable from "checked,
+        # found clean" -- the failure the not-attempted verdict exists to
+        # prevent. Preflighting with `exit 78` here bypassed it entirely.
+        run: |
+          if [ -z "${{ secrets.BRAIN_READ_TOKEN }}" ]; then
+            echo "::warning::BRAIN_READ_TOKEN is not set on this repository. project_verify.py will record every pointer as not-attempted and this job will then fail loudly. See this file's header for setup steps."
+          fi
+
+      - name: Run project_verify.py
+        env:
+          BRAIN_READ_TOKEN: ${{ secrets.BRAIN_READ_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python automation/brain_verify/project_verify.py \
+            --project "data-center" \
+            --project-root "${{ github.workspace }}" \
+            --brain-clone-dir /tmp/aviv-brain \
+            --brain-repo-url "https://github.com/avivnofar/aviv-brain.git" \
+            --json-out pointer-findings.jsonl
+
+      - name: Upload findings artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brain-pointer-verify-${{ github.run_id }}
+          path: pointer-findings.jsonl
+          retention-days: 30
