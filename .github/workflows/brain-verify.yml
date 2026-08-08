@@ -70,10 +70,17 @@ jobs:
         # value, so "the secret is set" was taken as "the secret works" for
         # a whole day. This step asks the API and prints the cause. It never
         # prints the token.
-        if: ${{ secrets.BRAIN_READ_TOKEN != '' }}
         env:
           T: ${{ secrets.BRAIN_READ_TOKEN }}
         run: |
+          # NOTE: the emptiness test is HERE and not in a step-level `if:`.
+          # `secrets` is not a valid context in `if:` -- GitHub rejects the
+          # whole workflow file at parse time, the run shows 0s with no jobs,
+          # and the only diagnostic is "this run likely failed because of a
+          # workflow file issue". Found 2026-08-08 by pushing it. A local
+          # `yaml.safe_load` parses it fine, which is exactly the class of
+          # defect a self-test cannot see.
+          if [ -z "$T" ]; then echo "BRAIN_READ_TOKEN empty; skipping probe"; exit 0; fi
           code=$(curl -s -o /tmp/probe.json -w '%{http_code}' \
             -H "Authorization: Bearer $T" \
             -H "Accept: application/vnd.github+json" \
