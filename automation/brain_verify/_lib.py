@@ -14,6 +14,7 @@ whole run die on one bad file.
 
 from __future__ import annotations
 
+import io
 import json
 import re
 import subprocess
@@ -64,12 +65,72 @@ class Finding:
         return json.dumps(d, ensure_ascii=False, sort_keys=True)
 
 
+class NonUTF8StreamError(Exception):
+    """Raised by `_force_utf8` when a stream cannot be made to accept UTF-8
+    and there is no way to work around it — see that function's docstring."""
+
+
+def _force_utf8(stream):
+    """Return a stream guaranteed to accept UTF-8 text, forcing the encoding
+    on `stream` itself when possible.
+
+    THIS IS THE FIX FOR RECS-S5 §S5-12 / RB-14: `emit_jsonl` used to write
+    straight to `sys.stdout` with whatever encoding the console happened to
+    have. On a `cp1255` console, the first finding containing a non-cp1255
+    character (`→`) raised `UnicodeEncodeError` mid-stream — after thirty
+    lines had already printed, so a partial scan read as a complete one and
+    the run's own tally line never printed to say so. Every prior session
+    worked around it by hand, with `PYTHONIOENCODING=utf-8` exported before
+    the interpreter started — an environment setting the NEXT runner has no
+    way to know to pass, and a run's own numbers should not depend on it.
+
+    Three attempts, in order, and each is load-bearing:
+      1. The stream is ALREADY UTF-8 (e.g. `--json-out`'s file, opened with
+         `encoding="utf-8"` explicitly) — nothing to do, return it unchanged.
+      2. `TextIOBase.reconfigure()` (Python 3.7+) changes the stream's
+         encoding in place, which is what `PYTHONIOENCODING=utf-8` achieves
+         from OUTSIDE the process — done here, from INSIDE it, so the setting
+         is no longer something a caller has to remember to pass.
+      3. If `reconfigure` is unavailable, wrap the stream's underlying byte
+         `.buffer` in a fresh UTF-8 `TextIOWrapper`.
+
+    If none of the three apply, this raises `NonUTF8StreamError` BEFORE a
+    single finding has been written — never partway through, which is
+    exactly the failure this function exists to remove. A caller that cannot
+    write UTF-8 at all should fail loudly and immediately, not print thirty
+    lines and then explode.
+    """
+    enc = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+    if enc == "utf8":
+        return stream
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8")
+            return stream
+        except Exception:
+            pass
+    buffer = getattr(stream, "buffer", None)
+    if buffer is not None:
+        return io.TextIOWrapper(buffer, encoding="utf-8", newline="")
+    raise NonUTF8StreamError(
+        "emit_jsonl: this stream cannot be forced to UTF-8 (no .reconfigure() "
+        "and no .buffer to wrap) — refusing to write anything, because a "
+        "stream that fails partway through a run produces a truncated result "
+        "that looks complete. Pass --json-out to write to a file instead."
+    )
+
+
 def emit_jsonl(findings: Iterable[Finding], stream=None) -> int:
     """Write one JSON object per line. Returns the count written.
     Per the run-harness failure table: 'nothing found' still writes output —
     an empty run and a run that never happened must not look identical, so
-    callers should print a trailing summary line even when count is 0."""
-    stream = stream or sys.stdout
+    callers should print a trailing summary line even when count is 0.
+
+    The stream is forced to UTF-8 before the first write — see
+    `_force_utf8()` — so a run's output no longer depends on
+    `PYTHONIOENCODING` being set by whoever launched the process."""
+    stream = _force_utf8(stream if stream is not None else sys.stdout)
     n = 0
     for f in findings:
         stream.write(f.to_json() + "\n")
@@ -277,20 +338,71 @@ def last_seen_marker(state: dict, source_name: str) -> Optional[str]:
 # not "what has each source's HEAD moved to."
 # ---------------------------------------------------------------------------
 
+def runs_dir(state_path: Path) -> Path:
+    """One directory of one-file-per-run records, beside last-run.json."""
+    return state_path.parent / "runs"
+
+
 def append_last_run(state_path: Path, link_id: str, trigger: str, exit_status: str,
                      timestamp: str) -> dict:
-    """Append one run record: {link_id, trigger, timestamp, exit_status}.
-    Same append-only, single-writer discipline as last-scan.json — nothing
-    already written is ever rewritten."""
-    state = load_state(state_path)
-    state["runs"].append({
+    """Record one run: {link_id, trigger, timestamp, exit_status}.
+
+    ONE FILE PER RUN, never an append into a shared file.
+
+    The first version rewrote a single last-run.json. Three jobs of one
+    workflow run each appended to it and each pushed, and on 2026-08-08 the
+    audit job's rebase hit `CONFLICT (content): automation/state/last-run.json`
+    and its record was lost — after which retrying could not help, because the
+    rebase was still in progress and every later attempt died on
+    "Pulling is not possible because you have unmerged files."
+
+    `skills/unattended-agent-runs` already carries this exact lesson:
+    "parallel runs appending to one shared file are structurally guaranteed to
+    conflict, not merely likely... one file per run, consolidated later by a
+    single named owner." The chain committed the defect its own library
+    documents. This is the library's own answer applied to it.
+
+    Two writers now never touch the same path, so there is nothing to
+    conflict. Readers consolidate via load_run_history().
+    """
+    record = {
         "link_id": link_id, "trigger": trigger,
         "timestamp": timestamp, "exit_status": exit_status,
-    })
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
-                           encoding="utf-8")
-    return state
+    }
+    d = runs_dir(state_path)
+    d.mkdir(parents=True, exist_ok=True)
+    # Filename carries the timestamp so a plain filename sort IS append order —
+    # the same position-not-date discipline as the rest of this module, moved
+    # into the name. Colons are illegal in Windows filenames; stripped.
+    safe_ts = timestamp.replace(":", "").replace("+", "p")
+    (d / f"{safe_ts}-{link_id}.json").write_text(
+        json.dumps(record, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8")
+    return load_run_history(state_path)
+
+
+def load_run_history(state_path: Path) -> dict:
+    """The consolidating reader for append_last_run's one-file-per-run records.
+
+    Returns the same {"runs": [...]} shape every existing reader already
+    expects, so most_recent_run/oldest_run/last_run_per_link are unchanged.
+
+    Reads BOTH the legacy single last-run.json (records written before the
+    2026-08-08 split, if any) and every file in runs/, legacy first, then
+    filename-sorted — which is timestamp order, which is append order.
+    """
+    runs: list = []
+    if state_path.exists():
+        runs.extend(load_state(state_path).get("runs", []))
+    d = runs_dir(state_path)
+    if d.is_dir():
+        for f in sorted(d.glob("*.json")):
+            try:
+                runs.append(json.loads(f.read_text(encoding="utf-8")))
+            except Exception:
+                raise FrontmatterError(f"run record at {f} is not valid JSON — "
+                                        f"refusing to guess; fix or delete it by hand")
+    return {"runs": runs}
 
 
 def most_recent_run(state: dict, link_id: Optional[str] = None,
