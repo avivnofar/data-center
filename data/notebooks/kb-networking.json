@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:06.791442Z",
-  "updatedAt": "2026-07-17T19:01:38.794601Z",
+  "updatedAt": "2026-08-10T06:05:54.334466Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -143,6 +143,17 @@
         ],
         "dateAdded": "2026-07-17T19:01:38.794532Z",
         "addedBy": "url"
+      },
+      {
+        "id": "vlans-and-trunking-protocols",
+        "title": "VLANs and Trunking Protocols",
+        "content": "### VLANs and Trunking Protocols\n\nVirtual Local Area Networks (VLANs) segment Layer 2 broadcast domains. Trunking protocols enable these VLANs to span multiple switches by tagging frames.\n\n#### IEEE 802.1Q Encapsulation\n802.1Q is the industry-standard trunking protocol. It inserts a 4-byte tag into the Ethernet frame header, containing the VLAN ID (VID). \n\n*   **Native VLAN:** Untagged traffic on a trunk port. Must match on both ends to prevent VLAN leaking and spanning-tree loops.\n*   **Allowed VLANs:** By default, a trunk allows all VLANs (1–4094). Use pruning to restrict traffic to necessary VLANs only.\n\n#### Configuration: Cisco IOS\nTo configure a trunk port, set the encapsulation (if required) and define the port mode.\n\n```bash\n# Enter interface configuration\nSwitch(config)# interface GigabitEthernet0/1\nSwitch(config-if)# switchport trunk encapsulation dot1q\nSwitch(config-if)# switchport mode trunk\n# Set the Native VLAN (must match peer)\nSwitch(config-if)# switchport trunk native vlan 99\n# Restrict allowed VLANs to optimize bandwidth\nSwitch(config-if)# switchport trunk allowed vlan 10,20,30\n```\n\n#### VLAN Trunking Protocol (VTP)\nVTP automates VLAN database synchronization across a domain. **Best Practice:** Use VTP Version 3 or disable VTP (Transparent Mode) to prevent accidental VLAN database overwrites.\n\n*   **Server:** Creates, modifies, and deletes VLANs; propagates information.\n*   **Client:** Receives and forwards updates; cannot modify local VLANs.\n*   **Transparent:** Does not participate in VTP updates but forwards them; maintains a local VLAN database.\n\n```bash\n# Set VTP mode to transparent to prevent synchronization risks\nSwitch(config)# vtp mode transparent\n```\n\n#### Dynamic Trunking Protocol (DTP)\nDTP negotiates trunking between Cisco switches. It is a frequent source of security vulnerabilities and configuration errors.\n\n*   **Recommendation:** Disable DTP on all user-facing ports to prevent \"VLAN hopping\" attacks.\n\n```bash\n# Disable DTP negotiation\nSwitch(config-if)# switchport nonegotiate\n```\n\n#### Troubleshooting Commands\nUse these commands to verify the state of VLANs and trunks:\n\n| Command | Purpose |\n| :--- | :--- |\n| `show vlan brief` | Displays VLAN status, name, and assigned ports. |\n| `show interfaces trunk` | Verifies trunk status, native VLAN, and allowed VLANs. |\n| `show interfaces <int> switchport` | Displays administrative and operational trunking status. |\n\n#### Key Operational Constraints\n*   **VLAN 1:** The default management VLAN. It is recommended to change the management VLAN to a non-default, non-routed VLAN for security.\n*   **MTU:** 802.1Q adds 4 bytes to the frame. Ensure the switch and connected devices support a minimum MTU of 1504 bytes to avoid fragmentation or frame drops.\n*   **Pruning:** Always prune unnecessary VLANs from trunks to reduce unnecessary broadcast traffic on links.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-10T06:05:54.334409Z",
+        "sources": [],
+        "dateAdded": "2026-08-10T06:05:54.334427Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -308,6 +319,56 @@
         "tags": [
           "arp"
         ]
+      },
+      {
+        "command": "interface GigabitEthernet0/1",
+        "description": "Enter interface configuration",
+        "platform": "both"
+      },
+      {
+        "command": "switchport trunk encapsulation dot1q",
+        "description": "Set the trunk encapsulation to 802.1Q",
+        "platform": "both"
+      },
+      {
+        "command": "switchport mode trunk",
+        "description": "Define the port mode as trunk",
+        "platform": "both"
+      },
+      {
+        "command": "switchport trunk native vlan 99",
+        "description": "Set the Native VLAN",
+        "platform": "both"
+      },
+      {
+        "command": "switchport trunk allowed vlan 10,20,30",
+        "description": "Restrict allowed VLANs on the trunk",
+        "platform": "both"
+      },
+      {
+        "command": "vtp mode transparent",
+        "description": "Set VTP mode to transparent",
+        "platform": "both"
+      },
+      {
+        "command": "switchport nonegotiate",
+        "description": "Disable DTP negotiation",
+        "platform": "both"
+      },
+      {
+        "command": "show vlan brief",
+        "description": "Displays VLAN status, name, and assigned ports",
+        "platform": "both"
+      },
+      {
+        "command": "show interfaces trunk",
+        "description": "Verifies trunk status, native VLAN, and allowed VLANs",
+        "platform": "both"
+      },
+      {
+        "command": "show interfaces <int> switchport",
+        "description": "Displays administrative and operational trunking status",
+        "platform": "both"
       }
     ]
   },

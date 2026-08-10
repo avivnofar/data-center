@@ -18,7 +18,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:50.820357Z",
-  "updatedAt": "2026-08-03T08:19:33.207223Z",
+  "updatedAt": "2026-08-10T06:05:44.037743Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -174,6 +174,17 @@
           }
         ],
         "dateAdded": "2026-08-03T08:19:33.207190Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "sip-trunking-case-intake-and-diagnostics",
+        "title": "SIP Trunking Case Intake and Diagnostics",
+        "content": "### SIP Trunking Case Intake and Diagnostics\n\nTo minimize Mean Time to Resolution (MTTR), follow this standardized intake and diagnostic workflow for SIP trunking issues.\n\n#### 1. Mandatory Intake Data\nBefore troubleshooting, verify the following parameters:\n*   **Source/Destination IPs:** Public and private IP addresses of the PBX/SBC and the ITSP (Internet Telephony Service Provider) gateway.\n*   **SIP Signaling Port:** Default (UDP/TCP 5060) or TLS (5061).\n*   **Codec Negotiation:** Verify G.711u/a or G.729 availability.\n*   **Registration Status:** Is the trunk registering (401/407 Unauthorized challenges followed by 200 OK)?\n\n#### 2. Diagnostic Methodology\nUse the following CLI-based approach to isolate the fault domain.\n\n**Step A: Connectivity Verification**\nConfirm basic reachability and firewall transparency.\n```bash\n# Verify path and latency\nmtr -rw [ITSP_Gateway_IP]\n\n# Check for SIP ALG interference (Ensure disabled on edge firewalls)\n# Test port availability\nnc -zv [ITSP_Gateway_IP] 5060\n```\n\n**Step B: Signaling Analysis (SIP Trace)**\nCapture traffic at the edge device to identify SIP response codes.\n\n*   **Asterisk/FreePBX:**\n    ```bash\n    asterisk -rvvv\n    sip set debug on\n    # Or for PJSIP\n    pjsip set logger on\n    ```\n*   **Cisco IOS-XE (CUBE):**\n    ```bash\n    debug ccsip messages\n    debug ccsip all\n    # View buffer\n    show logging\n    ```\n\n#### 3. Common Error Code Interpretation\nMap SIP response codes to the fault domain:\n\n| Code | Meaning | Diagnostic Action |\n| :--- | :--- | :--- |\n| **401/407** | Authentication Required | Verify SIP credentials (username/password/realm). |\n| **403** | Forbidden | Check IP ACLs on ITSP portal; verify outbound Caller ID format. |\n| **404** | Not Found | Check Dial Plan/Outbound Routing; verify Request-URI format. |\n| **408** | Request Timeout | Check firewall/NAT; verify SIP ALG is disabled. |\n| **488** | Not Acceptable Here | Codec mismatch; verify SDP offer/answer compatibility. |\n\n#### 4. NAT and Media Troubleshooting\nIf signaling succeeds but media (audio) fails (one-way/no-way audio), focus on the SDP (Session Description Protocol) payload.\n\n*   **SDP Inspection:** Ensure the `c=` (connection) line in the SDP contains the public IP, not the internal PBX IP.\n*   **RTP Port Range:** Ensure the firewall has the RTP port range (typically 10000–20000 UDP) open and mapped to the PBX.\n*   **SBC Configuration:** If using an SBC, verify the `media-address` or `nat-address` configuration matches the public interface.\n\n#### 5. Log Aggregation\nFor intermittent issues, correlate logs using the `Call-ID` header.\n```bash\n# Extract specific call flow from logs\ngrep \"Call-ID: [Unique_ID_String]\" /var/log/asterisk/full\n```\nAlways capture a PCAP file for escalated tickets:\n```bash\ntcpdump -i any port 5060 or portrange 10000-20000 -w trunk_debug.pcap\n```",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-10T06:05:44.037692Z",
+        "sources": [],
+        "dateAdded": "2026-08-10T06:05:44.037704Z",
         "addedBy": "discover"
       }
     ],
@@ -616,6 +627,56 @@
       {
         "command": "sngrep",
         "description": "Tool to inspect SIP traffic and registration headers.",
+        "platform": "linux"
+      },
+      {
+        "command": "mtr -rw [ITSP_Gateway_IP]",
+        "description": "Verify path and latency",
+        "platform": "linux"
+      },
+      {
+        "command": "nc -zv [ITSP_Gateway_IP] 5060",
+        "description": "Test port availability",
+        "platform": "linux"
+      },
+      {
+        "command": "asterisk -rvvv",
+        "description": "Access Asterisk CLI",
+        "platform": "linux"
+      },
+      {
+        "command": "sip set debug on",
+        "description": "Enable SIP debugging in Asterisk",
+        "platform": "linux"
+      },
+      {
+        "command": "pjsip set logger on",
+        "description": "Enable PJSIP logging in Asterisk",
+        "platform": "linux"
+      },
+      {
+        "command": "debug ccsip messages",
+        "description": "Enable SIP message debugging on Cisco IOS-XE",
+        "platform": "both"
+      },
+      {
+        "command": "debug ccsip all",
+        "description": "Enable all SIP debugging on Cisco IOS-XE",
+        "platform": "both"
+      },
+      {
+        "command": "show logging",
+        "description": "View Cisco IOS-XE log buffer",
+        "platform": "both"
+      },
+      {
+        "command": "grep \"Call-ID: [Unique_ID_String]\" /var/log/asterisk/full",
+        "description": "Extract specific call flow from Asterisk logs",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -i any port 5060 or portrange 10000-20000 -w trunk_debug.pcap",
+        "description": "Capture SIP and RTP traffic to a PCAP file",
         "platform": "linux"
       }
     ]

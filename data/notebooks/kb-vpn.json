@@ -17,7 +17,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:15.346877Z",
-  "updatedAt": "2026-07-17T16:19:04.331241Z",
+  "updatedAt": "2026-08-10T06:06:26.075457Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -257,6 +257,17 @@
         ],
         "dateAdded": "2026-07-17T16:19:04.331209Z",
         "addedBy": "discover"
+      },
+      {
+        "id": "vpn-capacity-planning-and-performance-analysis",
+        "title": "VPN Capacity Planning and Performance Analysis",
+        "content": "### VPN Capacity Planning and Performance Analysis\n\nEffective VPN capacity planning requires balancing encryption overhead, hardware processing limits, and bandwidth availability. Performance degradation is typically a function of CPU exhaustion on the gateway or MTU-induced fragmentation.\n\n#### 1. Capacity Modeling Formula\nTo estimate required bandwidth, use the following calculation for concurrent users:\n*   **Formula:** $BW_{req} = (N \\times A \\times F) \\times (1 + O)$\n    *   $N$: Number of concurrent users.\n    *   $A$: Average bandwidth per user (e.g., 0.5 Mbps for standard office tasks, 5 Mbps for video/collaboration).\n    *   $F$: Concurrency factor (e.g., 0.7 for peak usage).\n    *   $O$: Overhead factor (typically 10–20% for IPsec/TLS encapsulation).\n\n#### 2. Key Performance Indicators (KPIs)\nMonitor these metrics to establish a performance baseline:\n*   **Throughput:** Actual data transfer rate vs. theoretical gateway limit.\n*   **Latency/Jitter:** Critical for real-time applications (VoIP/Video).\n*   **CPU/Memory Utilization:** The primary bottleneck for high-encryption tunnels (e.g., AES-256).\n*   **Tunnel Uptime:** Frequency of re-keying or drops.\n*   **Packet Loss:** Indicates congestion or MTU mismatch.\n\n#### 3. Diagnostic Commands & Analysis\nUse these commands to identify bottlenecks at the gateway or endpoint:\n\n*   **Linux (Endpoint/Gateway):**\n    *   `sar -n DEV 1`: Monitor interface throughput in real-time.\n    *   `top` or `htop`: Check if VPN process CPU usage is hitting 100% on a single core (common in single-threaded VPN implementations).\n    *   `iperf3`: Measure end-to-end throughput.\n        *   *Server:* `iperf3 -s`\n        *   *Client:* `iperf3 -c <Server_IP> -l 64k -w 64k` (Adjust window size for high-latency links).\n\n*   **Cisco ASA/Firepower:**\n    *   `show vpn-sessiondb summary`: View active session counts and tunnel types.\n    *   `show cpu usage`: Identify if the control plane is saturated.\n    *   `show crypto ipsec sa`: Check for encapsulation/decapsulation errors and packet drops.\n\n#### 4. Optimization Best Practices\n*   **MTU Tuning:** To prevent fragmentation, adjust the MSS (Maximum Segment Size) to account for VPN headers. For standard 1500-byte Ethernet, an MSS of 1360–1400 is often required for IPsec.\n    *   *Cisco Syntax:* `sysopt connection tcpmss 1360`\n*   **Split Tunneling:** Offload non-critical traffic (e.g., SaaS, streaming) to the local ISP to reduce gateway load.\n*   **Hardware Acceleration:** Ensure the VPN gateway utilizes dedicated crypto-offload hardware (ASICs) rather than relying on general-purpose CPUs.\n*   **Protocol Selection:** If throughput is the priority over legacy compatibility, prioritize WireGuard or IKEv2/IPsec over older SSL/TLS-based VPNs, as they offer lower overhead and better multi-core scaling.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-10T06:06:26.075412Z",
+        "sources": [],
+        "dateAdded": "2026-08-10T06:06:26.075425Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -476,6 +487,51 @@
         "command": "sudo wg show wg0",
         "description": "View status for a specific interface",
         "platform": "linux"
+      },
+      {
+        "command": "sar -n DEV 1",
+        "description": "Monitor interface throughput in real-time.",
+        "platform": "linux"
+      },
+      {
+        "command": "top",
+        "description": "Check if VPN process CPU usage is hitting 100% on a single core.",
+        "platform": "linux"
+      },
+      {
+        "command": "htop",
+        "description": "Check if VPN process CPU usage is hitting 100% on a single core.",
+        "platform": "linux"
+      },
+      {
+        "command": "iperf3 -s",
+        "description": "Start iperf3 in server mode.",
+        "platform": "linux"
+      },
+      {
+        "command": "iperf3 -c <Server_IP> -l 64k -w 64k",
+        "description": "Start iperf3 in client mode to measure end-to-end throughput.",
+        "platform": "linux"
+      },
+      {
+        "command": "show vpn-sessiondb summary",
+        "description": "View active session counts and tunnel types.",
+        "platform": "both"
+      },
+      {
+        "command": "show cpu usage",
+        "description": "Identify if the control plane is saturated.",
+        "platform": "both"
+      },
+      {
+        "command": "show crypto ipsec sa",
+        "description": "Check for encapsulation/decapsulation errors and packet drops.",
+        "platform": "both"
+      },
+      {
+        "command": "sysopt connection tcpmss 1360",
+        "description": "Adjust the MSS to prevent fragmentation.",
+        "platform": "both"
       }
     ]
   },
