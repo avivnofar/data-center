@@ -18,8 +18,15 @@
 #      private; this workflow needs read access to clone it).
 #   2. Add it to THIS project repo's Actions secrets as BRAIN_READ_TOKEN.
 #   3. Adjust `project`, `brain-repo-url` and the schedule below.
-# If step 1-2 has not been done, the job fails with an explicit message
-# naming the missing secret — see project_verify.py's die_missing_secret().
+# If step 1-2 has not been done, the job still fails loudly — but only AFTER
+# project_verify.py itself runs and records why, per die_missing_secret().
+# See the "Announce the token state" step below: it does NOT preflight-exit.
+#
+# SYNCED 2026-08-10, RUN K: brought the "Run project_verify.py" step up to
+# the template's 2026-08-09 shape (set +e / captured exit code / GITHUB_STEP_
+# SUMMARY / per-exit-code case block) — this repo's own "Announce the token
+# state" fix (below) had never been ported back to the template; it now has
+# been, in the same run. See triage/RECS-RUN-K-2026-08-10.md A8.
 
 name: Brain pointer verification (SPEC-4c)
 
@@ -99,12 +106,39 @@ jobs:
           BRAIN_READ_TOKEN: ${{ secrets.BRAIN_READ_TOKEN }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          set +e
+          # NO --sibling-repo FLAG, AND THAT IS THE POINT (2026-08-09, Run B §B4).
+          # The set of repositories a project spans is read from the brain's
+          # tracked automation/checks/project-sources.json (`repos`), which the
+          # step above has just cloned to --brain-clone-dir. A project that is
+          # not declared there FAILS CLOSED with a named error and exit 2 —
+          # it does not quietly assume the project is one repository.
           python automation/brain_verify/project_verify.py \
             --project "data-center" \
             --project-root "${{ github.workspace }}" \
             --brain-clone-dir /tmp/aviv-brain \
             --brain-repo-url "https://github.com/avivnofar/aviv-brain.git" \
-            --json-out pointer-findings.jsonl
+            --json-out pointer-findings.jsonl 2> verify-summary.txt
+          rc=$?
+          set -e
+          cat verify-summary.txt
+          {
+            echo "### Route C — brain pointer verification"
+            echo ""
+            echo '```'
+            cat verify-summary.txt
+            echo "exit=$rc"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case $rc in
+            0)  echo "::notice::clean — no findings, no check-errors." ;;
+            1)  echo "::error::FINDINGS — at least one real defect in a brain pointer. See the artifact." ;;
+            2)  echo "::error::CHECK-ERRORED — the checker could not answer. This is a fault in the CHECK, not a verdict on the library." ;;
+            3)  echo "::error::FINDINGS **and** CHECK-ERRORS — both. Read the check-errors first; they bound what the findings mean." ;;
+            78) echo "::error::NOT-ATTEMPTED — required secret missing. Nothing was verified. This is a setup gap, never a clean run." ;;
+            *)  echo "::error::unexpected exit $rc" ;;
+          esac
+          exit $rc
 
       - name: Upload findings artifact
         if: always()
