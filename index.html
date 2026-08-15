@@ -2580,9 +2580,11 @@ async function buildNotebookContext(query) {
 // — in Hebrew responses — standalone English words/acronyms) in an isolated
 // LTR span so mixed Hebrew/English text renders in the correct visual order.
 // Runs on plain (already-escHtml'd) text segments outside code spans; see
-// renderMarkdown()'s backtick-delimited split. Uses null-byte placeholders
-// so later, broader patterns never re-match text already wrapped by an
-// earlier, more specific pattern.
+// renderMarkdown()'s backtick-delimited split. All patterns are joined into
+// one alternation and matched in a single regex.replace() pass, so matches
+// are non-overlapping by construction — no separate pattern ever gets a
+// chance to re-match text a prior one already consumed. Verified by
+// .github/scripts/test-wrapltrterms.js.
 function wrapLtrTerms(segment) {
   const isHebrew = LANG === 'he';
   const patterns = [
