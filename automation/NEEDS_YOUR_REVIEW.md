@@ -1212,3 +1212,134 @@ No option above is implemented, and none is presented as the "right" one — tha
   step than logging a URL as pending.
 - `flagged/pending-review.md` is currently an empty table — nothing is
   awaiting review right now, so there's nothing actionable there this session.
+
+---
+
+## RTL/bidi bug diagnosis session — one comment fix landed, two items flagged (2026-08-15)
+
+*(session brief: verify two specific pre-identified gaps, fix only if safely
+scoped, report on a third separately-flagged bug without fixing it. This
+session's HARD RULE explicitly overrode the normal "pause before pushing to
+master" policy for its own single push — that override does not extend to
+any other session.)*
+
+### 1. The "corpus-level coverage %, 95% backfill trigger" spec — confirmed never implemented
+
+Searched every `.js` and `.yml` file under `.github/` for `95`, `coverage`,
+`backfill`, `threshold`, `trigger`, `ratio`, `percent` (case-insensitive), plus
+the same terms across `automation/*.md`. Result: **no trace of this spec
+exists as working code anywhere in `.github/`.** The only "coverage" hits are
+unrelated — `check-links.js`'s per-file coverage (TODO-014, already fixed) and
+`health-check.js`'s plain `source_url` presence count (no percentage, no
+threshold, no backfill trigger — see `.github/scripts/health-check.js`, no
+`%`/ratio logic anywhere in the file). Confirmed genuinely never built, not
+just undocumented.
+
+**Not built this session.** Specifying "exactly what it should measure" from
+existing patterns (Part B's own condition) turned out to require inventing
+the metric and threshold from scratch — there is no prior spec fragment to
+reconstruct from, only the phrase itself. That's a design decision, not a
+scoped fix, so per this session's own scope rules it was left undone rather
+than guessed at. Flagged here for a supervised session: if this is still
+wanted, the first question is what "corpus-level coverage" should even mean
+for this repo (source_url presence? bilingual field completeness? something
+else?) — `health-check.js`'s existing per-check counts are a reasonable
+template once that's answered, but the answer isn't derivable from the repo
+as it stands.
+
+### 2. wrapLtrTerms() "no double-wrap" claim — TRUE, verified by a new kept test; stale comment fixed
+
+Wrote `.github/scripts/test-wrapltrterms.js` — extracts `wrapLtrTerms()`
+verbatim from `index.html` (brace-matched, not a fragile line-range copy) and
+runs it against 5 realistic mixed Hebrew/English strings (he *and* en flow,
+10 cases total), each containing a flag, a path, an IP, and a version number
+per CLAUDE.md's own RTL testing note. Checked for the literal double-wrap
+signature (a second `<span dir="ltr">` opening before a prior one closes).
+
+**Result: no double-wrap in any of the 10 cases.** `node
+.github/scripts/test-wrapltrterms.js` → `OK: no double-wrap across 10 he/en
+test cases.` (exit 0). Root cause of *why* it holds: the function joins all
+its patterns into **one** regex alternation and does a single `.replace()`
+pass — matches are non-overlapping by construction (a single-pass global
+regex can't re-consume characters another alternative already matched), so
+there's structurally no second pass in which a "broader pattern" could
+re-wrap already-wrapped text.
+
+**However, the code comment above the function was factually wrong about
+*why*** — it claimed "null-byte placeholders so later, broader patterns never
+re-match text already wrapped by an earlier pattern," describing a
+multi-pass/placeholder mechanism that doesn't exist anywhere in the actual
+code (grepped: zero null-byte/`\0`/placeholder logic in `index.html`). This
+is the exact "doc asserts a thing the code doesn't do" pattern this repo's
+own `CURRENT-SPEC.md` preamble and `spec-drift-check.js` exist to prevent —
+just in a code comment rather than the spec doc, so the drift checker
+wouldn't have caught it. **Fixed this session** (comment-only, zero logic
+change): now describes the actual single-pass-alternation mechanism and
+points at the new test. Verified via `git diff index.html` — 5 lines changed,
+all inside the comment block, `wrapLtrTerms()`'s body itself is byte-identical.
+`validate-json.js`, `health-check.js`, and `spec-drift-check.js` all still
+pass clean (re-run after the change).
+
+**Bonus finding, NOT fixed, flagged for a supervised follow-up:** while
+building the test cases, found a real *fragmentation* bug adjacent to (but
+distinct from) double-wrap. The path pattern
+(`(?<=^|[\s(])(?:[A-Za-z]:)?(?:[\\/][\w.-]+)+`) only matches when preceded by
+whitespace, `(`, or start-of-string. When a Windows path is preceded by
+anything else — e.g. the Hebrew "and" prefix `ו-` (very common in natural
+Hebrew: "ו-C:\temp\file.txt") — the lookbehind fails, so the path pattern
+never matches the path as one unit. In Hebrew flow, the standalone-word
+fallback pattern then matches its pieces separately: input `ו-C:\temp\file.txt`
+became `ו-<span..>C</span>:\<span..>temp</span>\<span..>file.txt</span>` —
+three separate isolated spans with the raw, non-isolated backslashes sitting
+between them. Each fragment is correctly LTR-isolated on its own, so this
+isn't a double-wrap and isn't a crash, but the un-isolated separators between
+fragments are exactly the kind of thing that can visually reorder under the
+bidi algorithm next to Hebrew text — this needs an actual browser to confirm
+what it looks like, which this session couldn't do (no visual RTL
+verification available). Left unfixed per this session's own scope rule
+("if a fix requires touching live rendering behavior you cannot verify
+without a browser, diagnose only"). Repro case is preserved in
+`.github/scripts/test-wrapltrterms.js`'s case list (case 4) for whoever picks
+this up, though that test only asserts the double-wrap property today, not
+fragmentation.
+
+### 3. `&quot;` rendering literally in some AI Search answers — diagnosed, NOT fixed (out of scope this session)
+
+Traced every `escHtml()` call site in `index.html` (25 call sites) and the
+full `renderMarkdown()` pipeline. Finding: **`escHtml()` itself is correct
+and is only ever called once per raw-text path** — `renderMarkdown()` calls
+it exactly once on the raw body (`index.html`, `let html = escHtml(body)`),
+and every downstream re-render of a stored message (`appendMessageBubble()`,
+session restore) re-runs `renderMarkdown()` on the *original raw text* stored
+in `dc-sessions`/passed to `finalizeStreamingBubble()`, never on
+already-rendered HTML. No double-escape site was found anywhere in
+`index.html`, `worker.js`, or `tools/commandflow/commandflow-core.js` (the
+latter has no HTML-escaping logic at all — confirmed by grep — so it isn't
+pre-escaping CLI output either).
+
+**Most likely root cause (code-consistent, not live-verified):** the
+Worker's `web_search` tool (`worker.js`, `max_uses: 2`) can return page
+content extracted from third-party sites without HTML-entity-decoding it
+first. If Claude quotes or paraphrases such a snippet verbatim in prose (not
+inside a fenced code block), the *literal characters* `&quot;` end up in
+Claude's raw response text. `escHtml()` then does exactly what it's supposed
+to on that raw text — encoding the literal `&` into `&amp;` — producing
+`&amp;quot;` in the DOM. The browser correctly decodes `&amp;` → `&`, so the
+**visible** text becomes `&quot;`, i.e. exactly the reported symptom. Under
+this theory, `escHtml()`/`renderMarkdown()` have no defect — they're
+correctly single-escaping already-corrupted input; the fix, if wanted, would
+be upstream (e.g. an HTML-entity-decode pass over web-search-derived content
+before it reaches the model, or over the model's answer text before
+`escHtml()`, scoped narrowly enough not to mangle intentional code-block
+content).
+
+**Could not be confirmed live this session** — no Anthropic Console API key
+is available in this environment and no historical `wrangler tail` data
+exists (same access gap already documented in the 2026-08-15 token-budget
+session above), so no real "some AI Search answers" sample could be pulled to
+verify this is really what's happening versus some other mechanism. Flagged
+for a supervised follow-up with live API access: reproduce with a query
+likely to trigger `web_search` over a page containing example markup (e.g.
+asking about HTML/config syntax), inspect the raw (pre-`escHtml`) response
+text server-side, and confirm literal `&quot;`/`&amp;` sequences are already
+present before the client ever touches it.
