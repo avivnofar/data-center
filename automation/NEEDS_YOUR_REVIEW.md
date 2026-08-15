@@ -1121,6 +1121,87 @@ The Anthropic-console spend limit above remains the open, higher-value item.
 
 ---
 
+## AI Search token-budget analysis — decision table, no option chosen (2026-08-15)
+
+*(read-only diagnostic session — measured from real code paths and one real
+production data point; nothing in this section changes any behavior. No
+option below is implemented or recommended as final; that's left for a later
+supervised session per the session brief.)*
+
+### 1. Request anatomy — every component, cached or not, measured from code
+
+Sizes are `chars/4` token estimates. This heuristic was cross-checked against
+`worker.js`'s own comment (base block "measures ~1.9k tokens") — the
+chars/4 estimate for the base block came out to 1,926 tokens, matching to
+within 2%, so it's trustworthy for the rest of this table.
+
+| Component | Source | Cached? | Size |
+|---|---|---|---|
+| Block 0 — universal base system prompt | `worker.js` `systemBlocks()`, `base` string | Yes (breakpoint 1) | 7,704 chars / ~1,926 tok — static per language |
+| Block 1 — mode/lang/CLI variant + CAPABILITIES | `worker.js` `systemBlocks()`, `variant` string | Yes (breakpoint 2) | 2,224–2,983 chars / ~560–745 tok depending on mode/lang/CLI combo (English/search/non-CLI: 2,515 chars / ~629 tok) |
+| `web_search_20260209` tool schema | Anthropic-provisioned, not client text | Yes (tools render before block 0, covered by breakpoint 1) | **Not directly measurable client-side, but inferred ≈7,257 tok** — CURRENT-SPEC.md's 2026-08-04 live test measured the actual cached prefix at 9,812 tokens, vs. this session's ~2,555-token measurement of the base+variant prompt text alone (English/search/non-CLI) for the same config. The ~7,257-token gap is the tool's code-execution provisioning, per the existing doc comment in `worker.js`. This is *why* caching pays off here — it dominates the cached prefix, not the prompt text. |
+| `db_context` | `index.html` `buildDbContext()` | No | 0–800 chars / 0–200 tok — top-3 substring-scored DB entries (see finding 3: this matcher is noisy) |
+| `notebook_context` | `index.html` `buildNotebookContext()` | No | 0–15,000 chars / 0–3,750 tok (client cap; server re-caps at 20,000 chars / 5,000 tok as defense-in-depth against a modified client) — only populated when `matchNotebooks()` clears its relevance threshold |
+| Conversation history (`messages[]`) | `index.html` `sendAiMessage()` — full `session.messages`, resent every request | **No — never cached today** | Grows every turn, uncapped except server hard limits (`MAX_MESSAGES=40`, `MAX_TOTAL_MESSAGE_CHARS=60,000` chars ≈ 15,000 tok). Real measured growth: **+821 tokens between two consecutive turns** (5,205 → 6,026 uncached input tokens), from the live test already documented in CURRENT-SPEC.md's "Recently Completed" section |
+| `images[]` (vision, when attached) | `worker.js` request handler | No | Up to 3 images × ~2 MB base64 each; billed as vision tokens, not comparable to the text-token figures above — out of scope for this table |
+
+### 2. Log mining — no real distribution data is accessible from this environment (said plainly, not estimated)
+
+- `wrangler tail` (confirmed authenticated: `wrangler whoami` → `avivnofar@gmail.com`, scope includes `workers_tail (read)`) is **live-only** — it has no historical replay. A 20-second live capture this session caught **zero requests**, consistent with the low personal-use traffic CLAUDE.md's "Infrastructure Costs" section already estimates (~$3–8/month).
+- No Anthropic Console API key is available in this environment (`.env.cloudflare` still has no real `ANTHROPIC_API_KEY`, confirmed via `grep`), so the Console's own usage/cost history — the actual source of truth per `worker.js`'s own comment — could not be queried either.
+- The **only** real usage numbers available anywhere in this repo are the two-request live test in CURRENT-SPEC.md (2026-08-04): request 1 `input_tokens=5,205` (uncached) / `cache_creation=9,812` / cost `$0.0431`; request 2 `input_tokens=6,026` (uncached) / `cache_read=9,812` / cost `$0.0216`. Two data points is not a distribution — **no min/median/max claim is possible**, and this section makes none.
+- One thing those two points *do* isolate cleanly: CURRENT-SPEC.md states the two requests were "two identical questions back to back," so `db_context`/`notebook_context` were identical between them (same query → same matches). The entire 821-token uncached-input delta is therefore attributable to conversation-history growth alone (the first turn's Q+A now sitting in `messages[]`) — which is where the finding-1 table entry above comes from.
+- **Bottom line for this section: real per-request distribution (how uncached input splits between knowledge context and conversation history, across many requests) cannot be produced from this environment today.** Option F below is a proposed fix for that gap, not an implementation of it.
+
+### 3. Selection granularity — 3 representative queries, real code path, real repo data
+
+Ran a Node harness reproducing `buildDbContext()`/`matchNotebooks()`/`buildNotebookContext()` verbatim against the actual `data/*.json` and `data/notebooks/*.json` files in this repo (not a mock).
+
+| Query | `db_context` matched | `notebook_context` attached | Total attached |
+|---|---|---|---|
+| KB-heavy: *"how do I check open ports with netstat"* | `netstat (Windows)`, `whoami`, `nmap` — 415 chars / 104 tok | none (0 notebooks matched) | 104 tok |
+| Notebook-heavy: *"what is the difference between site-to-site and remote access VPN"* | `ncdu`, `nbtstat`, `pathping` — 537 chars / 134 tok (**noise — none relevant to the question**) | **11 of 17 sections across 2 notebooks**, 14,841 chars / 3,710 tok — includes all 5 relevant `kb-vpn` sections (2,720 chars) **plus 6 unrelated `kb-remote-access` sections** (TeamViewer, AnyDesk, RustDesk, Azure Network Watcher — remote-desktop tools, not VPN theory) | 3,845 tok |
+| Generic: *"what is a hypervisor"* | `du`, `sudo`, `who / w` — 402 chars / 101 tok (**noise — none relevant**) | none (correctly, 0 notebooks matched) | 101 tok |
+
+**Root cause of the `db_context` noise (code-verified, `index.html` `buildDbContext()`):** its word list is `query.toLowerCase().split(/\s+/).filter(Boolean)` — no stopword removal, no minimum length. A query containing "a" or "is" matches almost every DB entry's haystack (since those substrings appear in nearly all English text), and `score > 0` is enough to qualify. `matchNotebooks()` right next to it in the same file already has the fix — `NOTEBOOK_STOPWORDS`, a 3-char minimum, and a minimum relevance score — `buildDbContext()` was simply never brought up to the same standard.
+
+**Root cause of the `notebook_context` over-attachment (code-verified, `buildNotebookContext()`):** section-level filtering uses `words.some(w => notebookWordMatch(hay, w))` — a section qualifies if it matches **any** query token, not most of them. For the VPN query, "remote" and "access" are common words inside the `kb-remote-access` notebook's own content (it's a notebook *about* remote access), so nearly every section in that notebook matches on those two tokens alone, even though the question was about VPN architecture, not remote-desktop software.
+
+**Quantified subsection-level delta:** if section selection required matching the query's *dominant* topic token (or a majority of tokens) rather than any single one, the notebook-heavy query's `notebook_context` would shrink from 14,841 → ~2,720 chars (the 5 genuinely relevant `kb-vpn` sections) — an **81% reduction (~2,780 tokens)** on that one request, with no loss of relevant content.
+
+### 4. Conversation caching feasibility — real Anthropic API mechanism, checked against current docs
+
+Two distinct Anthropic features are easy to conflate here; only one applies:
+
+- **Mid-conversation system messages** (`{"role": "system", ...}` appended to `messages[]`) — confirmed via the current `claude-api` skill docs to be supported only on **Claude Opus 5, Opus 4.8, Claude Fable 5, and Claude Mythos 5** — explicitly **not Claude Sonnet 5**, which is this app's `MODEL` constant. **Not usable here.**
+- **Ordinary `cache_control` on a message content block** (standard prompt caching, applied to `messages[]` instead of `system[]`) — this is the general mechanism, available on every model that supports prompt caching, Sonnet 5 included (1,024-token minimum cacheable prefix, same as Opus 4.8 — already comfortably exceeded by this app's ~1,926-token base block alone). **This is usable.**
+
+**What it would require:** per Anthropic's documented multi-turn pattern, place a single `cache_control: {"type": "ephemeral"}` breakpoint on the last content block of the last message, every request. Because the client already resends the full growing history every turn (finding 1), Anthropic's own longest-matching-prefix logic reuses everything already cached from the prior turn automatically — no per-turn breakpoint bookkeeping needed. Implementation-wise this is Worker-only (`worker.js`, right before the `fetch` to Anthropic): either the documented top-level `cache_control` auto-placement shortcut, or an explicit restructure of the last message's `content` from a plain string into a one-block array carrying the marker (more predictable given the app already has 2 manual breakpoints on `system` and a max of 4 per request — needs to be reconciled with the existing image-injection code path, which already restructures the last user message when images are attached).
+
+**What it would save — computed from the one real number available (finding 2's 821-token/turn measured growth), for a 10-turn conversation:**
+
+| | Without caching (today) | With a trailing message-block breakpoint |
+|---|---:|---:|
+| Weighted token-equivalents (history-growth component only) | 36,945 | 12,931 |
+| Cost at intro pricing ($2.00/$2.50/$0.20 per MTok input/cache-write/cache-read) | $0.0739 | $0.0259 |
+
+**≈65% reduction in the message-history cost component, ≈$0.048 saved per 10-turn conversation.** This is a small absolute number at the app's current personal-use volume (CLAUDE.md: ~$3–8/month total), and it compounds only with conversation length and request volume — flagged honestly as modest today, not as a headline win.
+
+### 5. Decision table — options only, no recommendation
+
+| # | Option | Measured / estimated savings | Quality cost | Implementation size |
+|---|---|---|---|---|
+| A | Harden `buildDbContext()` with the same stopword + minimum-length filter `matchNotebooks()` already uses | Measured: ~101–134 tokens of pure noise removed on 2 of 3 sample queries (finding 3) — small in isolation, but currently 100% waste | None identified — the removed matches were wrong-command citations, so this likely *improves* answer relevance, not just cost | Small — one function, `index.html` only, no server/schema change |
+| B | Tighten `buildNotebookContext()` section-relevance threshold (require the dominant/majority query token, not "any") | Measured: up to 81% reduction (~2,780 tokens) on the notebook-heavy sample query (finding 3) — scales with how often a query's tokens overlap two topically-adjacent notebooks | Real risk: too strict a threshold could drop a genuinely relevant section; needs validation against a broader query set before shipping | Small–medium — scoring-logic change in `index.html`, no server change; needs test-query coverage beyond this session's 3 samples |
+| C | Message-level prompt caching on conversation history (`cache_control` on the last message block, Worker-side) | Computed from real data: ~65% reduction in the message-history cost component, ~$0.048/10-turn conversation at current pricing (finding 4) — modest today, compounds with volume/length | None — pure infrastructure change, no change to what Claude sees or answers | Small — Worker-only (`worker.js`), but must be reconciled with the existing 2 system breakpoints (max 4/request), the 20-block cache lookback window, and the image-injection code path that already restructures the last message |
+| D | Cap conversation history sent per request (sliding window of the last N turns instead of full history) | Not measured this session — no real long-conversation data was accessible (finding 2). Bounded above by the existing server hard caps (`MAX_MESSAGES=40`, ~15,000 tok ceiling) | Real: Claude loses access to earlier turns. This app's "Solve a Case" diagnose mode is explicitly built around multi-turn narrowing, so truncation risk is mode-specific, not uniform | Small (client-side slice before sending) but "how many turns is safe" is a product judgment call, not just an engineering one |
+| E | Combine A+B+C (independent, non-conflicting changes — different files, different functions) | Sum of the above, roughly — not separately re-verified as a combined change this session | Sum of the above | Sum of the above, plus one integration test pass |
+| F | Add queryable usage-distribution logging (Workers Analytics Engine / Logpush, or a scheduled aggregator Worker writing daily summaries to the repo, mirroring the existing `notebook-sync.yml` pattern) | Not a savings itself — it's what makes finding 2's gap (no real distribution data) go away for the *next* round of this exact analysis | None | Small–medium, but needs a new Cloudflare binding/infrastructure decision, which per CLAUDE.md's Autonomous Brain Rules requires owner + architect sign-off before any session — not something to just build |
+
+No option above is implemented, and none is presented as the "right" one — that decision belongs to a later supervised session, per this session's brief.
+
+---
+
 ## Standing reminders (not new findings, just carried forward from CLAUDE.md)
 
 - No automation session may push to `master` — all sessions stop at a local
