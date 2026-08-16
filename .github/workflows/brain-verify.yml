@@ -132,12 +132,24 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           case $rc in
             0)  echo "::notice::clean — no findings, no check-errors." ;;
-            1)  echo "::error::FINDINGS — at least one real defect in a brain pointer. See the artifact." ;;
+            1)  echo "::notice::FINDINGS — at least one real defect in a brain pointer. See the artifact. Job stays green (RUN AA, 2026-08-16 — syncs aviv-brain's notify-on-breakage-only fix, commit bce1148, 2026-08-10)." ;;
             2)  echo "::error::CHECK-ERRORED — the checker could not answer. This is a fault in the CHECK, not a verdict on the library." ;;
             3)  echo "::error::FINDINGS **and** CHECK-ERRORS — both. Read the check-errors first; they bound what the findings mean." ;;
             78) echo "::error::NOT-ATTEMPTED — required secret missing. Nothing was verified. This is a setup gap, never a clean run." ;;
             *)  echo "::error::unexpected exit $rc" ;;
           esac
+          # RUN AA, 2026-08-16: fail (and trigger GitHub's default run-failed
+          # notification) only on real breakage — check-errored (2, 3),
+          # not-attempted (78), or an unrecognized code. A findings-only run
+          # (0 or 1) exits this step 0: the finding is still fully visible in
+          # the uploaded artifact and $GITHUB_STEP_SUMMARY above, just not
+          # pushed at the reader via a channel that had been firing on every
+          # legitimate finding. Mirrors aviv-brain's own brain-chain.yml fix
+          # (RUN L, commit bce1148, 2026-08-10, "Fail the job ONLY on
+          # breakage") — that fix was never ported to this file until now.
+          if [ "$rc" = "0" ] || [ "$rc" = "1" ]; then
+            exit 0
+          fi
           exit $rc
 
       - name: Upload findings artifact
