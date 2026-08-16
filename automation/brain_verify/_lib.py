@@ -3,7 +3,18 @@ _lib.py — shared, stdlib-only helpers for the brain's read-only check suite.
 
 Used by structural_checks.py, staleness_checks.py and project_verify.py.
 Nothing in this file writes to disk, calls the network, or shells out to
-anything other than `git log` (read-only) for a commit date.
+anything other than read-only `git log`/`git show`/`git cat-file` (a
+commit's date, SHA, message, whether a SHA resolves at all, or a file's
+text as of a past commit — SC-19 added the `git log`/`git show` pair, RUN
+AB, 2026-08-16; `git cat-file -e` was added for DC-08, RUN AC, same day) —
+**with one stated exception, added the same day:**
+`git_commit_exists_remote()` runs `git fetch` and DOES touch the network
+and write fetched objects/`FETCH_HEAD` into `.git/`. It exists because
+DC-08's own claim — that an ending SHA reached the remote, not merely the
+local object database — cannot be answered by reading local disk alone;
+see that function's own docstring and `done_contract.py`'s "DC-08 is the
+one exception" section for why this is a deliberate, narrow crossing of
+this module's read-only line rather than a drift from it.
 
 Per SPEC-6 sect.6's failure table, adapted for a stateless CI job: a check
 that cannot be answered is a FAILURE, not a shrug. Every public function
@@ -267,6 +278,168 @@ def git_head_commit(repo_root: Path) -> Optional[str]:
         return None
     v = out.stdout.strip()
     return v or None
+
+
+def git_last_commit_touching(repo_root: Path, relpath: str) -> Optional[str]:
+    """Full SHA of the most recent commit whose diff changed relpath's
+    content (rename-following). None if git fails or the path has no
+    history (e.g. not yet committed). Never raises."""
+    try:
+        out = subprocess.run(
+            ["git", "log", "--follow", "-1", "--format=%H", "--", relpath],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except Exception:
+        return None
+    v = out.stdout.strip()
+    return v or None
+
+
+def git_show_file(repo_root: Path, rev: str, relpath: str) -> Optional[str]:
+    """UTF-8 text of relpath as it existed at rev, or None if it did not
+    exist there (e.g. rev is the commit that created it) or git fails.
+    Never raises — a missing prior version means 'nothing to compare
+    against', not an error, to the two callers this exists for."""
+    try:
+        out = subprocess.run(
+            ["git", "show", f"{rev}:{relpath}"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except Exception:
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def git_commit_message(repo_root: Path, rev: str) -> Optional[str]:
+    """Full commit message (subject + body) of rev, or None on failure.
+    Never raises."""
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%B", rev],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except Exception:
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def git_commit_exists(repo_root: Path, rev: str) -> Optional[bool]:
+    """Does `rev` resolve to a real commit object in this repository?
+
+    Three-valued, on purpose, per rule 14's absent/not-attempted asymmetry:
+    `True` — git ran and confirmed the commit; `False` — git ran and could
+    not find it, a real negative; `None` — git itself could not be asked
+    (not installed, not a repository, timed out) and this function does not
+    know, which is NOT the same fact as `False` and must never be reported
+    as one. Never raises.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "cat-file", "-e", f"{rev}^{{commit}}"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except Exception:
+        return None
+    if out.returncode == 0:
+        return True
+    if "not a git repository" in (out.stderr or "").lower():
+        return None
+    return False
+
+
+def git_commit_exists_remote(
+    repo_root: Path, rev: str, remote: str = "origin", ref: str = "main",
+) -> Optional[bool]:
+    """Does `rev` resolve to a commit that has actually reached `remote`'s
+    `ref` branch — i.e. is `rev` an ancestor of (or equal to) that branch's
+    tip, checked by FETCHING the branch fresh rather than by trusting
+    whatever local remote-tracking ref happens to be sitting around?
+
+    ADDED 2026-08-16 (RUN AE), for `PIPELINE.md` rule 1b's ending-SHA
+    amendment ("that ending SHA must exist in the remote, not merely be
+    committed locally"). `git_commit_exists()` above answers a DIFFERENT
+    question — does this object exist anywhere in the LOCAL object
+    database — and a commit made and never pushed satisfies that just as
+    happily as a commit that reached `origin/main`, which is the exact
+    failure rule 1b exists to catch (three instances of it, named in that
+    rule's own reasoning). DC-08 called `git_commit_exists()` from
+    2026-08-16 (RUN AC) until this fix, so it verified the wrong thing for
+    the length of one day.
+
+    Three-valued, same asymmetry as `git_commit_exists()`, extended one
+    step: `True` — the fetch succeeded and `rev` is an ancestor of the
+    fetched branch tip, a real positive; `False` — the fetch succeeded and
+    `rev` is NOT reachable from it (a SHA that exists only locally, or not
+    at all, both land here — the caller's question is "did this reach the
+    remote", and both are a "no" to that question); `None` — the remote
+    itself could not be asked (no `origin`, no network, auth failure, a
+    timeout, no git binary, no repository at all) and this function does
+    not know, which is NOT the same fact as `False` and must never be
+    reported as one. Never raises.
+
+    THIS IS THE ONE FUNCTION IN THIS MODULE THAT TOUCHES THE NETWORK AND
+    WRITES TO `.git/` (fetched objects, `FETCH_HEAD`) — see this module's
+    own docstring for why that line is drawn, and why DC-08 is allowed to
+    cross it: a check built to prove a claim PERSISTED cannot answer that
+    question by reading local disk alone, the same reasoning
+    `done_contract.py`'s own "DC-08 is the one exception" section states
+    for the check that calls this.
+    """
+    try:
+        fetch = subprocess.run(
+            ["git", "fetch", "--quiet", remote, ref],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except Exception:
+        return None
+    if fetch.returncode != 0:
+        return None
+    try:
+        out = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", rev, "FETCH_HEAD"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except Exception:
+        return None
+    if out.returncode == 0:
+        return True
+    if out.returncode == 1:
+        return False
+    # Any other exit (typically 128, "Not a valid commit name") means `rev`
+    # is not a real object at all — still a real "no" to "did this reach
+    # the remote", not a fact this function failed to determine, UNLESS git
+    # itself is the thing that failed (no repository here either).
+    if "not a git repository" in (out.stderr or "").lower():
+        return None
+    return False
 
 
 # ---------------------------------------------------------------------------
