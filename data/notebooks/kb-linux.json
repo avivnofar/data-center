@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-08-03T08:19:10.005480Z",
+  "updatedAt": "2026-08-17T05:25:55.212883Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -191,6 +191,28 @@
         "lastUpdated": "2026-08-03T08:19:10.005425Z",
         "sources": [],
         "dateAdded": "2026-08-03T08:19:10.005441Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "troubleshooting-user-access-and-permissions",
+        "title": "Troubleshooting User Access and Permissions",
+        "content": "### Troubleshooting User Access and Permissions\n\nWhen diagnosing access issues, follow a systematic layer-based approach: Filesystem Permissions, Ownership, ACLs, and PAM/SSSD authentication.\n\n#### 1. Filesystem Permissions and Ownership\nVerify the effective permissions using `ls -ld` and `getfacl`. Standard `rwxrwxrwx` bits are often insufficient when Access Control Lists (ACLs) are present.\n\n*   **Check standard permissions:** `ls -l /path/to/resource`\n*   **Check ACLs:** `getfacl /path/to/resource`\n    *   If a `+` sign appears after the permission string (e.g., `-rw-rwxr--+`), standard `chmod` will not reflect the full access state.\n*   **Modify ACLs:** Use `setfacl` to grant specific user access without altering group ownership.\n    *   Grant read/execute: `setfacl -m u:username:rx /path/to/dir`\n    *   Remove ACL: `setfacl -x u:username /path/to/dir`\n\n#### 2. Identity and Group Membership\nIf a user cannot access a resource despite correct file permissions, verify their group membership. Changes to `/etc/group` or LDAP/SSSD providers may require a session refresh.\n\n*   **Verify current groups:** `id username`\n*   **Check for group updates:** If the user was recently added to a group, they must log out and back in, or run `newgrp <groupname>` to update their GID in the current shell.\n*   **SSSD/LDAP Cache:** If using centralized authentication, clear the SSSD cache if group memberships are not propagating:\n    ```bash\n    sss_cache -E\n    systemctl restart sssd\n    ```\n\n#### 3. PAM and Login Restrictions\nIf authentication fails entirely, inspect PAM (Pluggable Authentication Modules) configurations and `/etc/security/` limits.\n\n*   **Check for account locks:** `passwd -S username`\n*   **Review PAM logs:** Monitor `/var/log/auth.log` (Debian/Ubuntu) or `/var/log/secure` (RHEL/CentOS/Fedora) in real-time:\n    ```bash\n    tail -f /var/log/auth.log | grep username\n    ```\n*   **Resource Limits:** Check `/etc/security/limits.conf` or `/etc/security/limits.d/*.conf` for `nproc` or `nofile` restrictions that may prevent a user from spawning a shell.\n\n#### 4. SELinux/AppArmor Contexts\nIf permissions are correct but the kernel denies access (often resulting in \"Permission Denied\" despite `777` permissions), check Mandatory Access Control (MAC) systems.\n\n*   **SELinux:** Check for denials in audit logs:\n    ```bash\n    ausearch -m avc -ts recent\n    ```\n    *   Temporarily set to permissive mode to confirm if SELinux is the culprit: `setenforce 0` (revert with `setenforce 1`).\n*   **AppArmor:** Check status and logs:\n    ```bash\n    aa-status\n    dmesg | grep apparmor\n    ```\n\n#### 5. Common Pitfalls\n*   **Directory Traversal:** Users require `execute` (x) permission on *every* parent directory in the path to access a subdirectory, even if they have `read` (r) access to the target.\n*   **Immutable Bit:** If root cannot modify a file, check for the immutable attribute:\n    ```bash\n    lsattr /path/to/file\n    # If 'i' is present, remove it:\n    chattr -i /path/to/file\n    ```",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:44.759762Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:44.759778Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "implementing-and-troubleshooting-script-lock-files",
+        "title": "Implementing and Troubleshooting Script Lock Files",
+        "content": "### Implementing and Troubleshooting Script Lock Files\n\nTo prevent race conditions and concurrent execution of cron jobs or automated scripts, use lock files (mutexes). The most robust, POSIX-compliant method utilizes `flock`.\n\n#### Implementation via `flock`\n\n`flock` manages locks via file descriptors, ensuring the lock is released automatically if the script crashes or terminates.\n\n**Syntax:**\n```bash\n(\n  flock -n 200 || { echo \"Script already running\"; exit 1; }\n  # Critical section commands here\n) 200>/var/lock/my_script.lock\n```\n\n*   **`-n` (non-blocking):** Fails immediately if the lock is held.\n*   **`200`:** Arbitrary file descriptor.\n*   **`/var/lock/`:** Standard location (often a symlink to `/run/lock/` on modern systemd distributions). Ensure the user executing the script has write permissions to this directory.\n\n#### Implementation via `mkdir` (Atomic Operation)\n\nFor environments where `flock` is unavailable, `mkdir` provides an atomic operation guaranteed by the kernel.\n\n```bash\nLOCKDIR=\"/tmp/my_script.lock\"\n\nif mkdir \"$LOCKDIR\" 2>/dev/null; then\n    trap 'rmdir \"$LOCKDIR\"' EXIT\n    # Critical section commands here\nelse\n    echo \"Lock exists: $LOCKDIR\"\n    exit 1\nfi\n```\n\n#### Troubleshooting and Recovery\n\n**1. Stale Lock Files**\nIf a script is killed with `SIGKILL` (`kill -9`), the lock may persist.\n*   **`flock`:** Automatically cleans up when the file descriptor closes. If a stale lock persists, it indicates a filesystem-level issue or a dangling process.\n*   **`mkdir`:** Requires manual intervention. Implement a timeout check:\n    ```bash\n    # Remove lock if older than 1 hour\n    find /tmp/my_script.lock -type d -mmin +60 -exec rmdir {} \\;\n    ```\n\n**2. Identifying Lock Holders**\nTo determine which process holds a file lock, use `lsof` or `fuser`:\n\n*   **List process holding the lock:**\n    ```bash\n    lsof /var/lock/my_script.lock\n    # OR\n    fuser /var/lock/my_script.lock\n    ```\n\n**3. Permissions and Pathing**\n*   **Filesystem:** Avoid placing lock files on NFS mounts if possible; `flock` behavior over NFS can be inconsistent depending on the mount options (`nolock` vs `lock`).\n*   **Permissions:** If running via cron, ensure the lock directory is writable by the cron user. If using `/var/lock/`, you may need to create a subdirectory owned by the specific user:\n    ```bash\n    # In systemd tmpfiles.d configuration\n    d /run/lock/my_app 0755 user group -\n    ```\n\n**4. Debugging Deadlocks**\nIf scripts hang, check for circular dependencies where Script A waits for Script B's lock while Script B waits for Script A. Use `ps auxf` to view the process tree and identify blocked parent-child relationships. If using `flock`, ensure the file descriptor is not being inherited by child processes, which can prevent the lock from releasing. Use the `close-on-exec` flag if necessary.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:55.212839Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:55.212850Z",
         "addedBy": "discover"
       }
     ],
@@ -552,6 +574,131 @@
       {
         "command": "logrotate -v /etc/logrotate.d/<service_name>",
         "description": "Executes logrotate in verbose mode.",
+        "platform": "linux"
+      },
+      {
+        "command": "ls -ld",
+        "description": "Verify effective permissions and directory details",
+        "platform": "linux"
+      },
+      {
+        "command": "getfacl /path/to/resource",
+        "description": "Check Access Control Lists for a resource",
+        "platform": "linux"
+      },
+      {
+        "command": "ls -l /path/to/resource",
+        "description": "Check standard filesystem permissions",
+        "platform": "linux"
+      },
+      {
+        "command": "setfacl -m u:username:rx /path/to/dir",
+        "description": "Grant read/execute ACL permissions to a user",
+        "platform": "linux"
+      },
+      {
+        "command": "setfacl -x u:username /path/to/dir",
+        "description": "Remove ACL permissions for a user",
+        "platform": "linux"
+      },
+      {
+        "command": "id username",
+        "description": "Verify current user groups",
+        "platform": "linux"
+      },
+      {
+        "command": "newgrp <groupname>",
+        "description": "Update GID in the current shell",
+        "platform": "linux"
+      },
+      {
+        "command": "sss_cache -E",
+        "description": "Clear SSSD cache",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl restart sssd",
+        "description": "Restart SSSD service",
+        "platform": "linux"
+      },
+      {
+        "command": "passwd -S username",
+        "description": "Check for account locks",
+        "platform": "linux"
+      },
+      {
+        "command": "tail -f /var/log/auth.log | grep username",
+        "description": "Monitor PAM logs in real-time",
+        "platform": "linux"
+      },
+      {
+        "command": "ausearch -m avc -ts recent",
+        "description": "Check SELinux denials in audit logs",
+        "platform": "linux"
+      },
+      {
+        "command": "setenforce 0",
+        "description": "Set SELinux to permissive mode",
+        "platform": "linux"
+      },
+      {
+        "command": "setenforce 1",
+        "description": "Set SELinux to enforcing mode",
+        "platform": "linux"
+      },
+      {
+        "command": "aa-status",
+        "description": "Check AppArmor status",
+        "platform": "linux"
+      },
+      {
+        "command": "dmesg | grep apparmor",
+        "description": "Check AppArmor logs",
+        "platform": "linux"
+      },
+      {
+        "command": "lsattr /path/to/file",
+        "description": "Check for immutable file attributes",
+        "platform": "linux"
+      },
+      {
+        "command": "chattr -i /path/to/file",
+        "description": "Remove immutable attribute from a file",
+        "platform": "linux"
+      },
+      {
+        "command": "( flock -n 200 || { echo \"Script already running\"; exit 1; } ) 200>/var/lock/my_script.lock",
+        "description": "POSIX-compliant implementation of a lock file using flock.",
+        "platform": "linux"
+      },
+      {
+        "command": "LOCKDIR=\"/tmp/my_script.lock\"\n\nif mkdir \"$LOCKDIR\" 2>/dev/null; then\n    trap 'rmdir \"$LOCKDIR\"' EXIT\n    # Critical section commands here\nelse\n    echo \"Lock exists: $LOCKDIR\"\n    exit 1\nfi",
+        "description": "Implementation of a lock file using the atomic mkdir operation.",
+        "platform": "linux"
+      },
+      {
+        "command": "find /tmp/my_script.lock -type d -mmin +60 -exec rmdir {} \\;",
+        "description": "Removes a stale lock directory if it is older than 1 hour.",
+        "platform": "linux"
+      },
+      {
+        "command": "lsof /var/lock/my_script.lock",
+        "description": "Lists the process holding the specified lock file.",
+        "platform": "linux"
+      },
+      {
+        "command": "fuser /var/lock/my_script.lock",
+        "description": "Identifies the process using the specified lock file.",
+        "platform": "linux"
+      },
+      {
+        "command": "d /run/lock/my_app 0755 user group -",
+        "description": "Systemd tmpfiles.d configuration to create a lock directory with specific permissions.",
+        "platform": "linux"
+      },
+      {
+        "command": "ps auxf",
+        "description": "Displays the process tree to identify blocked parent-child relationships.",
         "platform": "linux"
       }
     ]

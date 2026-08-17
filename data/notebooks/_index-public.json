@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-08-03T08:19:56.465490Z",
+  "updatedAt": "2026-08-17T05:25:13.837428Z",
   "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
   "dataCenter": {
     "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
@@ -111,11 +111,11 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
       "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
-      "sectionCount": 8,
-      "commandCount": 10,
+      "sectionCount": 12,
+      "commandCount": 33,
       "issueCount": 10,
       "glossaryCount": 15,
-      "updatedAt": "2026-07-17T00:00:00.000000Z"
+      "updatedAt": "2026-08-17T05:25:12.253880Z"
     },
     {
       "id": "kb-firewall",

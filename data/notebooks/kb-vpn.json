@@ -17,7 +17,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:15.346877Z",
-  "updatedAt": "2026-08-10T06:06:26.075457Z",
+  "updatedAt": "2026-08-10T06:06:36.262592Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -267,6 +267,17 @@
         "lastUpdated": "2026-08-10T06:06:26.075412Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:06:26.075425Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "site-to-site-vpn-troubleshooting-framework",
+        "title": "Site-to-Site VPN Troubleshooting Framework",
+        "content": "### Site-to-Site VPN Troubleshooting Framework\n\nThis framework utilizes a top-down, layer-based approach to isolate IPsec tunnel failures. Follow this sequence to minimize Mean Time to Resolution (MTTR).\n\n#### 1. Phase 1 (IKE/ISAKMP) Validation\nPhase 1 failure typically indicates a mismatch in security associations (SA) or connectivity issues.\n\n*   **Symptom:** `NO_PROPOSAL_CHOSEN`, `AUTHENTICATION_FAILED`, or stuck in `MM_NO_STATE`.\n*   **Verification:** Ensure Peer IP, Pre-Shared Key (PSK), Encryption (AES-GCM/CBC), Hash (SHA-256/384), and Diffie-Hellman (DH) groups match exactly.\n*   **Commands:**\n    *   **Cisco IOS:** `show crypto isakmp sa`\n    *   **Juniper Junos:** `show security ike security-associations`\n    *   **StrongSwan:** `swanctl --list-sas`\n\n#### 2. Phase 2 (IPsec) Validation\nIf Phase 1 is established but traffic fails, Phase 2 (Quick Mode) is the culprit.\n\n*   **Symptom:** `PROXY_ID_MISMATCH` or `NO_PROPOSAL_CHOSEN` during Phase 2 negotiation.\n*   **Verification:** Verify that the Interesting Traffic (ACLs/Traffic Selectors) are mirror images on both peers. If Peer A defines `10.1.0.0/16` to `192.168.1.0/24`, Peer B must define `192.168.1.0/24` to `10.1.0.0/16`.\n*   **Commands:**\n    *   **Cisco IOS:** `show crypto ipsec sa` (Check `pkts encaps/decaps`). If encaps > 0 but decaps = 0, the remote peer is not returning traffic.\n    *   **Debug:** `debug crypto ipsec` (Use with caution in production).\n\n#### 3. Path MTU and Fragmentation\nLarge packets often drop silently, causing \"black hole\" connections where handshakes succeed but data transfer hangs.\n\n*   **Diagnosis:** Perform a sweep ping to identify the maximum non-fragmented packet size.\n    *   **Linux:** `ping -M do -s 1472 <Remote_IP>`\n    *   **Windows:** `ping -f -l 1472 <Remote_IP>`\n*   **Remediation:** Adjust MSS Clamping to account for IPsec overhead (typically 50–70 bytes).\n    *   **Cisco IOS:** `ip tcp adjust-mss 1360` (applied to tunnel/interface).\n\n#### 4. Routing and Policy Enforcement\nEven if the tunnel is \"UP,\" traffic will drop if the routing table or security policy prevents packet flow.\n\n*   **Checklist:**\n    1.  **Routing:** Does the routing table point traffic destined for the remote subnet toward the VPN interface/Virtual Tunnel Interface (VTI)?\n    2.  **Security Policies:** Ensure explicit `permit` rules exist for both `Internal -> Remote` and `Remote -> Internal` zones.\n    3.  **NAT Traversal (NAT-T):** If peers are behind NAT, ensure UDP 4500 is permitted.\n\n#### 5. Packet Capture (The Source of Truth)\nWhen logs are inconclusive, capture traffic at the ingress/egress points.\n\n*   **Syntax (tcpdump):**\n    `tcpdump -ni any host <Remote_Peer_IP> and (udp port 500 or udp port 4500 or esp)`\n*   **Analysis:**\n    *   If ESP packets are seen leaving but not arriving, investigate intermediate ISP/Firewall drops.\n    *   If no ESP packets are generated, the local security policy is likely dropping the traffic before encryption.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-10T06:06:36.262549Z",
+        "sources": [],
+        "dateAdded": "2026-08-10T06:06:36.262561Z",
         "addedBy": "discover"
       }
     ],
@@ -532,6 +543,51 @@
         "command": "sysopt connection tcpmss 1360",
         "description": "Adjust the MSS to prevent fragmentation.",
         "platform": "both"
+      },
+      {
+        "command": "show crypto isakmp sa",
+        "description": "Verify Phase 1 IKE/ISAKMP security associations on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "show security ike security-associations",
+        "description": "Verify Phase 1 IKE security associations on Juniper Junos",
+        "platform": "both"
+      },
+      {
+        "command": "swanctl --list-sas",
+        "description": "Verify Phase 1 IKE security associations on StrongSwan",
+        "platform": "linux"
+      },
+      {
+        "command": "show crypto ipsec sa",
+        "description": "Verify Phase 2 IPsec security associations on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "debug crypto ipsec",
+        "description": "Debug IPsec negotiation on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "ping -M do -s 1472 <Remote_IP>",
+        "description": "Perform a sweep ping to identify maximum non-fragmented packet size on Linux",
+        "platform": "linux"
+      },
+      {
+        "command": "ping -f -l 1472 <Remote_IP>",
+        "description": "Perform a sweep ping to identify maximum non-fragmented packet size on Windows",
+        "platform": "windows"
+      },
+      {
+        "command": "ip tcp adjust-mss 1360",
+        "description": "Adjust MSS Clamping to account for IPsec overhead on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "tcpdump -ni any host <Remote_Peer_IP> and (udp port 500 or udp port 4500 or esp)",
+        "description": "Capture IKE and ESP traffic using tcpdump",
+        "platform": "linux"
       }
     ]
   },

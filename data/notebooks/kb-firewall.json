@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:22.689273Z",
-  "updatedAt": "2026-07-20T07:50:27.563777Z",
+  "updatedAt": "2026-08-17T05:25:32.774487Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -266,6 +266,28 @@
         "lastUpdated": "2026-07-20T07:50:27.563725Z",
         "sources": [],
         "dateAdded": "2026-07-20T07:50:27.563740Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "vlan-configuration-and-network-segmentation",
+        "title": "VLAN Configuration and Network Segmentation",
+        "content": "### VLAN Configuration and Network Segmentation\n\nNetwork segmentation via 802.1Q VLANs is the foundational control for enforcing least-privilege traffic flow. In B2B telecom environments, segmentation must be enforced at the L2/L3 boundary (Gateway/Firewall) rather than relying solely on switch-level isolation.\n\n#### Linux (iptables/nftables)\nOn Linux hosts acting as gateways or bridges, VLAN interfaces are managed via `iproute2`. Traffic segmentation is enforced by binding rules to specific interfaces.\n\n**Interface Creation:**\n```bash\n# Create VLAN 100 on eth0\nip link add link eth0 name eth0.100 type vlan id 100\nip addr add 10.0.100.1/24 dev eth0.100\nip link set dev eth0.100 up\n```\n\n**Policy Enforcement (iptables):**\nRestrict inter-VLAN routing by targeting the interface.\n```bash\n# Block traffic from VLAN 100 to VLAN 200\niptables -A FORWARD -i eth0.100 -o eth0.200 -j DROP\n# Allow established traffic\niptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT\n```\n\n#### pfSense (FreeBSD/pf)\npfSense utilizes the `pf` engine. Segmentation is defined by assigning VLANs to physical interfaces and creating interface-specific firewall rules.\n\n1.  **VLAN Assignment:** Navigate to *Interfaces > Assignments > VLANs*. Define the Tag and Parent Interface.\n2.  **Interface Enablement:** Assign the new VLAN interface and enable it.\n3.  **Rule Logic:** Rules are processed top-down, first-match.\n    *   **Best Practice:** Place \"Block\" rules for inter-VLAN traffic at the top of the specific VLAN tab.\n    *   **Syntax (pf anchor):** If using shell/config files, ensure `scrub` is enabled to normalize packets, preventing fragmentation-based evasion.\n\n#### Enterprise NGFW (Zone-Based Policy)\nFortiGate, Check Point, and Cisco Firepower utilize **Zone-Based Policy Models**. Unlike legacy ACLs, these decouple physical/logical interfaces from the policy.\n\n*   **Zone Definition:** Group multiple VLAN sub-interfaces into a single logical \"Zone\" (e.g., `ZONE_TRUST`, `ZONE_DMZ`, `ZONE_IOT`).\n*   **Policy Enforcement:** Policies are defined as `Source Zone` -> `Destination Zone`.\n    *   **FortiGate (CLI):**\n        ```bash\n        config firewall policy\n            edit 1\n                set srcintf \"VLAN100\"\n                set dstintf \"VLAN200\"\n                set srcaddr \"all\"\n                set dstaddr \"all\"\n                set action deny\n            next\n        end\n        ```\n    *   **Check Point:** Use the **Unified Policy** tab. Ensure \"Implicit Cleanup\" is set to `Drop` to prevent accidental leakage between zones.\n\n#### Security Considerations for Telecom Environments\n1.  **VLAN Hopping Mitigation:** Disable DTP (Dynamic Trunking Protocol) on all switch ports. Force `switchport mode access` or `switchport mode trunk` with explicit allowed VLANs.\n2.  **MTU Overhead:** 802.1Q tags add 4 bytes. Ensure the MTU on trunk ports is set to at least 1504 bytes to prevent fragmentation of standard 1500-byte frames.\n3.  **Control Plane Policing (CoPP):** On enterprise hardware, apply CoPP to VLAN interfaces to rate-limit management traffic (SSH/SNMP/ICMP) originating from untrusted segments.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:22.569577Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:22.569594Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "network-topology-and-vlan-naming-conventions",
+        "title": "Network Topology and VLAN Naming Conventions",
+        "content": "### Network Topology and VLAN Naming Conventions\n\nIn high-availability B2B telecom environments, deterministic naming and zone-based segmentation are critical for auditability and policy enforcement.\n\n#### VLAN Naming Schema\nStandardize VLAN IDs (VID) and interface descriptions to facilitate rapid troubleshooting across heterogeneous environments (Linux, pfSense, NGFW). Use the following hierarchical structure:\n\n`[ZONE]_[FUNCTION]_[VLAN_ID]`\n\n*   **ZONE:** `MGMT` (Management), `CORE` (Backbone), `DMZ` (Public-facing), `USR` (User/Client), `SVC` (Service/Telecom).\n*   **FUNCTION:** Descriptive identifier (e.g., `VOIP`, `DB`, `WEB`, `VPN`).\n*   **VLAN_ID:** 4-digit numeric (e.g., `1010`).\n\n**Example:** `DMZ_WEB_1010`\n\n---\n\n#### Zone-Based Policy Mapping\nTransition from interface-based rules to zone-based policies. Treat all traffic as untrusted by default.\n\n| Zone | Security Level | Policy Enforcement Strategy |\n| :--- | :--- | :--- |\n| **MGMT** | High | Restricted to jump-hosts; SSH/HTTPS only. |\n| **DMZ** | Medium | Reverse-proxy terminated; no direct DB access. |\n| **SVC** | High | Strict ACLs; SIP/RTP pinning required. |\n| **USR** | Low | Egress filtering; mandatory inspection. |\n\n---\n\n#### Implementation Examples\n\n**1. Linux (iptables/nftables)**\nUse `nftables` sets for zone-based grouping to minimize rule bloat.\n```bash\n# Define sets for zone-based IP management\nnft add set inet filter zone_dmz { type ipv4_addr\\; flags interval\\; }\nnft add element inet filter zone_dmz { 192.168.10.0/24 }\n\n# Apply policy based on zone\nnft add rule inet filter forward iifname \"eth0\" ip saddr @zone_dmz accept\n```\n\n**2. pfSense (Interface Groups)**\nLeverage **Interface Groups** to apply common rules across multiple VLANs without duplicating policy.\n*   Navigate to **Interfaces > Interface Groups**.\n*   Add members (e.g., `VLAN10`, `VLAN20`).\n*   Apply rules to the Group interface; pfSense dynamically maps these to member interfaces.\n\n**3. Enterprise NGFW (FortiGate/Check Point)**\nAdopt a **Zone-to-Zone** policy model. Never use \"Any\" as a source or destination.\n\n*   **FortiGate:** Define `Zones` (logical groupings of interfaces). Policies must explicitly reference `Zone_A` to `Zone_B`.\n    ```fortinet\n    config system zone\n        edit \"DMZ_ZONE\"\n            set interface \"port2\" \"port3\"\n        next\n    end\n    ```\n*   **Check Point:** Utilize **Security Zones** in the policy layer. Ensure `Anti-Spoofing` is enabled on all interfaces to prevent traffic from entering a zone via an unauthorized physical port.\n\n#### Best Practices for Telecom Environments\n*   **MTU Consistency:** Ensure VLAN tagging (802.1Q) overhead is accounted for. Set MTU to 1504 bytes on trunk ports to accommodate QinQ or standard tagging without fragmentation.\n*   **Management Plane Isolation:** Always terminate management interfaces on a dedicated VRF or physically separate switch fabric.\n*   **Logging:** Tag all logs with the `ZONE` identifier to ensure SIEM correlation matches the topology map.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:32.774441Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:32.774454Z",
         "addedBy": "discover"
       }
     ],
@@ -532,6 +554,66 @@
         "command": "packet-tracer input <zone> <proto> <src_ip> <src_port> <dst_ip> <dst_port>",
         "description": "Verify Cisco packet path",
         "platform": "linux"
+      },
+      {
+        "command": "ip link add link eth0 name eth0.100 type vlan id 100",
+        "description": "Create VLAN 100 on eth0",
+        "platform": "linux"
+      },
+      {
+        "command": "ip addr add 10.0.100.1/24 dev eth0.100",
+        "description": "Assign IP address to VLAN interface",
+        "platform": "linux"
+      },
+      {
+        "command": "ip link set dev eth0.100 up",
+        "description": "Bring up the VLAN interface",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -A FORWARD -i eth0.100 -o eth0.200 -j DROP",
+        "description": "Block traffic from VLAN 100 to VLAN 200",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+        "description": "Allow established traffic",
+        "platform": "linux"
+      },
+      {
+        "command": "config firewall policy\n    edit 1\n        set srcintf \"VLAN100\"\n        set dstintf \"VLAN200\"\n        set srcaddr \"all\"\n        set dstaddr \"all\"\n        set action deny\n    next\nend",
+        "description": "FortiGate CLI policy to deny traffic between VLANs",
+        "platform": "linux"
+      },
+      {
+        "command": "switchport mode access",
+        "description": "Force switch port to access mode to mitigate VLAN hopping",
+        "platform": "both"
+      },
+      {
+        "command": "switchport mode trunk",
+        "description": "Force switch port to trunk mode",
+        "platform": "both"
+      },
+      {
+        "command": "nft add set inet filter zone_dmz { type ipv4_addr\\; flags interval\\; }",
+        "description": "Define sets for zone-based IP management",
+        "platform": "linux"
+      },
+      {
+        "command": "nft add element inet filter zone_dmz { 192.168.10.0/24 }",
+        "description": "Add IP range to the zone_dmz set",
+        "platform": "linux"
+      },
+      {
+        "command": "nft add rule inet filter forward iifname \"eth0\" ip saddr @zone_dmz accept",
+        "description": "Apply policy based on zone",
+        "platform": "linux"
+      },
+      {
+        "command": "config system zone\n    edit \"DMZ_ZONE\"\n        set interface \"port2\" \"port3\"\n    next\nend",
+        "description": "Define Zones (logical groupings of interfaces)",
+        "platform": "both"
       }
     ]
   },

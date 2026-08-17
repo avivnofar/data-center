@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-08-10T06:06:15.544594Z",
+  "updatedAt": "2026-08-17T05:25:12.253924Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -213,6 +213,28 @@
           }
         ],
         "dateAdded": "2026-08-10T06:06:15.544558Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "red-teaming-and-phishing-simulation-frameworks",
+        "title": "Red Teaming and Phishing Simulation Frameworks",
+        "content": "Effective red teaming and phishing simulations require a balance between realistic adversary emulation and operational stability. In B2B telecom environments, where network availability is critical, prioritize non-disruptive, controlled testing.\n\n### Phishing Simulation: Gophish\nGophish remains the industry standard for open-source phishing simulations due to its simplicity and API-driven architecture.\n\n*   **Configuration:** The `config.json` file controls core server behavior. Ensure strict file permissions (`chmod 640 config.json`) as it contains database credentials.\n    *   `admin_server.listen_url`: Set to `127.0.0.1:3333` for local management.\n    *   `phish_server.listen_url`: Set to `0.0.0.0:80` (or 443 with valid TLS) for campaign traffic.\n*   **Operational Security (OpSec):** Out-of-the-box Gophish is easily fingerprinted. To improve stealth:\n    *   **Header Modification:** Search the source code for `X-Gophish` headers and rename them (e.g., to `X-Contact`) using `sed` to avoid detection by email security gateways:\n        ```bash\n        find . -type f -exec sed -i.bak 's/X-Gophish-Contact/X-Contact/g' {} +\n        ```\n    *   **Infrastructure:** Use dedicated, reputable domains rather than default Gophish configurations. Always test against your own mail filters before full-scale deployment.\n\n### Red Teaming: Command & Control (C2)\nFor internal red teaming, C2 frameworks facilitate post-exploitation and lateral movement testing.\n\n*   **Sliver:** Currently favored for its versatility and cross-platform support (Windows, macOS, Linux). It supports multiple communication channels (mTLS, HTTPS, DNS), making it effective for testing egress filtering in complex network environments.\n*   **Covenant:** A .NET-based framework ideal for environments heavily reliant on Windows/Active Directory.\n    *   **Deployment:** Use Docker for rapid, isolated deployment.\n    *   **Workflow:**\n        1.  **Listener:** Configure a listener in the web UI (`https://localhost:7443`) to define how implants communicate back.\n        2.  **Launcher:** Generate a payload (Grunt) tailored to the target OS.\n        3.  **Execution:** Deploy the launcher on a test endpoint to establish a session.\n*   **Operational Best Practice:** Always align exercises with the **MITRE ATT&CK** framework. In telecom environments, focus testing on lateral movement and privilege escalation within management planes (e.g., SSH, SNMP, or API-based infrastructure controls) rather than just endpoint compromise.\n\n### Practical Implementation Checklist\n1.  **Scope Definition:** Define clear \"no-go\" zones (e.g., core switching fabric, production billing databases) to prevent accidental outages.\n2.  **Blue Team Coordination:** Use a \"Purple Team\" approach where defenders are aware of the simulation to maximize learning and validate detection logic.\n3.  **Data Handling:** Ensure all captured credentials or sensitive data during simulations are handled according to internal data privacy policies and purged immediately post-exercise.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:00.503902Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:00.503916Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "phishing-incident-triage-and-investigation",
+        "title": "Phishing Incident Triage and Investigation",
+        "content": "### Phishing Incident Triage and Investigation\n\nThis section outlines the operational workflow for analyzing suspected phishing emails within a B2B telecom/networking environment.\n\n#### 1. Initial Triage & Artifact Extraction\nUpon receiving a report, immediately isolate the email artifact. Do not open attachments or click links. Use your mail gateway (e.g., Mimecast, Proofpoint, or O365 Defender) to export the message as an `.eml` or `.msg` file.\n\n*   **Header Analysis:** Extract the `Authentication-Results` header to verify SPF, DKIM, and DMARC alignment.\n    *   `spf=pass` / `dkim=pass` / `dmarc=pass` indicates the email originated from the claimed domain, suggesting a compromised account rather than spoofing.\n*   **Command-Line Extraction:** Use `ripmime` or `exiftool` to safely extract attachments and metadata.\n    ```bash\n    # Extract attachments without executing\n    ripmime -i suspicious_email.eml -d ./output_dir\n    # Inspect metadata for malicious macros or hidden scripts\n    exiftool -a -u -g1 suspicious_email.eml\n    ```\n\n#### 2. URL and Attachment Detonation\nNever interact with suspicious URLs from a production machine.\n\n*   **URL Analysis:** Use `curl` to inspect headers without downloading payloads.\n    ```bash\n    # Check for redirects or suspicious server headers\n    curl -I -L -A \"Mozilla/5.0\" <SUSPICIOUS_URL>\n    ```\n*   **Reputation Checks:** Query VirusTotal or Cisco Talos via API to check for prior detections.\n    ```bash\n    # Example using VirusTotal API\n    curl -X GET https://www.virustotal.com/api/v3/urls/<URL_ID> \\\n      -H \"x-apikey: <YOUR_API_KEY>\"\n    ```\n*   **Sandboxing:** Submit files to an isolated sandbox (e.g., Cuckoo, Joe Sandbox, or vendor-specific EDR sandbox) to observe behavioral indicators (C2 callbacks, registry modifications, process injection).\n\n#### 3. Network-Level Investigation\nIn a telecom/networking environment, pivot from the email artifact to infrastructure logs.\n\n*   **Log Correlation:** Search SIEM/Log Management (Splunk, ELK) for the identified IOCs (sender IP, malicious domain, file hash).\n    *   **Query Example (Splunk):**\n        `index=network_logs (src_ip=<SENDER_IP> OR dest_host=<MALICIOUS_DOMAIN>) | stats count by src_user, dest_host, action`\n*   **DNS/Proxy Logs:** Check for outbound connections to the malicious domain. If internal hosts resolved the domain, identify the internal IP and initiate host-based containment.\n\n#### 4. Containment and Remediation\nIf the investigation confirms a phishing attempt:\n\n1.  **Global Purge:** Use PowerShell (Exchange Online) or API-based tools to remove the email from all user mailboxes.\n    ```powershell\n    # Exchange Online purge example\n    Search-Mailbox -Identity \"user@example.com\" -SearchQuery 'Subject:\"Urgent Invoice\"' -DeleteContent\n    ```\n2.  **Block IOCs:**\n    *   **Firewall/Proxy:** Block the malicious domain/IP at the edge.\n    *   **Gateway:** Add the sender domain or specific file hash to the global blocklist.\n3.  **Credential Reset:** If logs indicate a user clicked a link and navigated to a credential harvesting site, force a password reset and revoke active O365/SSO sessions immediately.\n4.  **Endpoint Scan:** Trigger an EDR scan (CrowdStrike, SentinelOne) on the affected host to search for dropped payloads or persistence mechanisms.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-17T05:25:12.253862Z",
+        "sources": [],
+        "dateAdded": "2026-08-17T05:25:12.253880Z",
         "addedBy": "discover"
       }
     ],
@@ -485,6 +507,56 @@
         "command": "sudo systemctl restart sshd",
         "description": "Restart the SSH service to apply configuration changes",
         "platform": "linux"
+      },
+      {
+        "command": "chmod 640 config.json",
+        "description": "Set strict file permissions for the Gophish configuration file.",
+        "platform": "linux"
+      },
+      {
+        "command": "find . -type f -exec sed -i.bak 's/X-Gophish-Contact/X-Contact/g' {} +",
+        "description": "Rename X-Gophish headers in source code to avoid detection.",
+        "platform": "linux"
+      },
+      {
+        "command": "admin_server.listen_url: 127.0.0.1:3333",
+        "description": "Configuration setting for Gophish local management interface.",
+        "platform": "both"
+      },
+      {
+        "command": "phish_server.listen_url: 0.0.0.0:80",
+        "description": "Configuration setting for Gophish campaign traffic listener.",
+        "platform": "both"
+      },
+      {
+        "command": "ripmime -i suspicious_email.eml -d ./output_dir",
+        "description": "Extract attachments from an email file without executing them.",
+        "platform": "linux"
+      },
+      {
+        "command": "exiftool -a -u -g1 suspicious_email.eml",
+        "description": "Inspect metadata of an email file for malicious macros or hidden scripts.",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -I -L -A \"Mozilla/5.0\" <SUSPICIOUS_URL>",
+        "description": "Inspect URL headers for redirects or suspicious server headers without downloading payloads.",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -X GET https://www.virustotal.com/api/v3/urls/<URL_ID> -H \"x-apikey: <YOUR_API_KEY>\"",
+        "description": "Query VirusTotal API for URL reputation checks.",
+        "platform": "linux"
+      },
+      {
+        "command": "index=network_logs (src_ip=<SENDER_IP> OR dest_host=<MALICIOUS_DOMAIN>) | stats count by src_user, dest_host, action",
+        "description": "Splunk query to correlate network logs with identified IOCs.",
+        "platform": "both"
+      },
+      {
+        "command": "Search-Mailbox -Identity \"user@example.com\" -SearchQuery 'Subject:\"Urgent Invoice\"' -DeleteContent",
+        "description": "Exchange Online PowerShell command to purge a specific email from a user mailbox.",
+        "platform": "windows"
       }
     ]
   },
