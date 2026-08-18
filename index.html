@@ -2711,10 +2711,19 @@ async function buildNotebookContext(query) {
 //     minimum relevance score, sections must match a majority of query tokens,
 //     and what it attaches is actual prose.
 //   - db_context runs 194 chars (1 entry) to 565 (3 entries, its practical
-//     ceiling). It is NOT a trustworthy relevance signal: buildDbContext()
-//     scores with haystack.includes(w), so "explain the CAP theorem" matches
-//     tcpdump/top/systeminfo on "cap" inside "Capture"/"capacity". Size tells
-//     you something matched, not that it was relevant.
+//     ceiling). Since 2026-08-18 it is word-boundary matched over a bilingual
+//     haystack like matchNotebooks() is, so it no longer inflates on
+//     substring noise — "explain the CAP theorem" used to attach
+//     tcpdump/top/systeminfo via "cap" inside "Capture"/"capacity" and now
+//     correctly attaches nothing. Size is still a coarse signal (three short
+//     entries is not proof of coverage), but it is no longer actively
+//     misleading.
+//   - Hebrew queries now land in the same range as English ones (measured
+//     2026-08-18: 366-414 chars for Hebrew KB questions, 0 for ones the KB
+//     genuinely does not cover), which is what let the Hebrew carve-out in
+//     shouldAllowWebSearch() be removed rather than re-tuned. The threshold
+//     was re-checked against those numbers and kept at 300: 3 matched
+//     entries clear it in both languages, 1 lone entry does not.
 // So 300 concretely means: "nothing matched at all, or only a single lone DB
 // entry did" counts as thin. Anything more leans on local context plus the
 // model's own knowledge, with the recency signal as the escape hatch. The two
@@ -2747,15 +2756,16 @@ function hasRecencySignal(query) {
 
 function shouldAllowWebSearch(query, dbContext, notebookContext) {
   if (hasRecencySignal(query)) return true;
-  // The thin-context signal is only meaningful when the local matchers could
-  // actually run. notebookQueryTokens() keeps [a-z0-9_-] only, so a query
-  // written entirely in Hebrew yields zero tokens and therefore always zero
-  // context — that is "the matcher couldn't look", not "the KB has nothing".
-  // Treating it as thin would turn search back on for nearly all Hebrew
-  // traffic (Hebrew is the default language) and forfeit most of the saving,
-  // so the decision falls to the recency signal alone there. Revisit if the
-  // matchers ever learn Hebrew.
-  if (!notebookQueryTokens(query).length) return false;
+  // The Hebrew carve-out that used to sit here is GONE (2026-08-18). It
+  // existed because notebookQueryTokens() kept [a-z0-9_-] only, so a Hebrew
+  // query always produced zero tokens and therefore zero context — "the
+  // matcher couldn't look", not "the KB has nothing" — and treating that as
+  // thin would have re-enabled paid search for nearly all traffic in the
+  // default language. The matchers now tokenize Hebrew and score it against
+  // the bilingual DB fields, so zero context in Hebrew once again means what
+  // it means in English: nothing matched. Measured on the real data through
+  // this exact path, Hebrew KB questions now attach 366-414 chars and stay
+  // on the cheap path on their own merits, no special case needed.
   return (dbContext || '').length + (notebookContext || '').length < SEARCH_THIN_CONTEXT_CHARS;
 }
 

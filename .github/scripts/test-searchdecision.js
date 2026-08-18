@@ -11,6 +11,11 @@
 // buildNotebookContext() dependencies) verbatim from index.html and runs them
 // against the real data/*.json + data/notebooks/ mirror — no mocked data to
 // drift out of sync with what the browser actually sends.
+//
+// Updated 2026-08-18 for the Hebrew matching fix: the rule no longer has a
+// Hebrew carve-out, because the matchers now tokenize Hebrew and score it
+// against the bilingual DB fields. Hebrew queries go through the same two
+// signals as English ones and are pinned here alongside them.
 
 const fs = require('fs');
 const path = require('path');
@@ -55,13 +60,20 @@ const fnSrc = [
   extractConst('NOTEBOOK_CONTEXT_MAX_CHARS'),
   extractConst('NOTEBOOK_MATCH_MIN_SCORE'),
   extractConst('NOTEBOOK_STOPWORDS'),
+  extractConst('NOTEBOOK_STOPWORDS_HE'),
+  extractConst('HEBREW_LETTER_CLASS'),
+  extractConst('HEBREW_PARTICLES'),
+  extractConst('HEBREW_CHAR_RE'),
   extractConst('SEARCH_THIN_CONTEXT_CHARS'),
   extractConst('SEARCH_RECENCY_TERMS_EN'),
   extractConst('SEARCH_RECENCY_TERMS_HE'),
   extractConst('SEARCH_RECENCY_RE_EN'),
   extractFn('notebookQueryTokens'),
   extractFn('escapeRegExp'),
+  extractFn('isHebrewText'),
+  extractFn('hebrewStripParticles'),
   extractFn('notebookWordMatch'),
+  extractFn('tokensUsableAgainst'),
   extractFn('matchNotebooks'),
   extractFn('notebookSectionMatches'),
   extractFn('fetchNotebook'),
@@ -118,28 +130,51 @@ const CASES = [
   { q: 'what is a hypervisor', expect: true, why: 'thin local context (0 chars)' },
   { q: 'what are microservices', expect: true, why: 'thin local context (0 chars)' },
 
-  // ── Known limit, pinned deliberately rather than papered over: a generic
-  //    theory question can still clear the threshold on db_context noise,
-  //    because buildDbContext() matches by substring — "cap" hits "Capture"
-  //    and "capacity", so this attaches tcpdump/top/systeminfo and reads as
-  //    442 chars of "coverage". No search for it. That is an acceptable
-  //    outcome (the model answers CAP theorem unaided, and the recency signal
-  //    still overrides), but it is the honest reason the threshold is not
-  //    presented as a relevance measure. If buildDbContext() ever moves to
-  //    word-boundary matching, this case flips to true and should.
-  { q: 'explain the CAP theorem', expect: false, why: 'db_context substring noise clears the threshold' },
+  // ── Resolved 2026-08-18, and this entry records the resolution. This case
+  //    used to expect FALSE, with the comment "if buildDbContext() ever moves
+  //    to word-boundary matching, this case flips to true and should". It
+  //    did, and it has. buildDbContext() used to match by substring, so "cap"
+  //    hit "Capture"/"capacity" and this question read as 442 chars of
+  //    coverage it did not have; it now attaches 0 and is correctly treated
+  //    as genuinely uncovered.
+  { q: 'explain the CAP theorem', expect: true, why: 'genuinely uncovered — "cap" no longer false-matches "Capture"' },
 
   // ── Hebrew. LANG only sets the response language; the rule reads the raw
   //    query in both languages, because Hebrew questions routinely carry
-  //    English technical terms (and are the only reason the tokenizer, which
-  //    keeps [a-z0-9_-] only, sees anything at all on a Hebrew query). ──
+  //    English technical terms.
+  //
+  //    Until 2026-08-18 shouldAllowWebSearch() had a Hebrew carve-out —
+  //    "no tokens, so the matcher couldn't look, so don't treat 0 chars as
+  //    thin" — because notebookQueryTokens() kept [a-z0-9_-] only and a
+  //    Hebrew query always produced 0 tokens and 0 context. The tokenizer is
+  //    Unicode-aware now and buildDbContext() searches the Hebrew fields, so
+  //    Hebrew queries produce real context, the carve-out is gone, and these
+  //    cases are decided by exactly the same two signals as the English ones.
+  //    The measured post-fix sizes are in the "ctx=" column of this script's
+  //    output; the covered/uncovered gap in Hebrew (240 -> 366 chars) is what
+  //    SEARCH_THIN_CONTEXT_CHARS = 300 now sits inside. ──
   { q: 'מה הגרסה האחרונה של nginx', expect: true, why: 'Hebrew recency signal' },
   { q: 'האם יצאה מהדורה חדשה של debian', expect: true, why: 'Hebrew recency signal' },
   { q: 'איך מנפים systemd service שנכשל', expect: false, why: 'notebook coverage via the English term' },
-  // Pure Hebrew, no recency: the matchers cannot tokenize it at all, so the
-  // thin-context signal is deliberately NOT used (it would be true for every
-  // Hebrew query, and Hebrew is the default language).
-  { q: 'איך בודקים פורטים פתוחים', expect: false, why: 'no ASCII tokens, no recency signal' },
+
+  // Pure Hebrew, no recency, real local coverage — the whole point of the fix.
+  // Every one of these returned 0 chars and was force-decided by the carve-out
+  // before 2026-08-18.
+  { q: 'איך בודקים איזה פורט תפוס', expect: false, why: 'Hebrew DB coverage (414 chars)' },
+  { q: 'בעיות חיבור ברשת פרטית וירטואלית', expect: false, why: 'Hebrew DB coverage (366 chars)' },
+  { q: 'איך מגדירים חומת אש בלינוקס', expect: false, why: 'Hebrew DB coverage (410 chars)' },
+  { q: 'השרת שלי איטי מה כדאי לבדוק', expect: false, why: 'Hebrew DB coverage (407 chars)' },
+  { q: 'שירות systemd לא עולה', expect: false, why: 'Hebrew DB + notebook coverage via the Latin token' },
+
+  // Pure Hebrew with genuinely no coverage — must now behave like its English
+  // twin "what is a hypervisor" rather than being forced to false.
+  { q: 'מה זה היפרוויזר', expect: true, why: 'thin local context (0 chars), Hebrew' },
+  // Thin-but-not-empty: only two short DB entries match, because Hebrew plural
+  // "פורטים" does not reach the singular "פורט" (suffixes are deliberately not
+  // stemmed — see notebookWordMatch()'s comment). 240 chars, under the
+  // threshold, so search is allowed. Pinned as the borderline case that shows
+  // where 300 actually bites in Hebrew.
+  { q: 'איך בודקים פורטים פתוחים', expect: true, why: 'thin Hebrew context (240 chars) — under the threshold' },
 ];
 
 // Recency-keyword cases that must NOT fire — the English terms are matched on
