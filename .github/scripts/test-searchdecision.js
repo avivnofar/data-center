@@ -59,6 +59,7 @@ function extractConst(name) {
 const fnSrc = [
   extractConst('NOTEBOOK_CONTEXT_MAX_CHARS'),
   extractConst('NOTEBOOK_MATCH_MIN_SCORE'),
+  extractConst('NOTEBOOKS_ENABLED'), // retrieval allowlist matchNotebooks() gates on
   extractConst('NOTEBOOK_STOPWORDS'),
   extractConst('NOTEBOOK_STOPWORDS_HE'),
   extractConst('HEBREW_LETTER_CLASS'),

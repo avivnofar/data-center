@@ -11,6 +11,10 @@
 // and their dependencies verbatim from index.html and runs them against the
 // real data/notebooks/ mirror — no mocked notebook content to drift out of
 // sync.
+//
+// It also PINS the NOTEBOOKS_ENABLED retrieval set (2026-08-18), so
+// re-enabling a notebook that was deliberately disabled is a conscious edit
+// rather than an accident. See the assertion below for the reasoning.
 
 const fs = require('fs');
 const path = require('path');
@@ -54,6 +58,7 @@ function extractConst(name) {
 const fnSrc = [
   extractConst('NOTEBOOK_CONTEXT_MAX_CHARS'),
   extractConst('NOTEBOOK_MATCH_MIN_SCORE'),
+  extractConst('NOTEBOOKS_ENABLED'),
   extractConst('NOTEBOOK_STOPWORDS'),
   extractConst('NOTEBOOK_STOPWORDS_HE'),
   extractConst('HEBREW_LETTER_CLASS'),
@@ -83,16 +88,62 @@ async function fakeFetch(url) {
 const idx = JSON.parse(fs.readFileSync(path.join(repoRoot, 'data/notebooks/_index-public.json'), 'utf8'));
 const DB = { notebookIndex: idx.notebooks };
 
-const buildNotebookContext = new AsyncFunction('DB', 'fetch', `
+const sandbox = new AsyncFunction('DB', 'fetch', `
   const notebookCache = {};
   ${fnSrc}
-  return buildNotebookContext;
+  return { buildNotebookContext, matchNotebooks, NOTEBOOKS_ENABLED };
 `)(DB, fakeFetch);
 
 let failures = 0;
 
 (async () => {
-  const bnc = await buildNotebookContext;
+  const { buildNotebookContext: bnc, matchNotebooks, NOTEBOOKS_ENABLED } = await sandbox;
+
+  /* ── The enabled set is PINNED (2026-08-18) ──────────────────────────
+   * NOTEBOOKS_ENABLED decides which mirrored notebooks may be paid for as
+   * request context. Eight were disabled deliberately (public+stable content
+   * the model already holds, stale fast-moving content, and two "private"
+   * notebooks measured to contain nothing private) — see index.html's
+   * NOTEBOOKS_ENABLED comment and audits/NOTEBOOK-VALUE-TEST.md.
+   *
+   * This assertion exists so re-enabling one is a DELIBERATE act: it fails
+   * loudly, and whoever is re-enabling has to update this list and say why.
+   * It is not a style check. Do not "fix" it by widening it to match
+   * index.html without reading the reasoning first.
+   *
+   * NOTE: this pins RETRIEVAL, not the mirror. data/notebooks/ keeps all 12
+   * notebooks and notebook-sync.yml keeps syncing them.
+   */
+  const EXPECTED_ENABLED = ['kb-cloud-devops', 'kb-cybersecurity', 'kb-firewall', 'kb-vpn'];
+  const actualEnabled = [...NOTEBOOKS_ENABLED].sort();
+  if (JSON.stringify(actualEnabled) !== JSON.stringify(EXPECTED_ENABLED)) {
+    failures++;
+    console.error(`FAILED: NOTEBOOKS_ENABLED changed.
+  expected: ${EXPECTED_ENABLED.join(', ')}
+  actual:   ${actualEnabled.join(', ')}
+If this is intentional, update EXPECTED_ENABLED here AND the reasoning in index.html + CURRENT-SPEC.md.`);
+  }
+  const knownIds = new Set(idx.notebooks.map(n => n.id));
+  [...NOTEBOOKS_ENABLED].filter(id => !knownIds.has(id)).forEach(id => {
+    failures++;
+    console.error(`FAILED: NOTEBOOKS_ENABLED names "${id}", which is not in the mirrored index — a typo here silently disables a notebook.`);
+  });
+
+  // A disabled notebook must never reach a request, however well it scores.
+  const disabledProbes = [
+    ['kb-linux', 'how do I find which process is using the most memory on a linux server'],
+    ['kb-1com', 'how do I configure an IVR queue on the 1COM PBX'],
+    ['kb-remote-access', 'is AnyDesk or TeamViewer better for unattended remote access'],
+    ['kb-ai-tools', 'compare the leading AI chat assistants and coding assistants'],
+  ];
+  for (const [id, q] of disabledProbes) {
+    const matched = matchNotebooks(q);
+    if (matched.some(nb => nb.id === id)) {
+      failures++;
+      console.error(`FAILED: disabled notebook ${id} still matched query "${q}"`);
+    }
+  }
+  console.log(`enabled set pinned: ${actualEnabled.join(', ')} (${idx.notebooks.length - actualEnabled.length} of ${idx.notebooks.length} mirrored notebooks disabled for retrieval)`);
 
   // Case 1: VPN-comparison query — the diagnosed over-attachment case.
   const vpnCtx = await bnc('what is the difference between site-to-site and remote access VPN');
@@ -142,14 +193,19 @@ let failures = 0;
 
   // Mixed Hebrew/English: the Latin token carries the match, and the Hebrew
   // tokens must not drag the section-majority threshold out of reach.
-  const mixedCtx = await bnc('שירות systemd לא עולה');
+  // The probe used to be "שירות systemd לא עולה", which routed through kb-linux
+  // — disabled for retrieval on 2026-08-18, so it now correctly attaches
+  // nothing and can no longer exercise the Hebrew/Latin token path. Re-pointed
+  // at an enabled notebook; the property under test is unchanged.
+  const mixedQuery = 'בעיה עם OpenVPN לא מתחבר';
+  const mixedCtx = await bnc(mixedQuery);
   if (mixedCtx.length < 1000) {
     failures++;
-    console.error(`FAILED: mixed he/en query "שירות systemd לא עולה" should attach notebook context via its Latin token, got ${mixedCtx.length} chars`);
+    console.error(`FAILED: mixed he/en query "${mixedQuery}" should attach notebook context via its Latin token, got ${mixedCtx.length} chars`);
   }
-  if (!/systemd/i.test(mixedCtx)) {
+  if (!/OpenVPN/i.test(mixedCtx)) {
     failures++;
-    console.error('FAILED: mixed he/en query should attach systemd content');
+    console.error('FAILED: mixed he/en query should attach OpenVPN content');
   }
   console.log(`mixed he/en query: ${mixedCtx.length} chars attached`);
 

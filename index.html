@@ -2524,6 +2524,51 @@ const notebookCache = {};
 const NOTEBOOK_CONTEXT_MAX_CHARS = 15000; // ~15 KB cap per request (server also enforces a cap)
 const NOTEBOOK_MATCH_MIN_SCORE = 3; // require at least one name/domain/tag hit — no match beats a wrong match
 
+/* ── Which mirrored notebooks may attach to a request (2026-08-18) ────────
+ * THIS IS A RETRIEVAL FILTER, NOT A MIRROR FILTER. The weekly sync
+ * (.github/workflows/notebook-sync.yml -> data/notebooks/) keeps mirroring
+ * ALL notebooks, and nothing here should ever be read as licence to delete
+ * a mirrored file or narrow the sync. The mirror is the archive; this set
+ * only decides what gets paid for as request context. A future session that
+ * "cleans up" data/notebooks/ to match this list has misread it.
+ *
+ * Why only four. Attaching notebook context costs ~2,700 uncached input
+ * tokens per question, and the deciding argument is not the sample size —
+ * it is the desk-check 2x2: content that is PUBLIC and STABLE is redundant
+ * by construction, because claude-sonnet-5 already holds it, so those tokens
+ * buy nothing. Content that is PUBLIC and FAST-MOVING is worse than
+ * redundant: a stale snapshot handed to the model as reference material is a
+ * wrong answer with authority attached. Only content the model cannot have —
+ * or vendor-specific detail it demonstrably gets wrong — earns its tokens.
+ * Full measurement: audits/NOTEBOOK-VALUE-TEST.md (local, gitignored).
+ *
+ * Re-enabling one is a deliberate act: .github/scripts/test-notebookcontext.js
+ * pins this exact set and fails if it changes, so it cannot drift back open
+ * by accident.
+ */
+const NOTEBOOKS_ENABLED = new Set([
+  'kb-vpn',           // the one measured win — FortiClient / Check Point specifics
+                      // in the answer traced directly to attached sections
+  'kb-firewall',      // vendor-specific pfSense/OPNsense detail beyond general knowledge
+  'kb-cybersecurity', // freshest material in the mirror (phishing / red-teaming, 08-10..08-17)
+  'kb-cloud-devops',  // provider consoles and deployment patterns that do move
+]);
+
+/* Disabled, and why — kept here so the reasoning survives the next session:
+ *   kb-linux, kb-bash, kb-networking, kb-voip-sip
+ *     PUBLIC + STABLE. Pure redundancy; the model already knows this.
+ *   kb-ai-tools
+ *     Fast-moving and 32 days stale — a point-in-time comparison of the
+ *     fastest-moving subject there is. The clearest harm case.
+ *   kb-remote-access
+ *     Fast-moving, 32 days stale, AND it over-attaches: it rode along on an
+ *     unrelated VPN question, contributed nothing, and cost tokens.
+ *   kb-1com, kb-mirtapbx
+ *     Labelled private, measured NOT private — no portal URLs, no FQDN/SRV
+ *     conventions, no model numbers, no default ports, no dial plans. The
+ *     no-context arm reproduced their content from general knowledge.
+ */
+
 // Common words carry no topic signal and are long enough to otherwise pass
 // the 3-char filter below (e.g. "how", "does", "the") — dropped before
 // scoring so they can't rack up cross-notebook weak-signal hits.
@@ -2630,8 +2675,12 @@ function tokensUsableAgainst(haystack, words) {
 // Scores DB.notebookIndex entries against the query using name/domain/tags
 // (strong signal) and summary (weak signal). Returns up to 2 notebooks
 // above the minimum relevance threshold.
+//
+// The NOTEBOOKS_ENABLED gate runs FIRST, before scoring — a disabled
+// notebook can never win a slot off an enabled one, so disabling one
+// promotes the runner-up rather than silently shrinking the result.
 function matchNotebooks(query) {
-  const idx = DB.notebookIndex || [];
+  const idx = (DB.notebookIndex || []).filter(nb => NOTEBOOKS_ENABLED.has(nb.id));
   const words = notebookQueryTokens(query);
   if (!idx.length || !words.length) return [];
 
