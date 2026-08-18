@@ -39,7 +39,10 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   3-char minimum `matchNotebooks()` uses (2026-08-18 fix — previously an
   unfiltered `split(/\s+/)`, so short common words like "a"/"is" scored
   nearly every DB entry and produced 100%-irrelevant matches on
-  plain-English queries; see `.github/scripts/test-builddbcontext.js`).
+  plain-English queries; see `.github/scripts/test-builddbcontext.js`), and
+  since the same day matches on **word boundaries over a bilingual
+  haystack** rather than `haystack.includes()` — see "Hebrew query
+  matching" below.
 - **Prompt caching (active since 2026-08-04)**: `systemBlocks()` returns the
   system prompt as an *array* of content blocks ordered static → dynamic,
   because Anthropic's cache is a prefix match. Two `cache_control: ephemeral`
@@ -72,18 +75,20 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   (latest/newest/current/version/CVE/release/changelog/still/2026 and Hebrew
   equivalents, matched on the raw query in **both** languages since Hebrew
   questions routinely carry English technical terms). `LANG` is not consulted:
-  it sets the response language only. One deliberate asymmetry —
-  `notebookQueryTokens()` keeps `[a-z0-9_-]` only, so a query written purely
-  in Hebrew always yields zero tokens and therefore zero context; that is "the
-  matcher could not look", not "the KB has nothing", so the thin-context
-  signal is skipped there and the decision falls to the recency signal alone
-  (otherwise every Hebrew query — the default language — would re-enable
-  search and forfeit the saving). The Worker fails closed: anything other than
+  it sets the response language only. The rule applies identically in both
+  languages: the Hebrew carve-out that used to sit in `shouldAllowWebSearch()`
+  — skip the thin-context signal when the query yields zero tokens — was
+  **removed 2026-08-18** once the matchers learned Hebrew, because zero
+  context in Hebrew now means "nothing matched", not "the matcher could not
+  look". The 300-char threshold was re-checked against the post-fix Hebrew
+  measurements and kept: covered Hebrew questions measure 366-414 chars,
+  uncovered ones 0-240, so the threshold sits inside the gap that separates
+  them. The Worker fails closed: anything other than
   a literal `true` means no tool, so an older cached client gets the cheap
   path. When the tool is absent the system prompt says so explicitly and
   forbids claiming a search happened (see `systemBlocks()`). Pinned by
-  `.github/scripts/test-searchdecision.js` (17 query cases against the real
-  `data/` files).
+  `.github/scripts/test-searchdecision.js` (23 query cases against the real
+  `data/` files, English and Hebrew).
 - **Notebook-X integration (repo mirror, decided + implemented 2026-07-21)**:
   `.github/workflows/notebook-sync.yml` mirrors the Notebook-X public index
   + all 12 notebooks verbatim into `data/notebooks/` weekly (read-only
@@ -102,6 +107,62 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   GitHub credentials on the Worker side. Supersedes the old
   `getNotebookXContext()` (confirmed silent no-op — unauthenticated fetch
   against the private repo always 404ed; deleted, not fixed).
+- **Hebrew query matching (2026-08-18)**: Hebrew is the app's default
+  language, and until this date a query written in it reached **nothing**.
+  `notebookQueryTokens()` stripped every character outside `[a-z0-9_-]`, so a
+  Hebrew query tokenized to `[]`, and both `buildDbContext()` and
+  `matchNotebooks()` return early at their `!words.length` guard — measured
+  at 0 chars of `db_context` and 0 of `notebook_context` across a set of
+  realistic Hebrew questions. Partly a regression: before `455a2e3`
+  `buildDbContext()` split on whitespace with no character filter, so Hebrew
+  tokens survived and matched the Hebrew keywords `data/*.json` carries
+  inside `tags` (that path was narrow — tags only — and noisy: the 2-letter
+  "מה" substring-matched inside "חסימה"). The notebook mirror was never
+  reachable in Hebrew; its tokenizer has been ASCII-only since `a745a75`
+  introduced it. The fix, entirely client-side:
+  - **Unicode-aware tokenizer** — `[^\p{L}\p{N}_-]`, keeping letters/digits in
+    any script. `NOTEBOOK_STOPWORDS_HE` sits alongside the English set.
+  - **One matcher, word-boundary, in both functions** — `buildDbContext()`
+    now calls `notebookWordMatch()` instead of `haystack.includes()`. `\b` is
+    useless for Hebrew (it keys off `[A-Za-z0-9_]` and never fires between two
+    Hebrew letters), so a Hebrew token matches on a **Hebrew-letter boundary**
+    with the one-letter particles ו/ה/ב/ל/מ/כ/ש allowed on either side —
+    "ברשת" and "רשת" are the same content word, while "רשת" correctly does
+    *not* match inside "הדורשת" and "שירות" not inside "ישירות".
+  - **Bilingual haystack, no translation layer** — `buildDbContext()` searches
+    `desc_he`/`scenarios_he` alongside the English fields. Hebrew and Latin
+    script don't overlap, so one combined haystack is enough: Hebrew tokens
+    can only hit Hebrew text, Latin tokens only English text.
+    `tokensUsableAgainst()` computes the section-majority threshold over the
+    tokens that can actually match a given haystack, so a mixed query like
+    "שירות systemd לא עולה" isn't sunk by Hebrew tokens that could never match
+    English prose.
+
+  **Documented limits**, all deliberate:
+  - **Suffixes are not stemmed.** Hebrew plural "פורטים" does not reach the
+    singular "פורט", nor construct "בדיקת" the base "בדיקה". A plural/construct
+    variant was trialled against the real data and measurably *worsened*
+    ranking (it pushed `nmap` out of the top 3 for "איך בודקים פורטים פתוחים"
+    in favour of `ping`/`strace`), so it was rejected on evidence rather than
+    left undone.
+  - **Prefix stripping is ambiguous in principle** — "בדיקה" is one word, not
+    ב+דיקה — which is why the original form is always tried and the stripped
+    form only added as an extra alternative. One measured consequence in the
+    current data: a query for "פורט" (port) also matches "מפורט" ("detailed"),
+    in one entry.
+  - **The notebook mirror is unreachable from pure Hebrew.** It is Notebook-X's
+    content mirrored verbatim and is English prose — 0 Hebrew characters across
+    all 12 notebooks and the index. A Hebrew query reaches it only through the
+    Latin tokens it carries (product names, commands, flags — which Hebrew
+    speakers type in English anyway); with no Latin token it attaches nothing.
+    Closing that needs translation, which was explicitly out of scope.
+    `.github/scripts/test-notebookcontext.js` re-checks the English-only
+    assumption on every run and prints a notice if the mirror ever gains
+    Hebrew.
+  - `quick_flags` are not in `buildDbContext()`'s haystack, and 2-character
+    tokens are filtered, so "מה עושה הדגל -n" attaches nothing and falls to
+    the thin-context branch. Untouched here; noted so it isn't rediscovered
+    as a surprise.
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
   `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
@@ -238,6 +299,28 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **Hebrew knowledge-base matching fixed — 2026-08-18** (commits `ec03f58`,
+  `3cd4bae`). The full design, rationale and limits are under "Hebrew query
+  matching" in Architecture above. Headline measurements, taken against the
+  real `data/*.json` and `data/notebooks/` mirror through the exact browser
+  code path:
+
+  | Hebrew query | db_context before | after | notebook_context |
+  |---|---|---|---|
+  | איך בודקים איזה פורט תפוס | 0 | 414 | 0 |
+  | בעיות חיבור ברשת פרטית וירטואלית | 0 | 366 | 0 |
+  | איך מגדירים חומת אש בלינוקס | 0 | 410 | 0 |
+  | השרת שלי איטי מה כדאי לבדוק | 0 | 407 | 0 |
+  | שירות systemd לא עולה (mixed) | 0 | 401 | 13,873 |
+  | מה עושה הדגל -n | 0 | 0 | 0 |
+
+  English queries were checked for regression at the same time and every
+  difference was an improvement: "how do I check open ports with netstat"
+  swapped `nmap` for `ss`, "listening on port 443" swapped `top/htop` for
+  `lsof`, and "explain the CAP theorem" went from three unrelated entries to
+  none. `cloudflare-worker/worker.js` was not touched — the whole fix is
+  client-side.
 
 - **Conditional web search — live-verified 2026-08-18.** Measured on
   production with `wrangler tail` open, against the deployed Worker and the
