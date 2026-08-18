@@ -55,9 +55,16 @@ const fnSrc = [
   extractConst('NOTEBOOK_CONTEXT_MAX_CHARS'),
   extractConst('NOTEBOOK_MATCH_MIN_SCORE'),
   extractConst('NOTEBOOK_STOPWORDS'),
+  extractConst('NOTEBOOK_STOPWORDS_HE'),
+  extractConst('HEBREW_LETTER_CLASS'),
+  extractConst('HEBREW_PARTICLES'),
+  extractConst('HEBREW_CHAR_RE'),
   extractFn('notebookQueryTokens'),
   extractFn('escapeRegExp'),
+  extractFn('isHebrewText'),
+  extractFn('hebrewStripParticles'),
   extractFn('notebookWordMatch'),
+  extractFn('tokensUsableAgainst'),
   extractFn('matchNotebooks'),
   extractFn('notebookSectionMatches'),
   extractFn('fetchNotebook'),
@@ -110,9 +117,53 @@ let failures = 0;
     console.error(`FAILED: "what is a hypervisor" should attach no notebook context, got:\n${noneCtx}`);
   }
 
+  /* ── Hebrew queries against an English-only mirror (2026-08-18) ─────────
+   * The mirrored notebooks are Notebook-X's own content, verbatim, and it is
+   * English prose — measured at fix time: 0 Hebrew characters across all 12
+   * notebooks and the index. So the deliberate design (B3) is:
+   *   - Hebrew tokens reach the BILINGUAL command DB (desc_he/scenarios_he/
+   *     Hebrew keywords in tags) — see test-builddbcontext.js.
+   *   - Latin tokens in a Hebrew query — product names, commands and flags,
+   *     which Hebrew speakers type in English anyway — reach the notebooks.
+   *   - A Hebrew query with NO Latin token reaches no notebook at all. That
+   *     is a documented limit, not a bug: closing it needs translation, which
+   *     was explicitly out of scope.
+   * tokensUsableAgainst() is what makes the middle case work: without it the
+   * majority threshold counts Hebrew tokens that cannot possibly match
+   * English prose, and a mixed query attaches nothing.
+   */
+  const mirrorHasHebrew = fs.readdirSync(path.join(repoRoot, 'data/notebooks'))
+    .some(f => /[\u0590-\u05FF]/.test(fs.readFileSync(path.join(repoRoot, 'data/notebooks', f), 'utf8')));
+  if (mirrorHasHebrew) {
+    console.log('NOTE: the notebook mirror now contains Hebrew text. tokensUsableAgainst() will start counting Hebrew tokens against it — re-measure the pure-Hebrew case below, which is pinned as a known limit on the assumption the mirror is English-only.');
+  }
+
+  // Mixed Hebrew/English: the Latin token carries the match, and the Hebrew
+  // tokens must not drag the section-majority threshold out of reach.
+  const mixedCtx = await bnc('שירות systemd לא עולה');
+  if (mixedCtx.length < 1000) {
+    failures++;
+    console.error(`FAILED: mixed he/en query "שירות systemd לא עולה" should attach notebook context via its Latin token, got ${mixedCtx.length} chars`);
+  }
+  if (!/systemd/i.test(mixedCtx)) {
+    failures++;
+    console.error('FAILED: mixed he/en query should attach systemd content');
+  }
+  console.log(`mixed he/en query: ${mixedCtx.length} chars attached`);
+
+  // Pure Hebrew, no Latin token: pinned as a known limit (see above).
+  if (!mirrorHasHebrew) {
+    const pureHeCtx = await bnc('בעיות חיבור ברשת פרטית וירטואלית');
+    if (pureHeCtx !== '') {
+      failures++;
+      console.error(`FAILED: a pure-Hebrew query is expected to attach no notebook context while the mirror is English-only — if that changed deliberately, update this assertion and CURRENT-SPEC.md's documented limit. Got ${pureHeCtx.length} chars`);
+    }
+    console.log('pure-Hebrew query: 0 chars attached (documented limit — the mirror is English-only)');
+  }
+
   if (failures > 0) {
     console.error(`\n${failures} failure(s) found.`);
     process.exit(1);
   }
-  console.log('OK: buildNotebookContext() majority-match threshold holds.');
+  console.log('OK: buildNotebookContext() majority-match threshold and Hebrew/English token handling hold.');
 })();

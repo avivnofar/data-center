@@ -50,7 +50,15 @@ function extractConst(name) {
 
 const fnSrc = [
   extractConst('NOTEBOOK_STOPWORDS'),
+  extractConst('NOTEBOOK_STOPWORDS_HE'),
+  extractConst('HEBREW_LETTER_CLASS'),
+  extractConst('HEBREW_PARTICLES'),
+  extractConst('HEBREW_CHAR_RE'),
   extractFn('notebookQueryTokens'),
+  extractFn('escapeRegExp'),
+  extractFn('isHebrewText'),
+  extractFn('hebrewStripParticles'),
+  extractFn('notebookWordMatch'),
   extractFn('buildDbContext'),
 ].join('\n');
 
@@ -60,7 +68,8 @@ const DB = {
   network: JSON.parse(fs.readFileSync(path.join(repoRoot, 'data/network.json'), 'utf8')),
 };
 
-const buildDbContext = new Function('DB', `${fnSrc}\nreturn buildDbContext;`)(DB);
+const { buildDbContext, notebookWordMatch, notebookQueryTokens } =
+  new Function('DB', `${fnSrc}\nreturn { buildDbContext, notebookWordMatch, notebookQueryTokens };`)(DB);
 
 let failures = 0;
 
@@ -99,8 +108,81 @@ let failures = 0;
   }
 }
 
+/* ── Word-boundary matching (2026-08-18) ──────────────────────────────────
+ * buildDbContext() used to score with haystack.includes(w). That made "CAP"
+ * match "Capture"/"capacity" and, in Hebrew, made "שירות" (service) match
+ * inside "ישירות" (directly). It now uses notebookWordMatch() — the same
+ * matcher matchNotebooks() has always used — so there is one implementation,
+ * not two.
+ */
+{
+  const ctx = buildDbContext('explain the CAP theorem');
+  if (ctx !== '') {
+    failures++;
+    console.error(`FAILED: "explain the CAP theorem" must match nothing — "cap" is not a word in "Capture"/"capacity". Got:\n${ctx}`);
+  }
+}
+
+const BOUNDARY_CASES = [
+  // [haystack, query word, expected, why]
+  ['capture packets on the wire', 'cap', false, 'CAP must not match inside "Capture"'],
+  ['disk capacity report', 'cap', false, 'CAP must not match inside "capacity"'],
+  ['the cap theorem explained', 'cap', true, 'a standalone word still matches'],
+  // Hebrew: \b keys off [A-Za-z0-9_] and so never fires between two Hebrew
+  // letters. Hebrew words match on a Hebrew-LETTER boundary instead, with the
+  // one-letter particles ו/ה/ב/ל/מ/כ/ש allowed on either side.
+  ['פקודה שרצה ישירות במסוף', 'שירות', false, '"שירות" must not match inside "ישירות"'],
+  ['הפעלת שירות במערכת', 'שירות', true, 'a standalone Hebrew word matches'],
+  ['מדיניות הדורשת אימות', 'רשת', false, '"רשת" must not match inside "הדורשת"'],
+  ['תקלות ברשת המקומית', 'רשת', true, 'the haystack carries the ב particle'],
+  ['בדיקת רשת מקומית', 'ברשת', true, 'the QUERY carries the ב particle'],
+  ['הגדרות וברשת הפנימית', 'רשת', true, 'stacked particles (ו+ב) on the haystack'],
+];
+for (const [hay, word, expected, why] of BOUNDARY_CASES) {
+  const got = notebookWordMatch(hay, word);
+  if (got !== expected) {
+    failures++;
+    console.error(`FAILED: notebookWordMatch("${hay}", "${word}") — expected ${expected} (${why}), got ${got}`);
+  }
+}
+
+/* ── Hebrew reachability (2026-08-18) ─────────────────────────────────────
+ * THE bug this file now guards. notebookQueryTokens() kept [a-z0-9_-] only,
+ * so a query written in Hebrew — the app's DEFAULT language — tokenized to
+ * [] and buildDbContext() returned '' at its !words.length guard. The whole
+ * 148-entry knowledge base was unreachable in Hebrew.
+ *
+ * Sizes below are the measured post-fix figures against the real data/*.json.
+ * They are asserted as a floor, not an exact value, so ordinary data growth
+ * doesn't fail the build.
+ */
+const HEBREW_CASES = [
+  { q: 'איך בודקים איזה פורט תפוס', min: 300, expect: /netstat/i, why: 'port/socket entries' },
+  { q: 'בעיות חיבור ברשת פרטית וירטואלית', min: 300, expect: /netstat|ss|ip\b/i, why: 'network-connection entries' },
+  { q: 'איך מגדירים חומת אש בלינוקס', min: 300, expect: /iptables|ufw|firewall/i, why: 'firewall entries' },
+  { q: 'השרת שלי איטי מה כדאי לבדוק', min: 300, expect: /free|top|vmstat|df/i, why: 'performance entries' },
+  { q: 'שירות systemd לא עולה', min: 300, expect: /systemctl|journalctl/i, why: 'mixed he/en query' },
+];
+for (const c of HEBREW_CASES) {
+  const ctx = buildDbContext(c.q);
+  if (!notebookQueryTokens(c.q).length) {
+    failures++;
+    console.error(`FAILED: "${c.q}" tokenizes to nothing — the tokenizer has stopped being Unicode-aware`);
+    continue;
+  }
+  if (ctx.length < c.min) {
+    failures++;
+    console.error(`FAILED: "${c.q}" should attach at least ${c.min} chars of DB context (${c.why}), got ${ctx.length}`);
+  }
+  if (!c.expect.test(ctx)) {
+    failures++;
+    console.error(`FAILED: "${c.q}" should match ${c.expect} (${c.why}), got:\n${ctx}`);
+  }
+  console.log(`he: ${String(ctx.length).padStart(4)} chars  ${c.q}   (pre-fix: 0 — tokenizer dropped every Hebrew letter)`);
+}
+
 if (failures > 0) {
   console.error(`\n${failures} failure(s) found.`);
   process.exit(1);
 }
-console.log('OK: buildDbContext() stopword/length filter holds across 3 test cases.');
+console.log(`OK: buildDbContext() stopword/length filter, word-boundary matching (${BOUNDARY_CASES.length} cases) and Hebrew reachability (${HEBREW_CASES.length} cases) all hold.`);

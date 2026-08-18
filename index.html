@@ -2447,6 +2447,19 @@ function formatSessionDate(ts) {
 // ("a", "is") can't rack up cross-entry false-positive matches — same
 // stopword list + 3-char minimum matchNotebooks() already relies on, no
 // second stopword list to drift out of sync.
+//
+// The haystack is BILINGUAL (2026-08-18): the Hebrew fields are searched
+// alongside the English ones, because Hebrew is the app's default language
+// and every entry already carries desc_he/scenarios_he plus Hebrew keywords
+// inside its `tags` string. Hebrew and Latin script don't overlap, so one
+// combined haystack is enough — a Hebrew token can only ever hit the Hebrew
+// text and a Latin one only the English text. No per-language haystack
+// split, no translation layer.
+//
+// Matching is word-boundary (notebookWordMatch), not substring: the old
+// haystack.includes(w) made "explain the CAP theorem" match tcpdump on "cap"
+// inside "Capture", and in Hebrew made "שירות" (service) match inside the
+// unrelated "ישירות" (directly).
 function buildDbContext(query) {
   const words = notebookQueryTokens(query);
   if (!words.length) return '';
@@ -2455,11 +2468,12 @@ function buildDbContext(query) {
   ['linux', 'cmd', 'network'].forEach(key => {
     (DB[key] || []).forEach(entry => {
       const haystack = [
-        entry.name, entry.tags, entry.desc_en,
+        entry.name, entry.tags, entry.desc_en, entry.desc_he,
         ...(entry.scenarios_en || []),
+        ...(entry.scenarios_he || []),
       ].filter(Boolean).join(' ').toLowerCase();
       let score = 0;
-      words.forEach(w => { if (haystack.includes(w)) score++; });
+      words.forEach(w => { if (notebookWordMatch(haystack, w)) score++; });
       if (score > 0) scored.push({ entry, score });
     });
   });
@@ -2486,10 +2500,68 @@ const NOTEBOOK_MATCH_MIN_SCORE = 3; // require at least one name/domain/tag hit 
 // scoring so they can't rack up cross-notebook weak-signal hits.
 const NOTEBOOK_STOPWORDS = new Set(['how','does','do','did','the','are','was','were','for','and','but','not','you','your','can','could','should','would','this','that','have','has','had','with','what','why','when','where','which','from','into']);
 
+// The Hebrew half of the same idea (2026-08-18). Most Hebrew function words
+// are 2 letters and are already dropped by the 3-char minimum below; they are
+// listed anyway so the set documents itself and survives a future change to
+// that minimum. Deliberately NOT included: בין / רשת / שרת / קובץ and other
+// words that read as "generic" but carry real topic signal in this corpus.
+const NOTEBOOK_STOPWORDS_HE = new Set([
+  'של','את','עם','איך','מה','לא','יש','זה','על','כדי','אני','הוא','היא',
+  'הם','הן','או','גם','כל','אם','כי','אז','רק','עוד','כבר','אבל','אשר',
+  'האם','למה','מתי','איפה','כמה','איזה','איזו','אלה','אלו','כמו','כאשר',
+  'שלי','שלך','שלו','שלה','הזה','זאת','אותו','אותה','יותר','פחות',
+  'לפני','אחרי','עבור','לפי','צריך','אפשר','ניתן','להיות','עושה','עושים',
+]);
+
+// Unicode-aware (2026-08-18). The old class was [^a-z0-9_-], which deleted
+// every Hebrew letter — so a query written in Hebrew, the app's DEFAULT
+// language, produced zero tokens, and with zero tokens buildDbContext() and
+// matchNotebooks() both bailed out at their !words.length guard. The whole
+// command DB and the notebook mirror were unreachable in Hebrew.
+// \p{L}/\p{N} keep letters and digits in any script while still stripping
+// punctuation, so "?איך" -> "איך" and "site-to-site" / "cve-2026-11045" are
+// unchanged. Hebrew has no case distinction, so toLowerCase() is a no-op there.
 function notebookQueryTokens(query) {
   return (query || '').toLowerCase().split(/\s+/)
-    .map(w => w.replace(/[^a-z0-9_-]/g, ''))
-    .filter(w => w.length >= 3 && !NOTEBOOK_STOPWORDS.has(w));
+    .map(w => w.replace(/[^\p{L}\p{N}_-]/gu, ''))
+    .filter(w => w.length >= 3 && !NOTEBOOK_STOPWORDS.has(w) && !NOTEBOOK_STOPWORDS_HE.has(w));
+}
+
+/* ── Hebrew word matching ─────────────────────────────────────────────────
+ * Two properties of Hebrew make \b useless here:
+ *   1. \b keys off [A-Za-z0-9_], so it never fires between two Hebrew
+ *      letters — /\bרשת\b/ matches happily inside "הדורשת".
+ *   2. The one-letter grammatical particles ו/ה/ב/ל/מ/כ/ש ("and/the/in/to/
+ *      from/as/that") attach directly to the following word with no space,
+ *      and they stack ("וברשת" = and+in+network). "ברשת" and "רשת" are the
+ *      same content word and must match each other.
+ * So a Hebrew token matches on a Hebrew-LETTER boundary, with an optional
+ * 0-2 particle cluster allowed on the haystack side, and the token is also
+ * tried with its own leading particles stripped — which covers both
+ * directions without a stemmer.
+ * Deliberate limits: SUFFIXES are not stripped (plural "רשתות" and construct
+ * "בדיקת" do not match "רשת"/"בדיקה"), because Hebrew suffix morphology needs
+ * a real stemmer and guessing costs precision. Prefix stripping is ambiguous
+ * in principle — "בדיקה" is one word, not ב+דיקה — which is why the ORIGINAL
+ * form is always tried too and the stripped form is only an extra
+ * alternative. One measured consequence in the current data: a query for
+ * "פורט" (port) also matches "מפורט" ("detailed") in one entry.
+ */
+const HEBREW_LETTER_CLASS = '\\u0590-\\u05FF';
+const HEBREW_PARTICLES = 'והבלמכש';
+const HEBREW_CHAR_RE = /[\u0590-\u05FF]/;
+
+function isHebrewText(s) {
+  return HEBREW_CHAR_RE.test(s || '');
+}
+
+function hebrewStripParticles(word) {
+  let w = word;
+  for (let i = 0; i < 2; i++) {
+    if (w.length > 3 && HEBREW_PARTICLES.indexOf(w[0]) !== -1) w = w.slice(1);
+    else break;
+  }
+  return w;
 }
 
 function escapeRegExp(s) {
@@ -2499,7 +2571,31 @@ function escapeRegExp(s) {
 // Word-boundary match, not substring — plain .includes() would match e.g.
 // the query word "work" inside the unrelated notebook name "AI Tools & Workflows".
 function notebookWordMatch(haystack, word) {
+  if (isHebrewText(word)) {
+    const forms = [word];
+    const stripped = hebrewStripParticles(word);
+    if (stripped !== word) forms.push(stripped);
+    const alt = forms.map(escapeRegExp).join('|');
+    return new RegExp(
+      '(?<![' + HEBREW_LETTER_CLASS + '])[' + HEBREW_PARTICLES + ']{0,2}(?:' + alt + ')(?![' + HEBREW_LETTER_CLASS + '])'
+    ).test(haystack);
+  }
   return new RegExp('\\b' + escapeRegExp(word) + '\\b').test(haystack);
+}
+
+// A query token can only ever match text written in its own script, so a
+// majority threshold has to be computed over the tokens that stand a chance
+// against THIS haystack. Otherwise a mostly-Hebrew query could never clear it
+// against the English-only notebook mirror (measured 2026-08-18: 0 Hebrew
+// characters across all 12 mirrored notebooks and the index), and every
+// Hebrew question would silently attach nothing. Self-adjusting: if the
+// mirror ever gains Hebrew content, its Hebrew tokens start counting again.
+// Falls back to the full set rather than an empty one, so a pure-Hebrew query
+// against English-only text still has to match something to qualify.
+function tokensUsableAgainst(haystack, words) {
+  if (isHebrewText(haystack)) return words;
+  const latin = words.filter(w => !isHebrewText(w));
+  return latin.length ? latin : words;
 }
 
 // Scores DB.notebookIndex entries against the query using name/domain/tags
@@ -2544,8 +2640,9 @@ async function fetchNotebook(id) {
 // architecture pulling in an unrelated notebook's sections purely because
 // both happen to say "remote access").
 function notebookSectionMatches(hay, words) {
-  const matchCount = words.filter(w => notebookWordMatch(hay, w)).length;
-  return matchCount >= Math.ceil(words.length / 2);
+  const usable = tokensUsableAgainst(hay, words);
+  const matchCount = usable.filter(w => notebookWordMatch(hay, w)).length;
+  return matchCount >= Math.ceil(usable.length / 2);
 }
 
 // Fetches matched notebooks and selects only sections whose title/tags/
