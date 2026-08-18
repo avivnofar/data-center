@@ -3010,13 +3010,52 @@ function parseSuggestionBlocks(text) {
   return { body, suggestions };
 }
 
-function renderMarkdown(text) {
+/* ── Trusted inline markup in guide markdown (2026-08-18) ────────────────
+ * workflows/*.md is repo-authored content and, per CLAUDE.md rule 4, its
+ * Hebrew prose legitimately wraps English technical terms in
+ * <span class="ltr-term">. renderMarkdown() escHtml()s everything, so those
+ * tags used to reach the page as visible text — and in Hebrew (the default
+ * language) wrapLtrTerms() then tore the escaped entities apart word by word,
+ * producing the `&quot;` / `&gt;` soup seen on the live site.
+ *
+ * The fix is deliberately narrow. Only the exact inline tags CLAUDE.md rule 6
+ * allows are honoured, only for callers that opt in (guides), and they are
+ * lifted out BEFORE escHtml() into non-textual sentinels, then put back at
+ * the very end. Everything else — including the <service> / <port> / <ip>
+ * placeholders these guides use inside commands — still escapes normally.
+ *
+ * Sentinels are U+0001 <n> U+0002 rather than a word-shaped token on purpose:
+ * wrapLtrTerms()'s Hebrew-mode pattern matches any bare Latin word, so a
+ * readable sentinel would itself get wrapped and never survive to be
+ * restored. Control characters match none of its patterns.
+ *
+ * The AI chat path does NOT pass this flag and is unchanged: model output is
+ * still fully escaped.
+ */
+const GUIDE_INLINE_HTML_RE = /<span class="ltr-term">|<\/span>|<\/?b>|<\/?code>/g;
+
+// U+0001 / U+0002 written as fromCharCode rather than as literal bytes in the
+// source: raw control characters in a file are invisible and are easy for an
+// editor, a linter or a copy-paste to silently drop.
+const INLINE_SENTINEL_A = String.fromCharCode(1);
+const INLINE_SENTINEL_B = String.fromCharCode(2);
+const INLINE_SENTINEL_RE = new RegExp(INLINE_SENTINEL_A + '([0-9]+)' + INLINE_SENTINEL_B, 'g');
+
+function renderMarkdown(text, opts) {
   const { body: strippedText, suggestions } = parseSuggestionBlocks(text);
   let relatedCmds = [];
   let body = strippedText.replace(/RELATED_COMMANDS:\s*\[([^\]]*)\]/i, (_, list) => {
     relatedCmds = list.split(',').map(s => s.trim()).filter(Boolean);
     return '';
   }).trim();
+
+  const trustedInline = [];
+  if (opts && opts.allowInlineHtml) {
+    body = body.replace(GUIDE_INLINE_HTML_RE, (tag) => {
+      trustedInline.push(tag);
+      return INLINE_SENTINEL_A + (trustedInline.length - 1) + INLINE_SENTINEL_B;
+    });
+  }
 
   let html = escHtml(body);
 
@@ -3070,6 +3109,13 @@ function renderMarkdown(text) {
   html = html.replace(/\n/g, '<br>');
   html = html.replace(/<br>(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)/g, '$1');
   html = html.replace(/(<\/?(?:pre|ol|li|h3|table|thead|tbody|tr|th|td)>)<br>/g, '$1');
+
+  // Restore the trusted inline tags lifted out above. Last step, so nothing
+  // downstream -- escHtml(), wrapLtrTerms(), the code/table/list passes --
+  // ever sees them as text.
+  if (trustedInline.length) {
+    html = html.replace(INLINE_SENTINEL_RE, (_, i) => trustedInline[Number(i)]);
+  }
 
   return { html, relatedCmds, suggestions };
 }
@@ -3146,17 +3192,13 @@ async function openWorkflow(id) {
   const detail = document.getElementById('workflow-detail');
   const content = document.getElementById('workflow-detail-content');
   detail.classList.add('visible');
-  content.classList.remove('print-target');
   content.innerHTML = `<p>${LANG === 'he' ? 'טוען...' : 'Loading...'}</p>`;
-  hidePdfFab();
 
   try {
     const res = await fetch(wf.path);
     if (!res.ok) throw new Error('not found');
     const md = await res.text();
-    content.innerHTML = renderMarkdown(md).html;
-    content.classList.add('print-target');
-    showPdfFab();
+    content.innerHTML = renderMarkdown(md, { allowInlineHtml: true }).html;
   } catch (e) {
     const failMsg = LANG === 'he'
       ? 'טעינת המדריך נכשלה. נסה לרענן את הדף.'
