@@ -320,7 +320,35 @@ needed) and validated by `.github/scripts/validate-json.js`.
   swapped `nmap` for `ss`, "listening on port 443" swapped `top/htop` for
   `lsof`, and "explain the CAP theorem" went from three unrelated entries to
   none. `cloudflare-worker/worker.js` was not touched — the whole fix is
-  client-side.
+  client-side, so no Worker deploy was needed.
+
+  **Live-verified on production**, GitHub Pages client against the deployed
+  Worker with `wrangler tail` open:
+
+  | # | Query | db / notebook chars | searches | est_cost_usd |
+  |---|---|---|---|---|
+  | 1 | איך מאבחנים שירות systemd שלא עולה? (mixed) | 401 / 13,873 | 0 | $0.031366 |
+  | 2 | איך בודקים איזה פורט תפוס בלינוקס? (pure Hebrew) | 414 / 0 | 0 | $0.007754 |
+  | 3 | how do I check which port is in use on linux? (English control) | 363 / 14,547 | 0 | $0.015560 |
+  | 4 | מה הגרסה היציבה האחרונה של nginx נכון להיום? (Hebrew recency) | 395 / 0 | 2 | $0.074026 |
+
+  Query 2 is the one that matters: pre-fix it sent 0 chars of both contexts,
+  and it now answers from the DB with `netstat`/`ss`/`lsof` and surfaces
+  `netstat` / `netstat (Windows)` / `sip-registration-troubleshoot` as source
+  chips. Query 3 confirms no English regression. Query 4 confirms the recency
+  branch still fires in Hebrew.
+
+  **One caveat on query 4, unrelated to this change.** Its first run reported
+  `web_search_requests: 2` but the model answered that the search tool's usage
+  limit was hit and fell back to stale training data (nginx 1.26.x) — the exact
+  failure mode documented above for `max_uses: 1`, now observed once at
+  `max_uses: 2`. An immediate English control ($0.045872) and an immediate
+  re-run of the same Hebrew query ($0.047472) both searched successfully and
+  returned the current release (1.30.4, with 2026 CVEs), in English and Hebrew
+  respectively. So it is transient budget exhaustion in the dynamic-filtering
+  path, not a Hebrew-specific or gating-related fault — but it means
+  `max_uses: 2` is not a hard guarantee of one usable answer-bearing search,
+  and a future `max_uses: 3` experiment has a live data point behind it.
 
 - **Conditional web search — live-verified 2026-08-18.** Measured on
   production with `wrangler tail` open, against the deployed Worker and the
