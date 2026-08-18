@@ -2766,6 +2766,69 @@ async function buildNotebookContext(query) {
   return 'NOTEBOOK-X REFERENCE SECTIONS (mirrored copy; bracketed dates are when each notebook/section was last revised at the source — they are NOT the current date):\n\n' + parts.join('\n');
 }
 
+/* ── Gap log (diagnostic plumbing, 2026-08-18) ────────────────────────────
+ * When a question produces ZERO db_context AND ZERO notebook_context, neither
+ * the command DB nor the Notebook-X mirror had anything to say about it. That
+ * is the most direct signal available of what this knowledge base does not
+ * cover, and until now it was discarded silently — the request just went out
+ * thin and nobody could later ask "what do people keep asking that we have
+ * nothing on?".
+ *
+ * Local-only. No network call, no new Worker field, no infrastructure. It is
+ * DIAGNOSTIC PLUMBING, not a feature: there is deliberately no UI, only the
+ * console entry point below. The intended consumer is Notebook-X's own gap
+ * list, which is currently maintained by hand — so entries are stored as
+ * plain JSON with NO derived fields (no scores, no token counts, no
+ * normalised query, no counters). Whatever eventually reads this should be
+ * free to derive its own; baking derivations in now would just be guessing at
+ * a consumer that does not exist yet.
+ *
+ * Failure is silent by design: localStorage throws in private mode and when
+ * the quota is full, and a diagnostic log must never break a chat message.
+ */
+const GAP_LOG_KEY = 'dc-gaps';
+const GAP_LOG_MAX = 200; // oldest-first eviction
+
+function readGapLog() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(GAP_LOG_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+// Records one uncovered query. `mode` is the USER-FACING mode
+// ('search' | 'diagnose' | 'cli'), not getAiBackendMode()'s collapsed value —
+// a gap reached through CLI Mode's fall-through is a different observation
+// from one typed into Free Search, and collapsing cli into search here would
+// destroy exactly the distinction a gap list wants.
+function recordGap(query, lang, mode) {
+  const q = (query || '').trim();
+  if (!q) return; // image-only messages carry no query to log
+  try {
+    const log = readGapLog();
+    log.push({ query: q, lang, mode, ts: new Date().toISOString() });
+    localStorage.setItem(GAP_LOG_KEY, JSON.stringify(log.slice(-GAP_LOG_MAX)));
+  } catch (_) { /* never let a diagnostic log break sending a message */ }
+}
+
+/* Console entry point — the whole read/export/clear surface, deliberately not
+ * wired to any button. Usage, from the browser console:
+ *     dcGaps()         -> the array of entries, oldest first
+ *     dcGaps('json')   -> the same array as a JSON string, ready to paste
+ *     dcGaps('clear')  -> empties the log, returns how many were removed
+ * Documented in CURRENT-SPEC.md under "Gap log". */
+window.dcGaps = function dcGaps(action) {
+  const log = readGapLog();
+  if (action === 'clear') {
+    try { localStorage.removeItem(GAP_LOG_KEY); } catch (_) { /* ignore */ }
+    return log.length;
+  }
+  if (action === 'json') return JSON.stringify(log, null, 2);
+  return log;
+};
+
 /* ── Web-search gating (cost control, 2026-08-18) ─────────────────────────── */
 // Anthropic's server-side web_search bills $10/1,000 searches on top of tokens,
 // and its tool DEFINITION is inside the cached prefix on every request — the
@@ -3755,6 +3818,10 @@ async function sendAiMessage() {
   const dbContext = buildDbContext(text);
   const notebookContext = await buildNotebookContext(text);
   const allowWebSearch = shouldAllowWebSearch(text, dbContext, notebookContext);
+  // Zero local coverage from both sources — log it (see recordGap()). Placed
+  // here rather than after the response because it records what the KNOWLEDGE
+  // BASE had, which is known now and does not depend on how the model answered.
+  if (!dbContext && !notebookContext) recordGap(text, LANG, AI_MODES[0]);
   const session = getCurrentSession();
   const backendMode = getAiBackendMode();
   // Payload only — the full thread stays on screen and in dc-sessions.

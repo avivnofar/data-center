@@ -230,6 +230,20 @@ const claims = [
     },
   },
   {
+    id: 'gap-log-recorded',
+    claim: 'Queries matching neither the command DB nor the notebook mirror are recorded to the dc-gaps localStorage log, at the call site',
+    // Same reasoning as request-history-capped: the log existing is not the
+    // claim, the log being WRITTEN on the zero-context path is. The guard is
+    // matched literally because a call without it would log every message.
+    check: () => {
+      const s = read('index.html');
+      return hasFn(s, 'recordGap')
+        && hasIdent(s, 'GAP_LOG_KEY')
+        && /window\.dcGaps\s*=/.test(s)
+        && /if \(!dbContext && !notebookContext\) recordGap\(/.test(s);
+    },
+  },
+  {
     id: 'notebook-mirror-present',
     claim: 'Notebook-X notebooks are mirrored into data/notebooks/ as same-origin static files',
     check: () => exists('data/notebooks')
@@ -322,6 +336,9 @@ function selfTest() {
     // Leaves notebookDateSuffix() defined but stops emitting it — the dates
     // look implemented and the model receives undated material.
     ['notebook-context-dated', 'index.html', (s) => s.replace('${notebookDateSuffix(nb)}', '')],
+    // Leaves recordGap() defined but drops the guarded call — a gap log that
+    // is never written, which is exactly the failure the claim is about.
+    ['gap-log-recorded', 'index.html', (s) => s.replace(/if \(!dbContext && !notebookContext\) recordGap\([^\n]*\);/, '')],
   ];
 
   const realRead = read;
