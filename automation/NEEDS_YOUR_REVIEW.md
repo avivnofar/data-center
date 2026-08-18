@@ -874,79 +874,31 @@ the structural half is not. Move both counters to a Durable Object
 limiter. The rename lowers the cost of being wrong about this, but it does not
 make the cap global — it only stops the code from claiming to be.
 
-### SEC-03 — what a forged `Origin` actually buys an attacker, and at what cost — **MEDIUM**
+### SEC-03 — the origin allowlist is not authentication — **MEDIUM**
 
-Verified against code, not docs:
+**The constraint, and only the constraint:** `/api/chat` is gated by an
+`Origin` allowlist. An allowlist checked against a request header is a
+same-origin-browser control, not authentication, and the Worker's own code
+comment says so. The endpoint is also inherently discoverable — the Worker URL
+is hardcoded in the public `index.html`, as it must be for a static site.
 
-- **Origin check**: `request.headers.get('Origin') || ''`, then
-  `ALLOWED_ORIGINS.includes(origin)`. A missing `Origin` becomes `''`, which is
-  not in the list → **403**. So plain `curl` with no headers *is* blocked — that
-  part is stronger than expected. But `curl -H "Origin: https://avivnofar.github.io"`
-  passes. The header is trivially forgeable and is not authentication; the code
-  says so itself.
-- **Request size caps — the premise that only `notebook_context` is capped is
-  outdated.** The Worker caps the whole body (6 MB), messages (40 turns, 12k
-  chars each, 60k total), `db_context` (20k chars), `notebook_context` (20k),
-  and images (3 max, 2 MB base64 each, media-type allowlisted). This surface is
-  well covered.
-- **Per-request model limits**: `MAX_TOKENS = 1536` output, `web_search` capped
-  at `max_uses: 2` (lowered from 3 on 2026-08-04).
-- **Turnstile**: implemented and fails closed, but **dormant unless
-  `TURNSTILE_SECRET` is set**. I cannot see Cloudflare secrets from here —
-  **owner should confirm whether it is set**. If it is, most of this finding
-  collapses; if not, the Origin header is the only gate.
+**Status: known and accepted, pending visitor attestation.** `verifyTurnstile()`
+is implemented and fails closed, but dormant until `TURNSTILE_SECRET` is set —
+that secret is the fix that actually closes this, and it is config, not code
+(see "Turnstile — two-step enablement" in `cloudflare-worker/README.md`). The
+per-request input ceilings and the per-isolate daily cap in `worker.js` bound
+the blast radius meanwhile; they narrow it, they do not gate access. An
+Anthropic-console monthly spend limit remains the highest value-per-effort
+item and is not a Worker change at all.
 
-**Cost per hour, worst case.** Max-size request ≈ 45k input tokens (system
-prompt + 20k-char `db_context` + 20k-char `notebook_context` + 60k chars of
-messages + 3 high-res images) and 1536 output tokens.
-
-**Recomputed 2026-08-04** after prompt caching + `max_uses: 3 → 2`. The cached
-prefix size is **measured, not estimated**: production logs show
-`cache_read_input_tokens = 9,812` on a warm request. At `claude-sonnet-5`
-introductory pricing ($2/$10 per MTok through 2026-08-31; $0.20/MTok cache
-read) plus web search at $10/1k searches:
-
-| | before | after |
-|---|---|---|
-| uncached input | 45,000 × $2/MTok = $0.0900 | 35,188 × $2/MTok = $0.0704 |
-| cached input | — | 9,812 × $0.20/MTok = $0.0020 |
-| output | 1,536 × $10/MTok = $0.0154 | 1,536 × $10/MTok = $0.0154 |
-| web search | 3 × $0.01 = $0.0300 | 2 × $0.01 = $0.0200 |
-| **per request** | **≈ $0.135** | **≈ $0.108** |
-| per hour, 20/min uncapped | ≈ $162 | **≈ $129** |
-| per isolate per UTC day (300 cap) | ≈ $40.6 | **≈ $32.3** |
-
-Once intro pricing ends (2026-09-01, $3/$15): $0.188 → **$0.152** per request,
-≈ $45.5 per isolate-day.
-
-**The honest read: caching helps less against an attacker than against normal
-traffic, and the assumption that "attacker requests are cache-hits after the
-first" is only ~22% true.** The cached prefix is 9,812 tokens — the `tools`
-array plus the static system blocks — which is 21.8% of a 45k-token
-max-payload request. Everything an attacker actually controls (`db_context`,
-`notebook_context`, messages, images) sits *below* the breakpoint by design,
-because that content changes every request and caching it would invalidate the
-entry every time. So caching is worth **$0.0177/request** against a
-max-payload caller, and dropping one web search another $0.010. Against
-*normal* traffic the same 9,812 tokens are most of the prompt, which is why an
-ordinary question halved in cost (see the measured figures in CURRENT-SPEC).
-
-One second-order effect, for completeness: an attacker rotating
-`mode`/`language`/`cli_mode` forces a cache *write* (1.25×) instead of a read
-on the static prefix, which costs ~$0.0013/request **more** than no caching at
-all. That is ~1% of request cost — noise, not a regression worth acting on,
-but it means caching is not a strict improvement in the adversarial case.
-
-The structural point is unchanged: a distributed caller rotating IPs across
-edge locations multiplies the per-isolate figure by the isolate count
-(SEC-02), so the real daily ceiling is still not bounded by anything
-computable from the code. `TURNSTILE_SECRET` remains the fix that actually
-closes this; the cost work narrows the blast radius, it does not gate access.
-
-**Concrete fix, cheapest first:** (1) set `TURNSTILE_SECRET` — the code path
-already exists and is dormant, so this is config, not code; (2) fix SEC-02 so
-the daily cap is real; (3) consider trimming `MAX_IMAGES`/`MAX_IMAGE_B64_CHARS`,
-which dominate the per-request input cost.
+**The operational detail is deliberately not in this public repo.** The
+specific request shape that satisfies the gate, and the arithmetic on what
+abusing it would cost per hour, live in the local, gitignored
+`audits/SECURITY-REASONING.md` — verbatim, nothing lost. `data-center` is a
+public repository and that material is a recipe plus its payoff, which is not
+something to publish next to a live endpoint. Redacted 2026-08-18; the text
+remains in this repo's git history, which is a separate cleanup decision for
+after the gate is closed.
 
 ### SEC-04 — notebook mirror is unsanitized prompt input — **LOW (report only)**
 
@@ -1087,21 +1039,13 @@ authentication" — it is just not obviously worth it at this traffic level.
 #### F-03 — SEC-02 verdict: acceptable as-is; one optional one-line change
 
 **Recommendation: leave the Worker alone. No Durable Object, no KV, no Turnstile
-for now.** The honest risk picture: the endpoint is discoverable (the URL is
-hardcoded in a public `index.html`), and a forged `Origin` header defeats the
-allowlist in one `curl` flag — but a missing `Origin` is rejected, which
-eliminates the broad automated scanning that finds open LLM proxies, and what
-remains is someone who deliberately reads the site's JS to steal inference or
-grief the owner. Against that single-source attacker the per-isolate cap is
-roughly effective in practice, because one caller from one location reaches a
-small number of colos and therefore a small number of counters; SEC-02's
-`1500 × isolates` ceiling only fully materialises for a distributed, deliberate
+for now.** The residual exposure is "a bad week costs money," not "a credential
+leaks": SEC-02's ceiling only fully materialises for a distributed, deliberate
 campaign, which is a poor fit for a low-traffic personal knowledge base with no
-payoff beyond wasted money. The input caps added in `47423a4` (6 MB body, 40
-turns, 60k chars, 3 images, 20k each of `db_context`/`notebook_context`, 1536
-output tokens, 3 web searches) are what actually bound the damage, and they are
-solid. So: the current protection is acceptable, and the residual exposure is
-"a bad week costs real money," not "a credential leaks."
+payoff beyond wasted money, and the input caps added in `47423a4` are what
+actually bound the damage. They are solid. (The threat-model reasoning behind
+this verdict — what specifically does and does not get an attacker through the
+gate — is in the local `audits/SECURITY-REASONING.md`, not here; see SEC-03.)
 
 What genuinely closes the remaining gap is **not a Worker change**: set a
 monthly spend limit and a budget alert on the Anthropic key in the console.
