@@ -469,6 +469,27 @@ needed) and validated by `.github/scripts/validate-json.js`.
   `.github/scripts/test-notebookdates.js`. New drift claim:
   `notebook-context-dated`.
 
+  **Live-verified on production after deploy** (Worker version
+  `9cdc463c`), two requests with `wrangler tail` open:
+
+  | Probe | db / notebook | cache | cost | Result |
+  |---|---|---|---|---|
+  | Site-to-site vs remote-access VPN (stable material, dated 2026-07-04/08-10) | 565 / 9,230 | write 3,806 | $0.026471 | No hedge — correct, the instruction excludes stable material |
+  | TeamViewer/AnyDesk/RustDesk (fast-moving material, dated 2026-07-17) | 440 / 9,742 | read 3,806 | $0.016447 | Hedged, in one clause: *"This reference material is dated 2026-07-17 in the source notebook — worth double-checking current pricing/tiers against each vendor's site before committing, since licensing terms shift."* |
+
+  That is the intended behaviour on both sides: the model hedged old
+  fast-moving content and did not hedge stable protocol material. Streaming is
+  intact (20 and 18 delta events, `done: true`, `web_search_requests = 0`), and
+  **prompt caching still engages** — the prefix re-formed at 3,806 tokens
+  (3,628 before, so `DATING YOUR CLAIMS` costs 178 tokens in the cached block),
+  written on the first request and read on the second.
+
+  One unrelated observation, seen here and in several of the A/B runs: an
+  English-language response can still emit its closing commands line in Hebrew
+  ("פקודות רלוונטיות לבדיקה:"). It predates this change, appears on requests
+  with and without notebook context, and is not caused by it — recorded so it
+  is not rediscovered as a regression of this work.
+
 - **Gap log — 2026-08-18.** Client-only; see "Gap log" in Architecture above for
   the storage shape and the console entry point. New test:
   `.github/scripts/test-gaplog.js`. New drift claim: `gap-log-recorded`.
