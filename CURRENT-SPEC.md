@@ -420,6 +420,53 @@ needed) and validated by `.github/scripts/validate-json.js`.
   `max_uses: 2` is not a hard guarantee of one usable answer-bearing search,
   and a future `max_uses: 3` experiment has a live data point behind it.
 
+- **Conversation lifecycle — live-verified on production, 2026-08-18.**
+  Measured against the deployed GitHub Pages client with `wrangler tail` open.
+  The owner's own browser state was the test fixture, including the very
+  26-message thread that polluted the earlier cost measurement.
+  - **Fresh start, nothing lost.** A page load rendered 0 message bubbles with
+    `dc-current-session` unset and no record written, while the sidebar listed
+    all 10 stored conversations and 0 empty shells (the pre-existing shells had
+    been pruned). Invoking the sidebar's own handler on the 26-message thread
+    restored all 26 bubbles and marked it active; "+ New" then returned to 0
+    bubbles, null pointer, 10 sessions.
+  - **Hebrew KB question**, fresh conversation, `db_context` 414 chars,
+    `web_search_requests = 0` — the same query as Hebrew row 2 above
+    ($0.007754 baseline). Cold prefix write: **$0.014991**
+    (`cache_creation = 3,709`). Immediate warm repeat: **$0.005810**
+    (`cache_read = 3,709`, `cache_creation = 0`), **25% under the baseline**.
+    `input_tokens = 174` on both — that figure is the point: it is the
+    uncached carry-in, and on a fresh conversation there is essentially none.
+    The two runs differ in output length (537 vs 472 tokens), so read the
+    baseline delta as an order of magnitude, not a controlled result.
+  - **The controlled before/after is the long-thread A/B.** Same Hebrew
+    question, same warm cache, same `db_context`, sent twice as raw requests
+    over the real 26-message thread — once untrimmed (27 messages, as the app
+    used to send) and once through `trimMessagesForRequest()` (11 messages,
+    6 user turns):
+
+    | | messages | uncached `input_tokens` | `est_cost_usd` |
+    |---|---|---|---|
+    | before (untrimmed) | 27 | 8,845 | $0.024742 |
+    | after (capped) | 11 | 3,054 | $0.012050 |
+
+    **51% cheaper on identical content**, uncached input down 65%, with
+    `cache_read = 3,709` and `web_search_requests = 0` on both sides. Part A
+    then removes the case entirely from ordinary use, since that thread is no
+    longer the one a visit opens into.
+  - **Solve a Case keeps its whole thread.** A 3-turn diagnose exchange, then
+    a turn-3 question answerable only from turn 1: the model returned the
+    hostname, the start time and the exact error string verbatim, and folded
+    in turn 2's command output. `input_tokens` grew 249 → 462 → 604 across the
+    three turns, i.e. nothing was trimmed — which is the intent.
+  - **The formatting failure did not reproduce.** Across four fresh short
+    threads (Hebrew search, English diagnose): zero literal ``` fences in the
+    rendered output, code in real `<pre>` blocks with copy buttons (4 in one
+    Hebrew answer), 22 line breaks of structure — no run-on paragraph. That is
+    consistent with context length having been the cause, but the failure was
+    *not* re-reproduced on a long thread to prove it, so treat causation as
+    unconfirmed rather than established.
+
 - **Mode-aware request history cap — 2026-08-18.** Client-only change to
   `index.html`; the Worker was not touched. Chosen numbers and their reasoning
   are under "Request history cap" in Architecture above: `search` 6 user turns,
