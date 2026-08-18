@@ -2443,8 +2443,12 @@ function formatSessionDate(ts) {
 }
 
 /* ── DB context for the worker ───────────────────────────────────────────── */
+// Tokenizes with notebookQueryTokens() (defined below) so short/common words
+// ("a", "is") can't rack up cross-entry false-positive matches — same
+// stopword list + 3-char minimum matchNotebooks() already relies on, no
+// second stopword list to drift out of sync.
 function buildDbContext(query) {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const words = notebookQueryTokens(query);
   if (!words.length) return '';
 
   const scored = [];

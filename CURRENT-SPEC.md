@@ -33,6 +33,11 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   to `/api/chat`; the Worker assembles a bilingual system prompt (appending
   both context strings, `notebook_context` capped server-side at 20 KB) and
   calls Claude with the `web_search` tool enabled (`max_uses: 2`).
+  `buildDbContext()` tokenizes the query with the same stopword list +
+  3-char minimum `matchNotebooks()` uses (2026-08-18 fix — previously an
+  unfiltered `split(/\s+/)`, so short common words like "a"/"is" scored
+  nearly every DB entry and produced 100%-irrelevant matches on
+  plain-English queries; see `.github/scripts/test-builddbcontext.js`).
 - **Prompt caching (active since 2026-08-04)**: `systemBlocks()` returns the
   system prompt as an *array* of content blocks ordered static → dynamic,
   because Anthropic's cache is a prefix match. Two `cache_control: ephemeral`
@@ -195,6 +200,16 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **`buildDbContext()` stopword/length filter (2026-08-18)** — implements
+  option A from the 2026-08-15 token-budget diagnostic's decision table
+  (`automation/NEEDS_YOUR_REVIEW.md`). Now tokenizes with
+  `matchNotebooks()`'s existing stopword list + 3-char minimum instead of
+  an unfiltered word split — verified against real `data/*.json`: a
+  stopword-only query ("what is a hypervisor") that previously matched 3
+  unrelated DB entries now matches none, and the diagnosed "whoami" false
+  positive on a netstat query no longer appears
+  (`.github/scripts/test-builddbcontext.js`).
 
 - **Cost-optimization round on the Worker (2026-08-04)** — prompt caching,
   usage measurement, and a lower web-search cap. Verified live against
