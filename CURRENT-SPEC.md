@@ -163,6 +163,35 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
     tokens are filtered, so "מה עושה הדגל -n" attaches nothing and falls to
     the thin-context branch. Untouched here; noted so it isn't rediscovered
     as a surprise.
+- **Conversation lifecycle (2026-08-18)** — a page load opens a **fresh, empty
+  conversation**. Until this date `loadAiIntoPanel()` restored the most recent
+  session, so a single thread accumulated across visits with no reset, and
+  every turn re-sent the whole accumulated history as uncached input: the
+  conditional-search session the same day found its first cost measurement
+  polluted by a 26-message, ~20 KB thread from 29 days earlier carrying 11,431
+  uncached input tokens. A long thread was also observed degrading answer
+  formatting (one run-on paragraph, ``` fences rendered as literal text) where
+  a short thread rendered correctly.
+  - **Nothing is deleted and nothing becomes unreachable.** The sessions
+    sidebar still lists every past conversation and `switchSession()` still
+    restores any of them in full — messages, mode and language. Only the
+    *default* open conversation changed. Pinned by
+    `.github/scripts/test-sessionlifecycle.js`.
+  - **Creation is lazy, and that is the load-bearing part.** No record is
+    written on page load or on "+ New"; `loadAiIntoPanel()` and
+    `startNewAiSession()` only drop the `dc-current-session` pointer, and
+    `ensureCurrentSession()` (called from `addMessageToSession()`) creates the
+    record on the first message actually sent. Eager creation would have been
+    the obvious implementation and would have silently destroyed history:
+    `createNewSession()` unshifts then slices to `CONFIG.MAX_HISTORY_SESSIONS`
+    (50), evicting from the oldest end, so one empty record per page load
+    pushes 50 visits' worth of real conversations off the tail. The test
+    asserts 50 consecutive loads write nothing and evict nothing, and
+    separately re-asserts that the cap does still evict — so the rationale
+    cannot quietly become folklore.
+  - **`pruneEmptySessions()`** runs once per load and drops zero-message
+    records — the shells the old eager path left behind, which still counted
+    against the cap. Sessions with any message are never touched.
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
   `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
@@ -215,7 +244,7 @@ paid API calls were made.
 | 15 | Hover tooltips on commands | `showTooltip()` — 200ms delay, viewport-aware positioning, flag list from `data-flags`, keyboard focus support. |
 | 17 | Mobile responsiveness | ≤768px: 44px touch targets (`.tab-btn/.filter-btn/.faq-pill`, `.copy-btn`), 16px inputs (iOS zoom fix), off-canvas sidebars; ≤480px adjustments. |
 | 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
-| 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. |
+| 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. Since 2026-08-18 a page load opens a fresh empty conversation instead of restoring the last one, and records are created lazily on first message (`ensureCurrentSession()`, `pruneEmptySessions()`) — the sidebar remains the full, unchanged path back to every past conversation. See "Conversation lifecycle" above. |
 | 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
 | 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. Workflows tab itself is now self-hosted from `data/workflows.json` + `workflows/*.md` (no external repo fetch). |
 | 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
@@ -299,6 +328,16 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **Fresh conversation on every page load — 2026-08-18.** Client-only change
+  to `index.html`; the Worker was not touched. Design, rationale and the
+  eviction hazard that shaped it are under "Conversation lifecycle" in
+  Architecture above. New regression test:
+  `.github/scripts/test-sessionlifecycle.js` (22 assertions across five
+  groups). New `spec-drift-check.js` claim `fresh-conversation-per-load`,
+  which asserts both halves — the fresh start *and* the absence of
+  `createNewSession()` in `loadAiIntoPanel()` — because a check on the first
+  half alone would go green on exactly the version that destroys history.
 
 - **Hebrew knowledge-base matching fixed — 2026-08-18** (commits `ec03f58`,
   `3cd4bae`). The full design, rationale and limits are under "Hebrew query

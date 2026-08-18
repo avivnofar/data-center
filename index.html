@@ -2377,7 +2377,36 @@ function createNewSession() {
   return session;
 }
 
+/* Lazy session creation (2026-08-18).
+
+   createNewSession() must NOT be called on page load or on "+ New". It
+   unshifts a record and slices to CONFIG.MAX_HISTORY_SESSIONS, so it evicts
+   from the OLDEST end — an empty record written per page load would push 50
+   visits' worth of real, message-bearing history off the tail. So the record
+   is created here instead, at the moment the first message is actually
+   stored. Until then there is simply no `dc-current-session` pointer and no
+   record, which is a valid state everywhere: getCurrentSession() returns
+   null, renderSessionList() marks nothing active, updateAiInputHint()
+   counts 0 user messages. */
+function ensureCurrentSession() {
+  return getCurrentSession() || createNewSession();
+}
+
+/* Drops zero-message session records. Sessions that have ANY message are
+   never touched — this only removes the empty shells that the pre-2026-08-18
+   eager-creation path wrote on every page load and every "+ New" click, and
+   which still count against CONFIG.MAX_HISTORY_SESSIONS. Idempotent; runs
+   once per page load from loadAiIntoPanel(), at which point no in-progress
+   conversation can be empty. */
+function pruneEmptySessions() {
+  const sessions = loadAiSessions();
+  const kept = sessions.filter(s => Array.isArray(s.messages) && s.messages.length > 0);
+  if (kept.length !== sessions.length) saveAiSessions(kept);
+  return sessions.length - kept.length;
+}
+
 function addMessageToSession(role, content) {
+  ensureCurrentSession();
   const sessions = loadAiSessions();
   const currentId = Number(localStorage.getItem('dc-current-session'));
   const idx = sessions.findIndex(s => s.id === currentId);
@@ -3094,13 +3123,23 @@ function buildAiPanelHtml() {
 }
 
 function loadAiIntoPanel() {
-  let session = getCurrentSession();
-  if (!session) session = createNewSession();
+  /* Every page load opens a FRESH, EMPTY conversation (2026-08-18).
 
-  if (session.messages.length > 0) {
-    session.messages.forEach(msg => appendMessageBubble(msg.role, msg.content));
-    scrollChatToBottom();
-  }
+     Previously this restored the most recent session, so a single thread
+     accumulated across visits indefinitely and every turn re-sent all of it
+     as uncached input — measured at 11,431 uncached input tokens carried in
+     from a 26-message thread 29 days old, billed again on each question.
+
+     Nothing is lost and nothing is deleted: the sessions sidebar below still
+     lists every past conversation, and switchSession() still restores any of
+     them in full, messages, mode and language included. This only changes
+     which conversation is open by default.
+
+     Note what is NOT done here: no record is written. See
+     ensureCurrentSession() for why an empty record per page load would
+     silently evict real history through CONFIG.MAX_HISTORY_SESSIONS. */
+  pruneEmptySessions();
+  localStorage.removeItem('dc-current-session');
 
   updateAiPanelLang();
   updateAiModeCheckboxes();
@@ -3329,7 +3368,11 @@ function startNewAiSession() {
   const strip = document.getElementById('ai-related-strip');
   if (strip) { strip.classList.remove('visible'); strip.querySelectorAll('.related-cmd-pill').forEach(el => el.remove()); }
 
-  createNewSession();
+  // Lazy, exactly as on page load: dropping the pointer starts a fresh
+  // thread, and the record is written on the first message. Creating one
+  // eagerly here would let repeated "+ New" clicks evict real history
+  // through CONFIG.MAX_HISTORY_SESSIONS — see ensureCurrentSession().
+  localStorage.removeItem('dc-current-session');
   renderSessionList();
   updateConversationUiState();
 }

@@ -220,6 +220,26 @@ const claims = [
     },
   },
   {
+    id: 'fresh-conversation-per-load',
+    claim: 'Page load opens a fresh empty conversation and creates the session record lazily',
+    // Two halves, both load-bearing. The fresh start is loadAiIntoPanel()
+    // dropping the current-session pointer instead of restoring it; the lazy
+    // half is that it does NOT call createNewSession(), which would evict real
+    // history through MAX_HISTORY_SESSIONS. Asserting only the first would go
+    // green on the version that quietly destroys 50 visits of history.
+    check: () => {
+      // index.html is CRLF; normalise before slicing so the boundary match
+      // below does not depend on line endings.
+      const s = read('index.html').replace(/\r\n/g, '\n');
+      const fn = s.slice(s.indexOf('function loadAiIntoPanel('));
+      const body = fn.slice(0, fn.indexOf('\n}\n'));
+      return hasFn(s, 'ensureCurrentSession')
+        && hasFn(s, 'pruneEmptySessions')
+        && body.includes("localStorage.removeItem('dc-current-session')")
+        && !body.includes('createNewSession(');
+    },
+  },
+  {
     id: 'master-not-main',
     claim: 'The default branch is master, and tooling refers to it as such',
     check: () => !/\borigin\/main\b/.test(read('automation/instructions_auditor.txt')),
@@ -256,6 +276,9 @@ function selfTest() {
     ['worker-prompt-cache-prefix', 'cloudflare-worker/worker.js', (s) => s.replace('CAPABILITIES:', 'CAPABILITIES_MOVED_AFTER_${dbContext.trim()}:')],
     ['worker-key-server-side-only', 'index.html', (s) => s.replace('<script>', '<script>const k="sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAA";')],
     ['notebook-sync-failure-visible', '.github/workflows/notebook-sync.yml', (s) => s.replace('if: failure()', 'if: always()')],
+    // Reintroduces eager creation on load — the regression that silently
+    // evicts real history — while leaving the fresh-start line in place.
+    ['fresh-conversation-per-load', 'index.html', (s) => s.replace(/ {2}pruneEmptySessions\(\);\r?\n {2}localStorage\.removeItem\('dc-current-session'\);/, '  createNewSession();')],
   ];
 
   const realRead = read;
