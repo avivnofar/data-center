@@ -1247,7 +1247,71 @@ without a browser, diagnose only"). Repro case is preserved in
 this up, though that test only asserts the double-wrap property today, not
 fragmentation.
 
-### 3. `&quot;` rendering literally in some AI Search answers — diagnosed, NOT fixed (out of scope this session)
+### 3. `&quot;` rendering literally — SUPERSEDED 2026-08-18: it was the guides renderer, and it is fixed
+
+> **Correction (2026-08-18, supervised session).** The diagnosis below is
+> **wrong for the reported symptom**, and the entry is kept only so the
+> reasoning that led away from the real cause stays on record.
+>
+> The symptom was reported against **AI Search answers** and blamed on
+> un-decoded HTML entities arriving in `web_search` content. Screenshot
+> evidence from the live site put it somewhere else entirely: the
+> **workflows/guides view**, rendering `&lt;span class=&quot;ltr-term&quot;&gt;`
+> as visible literal text in the guide body.
+>
+> The cause is not upstream and not `web_search`. `workflows/*.md` is
+> repo-authored content whose Hebrew prose legitimately wraps English
+> technical terms in `<span class="ltr-term">` per CLAUDE.md rule 4, and
+> `renderMarkdown()` escaped that markup along with everything else. In
+> Hebrew — the default language — `wrapLtrTerms()` then ran over the escaped
+> entities and split each one into its own LTR span, which is what turned
+> `&lt;` into a visible `&` followed by a separately-wrapped `lt`. Reproduced
+> in the live DOM before the fix, and confirmed against all three guide files
+> offline.
+>
+> Fixed the same session: `renderMarkdown(text, { allowInlineHtml: true })`,
+> opted into **only** by `openWorkflow()`, lifts the CLAUDE.md rule-6 inline
+> allowlist (`span.ltr-term`, `b`, `code`) out before `escHtml()` and restores
+> it last. Escaping was **not** loosened globally and the AI chat path is
+> untouched — both halves pinned by
+> `.github/scripts/test-guidemarkdown.js`.
+>
+> **And the `&quot;` half is now root-caused too — also not `web_search`.**
+> Found while verifying the guides fix, reproduced offline and in the live
+> DOM. `wrapLtrTerms()`, in **Hebrew only**, wraps every standalone Latin run
+> in an LTR-isolate span. It runs *after* `escHtml()`, so it sees `&quot;`,
+> `&amp;`, `&lt;` and `&gt;` as an `&`, an English word, and a `;` — and
+> wraps the word:
+>
+> ```
+> input   אין "התקנה" בפקודות אלו
+> output  אין &<span dir="ltr" ...>quot</span>;התקנה&<span dir="ltr" ...>quot</span>; ...
+> ```
+>
+> The `&` is now separated from `quot;` by a tag, so the browser can no longer
+> decode the entity and prints it literally. **Any ordinary `"` or `&` in a
+> Hebrew answer or a Hebrew guide hits this** — no third-party content, no
+> double-escape, no upstream defect required. English mode is unaffected,
+> which is why it reads as intermittent: the app defaults to Hebrew.
+> Verified: `escHtml()` alone produces correct entities; the corruption
+> appears only after `wrapLtrTerms()`.
+>
+> **NOT FIXED — deliberately out of scope, needs an owner decision.**
+> `wrapLtrTerms()` is shared with the AI chat rendering path, and this
+> session was scoped to the guides renderer with an explicit instruction not
+> to touch chat rendering. The candidate fix is one character on one pattern:
+> anchor the Hebrew standalone-word alternative with a `(?<!&)` lookbehind so
+> it cannot start immediately after an `&`. That is narrow, but it changes
+> what every Hebrew AI answer renders, so it wants its own change with
+> `.github/scripts/test-wrapltrterms.js` extended to cover `"`, `&`, `<`, `>`
+> and `A && B` in Hebrew flow — not a drive-by edit.
+>
+> This supersedes the "could not be confirmed live" note at the end of the
+> original entry below: the mechanism is confirmed, and it is client-side.
+
+<details>
+<summary>Original 2026-08-15 entry, superseded — kept for the record</summary>
+
 
 Traced every `escHtml()` call site in `index.html` (25 call sites) and the
 full `renderMarkdown()` pipeline. Finding: **`escHtml()` itself is correct
@@ -1287,3 +1351,5 @@ likely to trigger `web_search` over a page containing example markup (e.g.
 asking about HTML/config syntax), inspect the raw (pre-`escHtml`) response
 text server-side, and confirm literal `&quot;`/`&amp;` sequences are already
 present before the client ever touches it.
+
+</details>

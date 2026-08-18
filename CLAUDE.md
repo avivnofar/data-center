@@ -120,6 +120,13 @@ Or: `npx serve .`
   attaches only relevant sections to the request as a new
   `notebook_context` field, alongside the existing `db_context`. See
   CURRENT-SPEC.md for current status.
+- **`NOTEBOOKS_ENABLED` gates retrieval, not the mirror.** Only the
+  notebooks named in that set (`index.html`) may attach to a request; the
+  rest were disabled deliberately after measurement. The weekly sync keeps
+  mirroring **all** notebooks — never delete a file from `data/notebooks/`
+  or narrow `notebook-sync.yml` to match the enabled set. Re-enabling one is
+  a deliberate act: `.github/scripts/test-notebookcontext.js` pins the set
+  and fails if it changes.
 - **Self-extension / self-education (suggest-only, prompt-side only)**:
   the system prompt instructs Claude to append plain-text
   `CAPABILITY_SUGGESTION: {...}` / `LEARNED_SOURCE: {...}` lines after a
@@ -334,12 +341,21 @@ self-hosted in this repo — no external repo dependency.
 - If `data/workflows.json` is empty, the panel shows a bilingual empty-state
   message (matching the pattern used by the bookmarks panel) instead of a
   dead tab.
-- **PDF export**: the "📄 Generate PDF" FAB calls `generatePdf()` →
-  `window.print()`, with a `@media print` block that isolates the active
-  workflow (`.print-target`) and keeps code LTR. No PDF library, no build
-  step, no generated PDFs are committed to the repo.
+- **PDF export was removed (2026-08-18)** — the FAB, `generatePdf()`, the
+  `@media print` block and the `.print-target` marker are all gone. It never
+  worked: the print CSS lost a specificity fight to `#workflow-detail-content`
+  and locked itself to one page height. Do not reinstate it without fixing
+  both; the reasoning is in CURRENT-SPEC.md feature #21 and in a tombstone
+  comment in `index.html`. There is still no PDF library and no build step.
 - Adding a new workflow: add markdown under `workflows/`, add a matching
   entry to `data/workflows.json` — no code change needed.
+- **Inline HTML in guide markdown**: `openWorkflow()` calls
+  `renderMarkdown(md, { allowInlineHtml: true })`, which honours exactly the
+  Rule 6 allowlist (`<span class="ltr-term">`, `<b>`, `<code>`) authored in
+  `workflows/*.md` and escapes everything else — including the
+  `<service>` / `<port>` placeholders these guides use inside commands. Do
+  not widen that allowlist, and do not pass the flag from the AI chat path:
+  model output must stay fully escaped.
 
 ---
 

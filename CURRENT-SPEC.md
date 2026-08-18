@@ -136,6 +136,30 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   and caps content at ~15 KB, truncating at section boundaries. The Worker
   is a dumb proxy for this — no fetching, no KV, no
   GitHub credentials on the Worker side.
+  - **Per-notebook retrieval gate (2026-08-18)**. `NOTEBOOKS_ENABLED` in
+    `index.html` lists the notebooks that may attach to a request;
+    `matchNotebooks()` filters against it *before* scoring, so a disabled
+    notebook never wins a slot off an enabled one. Enabled: **`kb-vpn`,
+    `kb-firewall`, `kb-cybersecurity`, `kb-cloud-devops`** — the other eight
+    are disabled. The reasoning is the desk-check 2×2, not a sample size:
+    content that is public *and* stable is redundant by construction because
+    the model already holds it, and content that is public *and* fast-moving
+    is worse than redundant once it goes stale, since it reaches the model as
+    reference material with authority attached. Two notebooks labelled
+    private were measured to hold nothing private. The full measurement —
+    per-question costs, answers and the desk-check table — lives in
+    `audits/NOTEBOOK-VALUE-TEST.md`, which is **local and gitignored**
+    (`.gitignore`: `audits/`) and is deliberately not reproduced here.
+    **This gates retrieval, not the mirror**: `notebook-sync.yml` keeps
+    syncing all 12 notebooks into `data/notebooks/` and nothing should be
+    deleted to match the enabled list. Measured offline across a 16-query
+    spread (the five from the value test plus realistic English and Hebrew
+    questions): mean attached context **4,533 → 1,385 chars**, and 9 of 16
+    queries attached something before versus 3 of 16 after. No query dropped
+    below `SEARCH_THIN_CONTEXT_CHARS` as a result, so nothing flipped onto
+    the paid `web_search` path — checked explicitly, since that would have
+    turned a token saving into a $0.01-per-question charge. The set is pinned
+    by `.github/scripts/test-notebookcontext.js`, which fails if it changes.
   - **Freshness dates travel with the content (2026-08-18)**. Every emitted
     heading carries the date the material was last revised at the source:
     `### Name (domain) [updated YYYY-MM-DD, web-verified YYYY-MM-DD]` per
@@ -284,9 +308,11 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
 - **Workflows tab**: self-hosted (2026-07-20) — renders bilingual workflow
   markdown from this repo's own `workflows/` folder, registered in
   `data/workflows.json` (loaded into `DB.workflows`, same pattern as
-  `data/modules.json`). No external repo dependency; print-based PDF export
-  unchanged. `data-center-archive` (the former source) was retired — it was
-  never actually pushed to GitHub, only a local scratch folder.
+  `data/modules.json`). No external repo dependency. The print-based PDF
+  export that used to sit on this view was **removed 2026-08-18** — see
+  feature #21 under Removed. `data-center-archive` (the former source) was
+  retired — it was never actually pushed to GitHub, only a local scratch
+  folder.
 - **Zero office-simulation coupling** since 2026-07-19 — the former
   Office/Admin UI was fully removed.
 
@@ -308,7 +334,7 @@ All 27 ever-requested features were checked against the actual code.
 "Code-verified" means the full request/response path was read; no live
 paid API calls were made.
 
-### ✅ Fully Working (20)
+### ✅ Fully Working (19)
 
 | # | Feature | Evidence |
 |---|---|---|
@@ -319,7 +345,7 @@ paid API calls were made.
 | 5 | Image paste + upload + vision | Attach button `#ai-attach-btn` and document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64, previews, removable) → `images` in the request body; Worker injects `type:'image'` blocks (max 3). |
 | 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20260209', name:'web_search', max_uses:1}]` — yes, actually added, but **attached conditionally** since 2026-08-18 (only when the client sends `allow_web_search: true`; see "Conditional web search" above), and the system prompt's CAPABILITIES section is conditional with it so Claude cannot claim a search it had no tool for. `max_uses` **stays at 2**: lowering it to 1 was tried on 2026-08-18 and reverted the same session on live evidence — see "max_uses: 1 was tried and reverted" in Recently Completed. Earlier: `max_uses` lowered 3 → 2 on 2026-08-04: web search bills $10/1,000 searches on top of tokens, making it the largest per-request cost multiplier a caller controls. Upgraded from `web_search_20250305` on 2026-08-01 for **dynamic filtering** (Claude filters results via code execution before they reach the context window, reducing input tokens on search-heavy answers). `allowed_callers` is left at its `_20260209` default of `["code_execution_20260120"]`; `code_execution` is deliberately *not* declared separately. A newer `web_search_20260318` exists, adding only `response_inclusion` (an output-token optimisation for agents that don't echo search content back) — not adopted, since this app streams answers to a browser. |
 | 11 | Hebrew default + English toggle | `LANG = localStorage.getItem('dc-lang') \|\| 'he'`; `applyLang()` flips `document.documentElement.dir` and re-renders. |
-| 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
+| 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. Since 2026-08-18 the **guides** view additionally opts into `renderMarkdown(md, { allowInlineHtml: true })`, which honours the CLAUDE.md rule-6 inline allowlist (`span.ltr-term`, `b`, `code`) authored in `workflows/*.md` instead of escaping it into visible text; escaping is **not** loosened anywhere else and the AI chat path is unchanged. Pinned by `.github/scripts/test-guidemarkdown.js`. |
 | 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html); `toggleSidebarCollapse()` + persisted collapsed state + mobile off-canvas mode. |
 | 14 | Chat as dominant UI | `init()` ends with `switchTab('ai')` — AI Search is the default tab; the chat panel fills the entire main content area beside the 200px sidebar. |
 | 15 | Hover tooltips on commands | `showTooltip()` — 200ms delay, viewport-aware positioning, flag list from `data-flags`, keyboard focus support. |
@@ -327,7 +353,6 @@ paid API calls were made.
 | 18 | FAQ pills row | `FAQ_PILLS` (7 per language) rendered into `#faq-pills`; `useFaqPill()` fills the input; auto-hidden once a conversation is active. |
 | 19 | Session history sidebar | `dc-sessions` in localStorage (max 50), `renderSessionList()`, `switchSession()`, per-session mode/language, auto-summary from first user message. Since 2026-08-18 a page load opens a fresh empty conversation instead of restoring the last one, and records are created lazily on first message (`ensureCurrentSession()`, `pruneEmptySessions()`) — the sidebar remains the full, unchanged path back to every past conversation. See "Conversation lifecycle" above. |
 | 20 | Bookmark system | Save/Dismiss genuinely persist (`dc-bookmarks` with `dateAdded`, `dc-dismissed-bookmarks`; saved state survives re-renders). Full browse/remove UI added: `#bookmarks-btn` topbar button → `openBookmarksPanel()` opens `#bookmarks-modal` (`renderBookmarksList()`, index.html), listing domain + date per saved URL with a per-row Remove button (`removeBookmark()`) and a bilingual empty state; Escape/click-outside/close-button all dismiss, focus is managed. No new localStorage keys; client-side only, no tokens. |
-| 21 | PDF export (workflows) | `generatePdf()` → `window.print()` + `@media print` isolation of `.print-target`. Workflows tab itself is now self-hosted from `data/workflows.json` + `workflows/*.md` (no external repo fetch). |
 | 24 | Core knowledge modules | linux 42, cmd 25, network 30, troubleshoot 23 entries; schema + Hebrew-QA validators pass. |
 | 25 | 1COM + MirtaPBX modules | Present and active (17 + 11 entries), rendered as normal tabs. Now specialty/vendor content within general-IT scope, not the defining boundary. |
 | 26 | CommandFlow integration | Re-verified post-cleanup: `<script src="tools/commandflow/commandflow-core.js">`, `data/tools.json` registry, topbar link, CLI Mode path all intact. |
@@ -342,6 +367,12 @@ paid API calls were made.
 | 9 | Auto-update KB via GitHub Issue | Prompt-side plus client-side rendering: `CAPABILITY_SUGGESTION` blocks are parsed and shown as cards (see #7). | No code path creates an Issue anywhere in this repo. Blocked on the same GitHub write-credential decision. |
 | 10 | Self-extending capability | `CAPABILITY_SUGGESTION: {...}` block spec in the system prompt, now detected and surfaced in the UI (see #7). | No Issue filing, so a suggestion still requires the owner to act on it manually. Aspirational beyond surfacing. |
 | 16 | Expandable cards + copy buttons | Expand/collapse fully works (`toggleCard()`, `aria-expanded`, keyboard support via `handleExpandKeydown`). Copy-to-clipboard now exists on both AI-chat code blocks (`copyAiCode()`) **and** command-card `usage-cmd` rows (`copyUsageCmd()`, index.html + 2684) — shipped by TODO-003, merge `b3451b1`, 2026-07-20. | Nothing outstanding — this row is retained for audit-trail continuity and should move to "Fully Working" at the next full re-audit. |
+
+### 🗑 Removed (1)
+
+| # | Feature | Why |
+|---|---|---|
+| 21 | PDF export (workflows) | Removed 2026-08-18. The "צור PDF" FAB opened print mode with nothing usable to print, and the earlier hypothesis — that the 2026-07-20 self-hosting refactor had dropped the `.print-target` marker — is **wrong**: `openWorkflow()` was applying it correctly to an element holding 6,248px of rendered guide content. The print CSS itself was broken in two independent ways, both measured in the live DOM before removal. **(1) Specificity**: `.print-target { background:#fff; color:#000 }` (0,1,0) lost to `#workflow-detail-content { background: var(--surface) }` (1,0,0), so the block kept its dark background, and `h3` / `code` kept their light accent colours from ID rules that also outranked it — browsers drop backgrounds when printing but keep text colour, so the page came out near-white on white. **(2) Geometry**: `position:absolute; inset:0` locks the box to its containing block's height — measured **799px against 6,248px of content** — so everything past the first page overflowed an out-of-flow box Chrome does not fragment across pages. Guides are deprioritised by owner decision, so this was removed rather than repaired; the FAB, its CSS, `generatePdf()`/`showPdfFab()`/`hidePdfFab()`, the `@media print` block and the `.print-target` marker are all gone, with a tombstone comment in `index.html` recording both defects for anyone who reinstates it. |
 
 ### ❌ Requested But Never Built (2)
 
@@ -394,6 +425,18 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Known Issues / Open Items
 
+- **`&quot;` / `&amp;` render literally in Hebrew — root-caused 2026-08-18,
+  NOT fixed.** `wrapLtrTerms()` runs after `escHtml()` and, in Hebrew only,
+  wraps the entity *name* out of `&quot;` / `&amp;` / `&lt;` / `&gt;` in its
+  own LTR-isolate span, separating the `&` from the rest so the browser can no
+  longer decode it. Any plain `"` or `&` in a Hebrew answer or guide hits
+  this; English is unaffected, which is why it looked intermittent. It is
+  **not** un-decoded `web_search` content — that hypothesis is corrected in
+  `automation/NEEDS_YOUR_REVIEW.md`. Left unfixed because `wrapLtrTerms()` is
+  shared with the AI chat rendering path and the 2026-08-18 session was
+  scoped to the guides renderer. Candidate fix and the test coverage it needs
+  are recorded in `NEEDS_YOUR_REVIEW.md`.
+
 - The partially-built AI self-improvement items (#7-#10 above) now share a
   narrower root gap: as of TODO-001 (2026-07-24) the suggestion blocks ARE
   parsed client-side and rendered as dismissible cards, so they no longer
@@ -409,6 +452,35 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **Eight of twelve notebooks disabled for retrieval — 2026-08-18.** Acting on
+  the value measurement below: `NOTEBOOKS_ENABLED` gates which mirrored
+  notebooks may be attached to a request. Design, enabled set and the
+  before/after numbers are under "Notebook-X integration" above. The mirror is
+  untouched — all 12 notebooks keep syncing; only what gets paid for as
+  context changed.
+
+- **PDF export removed, and the standing diagnosis corrected — 2026-08-18.**
+  The `.print-target` marker was never missing; the print CSS lost a
+  specificity fight and locked itself to one page height. Both defects are
+  recorded in feature #21 under Removed and in a tombstone comment in
+  `index.html`.
+
+- **Guides stopped showing their own markup as text — 2026-08-18.**
+  `workflows/*.md` legitimately contains `<span class="ltr-term">` per
+  CLAUDE.md rule 4, and `renderMarkdown()` escaped it, so the guide body
+  rendered `&lt;span class=&quot;ltr-term&quot;&gt;` as visible text — in
+  Hebrew, worse, because `wrapLtrTerms()` then split each escaped entity into
+  its own LTR span. `renderMarkdown(text, { allowInlineHtml: true })`, opted
+  into only by `openWorkflow()`, lifts the rule-6 inline allowlist out before
+  `escHtml()` (into `String.fromCharCode(1)`-delimited sentinels, which none
+  of `wrapLtrTerms()`'s patterns can match) and restores it last. Escaping is
+  not loosened globally; the AI chat path is untouched. This **supersedes**
+  the entry in `automation/NEEDS_YOUR_REVIEW.md` that blamed un-decoded
+  entities in `web_search` content — corrected in place there.
+  `.github/scripts/test-guidemarkdown.js` pins both halves: guide mode renders
+  all 182 authored spans across the three guide files, and default mode still
+  escapes everything.
 
 - **Notebook value measured, and it mostly did not show — 2026-08-18.** A paid
   live A/B against the deployed Worker: 5 questions × 2 runs, identical
