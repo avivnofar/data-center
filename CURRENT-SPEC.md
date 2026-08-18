@@ -59,8 +59,13 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   scores it against the user's query (word-boundary matching + stopword
   filter, min relevance threshold — no match beats a wrong match) and
   `buildNotebookContext()` fetches up to 2 matched notebooks, selects only
-  matching sections, and caps content at ~15 KB, truncating at section
-  boundaries. The Worker is a dumb proxy for this — no fetching, no KV, no
+  sections matching a majority of the query's significant words (2026-08-18
+  fix — previously any single shared token qualified a section, so
+  topically-adjacent notebooks with generic word overlap — e.g. a VPN query
+  pulling in an unrelated remote-desktop-tools notebook via "remote"/
+  "access" — over-attached; see `.github/scripts/test-notebookcontext.js`),
+  and caps content at ~15 KB, truncating at section boundaries. The Worker
+  is a dumb proxy for this — no fetching, no KV, no
   GitHub credentials on the Worker side. Supersedes the old
   `getNotebookXContext()` (confirmed silent no-op — unauthenticated fetch
   against the private repo always 404ed; deleted, not fixed).
@@ -210,6 +215,20 @@ needed) and validated by `.github/scripts/validate-json.js`.
   unrelated DB entries now matches none, and the diagnosed "whoami" false
   positive on a netstat query no longer appears
   (`.github/scripts/test-builddbcontext.js`).
+
+- **`buildNotebookContext()` majority-match section threshold (2026-08-18)**
+  — implements option B from the same diagnostic. A section now must match
+  a majority of the query's significant words instead of any single token
+  — verified against the real `data/notebooks/` mirror: the diagnosed
+  VPN-comparison query dropped from 14,841 to 5,987 attached chars (11 → 4
+  sections; a 60% reduction), fully excluding the previously
+  over-attached TeamViewer/AnyDesk/RustDesk remote-desktop-tool sections
+  while keeping the genuinely relevant "VPN Architectures" section
+  (`.github/scripts/test-notebookcontext.js`). One known residual: one
+  borderline section ("Azure Network Watcher") still ties the majority
+  threshold on generic word overlap and remains attached — a real limit of
+  token-overlap-only matching on this specific notebook pair, not a
+  regression, left as-is per this session's small-fix scope.
 
 - **Cost-optimization round on the Worker (2026-08-04)** — prompt caching,
   usage measurement, and a lower web-search cap. Verified live against

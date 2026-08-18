@@ -2538,9 +2538,19 @@ async function fetchNotebook(id) {
   }
 }
 
+// A section must match a majority of the query's significant words, not
+// just any single shared token — "any" let topically-adjacent notebooks
+// over-attach on 1-2 generic overlapping words (e.g. a query about VPN
+// architecture pulling in an unrelated notebook's sections purely because
+// both happen to say "remote access").
+function notebookSectionMatches(hay, words) {
+  const matchCount = words.filter(w => notebookWordMatch(hay, w)).length;
+  return matchCount >= Math.ceil(words.length / 2);
+}
+
 // Fetches matched notebooks and selects only sections whose title/tags/
-// content match query terms, capped at ~15 KB total and truncated at
-// section boundaries (never mid-section).
+// content match a majority of the query's significant words, capped at
+// ~15 KB total and truncated at section boundaries (never mid-section).
 async function buildNotebookContext(query) {
   const matches = matchNotebooks(query);
   if (!matches.length) return '';
@@ -2557,7 +2567,7 @@ async function buildNotebookContext(query) {
       : [];
     const relevant = sections.filter(sec => {
       const hay = [sec.title, ...(sec.tags || []), sec.content].filter(Boolean).join(' ').toLowerCase();
-      return words.some(w => notebookWordMatch(hay, w));
+      return notebookSectionMatches(hay, words);
     });
     if (!relevant.length) continue;
 
