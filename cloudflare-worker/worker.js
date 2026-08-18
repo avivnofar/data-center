@@ -268,6 +268,13 @@ const NOTEBOOK_CONTEXT_MAX_CHARS = 20000; // defense in depth against a modified
  *   [1] variant   - static per (language, mode, cliMode)   <- cache breakpoint
  *   [2] contexts  - db_context + notebook_context (per-request, NOT cached)
  *
+ * WEB-SEARCH GATING (2026-08-18) forks the prefix in two: when
+ * `allowWebSearch` is false the tools array is omitted entirely and the
+ * CAPABILITIES bullet is reworded, so the cached prefix exists in two shapes
+ * (with-tools ~9.8k tokens, without-tools ~2.6k). Two shapes means two cache
+ * entries, which is the accepted cost of not paying for the tool definition
+ * on requests that will never search.
+ *
  * Two breakpoints rather than one: block 0 is shared across all four
  * mode/cliMode combinations, so a diagnose request reads the cache a search
  * request wrote. It is NOT shared across languages — `Response language:` is
@@ -285,7 +292,7 @@ const NOTEBOOK_CONTEXT_MAX_CHARS = 20000; // defense in depth against a modified
  * Block 0 measures ~1.9k tokens, comfortably over claude-sonnet-5's 1024-token
  * minimum cacheable prefix (below that the cache silently does nothing).
  */
-function systemBlocks(mode, language, dbContext, cliMode, notebookContext) {
+function systemBlocks(mode, language, dbContext, cliMode, notebookContext, allowWebSearch) {
   const langLabel = language === 'he' ? 'HEBREW' : 'ENGLISH';
 
   // ── Block 0: universal base. Do not interpolate anything per-request here. ──
@@ -463,8 +470,15 @@ specific troubleshooting steps. For 1COM or MirtaPBX screenshots: identify
 the exact screen, settings page, or error shown and give precise instructions.`;
 
   // CAPABILITIES moved ahead of db_context/notebook_context (2026-08-04) so the
-  // cached prefix ends here. Text itself is unchanged.
-  variant += `
+  // cached prefix ends here.
+  //
+  // The search-availability bullet is conditional (2026-08-18): the tool is
+  // only attached to requests the client marked `allow_web_search`, so on the
+  // rest the prompt must not claim a tool that is not there — otherwise the
+  // model can narrate a search it never ran. The LEARNED_SOURCE bullet goes
+  // with it: it fires only on a web_search result, so with no tool it is
+  // unreachable text. Everything else is unchanged.
+  variant += allowWebSearch ? `
 
 CAPABILITIES:
 - A web_search tool is available. Use it when your training data may be
@@ -490,7 +504,23 @@ CAPABILITIES:
   geeksforgeeks.org, w3schools.com, or *.blogspot.com.
 Both suggestion blocks are optional, machine-readable hints for the app —
 omit them entirely on most responses. They are proposals only; a human
-reviews them before anything changes.`;
+reviews them before anything changes.` : `
+
+CAPABILITIES:
+- No web_search tool is available on this request. Answer from your own
+  knowledge plus any reference material provided below. Do not say or imply
+  that you searched the web, browsed, checked, or looked anything up online,
+  and do not present a URL as something you just verified. If the answer
+  genuinely depends on information that may have changed recently — a current
+  version number, a recent CVE, a release date — say plainly that you cannot
+  check it live, and point the user at the official documentation to confirm.
+- If this session exposed a genuine, specific gap in the knowledge base (a
+  missing command, module, file type, or schema field — not a vague "could
+  be more"), end your response with a line "---" followed by:
+    CAPABILITY_SUGGESTION: {"type": "...", "summary": "...", "proposed_change": "...", "affected_files": ["..."]}
+  This block is optional, a machine-readable hint for the app — omit it
+  entirely on most responses. It is a proposal only; a human reviews it
+  before anything changes.`;
 
   // ── Block 2: per-request. Everything below the last breakpoint. ──
   let contexts = '';
@@ -503,7 +533,10 @@ reviews them before anything changes.`;
     contexts += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old):\n` +
       `The following is supplementary reference material selected from Notebook-X ` +
       `knowledge notebooks based on the user's question. Cite it when used, but it ` +
-      `may not cover everything — web_search remains available for anything it doesn't cover.\n\n` +
+      `may not cover everything` +
+      (allowWebSearch
+        ? ` — web_search remains available for anything it doesn't cover.\n\n`
+        : `, and no web_search tool is available on this request.\n\n`) +
       notebookContext.trim();
   }
 
@@ -659,7 +692,7 @@ export default {
       return jsonResponse({ error: 'general', message: 'Body must be a JSON object' }, 400, origin);
     }
 
-    const { messages, mode, language, db_context, notebook_context, cli_mode, images } = body;
+    const { messages, mode, language, db_context, notebook_context, cli_mode, images, allow_web_search } = body;
 
     const messagesError = validateMessages(messages);
     if (messagesError) {
@@ -703,7 +736,12 @@ export default {
     const trimmedDbContext = typeof db_context === 'string'
       ? db_context.slice(0, DB_CONTEXT_MAX_CHARS)
       : '';
-    const system = systemBlocks(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', trimmedDbContext, !!cli_mode, trimmedNotebookContext);
+    // Web-search gating (2026-08-18). The client decides — see
+    // shouldAllowWebSearch() in index.html — and must opt IN explicitly:
+    // anything other than a literal true (missing field, older cached client,
+    // hand-rolled request) means no tool, i.e. the cheap path by default.
+    const allowWebSearch = allow_web_search === true;
+    const system = systemBlocks(mode === 'diagnose' ? 'diagnose' : 'search', language === 'he' ? 'he' : 'en', trimmedDbContext, !!cli_mode, trimmedNotebookContext, allowWebSearch);
 
     // If images are attached, inject them into the last user message as
     // vision content blocks (max 3 images, base64 encoded).
@@ -800,11 +838,20 @@ export default {
           // here (a second execution environment confuses the model, and there
           // is no extra charge for the provisioned one). Left at the default
           // deliberately. Requires a 4.6+ model; claude-sonnet-5 qualifies.
-          // max_uses lowered 3 -> 2 on 2026-08-04: web search bills $10/1,000
-          // searches on top of tokens, and it is the largest per-request cost
-          // multiplier an attacker controls. Two searches still covers the
-          // "check current version / recent CVE" cases this is here for.
-          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 2 }],
+          // max_uses lowered 3 -> 2 on 2026-08-04, then 2 -> 1 on 2026-08-18:
+          // web search bills $10/1,000 searches on top of tokens, and it is the
+          // largest per-request cost multiplier a caller controls. One search
+          // still covers the "check current version / recent CVE" case this is
+          // here for; it trades some breadth on multi-part questions, and is
+          // revisitable (see CURRENT-SPEC.md).
+          //
+          // Omitted entirely when the client did not ask for search: the tool
+          // definition itself sits inside the cached prefix (tools render
+          // before system), so leaving it out is what removes both the
+          // per-search charge and its ~7,257-token prefix contribution.
+          ...(allowWebSearch
+            ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }] }
+            : {}),
         }),
       });
     } catch (err) {

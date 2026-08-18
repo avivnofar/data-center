@@ -2589,6 +2589,79 @@ async function buildNotebookContext(query) {
   return 'NOTEBOOK-X REFERENCE SECTIONS (mirrored, may be up to a week old):\n\n' + parts.join('\n');
 }
 
+/* ── Web-search gating (cost control, 2026-08-18) ─────────────────────────── */
+// Anthropic's server-side web_search bills $10/1,000 searches on top of tokens,
+// and its tool DEFINITION is inside the cached prefix on every request — the
+// 2026-08-15 token-budget analysis attributes ~7,257 of the measured
+// 9,812-token cached prefix to it — including on requests that never search.
+// So the client decides per request whether the tool is worth offering and
+// sends `allow_web_search`; the Worker omits the tool entirely when false,
+// which drops both the per-search charge and that prefix contribution.
+//
+// The rule is deliberately conservative and dumb — two signals, OR'd:
+//   1. THIN LOCAL CONTEXT. db_context + notebook_context under
+//      SEARCH_THIN_CONTEXT_CHARS means the local KB and the notebook mirror
+//      had little or nothing to offer, so an outside source may be needed.
+//   2. RECENCY SIGNAL in the query text — the case web_search actually exists
+//      for (current versions, new CVEs, releases).
+// Anything else: false. Note the tool being present was never a guarantee that
+// Claude searched; it decides. This removes the option, not a certainty.
+//
+// Threshold rationale — measured 2026-08-18 against the real data/*.json and
+// data/notebooks/ mirror through this exact code path, not estimated:
+//   - notebook_context, when it attaches at all, runs 792-14,737 chars. It is
+//     the trustworthy signal: matchNotebooks() is word-boundary scored with a
+//     minimum relevance score, sections must match a majority of query tokens,
+//     and what it attaches is actual prose.
+//   - db_context runs 194 chars (1 entry) to 565 (3 entries, its practical
+//     ceiling). It is NOT a trustworthy relevance signal: buildDbContext()
+//     scores with haystack.includes(w), so "explain the CAP theorem" matches
+//     tcpdump/top/systeminfo on "cap" inside "Capture"/"capacity". Size tells
+//     you something matched, not that it was relevant.
+// So 300 concretely means: "nothing matched at all, or only a single lone DB
+// entry did" counts as thin. Anything more leans on local context plus the
+// model's own knowledge, with the recency signal as the escape hatch. The two
+// alternatives were weighed and rejected: 0 would ignore the genuinely
+// uncovered case (measured: "what is a hypervisor" and "what are
+// microservices" both produce exactly 0 chars), and ~600 would discount
+// db_context entirely and push every command-DB question back onto paid
+// search — precisely the questions the model answers well unaided. One
+// constant, easy to revisit; .github/scripts/test-searchdecision.js pins the
+// behaviour either way.
+const SEARCH_THIN_CONTEXT_CHARS = 300;
+
+// Checked against the raw query in BOTH languages regardless of LANG: LANG
+// only controls the response language, and Hebrew-speaking users routinely
+// type Hebrew questions containing English technical terms (and vice versa).
+const SEARCH_RECENCY_TERMS_EN = ['latest', 'newest', 'current', 'version', 'versions', 'cve', 'release', 'released', 'releases', 'changelog', 'still', '2026'];
+const SEARCH_RECENCY_TERMS_HE = ['אחרון', 'אחרונה', 'החדש', 'חדשה', 'עדכני', 'עדכנית', 'עדכנים', 'נוכחי', 'נוכחית', 'גרסה', 'גירסה', 'גרסת', 'מהדורה', 'עדיין'];
+const SEARCH_RECENCY_RE_EN = new RegExp('\\b(?:' + SEARCH_RECENCY_TERMS_EN.join('|') + ')\\b');
+
+function hasRecencySignal(query) {
+  const q = (query || '').toLowerCase();
+  // English terms need word boundaries — a plain substring test would match
+  // "version" inside "conversion". Hebrew terms use substring matching
+  // instead, because \b keys off [A-Za-z0-9_] and so never fires between two
+  // Hebrew letters, and Hebrew glues prefixes onto words ("הגרסה" contains
+  // "גרסה", which substring matching handles and \b would not).
+  if (SEARCH_RECENCY_RE_EN.test(q)) return true;
+  return SEARCH_RECENCY_TERMS_HE.some(t => q.includes(t));
+}
+
+function shouldAllowWebSearch(query, dbContext, notebookContext) {
+  if (hasRecencySignal(query)) return true;
+  // The thin-context signal is only meaningful when the local matchers could
+  // actually run. notebookQueryTokens() keeps [a-z0-9_-] only, so a query
+  // written entirely in Hebrew yields zero tokens and therefore always zero
+  // context — that is "the matcher couldn't look", not "the KB has nothing".
+  // Treating it as thin would turn search back on for nearly all Hebrew
+  // traffic (Hebrew is the default language) and forfeit most of the saving,
+  // so the decision falls to the recency signal alone there. Revisit if the
+  // matchers ever learn Hebrew.
+  if (!notebookQueryTokens(query).length) return false;
+  return (dbContext || '').length + (notebookContext || '').length < SEARCH_THIN_CONTEXT_CHARS;
+}
+
 /* ── Lightweight markdown renderer ───────────────────────────────────────── */
 // Wraps embedded technical terms (commands, flags, paths, IPs, versions, and
 // — in Hebrew responses — standalone English words/acronyms) in an isolated
@@ -3419,6 +3492,7 @@ async function sendAiMessage() {
 
   const dbContext = buildDbContext(text);
   const notebookContext = await buildNotebookContext(text);
+  const allowWebSearch = shouldAllowWebSearch(text, dbContext, notebookContext);
   const session = getCurrentSession();
   const messages = (session ? session.messages : []).map(m => ({ role: m.role, content: m.content }));
 
@@ -3434,7 +3508,7 @@ async function sendAiMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = AI_STRINGS.sending[LANG]; }
 
   try {
-    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, notebookContext, isCliModeActive(), imagesToSend);
+    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, notebookContext, isCliModeActive(), imagesToSend, allowWebSearch);
   } catch (e) {
     showAiThinking(false);
     const isConnectionError = e instanceof TypeError;
@@ -3445,11 +3519,11 @@ async function sendAiMessage() {
   }
 }
 
-async function streamFromWorker(messages, mode, language, dbContext, notebookContext, cliMode, images) {
+async function streamFromWorker(messages, mode, language, dbContext, notebookContext, cliMode, images, allowWebSearch) {
   const response = await fetch(CONFIG.WORKER_URL + '/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, mode, language, db_context: dbContext, notebook_context: notebookContext || undefined, cli_mode: !!cliMode, images: images && images.length ? images : undefined }),
+    body: JSON.stringify({ messages, mode, language, db_context: dbContext, notebook_context: notebookContext || undefined, cli_mode: !!cliMode, images: images && images.length ? images : undefined, allow_web_search: !!allowWebSearch }),
   });
 
   if (!response.ok) {
