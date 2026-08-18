@@ -1438,27 +1438,6 @@
     }
     .bm-row-remove:hover { border-color: #ef4444; color: #ef4444; }
 
-    /* ── PDF export FAB ────────────────────────────────────────────────────── */
-    #pdf-fab {
-      background: var(--accent);
-      border: none;
-      border-radius: 24px;
-      bottom: 38px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      color: #06240f;
-      cursor: pointer;
-      display: none;
-      font-family: var(--sans);
-      font-size: 0.85rem;
-      font-weight: 700;
-      inset-inline-end: 20px;
-      padding: 10px 18px;
-      position: fixed;
-      z-index: 200;
-    }
-    #pdf-fab.visible { display: block; }
-    #pdf-fab:hover { background: #86efac; }
-
     /* ── Status bar ────────────────────────────────────────────────────────── */
     body { padding-bottom: 28px; }
     #status-bar {
@@ -1496,15 +1475,6 @@
       background: var(--accent);
       box-shadow: 0 0 4px var(--accent-glow);
       flex-shrink: 0;
-    }
-
-    /* ── Print styles ──────────────────────────────────────────────────────── */
-    @media print {
-      body * { visibility: hidden; }
-      .print-target, .print-target * { visibility: visible; }
-      .print-target { background: #fff; color: #000; inset: 0; padding: 24px; position: absolute; }
-      .print-target pre, .print-target code { background: #f4f4f4 !important; color: #000 !important; direction: ltr; unicode-bidi: isolate; }
-      #pdf-fab, #topbar, #tab-nav, #status-bar, .workflow-list, #workflow-detail-back { display: none !important; }
     }
 
     /* ── Mobile (≤768px) ───────────────────────────────────────────────────── */
@@ -1630,11 +1600,6 @@
 <div id="tooltip" role="tooltip"></div>
 <div id="nav-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
 <div id="ai-sidebar-overlay" onclick="toggleAiSidebar()"></div>
-
-<button id="pdf-fab" onclick="generatePdf()">
-  <span class="he">📄 צור PDF</span>
-  <span class="en" style="display:none">📄 Generate PDF</span>
-</button>
 
 <div id="status-bar" role="status" aria-live="off">
   <div class="status-side status-left">
@@ -3158,7 +3123,6 @@ function renderWorkflowsPanel(panel) {
       <p style="color:var(--text-muted);font-size:0.85rem;">
         ${LANG === 'he' ? 'אין עדיין מדריכים זמינים.' : 'No workflow guides available yet.'}
       </p>`;
-    hidePdfFab();
     return;
   }
 
@@ -3182,7 +3146,6 @@ function renderWorkflowsPanel(panel) {
       <div id="workflow-detail-content"></div>
     </div>
   `;
-  hidePdfFab();
 }
 
 async function openWorkflow(id) {
@@ -3210,21 +3173,26 @@ async function openWorkflow(id) {
 function backToWorkflowList() {
   document.getElementById('workflow-list').style.display = '';
   document.getElementById('workflow-detail').classList.remove('visible');
-  hidePdfFab();
 }
 
-/* ── PDF export (browser print) ───────────────────────────────────────────── */
-function showPdfFab() {
-  const fab = document.getElementById('pdf-fab');
-  if (fab) fab.classList.add('visible');
-}
-function hidePdfFab() {
-  const fab = document.getElementById('pdf-fab');
-  if (fab) fab.classList.remove('visible');
-}
-function generatePdf() {
-  window.print();
-}
+/* ── PDF export: REMOVED 2026-08-18 ──────────────────────────────────
+ * The "צור PDF" FAB called window.print() against a @media print block that
+ * isolated .print-target. The marker was being applied correctly — the print
+ * CSS itself was broken, in two independent ways, both measured in the live
+ * DOM before removal:
+ *   1. Specificity. `.print-target { background:#fff; color:#000 }` (0,1,0)
+ *      lost to `#workflow-detail-content { background: var(--surface) }`
+ *      (1,0,0), so the block kept its dark background, and `h3` / `code` kept
+ *      their light accent colours from ID rules that also outranked it.
+ *      Browsers drop backgrounds when printing but keep text colour, so the
+ *      result was near-white text on white paper.
+ *   2. Geometry. `position:absolute; inset:0` locks the box to the containing
+ *      block's height — measured 799px against 6,248px of guide content — so
+ *      everything past the first page overflowed an out-of-flow box that
+ *      Chrome does not fragment across pages.
+ * Guides are deprioritised by owner decision, so this was removed rather than
+ * repaired. Reinstating it means fixing BOTH of the above, not just the FAB.
+ */
 
 /* ── Panel rendering ──────────────────────────────────────────────────────── */
 function renderAiPanel(panel) {
