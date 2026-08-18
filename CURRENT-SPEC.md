@@ -135,7 +135,27 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   "access" — over-attached; see `.github/scripts/test-notebookcontext.js`),
   and caps content at ~15 KB, truncating at section boundaries. The Worker
   is a dumb proxy for this — no fetching, no KV, no
-  GitHub credentials on the Worker side. Supersedes the old
+  GitHub credentials on the Worker side.
+  - **Freshness dates travel with the content (2026-08-18)**. Every emitted
+    heading carries the date the material was last revised at the source:
+    `### Name (domain) [updated YYYY-MM-DD, web-verified YYYY-MM-DD]` per
+    notebook (`lastWebVerified` only when present and different — 4 of 12
+    notebooks have it), `#### Title [YYYY-MM-DD]` per section from
+    `lastUpdated` (present on 130/130 sections today; the notebook-level date
+    is the fallback). Dates are read from the **notebook file, never from
+    `_index-public.json`** — the index lags, dating `kb-firewall` 2026-07-17
+    where the file says 2026-08-17. Cost, measured across the five queries in
+    `audits/NOTEBOOK-VALUE-TEST.md`: **+852 chars over 34,442, +2.47%** (dates
+    +34 to +132 per request; the reworded header accounts for a further +91,
+    once per request). Pinned by
+    `.github/scripts/test-notebookdates.js` and the `notebook-context-dated`
+    drift claim, which asserts the suffix is *emitted*, not merely defined.
+  - **The header no longer claims "may be up to a week old"** (both the client
+    header and the Worker's wrapper). That figure came from the weekly sync
+    cadence, which bounds the age of the *copy*, not of the *content* — real
+    section dates in the mirror run back to 2026-06-30, a 7-week spread. It
+    was an unearned freshness guarantee handed to the model; the dates replace
+    it with the actual quantity. Supersedes the old
   `getNotebookXContext()` (confirmed silent no-op — unauthenticated fetch
   against the private repo always 404ed; deleted, not fixed).
 - **Hebrew query matching (2026-08-18)**: Hebrew is the app's default
@@ -223,6 +243,36 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   - **`pruneEmptySessions()`** runs once per load and drops zero-message
     records — the shells the old eager path left behind, which still counted
     against the cap. Sessions with any message are never touched.
+- **Gap log (2026-08-18)** — when a query produces **zero `db_context` and
+  zero `notebook_context`**, neither the command DB nor the notebook mirror
+  covered it, and that is the most direct signal available of what this
+  knowledge base is missing. `recordGap()` appends
+  `{query, lang, mode, ts}` to `localStorage` key **`dc-gaps`**, capped at
+  **200 entries, oldest evicted first**. `mode` is the *user-facing* mode
+  (`search`/`diagnose`/`cli`), not `getAiBackendMode()`'s collapsed value, so
+  a gap reached through CLI Mode's fall-through stays distinguishable.
+  - **Deliberately no UI.** This is diagnostic plumbing, not a feature. The
+    entire read/export/clear surface is one console-callable function:
+
+    | Call | Does |
+    |---|---|
+    | `dcGaps()` | returns the entries, oldest first |
+    | `dcGaps('json')` | the same array as a JSON string, ready to paste |
+    | `dcGaps('clear')` | empties the log, returns how many were removed |
+
+  - **Plain JSON, no derived fields** — no scores, no token counts, no
+    normalised query, no counters. The intended consumer is Notebook-X's own
+    gap list, which is maintained by hand today; automation there is an open
+    owner decision. Deriving anything now would be guessing at a consumer that
+    does not exist, so the log stays trivially exportable and lets whatever
+    reads it derive its own.
+  - **Fails silently by design** — `localStorage` throws in private mode and
+    on quota, and a diagnostic log must never break sending a message. A
+    corrupt or non-array stored value reads as an empty log rather than
+    throwing. Pinned by `.github/scripts/test-gaplog.js` and the
+    `gap-log-recorded` drift claim, which asserts the guarded call exists at
+    the call site — a log that is defined but never written would otherwise
+    pass every identifier check.
 - **Three AI modes** — strict radio, exactly one active
   (`AI_MODE_VALUES = ['search', 'diagnose', 'cli']`, stored in
   `localStorage` `dc-modes`): Free Search, Solve a Case, CLI Mode.
@@ -359,6 +409,80 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **Notebook value measured, and it mostly did not show — 2026-08-18.** A paid
+  live A/B against the deployed Worker: 5 questions × 2 runs, identical
+  question text and `db_context`, fresh conversation each time, the only
+  variable being whether `notebook_context` was attached. `allow_web_search`
+  was pinned to the same value on both arms (naturally `false` on all ten, so
+  production behaviour was not overridden) and `web_search_requests = 0`
+  everywhere, so no search charge confounds the result. Full answers, per-run
+  costs and the per-question comparison table are in
+  **`audits/NOTEBOOK-VALUE-TEST.md`** (gitignored, local only). Total spend
+  **$0.136710**.
+
+  | | Verdict |
+  |---|---|
+  | Linux | context NEUTRAL — the *no-context* answer contributed the OOM-killer check the with-context one omitted |
+  | Networking | context DEGRADED (causation unsure, single pair) — the with-context answer was a strict coverage subset, losing Windows and MTU material |
+  | VPN | context **ADDED** — FortiClient/Check Point specifics and the Phase 1→2→MTU→routing→capture ladder, both traceable to attached sections |
+  | Cybersecurity | context NEUTRAL — real IR-discipline additions, matched by equally valuable additions on the no-context side |
+  | 1COM/MirtaPBX | context NEUTRAL — **and this is the finding** |
+
+  **The private-knowledge control is the result that matters.** 1COM/MirtaPBX
+  was chosen to be the case notebooks should win most decisively, and it drew.
+  Reading `kb-1com` explains why: across 12,157 attached chars there is no
+  admin-portal URL, no FQDN or SRV convention, no device model number, no
+  default port or credential convention, no customer dial plan — its "Cloud PBX
+  Platform" section defines *extension*, *trunk* and *IVR* in generic terms any
+  frontier model already holds. The notebook is labelled private; its content is
+  not. Retrieval worked correctly and delivered material with nothing private in
+  it. The no-context arm reproduced the same answer from general knowledge plus
+  the word "1COM" in the question.
+
+  **Cost.** +13,379 uncached input tokens across five questions, **+2,676 per
+  question**, **+$0.005352 per question** — roughly doubling the cost of a warm,
+  non-searching KB question. Small in absolute terms; the point is that on four
+  of five questions it bought nothing measurable.
+
+  **What the test does not establish.** One run per arm, English only, `search`
+  mode only, no repeats — so run-to-run variance is unmeasured and the
+  Networking verdict rests on a single pair. More importantly, **none of these
+  five questions touched the stale quadrant** (`kb-ai-tools`, or the
+  version-pinned sections of `kb-vpn`/`kb-firewall`/`kb-cybersecurity`). Zero
+  staleness was observed because the test did not go near where staleness
+  lives. The desk-check in the same document flags `kb-ai-tools` (32 days old,
+  all 14 sections a point-in-time comparison of AI models and tools) and
+  `kb-remote-access` (32 days) as the actively harmful cases; measuring them is
+  future work.
+
+- **Freshness dates on notebook context + a dating instruction in the prompt —
+  2026-08-18.** Design and measured cost are under "Notebook-X integration" in
+  Architecture above. `worker.js` gained a `DATING YOUR CLAIMS` paragraph in the
+  **cached base block** (block 0, so it is paid for once per prefix, not per
+  request) telling the model to hedge in a clause — not a disclaimer paragraph —
+  when answering from dated reference material or from training knowledge in a
+  fast-moving area, and explicitly *not* to hedge stable material like command
+  syntax or RFC behaviour. This addresses the *harm* half of the stale quadrant;
+  it does nothing about the redundancy half, since a fresh date on content the
+  model already knows still buys nothing. New test:
+  `.github/scripts/test-notebookdates.js`. New drift claim:
+  `notebook-context-dated`.
+
+- **Gap log — 2026-08-18.** Client-only; see "Gap log" in Architecture above for
+  the storage shape and the console entry point. New test:
+  `.github/scripts/test-gaplog.js`. New drift claim: `gap-log-recorded`.
+
+- **Grok/xAI residue check — 2026-08-18, nothing found.** Working tree and full
+  git history (`git log --all -S`) searched for `grok`, `xai`, `x.ai`,
+  `GROK_API_KEY`, `XAI_API_KEY`: **zero hits**. The three commits `-S'xai'`
+  reports are all `vertexaisearch.cloud.google.com` grounding URLs inside the
+  Notebook-X mirror — Google Vertex AI Search, not xAI. (An unescaped `x.ai`
+  pattern matches `verte**xais**earch`, which is what makes this look like a hit
+  at first glance; recorded so the next person does not re-derive it.) Live
+  secrets at the time of the check — GitHub Actions: `BRAIN_READ_TOKEN`,
+  `NOTEBOOKX_READ_TOKEN`. Cloudflare Worker: `ANTHROPIC_API_KEY`, `LOG_SALT`.
+  No second AI provider was ever configured. Nothing was deleted.
 
 - **Fresh conversation on every page load — 2026-08-18.** Client-only change
   to `index.html`; the Worker was not touched. Design, rationale and the
