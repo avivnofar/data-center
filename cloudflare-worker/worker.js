@@ -838,19 +838,30 @@ export default {
           // here (a second execution environment confuses the model, and there
           // is no extra charge for the provisioned one). Left at the default
           // deliberately. Requires a 4.6+ model; claude-sonnet-5 qualifies.
-          // max_uses lowered 3 -> 2 on 2026-08-04, then 2 -> 1 on 2026-08-18:
-          // web search bills $10/1,000 searches on top of tokens, and it is the
-          // largest per-request cost multiplier a caller controls. One search
-          // still covers the "check current version / recent CVE" case this is
-          // here for; it trades some breadth on multi-part questions, and is
-          // revisitable (see CURRENT-SPEC.md).
+          // max_uses lowered 3 -> 2 on 2026-08-04: web search bills $10/1,000
+          // searches on top of tokens, and it is the largest per-request cost
+          // multiplier a caller controls.
+          //
+          // 2 -> 1 was tried on 2026-08-18 and REVERTED the same session on
+          // live evidence. At max_uses: 1 the search path stops working rather
+          // than merely narrowing: both live attempts at "what is the latest
+          // stable nginx version" came back with the model reporting the tool
+          // exhausted ("search limit hit" / "temporarily unavailable") and
+          // answering from stale training data (1.26.x/1.27.x), where the same
+          // question at max_uses: 2 had returned the actual current release
+          // with citations. The likely cause is this tool version's dynamic
+          // filtering — it provisions code execution that can consume the
+          // budget before the answer-bearing query runs — so 1 is not "half of
+          // 2", it is zero usable searches. Do not lower this again without
+          // re-running that live check; the saving is $0.01/searching request
+          // and the cost is the feature.
           //
           // Omitted entirely when the client did not ask for search: the tool
           // definition itself sits inside the cached prefix (tools render
           // before system), so leaving it out is what removes both the
           // per-search charge and its ~7,257-token prefix contribution.
           ...(allowWebSearch
-            ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }] }
+            ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 2 }] }
             : {}),
         }),
       });

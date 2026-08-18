@@ -33,7 +33,7 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   allow_web_search}` to `/api/chat`; the Worker assembles a bilingual system
   prompt (appending both context strings, `notebook_context` capped
   server-side at 20 KB) and calls Claude, attaching the `web_search` tool
-  (`max_uses: 1`) **only when `allow_web_search` is true** — see
+  (`max_uses: 2`) **only when `allow_web_search` is true** — see
   "Conditional web search" below.
   `buildDbContext()` tokenizes the query with the same stopword list +
   3-char minimum `matchNotebooks()` uses (2026-08-18 fix — previously an
@@ -146,7 +146,7 @@ paid API calls were made.
 | 3 | Solve a Case guided controls | `#diagnose-controls`: platform/severity chips (`selectDiagnoseChip()` → `DIAGNOSE_PLATFORM/SEVERITY`) + 5 action buttons wired to `diagnoseAction()` — `start` prefills the input with chip context; next/resolved/escalate/guide call `sendAiMessage()`. |
 | 4 | CLI Mode terminal-in-chat | `tryRunCliCommand()` → `CommandFlow.loadDb()/run()`; `clear`/`cls` handled; unmatched input falls through to Claude. |
 | 5 | Image paste + upload + vision | Attach button `#ai-attach-btn` and document-level paste handler → `handleImageAttachment()` → `pendingImages` (base64, previews, removable) → `images` in the request body; Worker injects `type:'image'` blocks (max 3). |
-| 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20260209', name:'web_search', max_uses:1}]` — yes, actually added, but **attached conditionally** since 2026-08-18 (only when the client sends `allow_web_search: true`; see "Conditional web search" above), and the system prompt's CAPABILITIES section is conditional with it so Claude cannot claim a search it had no tool for. `max_uses` lowered 2 → 1 on 2026-08-18: this halves the per-request search bill on the requests that do search, at the cost of some answer breadth on multi-part questions (one search cannot cover two independent unknowns) — **revisitable**, it is a single constant in `worker.js`. When the app was reading only one KB entry, one search is enough; if answers start hedging on multi-part recency questions, put it back to 2. Earlier: `max_uses` lowered 3 → 2 on 2026-08-04: web search bills $10/1,000 searches on top of tokens, making it the largest per-request cost multiplier a caller controls. Upgraded from `web_search_20250305` on 2026-08-01 for **dynamic filtering** (Claude filters results via code execution before they reach the context window, reducing input tokens on search-heavy answers). `allowed_callers` is left at its `_20260209` default of `["code_execution_20260120"]`; `code_execution` is deliberately *not* declared separately. A newer `web_search_20260318` exists, adding only `response_inclusion` (an output-token optimisation for agents that don't echo search content back) — not adopted, since this app streams answers to a browser. |
+| 6 | Web search tool for Claude | `worker.js`: `tools: [{type:'web_search_20260209', name:'web_search', max_uses:1}]` — yes, actually added, but **attached conditionally** since 2026-08-18 (only when the client sends `allow_web_search: true`; see "Conditional web search" above), and the system prompt's CAPABILITIES section is conditional with it so Claude cannot claim a search it had no tool for. `max_uses` **stays at 2**: lowering it to 1 was tried on 2026-08-18 and reverted the same session on live evidence — see "max_uses: 1 was tried and reverted" in Recently Completed. Earlier: `max_uses` lowered 3 → 2 on 2026-08-04: web search bills $10/1,000 searches on top of tokens, making it the largest per-request cost multiplier a caller controls. Upgraded from `web_search_20250305` on 2026-08-01 for **dynamic filtering** (Claude filters results via code execution before they reach the context window, reducing input tokens on search-heavy answers). `allowed_callers` is left at its `_20260209` default of `["code_execution_20260120"]`; `code_execution` is deliberately *not* declared separately. A newer `web_search_20260318` exists, adding only `response_inclusion` (an output-token optimisation for agents that don't echo search content back) — not adopted, since this app streams answers to a browser. |
 | 11 | Hebrew default + English toggle | `LANG = localStorage.getItem('dc-lang') \|\| 'he'`; `applyLang()` flips `document.documentElement.dir` and re-renders. |
 | 12 | RTL/LTR mixed rendering | `wrapLtrTerms()` intact after the Office-UI removal; applied in `renderMarkdown()` outside code spans; all modes render through it. |
 | 13 | Collapsible left sidebar nav | `#tab-nav` fixed left column (200px, index.html); `toggleSidebarCollapse()` + persisted collapsed state + mobile off-canvas mode. |
@@ -238,6 +238,50 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **Conditional web search — live-verified 2026-08-18.** Measured on
+  production with `wrangler tail` open, against the deployed Worker and the
+  live GitHub Pages client:
+  - **KB question** ("systemd service failed to start how do I debug", fresh
+    session, no conversation history): `web_search_requests = 0`,
+    `cache_read_input_tokens = 3,628`, `cache_creation = 0`,
+    **`est_cost_usd = $0.014004`**. Against the 2026-08-04 reference points
+    that is 68% below the $0.0431 cold request and 35% below the $0.0216 warm
+    one — but neither is a like-for-like control (different question,
+    different history length, different answer length), so treat it as the
+    right order of magnitude, not a controlled delta.
+  - **The two prefix shapes both cache.** The no-tools prefix measured
+    **3,628 tokens** — written on its first request, read on the next — so the
+    `web_search_20260209` definition really was **6,184 tokens** of the old
+    9,812-token prefix (the earlier ~7,257 figure was an inference from a
+    chars/4 estimate of the prompt text; this measures it directly). Two
+    shapes, two entries, both hitting. No cache regression.
+  - **Honest accounting of where the saving comes from.** Dropping a *cached*
+    tool definition is worth only ~$0.0012 per warm request (6,184 tokens at
+    the $0.20/MTok cache-read rate). The money is in the searches not bought
+    ($0.01 each) and in cold-prefix cache *writes* not paid (6,184 tokens at
+    $2.50/MTok ≈ $0.0155 each). The prefix-size headline is real but is not
+    the bulk of the saving.
+  - **Recency question** ("what is the latest stable nginx version", fresh
+    session): search fires as designed, `web_search_requests = 1`,
+    `est_cost_usd = $0.05028` — which includes a one-time cold cache write of
+    the with-tools prefix (`cache_creation = 10,744`); the immediate repeat
+    ran at 0.97 cache hit ratio and $0.038938.
+
+- **`max_uses: 1` was tried and reverted the same session (2026-08-18).** The
+  cost case was sound on paper — halve the $10/1,000 search bill — but live
+  testing showed it does not narrow the search path, it disables it. Both
+  attempts at the nginx question came back with the model stating the search
+  tool was exhausted ("search limit hit", "temporarily unavailable") and then
+  answering from stale training data (1.26.x/1.27.x), where the same question
+  at `max_uses: 2` had previously returned the actual current release with
+  citations. The plausible mechanism is this tool version's dynamic filtering:
+  it provisions code execution that can spend the budget before the
+  answer-bearing query runs, so 1 is not "half of 2" — it is zero usable
+  searches. Reverted to 2, with the finding recorded in `worker.js` next to
+  the constant. **Conditional attachment (above) is unaffected and is where
+  the saving actually lives**; this only concerns requests that already
+  decided to search.
 
 - **`buildDbContext()` stopword/length filter (2026-08-18)** — implements
   option A from the 2026-08-15 token-budget diagnostic's decision table
