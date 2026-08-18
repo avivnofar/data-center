@@ -193,6 +193,19 @@ const claims = [
     },
   },
   {
+    id: 'request-history-capped',
+    claim: 'The /api/chat request body carries a mode-aware cap on prior turns, applied at the call site',
+    // The cap existing is not the claim — the cap being APPLIED is. A version
+    // that defines REQUEST_HISTORY_TURNS and then sends the whole thread
+    // anyway is the exact silent regression this guards.
+    check: () => {
+      const s = read('index.html');
+      return hasFn(s, 'trimMessagesForRequest')
+        && hasIdent(s, 'REQUEST_HISTORY_TURNS')
+        && /trimMessagesForRequest\(/.test(s.slice(s.indexOf('async function sendAiMessage(')));
+    },
+  },
+  {
     id: 'notebook-mirror-present',
     claim: 'Notebook-X notebooks are mirrored into data/notebooks/ as same-origin static files',
     check: () => exists('data/notebooks')
@@ -268,6 +281,9 @@ function selfTest() {
     ['tab-keyboard-nav', 'index.html', (s) => s.replace("case 'Home'", "case 'NotHome'")],
     ['zero-dependency-core', 'index.html', (s) => s.replace('<script>', '<script src="https://cdn.example.com/x.js"></script><script>')],
     ['no-issue-filing', 'index.html', (s) => s.replace('<script>', '<script>const u="https://api.github.com/repos/x/y/issues";')],
+    // Leaves the cap defined but stops applying it at the call site — the cap
+    // looks present, every message is still sent.
+    ['request-history-capped', 'index.html', (s) => s.replace(/ {2}const messages = trimMessagesForRequest\(/, '  const messages = ((x) => x)(')],
     ['worker-db-cap', 'cloudflare-worker/worker.js', (s) => s.replace(/DB_CONTEXT_MAX_CHARS/g, 'REMOVED_CAP')],
     ['worker-daily-cap-enforced', 'cloudflare-worker/worker.js', (s) => s.replace(/dayEntry\.count >= DAILY_MAX_PER_ISOLATE/, 'false')],
     // Mutate the ORDER, not the identifier: moves db_context back above the

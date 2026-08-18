@@ -3438,6 +3438,67 @@ function renderSessionList() {
   }).join('');
 }
 
+/* ── Request history cap ──────────────────────────────────────────────────
+   How many prior turns are put into the /api/chat REQUEST BODY.
+
+   THIS TRIMS THE PAYLOAD ONLY — IT IS NOT DATA LOSS. The chat area keeps
+   rendering the entire thread, `dc-sessions` keeps storing the entire thread,
+   and the sidebar keeps restoring the entire thread. A turn that is trimmed
+   out of a request is still on screen, still saved, and still comes back on
+   the next reload. Display and payload are two different things, and
+   conflating them is the mistake this comment exists to prevent.
+
+   Why cap at all: the conversation is stateless on the server, so every turn
+   re-sends all prior turns as *uncached* input tokens — they sit after the
+   cached prefix (see "Prompt caching" in CURRENT-SPEC.md) and are billed in
+   full each time. A 26-message thread measured 11,431 uncached input tokens
+   on a single question (2026-08-18).
+
+   The limits are mode-aware because the two modes use history differently:
+
+   - `search` — 6 user turns (the current question plus the 5 before it).
+     Free Search questions are largely self-contained; 6 comfortably covers
+     the usual "and what about on Windows?" follow-up chain, and the local
+     `db_context` / `notebook_context` is rebuilt from the *current* query on
+     every request anyway, so an older turn is not what makes the answer
+     grounded.
+
+   - `diagnose` — 40 user turns. Effectively no cap at real usage; it is a
+     runaway guard, not a working limit (the guided Solve-a-Case flow is
+     ~5 steps, and `updateAiInputHint()` labels it "Step N of ~5"). The
+     diagnostic thread IS the product here: the model needs the symptom
+     stated in turn one and every command output pasted since, so trimming
+     this mode does not save money, it breaks the feature. Deliberately
+     asymmetric with `search`.
+
+   CLI Mode: checked, and it does reach the Worker — but only for input
+   CommandFlow did not recognise. Recognised commands render client-side and
+   `sendAiMessage()` returns before any fetch. Those fall-through requests go
+   out with backend mode `search`, because modes are a strict radio and
+   `getAiBackendMode()` only ever returns `'search'` or `'diagnose'`. So CLI
+   already gets the search cap by construction; no third limit and no CLI
+   branch was added, on purpose. */
+const REQUEST_HISTORY_TURNS = { search: 6, diagnose: 40 };
+
+/* Keeps the last N user turns and everything that follows them, cutting from
+   the OLDEST end.
+
+   Never cuts mid-exchange: the cut always lands on a user message, so the
+   model never receives an assistant turn whose question was trimmed away
+   (which would read as the assistant volunteering an answer to nothing), and
+   the array it receives always starts with a `user` role, as the API
+   requires. Messages are already flat {role, content} pairs in send order. */
+function trimMessagesForRequest(messages, mode) {
+  const list = Array.isArray(messages) ? messages : [];
+  const limit = REQUEST_HISTORY_TURNS[mode] || REQUEST_HISTORY_TURNS.search;
+
+  const userIdx = [];
+  for (let i = 0; i < list.length; i++) if (list[i].role === 'user') userIdx.push(i);
+  if (userIdx.length <= limit) return list;
+
+  return list.slice(userIdx[userIdx.length - limit]);
+}
+
 /* ── Chat send / streaming ────────────────────────────────────────────────── */
 function aiInputKeydown(event) {
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
@@ -3644,7 +3705,13 @@ async function sendAiMessage() {
   const notebookContext = await buildNotebookContext(text);
   const allowWebSearch = shouldAllowWebSearch(text, dbContext, notebookContext);
   const session = getCurrentSession();
-  const messages = (session ? session.messages : []).map(m => ({ role: m.role, content: m.content }));
+  const backendMode = getAiBackendMode();
+  // Payload only — the full thread stays on screen and in dc-sessions.
+  // See REQUEST_HISTORY_TURNS above for the per-mode limits and why they differ.
+  const messages = trimMessagesForRequest(
+    (session ? session.messages : []).map(m => ({ role: m.role, content: m.content })),
+    backendMode
+  );
 
   const imagesToSend = pendingImages.filter(Boolean);
   clearImagePreviews();
@@ -3658,7 +3725,7 @@ async function sendAiMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = AI_STRINGS.sending[LANG]; }
 
   try {
-    await streamFromWorker(messages, getAiBackendMode(), AI_LANG, dbContext, notebookContext, isCliModeActive(), imagesToSend, allowWebSearch);
+    await streamFromWorker(messages, backendMode, AI_LANG, dbContext, notebookContext, isCliModeActive(), imagesToSend, allowWebSearch);
   } catch (e) {
     showAiThinking(false);
     const isConnectionError = e instanceof TypeError;

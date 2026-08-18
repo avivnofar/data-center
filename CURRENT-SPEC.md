@@ -43,6 +43,37 @@ to any one company. AI backend model: **`claude-sonnet-5`**.
   since the same day matches on **word boundaries over a bilingual
   haystack** rather than `haystack.includes()` — see "Hebrew query
   matching" below.
+- **Request history cap (2026-08-18)** — `trimMessagesForRequest()` bounds how
+  many prior turns go into the `/api/chat` **request body**. It trims the
+  payload only: the chat area still renders the whole thread, `dc-sessions`
+  still stores it, and the sidebar still restores it. Display and payload are
+  separate; conflating them would be data loss and this is not that.
+  The reason to cap is that the conversation is stateless server-side, so
+  prior turns are re-sent as *uncached* input on every request — they land
+  after the cached prefix and are billed in full each time (11,431 uncached
+  input tokens measured on one question over a 26-message thread).
+  - **`search` — 6 user turns** (the current question plus the 5 before it).
+    Free Search questions are largely self-contained, and `db_context` /
+    `notebook_context` are rebuilt from the *current* query on every request,
+    so grounding does not depend on old turns.
+  - **`diagnose` — 40 user turns**, i.e. no cap at real usage; it is a runaway
+    guard, not a working limit (the guided flow is ~5 steps). The diagnostic
+    thread IS the product: the model needs the symptom from turn one and every
+    command output pasted since, so trimming here would break the feature
+    rather than save money. The asymmetry is deliberate.
+  - **CLI Mode gets no cap of its own, by design.** It does reach the Worker,
+    but only for input CommandFlow did not recognise (recognised commands
+    render client-side and `sendAiMessage()` returns before any fetch), and
+    those requests go out as backend mode `search` — modes are a strict radio
+    and `getAiBackendMode()` only ever returns `'search'` or `'diagnose'`. So
+    CLI inherits the search cap by construction.
+  - **Never cuts mid-exchange**: the cut lands on a user message, so the
+    payload always begins with a `user` role and never carries an assistant
+    turn whose question was trimmed away. Pinned by
+    `.github/scripts/test-requesthistory.js`, which sweeps every thread length
+    0–30 in both modes for that invariant rather than spot-checking, and by
+    the `request-history-capped` drift claim — which asserts the cap is
+    *applied at the call site*, not merely defined.
 - **Prompt caching (active since 2026-08-04)**: `systemBlocks()` returns the
   system prompt as an *array* of content blocks ordered static → dynamic,
   because Anthropic's cache is a prefix match. Two `cache_control: ephemeral`
@@ -388,6 +419,13 @@ needed) and validated by `.github/scripts/validate-json.js`.
   path, not a Hebrew-specific or gating-related fault — but it means
   `max_uses: 2` is not a hard guarantee of one usable answer-bearing search,
   and a future `max_uses: 3` experiment has a live data point behind it.
+
+- **Mode-aware request history cap — 2026-08-18.** Client-only change to
+  `index.html`; the Worker was not touched. Chosen numbers and their reasoning
+  are under "Request history cap" in Architecture above: `search` 6 user turns,
+  `diagnose` 40, CLI inherits `search`. New regression test:
+  `.github/scripts/test-requesthistory.js` (25 assertions). New
+  `spec-drift-check.js` claim `request-history-capped`.
 
 - **Conditional web search — live-verified 2026-08-18.** Measured on
   production with `wrangler tail` open, against the deployed Worker and the
