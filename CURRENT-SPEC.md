@@ -219,11 +219,16 @@ needed) and validated by `.github/scripts/validate-json.js`.
 - **`buildNotebookContext()` majority-match section threshold (2026-08-18)**
   — implements option B from the same diagnostic. A section now must match
   a majority of the query's significant words instead of any single token
-  — verified against the real `data/notebooks/` mirror: the diagnosed
-  VPN-comparison query dropped from 14,841 to 5,987 attached chars (11 → 4
-  sections; a 60% reduction), fully excluding the previously
-  over-attached TeamViewer/AnyDesk/RustDesk remote-desktop-tool sections
-  while keeping the genuinely relevant "VPN Architectures" section
+  — verified against the real `data/notebooks/` mirror (re-verified after
+  rebasing onto the same-day `chore: weekly Notebook-X mirror sync`, which
+  grew `kb-vpn.json` mid-session — figures below are post-sync): the
+  diagnosed VPN-comparison query dropped from 14,841 to 9,007 attached
+  chars (11 → 5 sections; a 39% reduction — will drift as the weekly sync
+  grows/shrinks the underlying notebooks; re-run
+  `.github/scripts/test-notebookcontext.js` for the current figure), fully
+  excluding the previously over-attached TeamViewer/AnyDesk/RustDesk
+  remote-desktop-tool sections while keeping the genuinely relevant "VPN
+  Architectures" section
   (`.github/scripts/test-notebookcontext.js`). One known residual: one
   borderline section ("Azure Network Watcher") still ties the majority
   threshold on generic word overlap and remains attached — a real limit of
