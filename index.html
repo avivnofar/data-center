@@ -2674,9 +2674,52 @@ function notebookSectionMatches(hay, words) {
   return matchCount >= Math.ceil(usable.length / 2);
 }
 
+/* ── Freshness dates on attached context (2026-08-18) ─────────────────────
+ * The mirror carries dates and, until this change, sent none of them: every
+ * section arrived as undated reference material, so a claim last revised in
+ * June read exactly like one revised yesterday and the model stated both with
+ * the same confidence. Measured across the 12 mirrored notebooks, section
+ * dates span 2026-06-30 to 2026-08-17 — a 7-week spread inside one corpus.
+ *
+ * Dates are read from the NOTEBOOK FILE, never from _index-public.json. The
+ * index's per-notebook `updatedAt` lags the file's own: at the time of this
+ * change the index dated kb-firewall 2026-07-17 while the file said
+ * 2026-08-17, and kb-linux 2026-08-03 vs 2026-08-17. Using the index would
+ * have made content look staler than it is.
+ *
+ * Kept deliberately terse — this payload was cut twice in the preceding two
+ * sessions and is not to be quietly regrown. A section costs 13 chars
+ * (" [YYYY-MM-DD]"); a notebook costs ~19-45, and at most 2 notebooks attach
+ * per request. Measured on the five queries of audits/NOTEBOOK-VALUE-TEST.md:
+ * the dates themselves add +34 to +132 chars (+91 more comes from the longer
+ * header below, once per request), for +125 to +223 total — +2.47% across the
+ * 34,442 chars those five queries attach in aggregate. The one outlier is a
+ * 792-char attachment where the fixed header cost lands as +15.8%; on every
+ * attachment large enough to matter it is 1.6-3.3%.
+ */
+function isoDay(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : '';
+}
+
+// "### Name (domain) [updated 2026-08-17, web-verified 2026-08-10]".
+// lastWebVerified is a genuinely different signal from updatedAt — when the
+// notebook's external claims were last checked against the live web, as
+// opposed to when its text was last touched — so it is carried when present
+// (4 of 12 notebooks) and silently omitted when not.
+function notebookDateSuffix(nb) {
+  const bits = [];
+  const updated = isoDay(nb && nb.updatedAt);
+  const verified = isoDay(nb && nb.knowledgeBase && nb.knowledgeBase.lastWebVerified);
+  if (updated) bits.push(`updated ${updated}`);
+  if (verified && verified !== updated) bits.push(`web-verified ${verified}`);
+  return bits.length ? ` [${bits.join(', ')}]` : '';
+}
+
 // Fetches matched notebooks and selects only sections whose title/tags/
 // content match a majority of the query's significant words, capped at
 // ~15 KB total and truncated at section boundaries (never mid-section).
+// Each section carries its own lastUpdated date where the mirror has one,
+// falling back to the notebook-level date on the "###" line otherwise.
 async function buildNotebookContext(query) {
   const matches = matchNotebooks(query);
   if (!matches.length) return '';
@@ -2697,10 +2740,11 @@ async function buildNotebookContext(query) {
     });
     if (!relevant.length) continue;
 
-    let block = `### ${nb.name} (${nb.domain})\n`;
+    let block = `### ${nb.name} (${nb.domain})${notebookDateSuffix(nb)}\n`;
     let added = false;
     for (const sec of relevant) {
-      const secText = `\n#### ${sec.title}\n${sec.content}\n`;
+      const secDate = isoDay(sec.lastUpdated);
+      const secText = `\n#### ${sec.title}${secDate ? ` [${secDate}]` : ''}\n${sec.content}\n`;
       if (total + block.length + secText.length > NOTEBOOK_CONTEXT_MAX_CHARS) break;
       block += secText;
       added = true;
@@ -2712,7 +2756,14 @@ async function buildNotebookContext(query) {
   }
 
   if (!parts.length) return '';
-  return 'NOTEBOOK-X REFERENCE SECTIONS (mirrored, may be up to a week old):\n\n' + parts.join('\n');
+  // The old header said "may be up to a week old", reasoning from the weekly
+  // sync cadence. That was the wrong quantity: the sync only bounds how stale
+  // the COPY is, not the CONTENT, and the content is much older — section
+  // dates in the mirror run back to 2026-06-30. Saying "a week" to the model
+  // was an unearned freshness guarantee. Dates now travel with the material
+  // instead, and the header points at them rather than making a claim of its
+  // own. Kept to one line: the Worker wraps this with its own framing.
+  return 'NOTEBOOK-X REFERENCE SECTIONS (mirrored copy; bracketed dates are when each notebook/section was last revised at the source — they are NOT the current date):\n\n' + parts.join('\n');
 }
 
 /* ── Web-search gating (cost control, 2026-08-18) ─────────────────────────── */

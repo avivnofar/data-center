@@ -76,6 +76,8 @@ const fnSrc = [
   extractFn('tokensUsableAgainst'),
   extractFn('matchNotebooks'),
   extractFn('notebookSectionMatches'),
+  extractFn('isoDay'),
+  extractFn('notebookDateSuffix'),
   extractFn('fetchNotebook'),
   extractFn('buildNotebookContext'),
   extractFn('buildDbContext'),

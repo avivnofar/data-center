@@ -328,6 +328,15 @@ platform or technology. Always cite specific commands when answering. Be
 concise and practical. Reference the local database context when relevant,
 but your knowledge extends well beyond it — feel free to answer from your
 general expertise when the local database doesn't cover a topic.
+
+DATING YOUR CLAIMS: when you answer from attached reference material whose
+heading carries a date more than a few weeks old, or from training knowledge in
+a fast-moving area (AI tools and models, product versions, releases, pricing,
+threat landscape), say so in a few words as you make the claim — "as of
+<date>", "this may have moved since" — instead of stating it flatly. Keep it to
+a clause, not a disclaimer paragraph, and do not hedge stable material
+(command syntax, protocols, RFC behaviour) this way.
+
 This is a compact chat UI, not a document: avoid heavy markdown decoration
 (multiple "##" headers, horizontal rules, emoji section markers). Prefer one
 short intro line, a code block with the key command(s), and brief explanation —
@@ -529,10 +538,18 @@ CAPABILITIES:
     contexts += `\n\n${dbContext.trim()}`;
   }
 
+  // "may be up to a week old" was removed here on 2026-08-18 for the same
+  // reason as in the client (see buildNotebookContext()): the weekly sync
+  // bounds the age of the COPY, not of the CONTENT, and the content in the
+  // mirror runs back to 2026-06-30. The framing now points at the per-section
+  // dates the client attaches rather than asserting a freshness the data does
+  // not support.
   if (notebookContext && notebookContext.trim()) {
-    contexts += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored, may be up to a week old):\n` +
+    contexts += `\n\nNOTEBOOK-X REFERENCE CONTENT (mirrored from a separate knowledge base):\n` +
       `The following is supplementary reference material selected from Notebook-X ` +
-      `knowledge notebooks based on the user's question. Cite it when used, but it ` +
+      `knowledge notebooks based on the user's question. Headings carry the date ` +
+      `each notebook or section was last revised at the source; some are months ` +
+      `old. Cite it when used, but it ` +
       `may not cover everything` +
       (allowWebSearch
         ? ` — web_search remains available for anything it doesn't cover.\n\n`

@@ -206,6 +206,30 @@ const claims = [
     },
   },
   {
+    id: 'notebook-context-dated',
+    claim: 'Attached notebook context carries per-section/notebook freshness dates, and no longer claims to be at most a week old',
+    // Both halves are asserted. A version that defines notebookDateSuffix()
+    // and then emits the heading without it would look correct by identifier
+    // and send undated material anyway — and the stale "a week old" claim is
+    // the thing the dates were added to replace, so its absence is part of
+    // the claim, not a separate tidy-up.
+    check: () => {
+      const s = read('index.html');
+      const w = read('cloudflare-worker/worker.js');
+      // Comments are stripped before the negative test. Both files carry a
+      // comment explaining WHY "may be up to a week old" was removed, and
+      // that explanation is worth keeping — what must not come back is the
+      // phrase in text the model actually receives.
+      const noComments = (src) => src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      return hasFn(s, 'notebookDateSuffix')
+        && hasFn(s, 'isoDay')
+        && /\$\{notebookDateSuffix\(nb\)\}/.test(s)
+        && /\[\$\{secDate\}\]/.test(s)
+        && !/up to a week old/.test(noComments(s))
+        && !/up to a week old/.test(noComments(w));
+    },
+  },
+  {
     id: 'notebook-mirror-present',
     claim: 'Notebook-X notebooks are mirrored into data/notebooks/ as same-origin static files',
     check: () => exists('data/notebooks')
@@ -295,6 +319,9 @@ function selfTest() {
     // Reintroduces eager creation on load — the regression that silently
     // evicts real history — while leaving the fresh-start line in place.
     ['fresh-conversation-per-load', 'index.html', (s) => s.replace(/ {2}pruneEmptySessions\(\);\r?\n {2}localStorage\.removeItem\('dc-current-session'\);/, '  createNewSession();')],
+    // Leaves notebookDateSuffix() defined but stops emitting it — the dates
+    // look implemented and the model receives undated material.
+    ['notebook-context-dated', 'index.html', (s) => s.replace('${notebookDateSuffix(nb)}', '')],
   ];
 
   const realRead = read;
