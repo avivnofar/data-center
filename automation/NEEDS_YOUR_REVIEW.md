@@ -1193,6 +1193,23 @@ as it stands.
 
 ### 2. wrapLtrTerms() "no double-wrap" claim — TRUE, verified by a new kept test; stale comment fixed
 
+> **Both the entity-splitting bug (item 3 below) and this entry's own
+> "bonus finding" fragmentation bug are now fixed (2026-08-19, supervised
+> session, browser-verified).** The entity fix does **not** use the `(?<!&)`
+> lookbehind candidate recorded below/in item 3 — that lookbehind was checked
+> and found insufficient (it only blocks a match starting immediately after
+> `&`, not one starting further into the entity name, e.g. "uot" inside
+> "&quot;"). The actual fix adds an explicit HTML-entity alternative to the
+> pattern alternation, consumed whole and left unwrapped. The path/flag
+> fragmentation fix extends the boundary lookbehind to accept a glued Hebrew
+> particle, and separately fixes a pre-existing (non-Hebrew) flag-vs-path
+> leftmost-match ambiguity it exposed. Full design and live-DOM verification:
+> `CURRENT-SPEC.md` → Recently Completed →
+> "`wrapLtrTerms()` entity-splitting and Hebrew-prefixed-path fragmentation
+> fixed". `.github/scripts/test-wrapltrterms.js` gained 45 new assertions
+> (entity cases + all 7 Hebrew particles × 5 term types) confirmed failing
+> pre-fix and passing post-fix.
+
 Wrote `.github/scripts/test-wrapltrterms.js` — extracts `wrapLtrTerms()`
 verbatim from `index.html` (brace-matched, not a fragile line-range copy) and
 runs it against 5 realistic mixed Hebrew/English strings (he *and* en flow,
@@ -1296,15 +1313,11 @@ fragmentation.
 > Verified: `escHtml()` alone produces correct entities; the corruption
 > appears only after `wrapLtrTerms()`.
 >
-> **NOT FIXED — deliberately out of scope, needs an owner decision.**
-> `wrapLtrTerms()` is shared with the AI chat rendering path, and this
-> session was scoped to the guides renderer with an explicit instruction not
-> to touch chat rendering. The candidate fix is one character on one pattern:
-> anchor the Hebrew standalone-word alternative with a `(?<!&)` lookbehind so
-> it cannot start immediately after an `&`. That is narrow, but it changes
-> what every Hebrew AI answer renders, so it wants its own change with
-> `.github/scripts/test-wrapltrterms.js` extended to cover `"`, `&`, `<`, `>`
-> and `A && B` in Hebrew flow — not a drive-by edit.
+> **FIXED 2026-08-19** — see the correction note on item 2 above and
+> `CURRENT-SPEC.md` → Recently Completed. The `(?<!&)` lookbehind candidate
+> floated below was checked and rejected as insufficient; the fix that
+> shipped instead matches the whole entity as its own alternative and leaves
+> it unwrapped.
 >
 > This supersedes the "could not be confirmed live" note at the end of the
 > original entry below: the mechanism is confirmed, and it is client-side.

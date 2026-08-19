@@ -425,18 +425,6 @@ needed) and validated by `.github/scripts/validate-json.js`.
 
 ## Known Issues / Open Items
 
-- **`&quot;` / `&amp;` render literally in Hebrew — root-caused 2026-08-18,
-  NOT fixed.** `wrapLtrTerms()` runs after `escHtml()` and, in Hebrew only,
-  wraps the entity *name* out of `&quot;` / `&amp;` / `&lt;` / `&gt;` in its
-  own LTR-isolate span, separating the `&` from the rest so the browser can no
-  longer decode it. Any plain `"` or `&` in a Hebrew answer or guide hits
-  this; English is unaffected, which is why it looked intermittent. It is
-  **not** un-decoded `web_search` content — that hypothesis is corrected in
-  `automation/NEEDS_YOUR_REVIEW.md`. Left unfixed because `wrapLtrTerms()` is
-  shared with the AI chat rendering path and the 2026-08-18 session was
-  scoped to the guides renderer. Candidate fix and the test coverage it needs
-  are recorded in `NEEDS_YOUR_REVIEW.md`.
-
 - The partially-built AI self-improvement items (#7-#10 above) now share a
   narrower root gap: as of TODO-001 (2026-07-24) the suggestion blocks ARE
   parsed client-side and rendered as dismissible cards, so they no longer
@@ -452,6 +440,60 @@ needed) and validated by `.github/scripts/validate-json.js`.
   links.txt` — were all removed per owner decision on the same date.)
 
 ## Recently Completed
+
+- **`wrapLtrTerms()` entity-splitting and Hebrew-prefixed-path fragmentation
+  fixed — 2026-08-19 (supervised session).** Two bugs in the shared RTL/LTR
+  isolation function, both root-caused in earlier sessions and left unfixed
+  pending browser verification (see the superseded Known-Issues entry this
+  replaces, and the corresponding items in `automation/NEEDS_YOUR_REVIEW.md`).
+  - **Entity splitting.** `wrapLtrTerms()` runs on already-`escHtml()`'d text,
+    and in Hebrew its bare-word pattern treated the letters inside
+    `&quot;`/`&amp;`/`&lt;`/`&gt;` as a standalone English word, wrapping just
+    that word and severing the `&` from the rest so the browser could no
+    longer decode the entity. **Rejected fix**: a `(?<!&)` lookbehind on the
+    bare-word pattern (the candidate recorded in `NEEDS_YOUR_REVIEW.md`) —
+    verified insufficient, since it only blocks a match starting immediately
+    after `&`; the regex still finds a fresh starting position one or more
+    letters in (e.g. "uot" inside "&quot;") and wraps that instead. **Fix
+    used**: an explicit HTML-entity alternative (`&(?:[a-zA-Z]+|#[0-9]+);`)
+    added to the existing pattern alternation, matched whole and handed back
+    unwrapped — the same "one pattern consumes the text so no other pattern
+    re-matches it" trick the function's single-pass, no-double-wrap design
+    already relies on for its other patterns.
+  - **Hebrew-prefixed path/flag fragmentation.** The path and flag patterns
+    only matched when preceded by whitespace, `(`, or start-of-string. Hebrew
+    particles (ו/ה/ב/ל/מ/כ/ש) glue directly onto a following term with a "-"
+    join (CLAUDE.md rule 4), so `"ו-C:\temp\file.txt"` failed that lookbehind
+    and fell apart into separately-wrapped fragments with raw, non-isolated
+    `\` and `:` between them. Fix: the lookbehind now also accepts a Hebrew
+    particle (with an optional joining `-`, since a flag's own leading `-` can
+    serve as the join, e.g. `"ב-n"`). Fixing this exposed a second, pre-existing
+    (non-Hebrew-specific) bug: with the boundary now firing more often, the
+    flag pattern could win a leftmost-match race against the path pattern for
+    inputs like `"(-C:\temp\file.txt)"`, claiming `-C` one character before the
+    path pattern's own attempt at `C:\temp\file.txt` — confirmed reproducible
+    in English too, unrelated to the Hebrew fix. Fixed with a `(?!:)` negative
+    lookahead on the flag pattern (no real CLI flag is a single letter
+    immediately followed by `:`).
+  - **Coverage**: `.github/scripts/test-wrapltrterms.js` extended with entity
+    cases (`&quot;`, `&amp;`, `&lt;`, `&gt;`, `&#39;`) and Hebrew-prefixed-term
+    cases across all 7 particles × 5 term types (Windows path, POSIX path, IP,
+    flag, version) — 45 new assertions, confirmed failing against the pre-fix
+    function (via `git stash`) before the fix, passing after. All pre-existing
+    validators/tests still pass.
+  - **Live-verified in the browser** (local static server, real DOM, not just
+    string output): the "מתודולוגיית אבחון רשת" guide's quoted Hebrew phrases
+    (e.g. `"אין אינטרנט"`, `"המארח לא נגיש"`) render with literal `"` marks, no
+    `&quot;`/split spans. A synthetic Hebrew AI-chat bubble containing an IP, a
+    flag, a Windows path, a version number and a quoted phrase — all
+    Hebrew-particle-prefixed — rendered each term as a single atomic
+    `<span dir="ltr">` unit with correct internal left-to-right order; the
+    equivalent English bubble was unaffected (confirming no regression). One
+    unrelated, pre-existing bidi characteristic observed and left alone as
+    out of scope: two or more *consecutive* standalone English words in
+    Hebrew flow (e.g. a two-word quoted phrase) can visually reorder relative
+    to each other, since each word is isolated word-by-word rather than
+    phrase-by-phrase — orthogonal to both bugs fixed here.
 
 - **Eight of twelve notebooks disabled for retrieval — 2026-08-18.** Acting on
   the value measurement below: `NOTEBOOKS_ENABLED` gates which mirrored
