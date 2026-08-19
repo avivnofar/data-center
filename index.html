@@ -2938,21 +2938,54 @@ function shouldAllowWebSearch(query, dbContext, notebookContext) {
 // .github/scripts/test-wrapltrterms.js.
 function wrapLtrTerms(segment) {
   const isHebrew = LANG === 'he';
+  // Hebrew's one-letter grammatical particles (ו/ה/ב/ל/מ/כ/ש — same set as
+  // HEBREW_PARTICLES above, inlined here so this function stays extractable
+  // and runnable standalone, see .github/scripts/test-wrapltrterms.js) glue
+  // straight onto a following LTR term with a "-" join (CLAUDE.md rule 4,
+  // e.g. "ה-listening sockets"), so "ו-C:\temp\file.txt" has no space
+  // before the path, and a flag's own leading "-" can BE that join (e.g.
+  // "ב-n"). The lookbehind marking where an LTR term is allowed to start
+  // must accept a glued particle (with or without its own extra hyphen) as
+  // a boundary too, or the path/flag patterns below never fire and the
+  // Hebrew-only bare-word pattern tears the term apart letter-group by
+  // letter-group instead of matching it as one unit.
+  const TERM_START = isHebrew
+    ? '(?:^|[\\s(]|[והבלמכש]{1,2}-?)'
+    : '(?:^|[\\s(])';
+  // HTML entities (&amp; &lt; &gt; &quot; &#39; ...) must never be split.
+  // Matched whole and handed back unwrapped in the replace callback below,
+  // so no later alternative — in particular the Hebrew bare-word pattern,
+  // which would otherwise treat "quot" inside "&quot;" as a standalone
+  // English word — ever gets a chance to start mid-entity. This is the same
+  // "one pattern consumes the text so no other pattern re-matches it" trick
+  // the rest of this function already relies on for its no-double-wrap
+  // property; a lookbehind on the bare-word pattern alone can't fix this,
+  // since it would only block a match starting right after "&" and not one
+  // starting one or more letters further in (e.g. "uot" inside "&quot;").
+  const ENTITY = '&(?:[a-zA-Z]+|#[0-9]+);';
   const patterns = [
-    /https?:\/\/[^\s<>"')\]]+/,
-    /\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b/,
-    /(?<=^|[\s(])(?:[A-Za-z]:)?(?:[\\/][\w.-]+)+/,
-    /(?<=^|[\s(])--?[A-Za-z][\w-]*/,
+    ENTITY,
+    /https?:\/\/[^\s<>"')\]]+/.source,
+    /\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b/.source,
+    '(?<=' + TERM_START + ')' + /(?:[A-Za-z]:)?(?:[\\/][\w.-]+)+/.source,
+    // (?!:) keeps a drive-letter path ("-C:\temp") from being claimed by
+    // the flag pattern one character early (regex alternation matches the
+    // leftmost successful alternative, not the longest overall match) — no
+    // real CLI flag is a single letter immediately followed by ":" anyway.
+    '(?<=' + TERM_START + ')' + /--?[A-Za-z](?!:)[\w-]*/.source,
   ];
   if (isHebrew) {
     // Version numbers (8.0.1, 2.4) and standalone English words/acronyms
     // (2+ chars) are only isolated in Hebrew flow — not worth the cost
     // of wrapping every word in an all-English response.
-    patterns.push(/\b\d+\.\d+(?:\.\d+)?\b/);
-    patterns.push(/[A-Za-z][A-Za-z0-9]*(?:[_.-][A-Za-z0-9]+)*/);
+    patterns.push(/\b\d+\.\d+(?:\.\d+)?\b/.source);
+    patterns.push('[A-Za-z][A-Za-z0-9]*(?:[_.-][A-Za-z0-9]+)*');
   }
-  const re = new RegExp(patterns.map(p => p.source).join('|'), 'g');
-  return segment.replace(re, (m) => `<span dir="ltr" style="unicode-bidi:isolate">${m}</span>`);
+  const re = new RegExp(patterns.join('|'), 'g');
+  const entityRe = new RegExp('^' + ENTITY + '$');
+  return segment.replace(re, (m) => (
+    entityRe.test(m) ? m : `<span dir="ltr" style="unicode-bidi:isolate">${m}</span>`
+  ));
 }
 
 // Parses the optional trailing "---\nCAPABILITY_SUGGESTION: {...}" /
