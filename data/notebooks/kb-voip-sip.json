@@ -18,7 +18,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:50.820357Z",
-  "updatedAt": "2026-08-10T06:05:44.037743Z",
+  "updatedAt": "2026-08-19T14:55:00.198189Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -38,7 +38,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:32:05.056Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "sip-protocol",
@@ -47,7 +48,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:32:18.501Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "rtp-and-media",
@@ -56,7 +58,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:32:32.405Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "nat-traversal",
@@ -65,7 +68,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:32:46.191Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "codecs",
@@ -74,7 +78,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:32:59.495Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "sip-trunking",
@@ -83,7 +88,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:33:13.262Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "dtmf",
@@ -92,7 +98,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:33:26.548Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "sip-softphone-clients",
@@ -106,7 +113,8 @@
           "sip-client"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "call-quality-troubleshooting",
@@ -115,7 +123,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-09T20:33:40.524Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "sip-trunking-diagnostic-and-troubleshooting-framework",
@@ -126,7 +135,8 @@
         "lastUpdated": "2026-08-03T08:19:21.339060Z",
         "sources": [],
         "dateAdded": "2026-08-03T08:19:21.339073Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "sip-registration-and-authentication-mechanisms",
@@ -174,7 +184,8 @@
           }
         ],
         "dateAdded": "2026-08-03T08:19:33.207190Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "sip-trunking-case-intake-and-diagnostics",
@@ -185,7 +196,8 @@
         "lastUpdated": "2026-08-10T06:05:44.037692Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:05:44.037704Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       }
     ],
     "glossary": [

@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:58.816344Z",
-  "updatedAt": "2026-08-03T08:19:43.843074Z",
+  "updatedAt": "2026-08-19T14:54:11.533715Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -41,7 +41,8 @@
           "product-line"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "cloud-pbx-platform",
@@ -57,7 +58,8 @@
           "ivr"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "ip-phones",
@@ -72,7 +74,8 @@
           "dhcp"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "ip-intercom",
@@ -87,7 +90,8 @@
           "sip"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "access-control",
@@ -101,7 +105,8 @@
           "door-controller"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "poe-devices",
@@ -115,7 +120,8 @@
           "networking"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "provisioning",
@@ -130,7 +136,8 @@
           "mac-address"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "1com-troubleshooting",
@@ -146,7 +153,8 @@
           "poe"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "it-team-tools",
@@ -161,7 +169,8 @@
           "mirtapbx"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "troubleshooting-sip-registration-and-authentication",
@@ -172,7 +181,8 @@
         "lastUpdated": "2026-08-03T08:19:43.843031Z",
         "sources": [],
         "dateAdded": "2026-08-03T08:19:43.843044Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       }
     ],
     "glossary": [

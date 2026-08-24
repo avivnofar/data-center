@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:06.791442Z",
-  "updatedAt": "2026-08-10T06:05:54.334466Z",
+  "updatedAt": "2026-08-19T14:54:49.291103Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -49,7 +49,8 @@
         "sources": [
           "https://datatracker.ietf.org/doc/html/rfc791",
           "https://www.cisco.com/c/en/us/support/docs/ip/routing-information-protocol-rip/13788-3.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "ip-addressing-subnetting",
@@ -65,7 +66,8 @@
         "sources": [
           "https://datatracker.ietf.org/doc/html/rfc1918",
           "https://datatracker.ietf.org/doc/html/rfc4291"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "routing-and-switching",
@@ -81,7 +83,8 @@
         "sources": [
           "https://datatracker.ietf.org/doc/html/rfc2328",
           "https://www.ieee802.org/1/pages/802.1Q-2014.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "dns-and-dhcp",
@@ -97,7 +100,8 @@
         "sources": [
           "https://datatracker.ietf.org/doc/html/rfc1035",
           "https://datatracker.ietf.org/doc/html/rfc2131"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "transport-and-app-protocols",
@@ -113,7 +117,8 @@
         "sources": [
           "https://datatracker.ietf.org/doc/html/rfc793",
           "https://datatracker.ietf.org/doc/html/rfc768"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "observability-and-troubleshooting",
@@ -129,7 +134,8 @@
         "sources": [
           "https://www.wireshark.org/docs/wsug_html_chunked/",
           "https://ss64.com/bash/ss.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "httpswwwrfc-editororgrfcrfc4632txt",
@@ -142,7 +148,8 @@
           "https://www.rfc-editor.org/rfc/rfc4632.txt"
         ],
         "dateAdded": "2026-07-17T19:01:38.794532Z",
-        "addedBy": "url"
+        "addedBy": "url",
+        "durability": "stable"
       },
       {
         "id": "vlans-and-trunking-protocols",
@@ -153,7 +160,8 @@
         "lastUpdated": "2026-08-10T06:05:54.334409Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:05:54.334427Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       }
     ],
     "glossary": [

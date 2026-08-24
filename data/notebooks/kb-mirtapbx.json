@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:11.571240Z",
-  "updatedAt": "2026-07-10T08:17:22.072440Z",
+  "updatedAt": "2026-08-19T14:54:42.085251Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -36,7 +36,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:16:27.666Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "extension-configuration",
@@ -45,7 +46,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:16:40.913Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "trunk-setup",
@@ -54,7 +56,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:16:54.216Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "dialplan",
@@ -63,7 +66,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:17:07.793Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "ivr-and-ring-groups",
@@ -72,7 +76,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:17:20.727Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "asterisk-cli",
@@ -81,7 +86,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:17:34.324Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "common-issues",
@@ -90,7 +96,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:17:46.779Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "integration-with-1com",
@@ -99,7 +106,8 @@
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-10T07:17:59.947Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       }
     ],
     "glossary": [

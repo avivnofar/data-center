@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:43.918509Z",
-  "updatedAt": "2026-07-17T18:59:22.082295Z",
+  "updatedAt": "2026-08-19T14:54:21.701896Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -40,7 +40,8 @@
           "exit-codes"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "variables-arrays",
@@ -53,7 +54,8 @@
           "arrays"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "control-flow",
@@ -68,7 +70,8 @@
           "case"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "functions",
@@ -80,7 +83,8 @@
           "functions"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "string-manipulation",
@@ -93,7 +97,8 @@
           "sed"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "file-operations",
@@ -106,7 +111,8 @@
           "io"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "process-control",
@@ -120,7 +126,8 @@
           "background"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "networking-commands",
@@ -134,7 +141,8 @@
           "jq"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "script-best-practices",
@@ -147,7 +155,8 @@
           "shellcheck"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "common-one-liners",
@@ -160,7 +169,8 @@
           "automation"
         ],
         "lastUpdated": "2026-06-30T00:00:00.000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "signal-handling-and-cleanup-logic",
@@ -171,7 +181,8 @@
         "lastUpdated": "2026-07-17T18:59:22.082072Z",
         "sources": [],
         "dateAdded": "2026-07-17T18:59:22.082072Z",
-        "addedBy": "ai-fill"
+        "addedBy": "ai-fill",
+        "durability": "stable"
       }
     ],
     "glossary": [

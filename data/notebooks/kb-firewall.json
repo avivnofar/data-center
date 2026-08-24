@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:22.689273Z",
-  "updatedAt": "2026-08-17T05:25:32.774487Z",
+  "updatedAt": "2026-08-19T14:54:34.499392Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -40,7 +40,8 @@
           "ngfw"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "iptables",
@@ -53,7 +54,8 @@
           "nat"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "ufw",
@@ -65,7 +67,8 @@
           "ubuntu"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "pfsense",
@@ -78,7 +81,8 @@
           "appliance"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "acls-rules",
@@ -91,7 +95,8 @@
           "rule-design"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "zone-based-firewalls",
@@ -104,7 +109,8 @@
           "cisco-zbfw"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "idsips-basics",
@@ -118,7 +124,8 @@
           "suricata"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "firewall-troubleshooting",
@@ -131,12 +138,13 @@
           "conntrack"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "pfsense-ce-28-new-features-and-upgrade-notes",
         "title": "pfSense CE 2.8 new features and upgrade notes",
-        "content": "### pfSense CE 2.8 New Features and Upgrade Notes\n\npfSense CE 2.8.x (current stable: 2.8.1) represents a significant architectural shift, moving to a newer FreeBSD base (15.x) and introducing enterprise-grade features previously reserved for pfSense Plus.\n\n#### Key Technical Features\n*   **Kernel-Based PPPoE (`if_pppoe`):** Introduces a high-performance, kernel-mode PPPoE driver. This reduces CPU overhead significantly for multi-gigabit fiber WAN connections.\n    *   *Configuration:* Navigate to **System > Advanced > Networking** to toggle the driver. Note that legacy `mpd`-based PPPoE remains for compatibility with MLPPP.\n*   **Kea DHCP Integration:** Replaces the aging ISC DHCP daemon with ISC Kea.\n    *   *Capabilities:* Supports native High Availability (HA) with state synchronization, dynamic DNS updates to Unbound without service restarts, and advanced JSON-based configuration snippets for complex deployments.\n*   **NAT64 Support:** Native implementation for IPv6-only environments. Includes `PREF64` support in Router Advertisements and integrated DNS64 via the DNS Resolver.\n*   **Gateway Fail-Back Enhancements:** Improved logic for traffic recovery to preferred gateways, reducing flapping in multi-WAN environments.\n\n#### Upgrade Strategy for Enterprise Environments\nDue to major changes in the PHP interpreter and the underlying FreeBSD base, the upgrade path requires strict adherence to the following workflow to prevent configuration corruption or package-induced boot loops.\n\n1.  **Pre-Upgrade Preparation:**\n    *   **Package Removal:** Uninstall all third-party packages (e.g., `pfBlockerNG`, `Snort`, `Suricata`) before initiating the upgrade. Package settings are retained in the `config.xml` and will be restored upon reinstallation.\n    *   **Backup:** Perform a full `config.xml` backup. Store it off-box.\n2.  **Execution:**\n    *   Use the **System > Update** dashboard.\n    *   If the system fails to boot or exhibits \"Another instance\" errors post-upgrade, perform a hard refresh of the WebGUI or clear browser cache/cookies.\n3.  **Post-Upgrade Verification:**\n    *   **Boot Loader:** The upgrade process updates the boot loader automatically. If you utilize multi-disk setups or custom EFI partitions, verify the boot order in the BIOS/UEFI to ensure the system is not booting from an older, stale partition.\n    *   **Service Validation:** Reinstall packages one by one. Validate service status via `Status > Services` and check `Status > System Logs` for any dependency errors related to the new PHP version.\n\n#### Administrative Best Practices\n*   **Rule Ordering:** Maintain the \"First Match Wins\" principle. Ensure anti-lockout rules remain at the top of the LAN interface.\n*   **Management Hardening:** Disable root access to the WebGUI and restrict administrative access to specific management VLANs or VPN-only sources.\n*   **State Policy:** Leverage the updated system aliases and state policy settings to tighten security posture, particularly when migrating from zone-based NGFW environments (e.g., FortiGate/Cisco) where interface-to-interface policy mapping is standard.",
+        "content": "> **Point-in-time reference — accurate as of 2026-07-17.** This section describes a fast-moving subject (versions, releases, or current landscape) and may be outdated by the time you read it — verify specifics against a current source before relying on them.\n\n### pfSense CE 2.8 New Features and Upgrade Notes\n\npfSense CE 2.8.x (current stable: 2.8.1) represents a significant architectural shift, moving to a newer FreeBSD base (15.x) and introducing enterprise-grade features previously reserved for pfSense Plus.\n\n#### Key Technical Features\n*   **Kernel-Based PPPoE (`if_pppoe`):** Introduces a high-performance, kernel-mode PPPoE driver. This reduces CPU overhead significantly for multi-gigabit fiber WAN connections.\n    *   *Configuration:* Navigate to **System > Advanced > Networking** to toggle the driver. Note that legacy `mpd`-based PPPoE remains for compatibility with MLPPP.\n*   **Kea DHCP Integration:** Replaces the aging ISC DHCP daemon with ISC Kea.\n    *   *Capabilities:* Supports native High Availability (HA) with state synchronization, dynamic DNS updates to Unbound without service restarts, and advanced JSON-based configuration snippets for complex deployments.\n*   **NAT64 Support:** Native implementation for IPv6-only environments. Includes `PREF64` support in Router Advertisements and integrated DNS64 via the DNS Resolver.\n*   **Gateway Fail-Back Enhancements:** Improved logic for traffic recovery to preferred gateways, reducing flapping in multi-WAN environments.\n\n#### Upgrade Strategy for Enterprise Environments\nDue to major changes in the PHP interpreter and the underlying FreeBSD base, the upgrade path requires strict adherence to the following workflow to prevent configuration corruption or package-induced boot loops.\n\n1.  **Pre-Upgrade Preparation:**\n    *   **Package Removal:** Uninstall all third-party packages (e.g., `pfBlockerNG`, `Snort`, `Suricata`) before initiating the upgrade. Package settings are retained in the `config.xml` and will be restored upon reinstallation.\n    *   **Backup:** Perform a full `config.xml` backup. Store it off-box.\n2.  **Execution:**\n    *   Use the **System > Update** dashboard.\n    *   If the system fails to boot or exhibits \"Another instance\" errors post-upgrade, perform a hard refresh of the WebGUI or clear browser cache/cookies.\n3.  **Post-Upgrade Verification:**\n    *   **Boot Loader:** The upgrade process updates the boot loader automatically. If you utilize multi-disk setups or custom EFI partitions, verify the boot order in the BIOS/UEFI to ensure the system is not booting from an older, stale partition.\n    *   **Service Validation:** Reinstall packages one by one. Validate service status via `Status > Services` and check `Status > System Logs` for any dependency errors related to the new PHP version.\n\n#### Administrative Best Practices\n*   **Rule Ordering:** Maintain the \"First Match Wins\" principle. Ensure anti-lockout rules remain at the top of the LAN interface.\n*   **Management Hardening:** Disable root access to the WebGUI and restrict administrative access to specific management VLANs or VPN-only sources.\n*   **State Policy:** Leverage the updated system aliases and state policy settings to tighten security posture, particularly when migrating from zone-based NGFW environments (e.g., FortiGate/Cisco) where interface-to-interface policy mapping is standard.",
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-17T15:15:52.017678Z",
@@ -191,7 +199,8 @@
           }
         ],
         "dateAdded": "2026-07-17T15:15:52.017692Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "fast-moving"
       },
       {
         "id": "palo-alto-pan-os-zone-and-dos-protection",
@@ -255,7 +264,8 @@
           }
         ],
         "dateAdded": "2026-07-17T16:56:14.133617Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "firewall-change-management-and-audit-procedures",
@@ -266,7 +276,8 @@
         "lastUpdated": "2026-07-20T07:50:27.563725Z",
         "sources": [],
         "dateAdded": "2026-07-20T07:50:27.563740Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "vlan-configuration-and-network-segmentation",
@@ -277,7 +288,8 @@
         "lastUpdated": "2026-08-17T05:25:22.569577Z",
         "sources": [],
         "dateAdded": "2026-08-17T05:25:22.569594Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "network-topology-and-vlan-naming-conventions",
@@ -288,7 +300,8 @@
         "lastUpdated": "2026-08-17T05:25:32.774441Z",
         "sources": [],
         "dateAdded": "2026-08-17T05:25:32.774454Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       }
     ],
     "glossary": [

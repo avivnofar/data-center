@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-08-17T05:25:12.253924Z",
+  "updatedAt": "2026-08-24T05:28:44.220375Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -40,12 +40,13 @@
           "least-privilege"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "threat-landscape",
         "title": "Threat Landscape",
-        "content": "Phishing remains the most common initial-access vector. Variants: spear phishing (targeted, researched), whaling (targets executives), smishing/vishing (SMS/voice), and business email compromise (BEC — impersonating a vendor or executive to redirect payments). Defense is layered: email filtering, DMARC/SPF/DKIM, user training, and MFA so a stolen password alone isn't enough.\n\nRansomware typically arrives via phishing, exposed RDP, or a vulnerable public-facing service, then moves laterally (often via SMB admin shares or stolen domain admin credentials) before encrypting and exfiltrating data for double-extortion. Segmented networks and offline/immutable backups are the main mitigations — backups reachable from the same compromised domain are not real backups.\n\nSupply chain attacks compromise a trusted upstream component (a library, an update mechanism, an MSP) to reach many downstream victims at once — verify package integrity (checksums, lockfiles) and limit third-party access scope.\n\nInsider threats (malicious or negligent) are mitigated by least privilege, access logging, and separation of duties rather than pure perimeter defense.\n\nSocial engineering exploits human trust rather than technical flaws — pretexting, tailgating into secure areas, or a fake IT support call requesting a password reset. No technical control fully substitutes for trained, skeptical staff.\n\nOther common patterns: credential stuffing (reused passwords tried against many services), exploitation of unpatched CVEs within days of public disclosure, and misconfigured cloud storage (public S3 buckets, open blob containers) as a leading cause of large data exposures.",
+        "content": "> **Point-in-time reference — accurate as of 2026-07-17.** This section describes a fast-moving subject (versions, releases, or current landscape) and may be outdated by the time you read it — verify specifics against a current source before relying on them.\n\nPhishing remains the most common initial-access vector. Variants: spear phishing (targeted, researched), whaling (targets executives), smishing/vishing (SMS/voice), and business email compromise (BEC — impersonating a vendor or executive to redirect payments). Defense is layered: email filtering, DMARC/SPF/DKIM, user training, and MFA so a stolen password alone isn't enough.\n\nRansomware typically arrives via phishing, exposed RDP, or a vulnerable public-facing service, then moves laterally (often via SMB admin shares or stolen domain admin credentials) before encrypting and exfiltrating data for double-extortion. Segmented networks and offline/immutable backups are the main mitigations — backups reachable from the same compromised domain are not real backups.\n\nSupply chain attacks compromise a trusted upstream component (a library, an update mechanism, an MSP) to reach many downstream victims at once — verify package integrity (checksums, lockfiles) and limit third-party access scope.\n\nInsider threats (malicious or negligent) are mitigated by least privilege, access logging, and separation of duties rather than pure perimeter defense.\n\nSocial engineering exploits human trust rather than technical flaws — pretexting, tailgating into secure areas, or a fake IT support call requesting a password reset. No technical control fully substitutes for trained, skeptical staff.\n\nOther common patterns: credential stuffing (reused passwords tried against many services), exploitation of unpatched CVEs within days of public disclosure, and misconfigured cloud storage (public S3 buckets, open blob containers) as a leading cause of large data exposures.",
         "subsections": [],
         "tags": [
           "phishing",
@@ -54,7 +55,8 @@
           "social-engineering"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "fast-moving"
       },
       {
         "id": "authentication-mfa",
@@ -68,7 +70,8 @@
           "passwords"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "encryption-basics",
@@ -83,7 +86,8 @@
           "openssl"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "network-security",
@@ -98,7 +102,8 @@
           "ids"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "endpoint-security",
@@ -112,7 +117,8 @@
           "mdm"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "incident-response",
@@ -125,7 +131,8 @@
           "triage"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "security-hardening-checklists",
@@ -138,7 +145,8 @@
           "checklist"
         ],
         "lastUpdated": "2026-07-17T00:00:00.000000Z",
-        "sources": []
+        "sources": [],
+        "durability": "stable"
       },
       {
         "id": "phishing-detection-and-incident-response",
@@ -149,7 +157,8 @@
         "lastUpdated": "2026-08-10T06:06:04.869410Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:06:04.869425Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "implementing-mfa-for-linux-ssh-access",
@@ -213,7 +222,8 @@
           }
         ],
         "dateAdded": "2026-08-10T06:06:15.544558Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "red-teaming-and-phishing-simulation-frameworks",
@@ -224,7 +234,8 @@
         "lastUpdated": "2026-08-17T05:25:00.503902Z",
         "sources": [],
         "dateAdded": "2026-08-17T05:25:00.503916Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "phishing-incident-triage-and-investigation",
@@ -235,6 +246,31 @@
         "lastUpdated": "2026-08-17T05:25:12.253862Z",
         "sources": [],
         "dateAdded": "2026-08-17T05:25:12.253880Z",
+        "addedBy": "discover",
+        "durability": "stable"
+      },
+      {
+        "id": "defining-network-exposure-and-internet-facing-assets",
+        "title": "Defining Network Exposure and Internet-Facing Assets",
+        "content": "### Defining Network Exposure and Internet-Facing Assets\n\nIn a B2B telecom environment, \"exposure\" is defined by the reachability of a service from an untrusted network (the public internet) and the level of authentication required to interact with that service. An asset is \"internet-facing\" if it possesses a routable public IP address or is reachable via a NAT/PAT mapping from a public-facing edge device.\n\n#### 1. Taxonomy of Exposure\n*   **Direct Exposure:** Assets with public IP addresses assigned to physical or virtual interfaces (e.g., BGP edge routers, public-facing load balancers).\n*   **Indirect Exposure (NAT/PAT):** Internal resources exposed via port forwarding on firewalls or reverse proxies. These are often the most dangerous as they may bypass internal segmentation policies.\n*   **Shadow Exposure:** Services exposed via secondary paths, such as VPN concentrators, management interfaces (IPMI/iDRAC) accidentally bridged to public segments, or cloud-native ingress controllers (e.g., AWS ALBs) misconfigured with overly permissive Security Groups.\n\n#### 2. Operational Discovery and Validation\nTo maintain an accurate inventory, rely on active probing and configuration analysis rather than static documentation.\n\n**A. Edge Mapping (Nmap/Masscan)**\nUse `masscan` for rapid discovery of open ports across your public CIDR blocks, followed by `nmap` for service fingerprinting.\n```bash\n# Rapid scan of public range\nmasscan -p1-65535 192.0.2.0/24 --rate 10000\n\n# Service enumeration on identified targets\nnmap -sV -sC -Pn -p <port> <target_ip>\n```\n\n**B. Configuration Auditing (Cisco/Juniper/Cloud)**\nFor B2B telecom, the primary risk is \"leaky\" ACLs. Audit your edge firewalls to ensure no `any-any` rules exist for management protocols (SSH, SNMP, Telnet).\n\n*   **Cisco IOS/IOS-XE:** Verify NAT translations.\n    ```bash\n    show ip nat translations | include <public_ip>\n    show access-lists | include permit\n    ```\n*   **Cloud (AWS/Azure):** Use CLI tools to identify permissive ingress.\n    ```bash\n    # AWS: Identify Security Groups allowing 0.0.0.0/0 on sensitive ports\n    aws ec2 describe-security-groups --filters Name=ip-permission.cidr,Values=0.0.0.0/0\n    ```\n\n#### 3. Risk Classification Matrix\nClassify assets based on the **Exposure-to-Impact** ratio:\n\n| Exposure Type | Risk Level | Mitigation Strategy |\n| :--- | :--- | :--- |\n| **Management Plane** | Critical | Move to OOB (Out-of-Band) management; VPN/Zero Trust access only. |\n| **Control Plane** | High | IP-based ACLs (whitelist specific peer IPs); BGP TTL security. |\n| **Data Plane (Public)** | Moderate | WAF/IPS inspection; rate limiting; mTLS. |\n\n#### 4. Practical Hardening Standards\n*   **Default Deny:** All edge interfaces must have an implicit `deny all` at the end of the ingress ACL.\n*   **Protocol Minimization:** Disable non-essential services (ICMP redirects, proxy-arp, SNMP) on public-facing interfaces.\n*   **Service Binding:** Ensure internal services are bound to `127.0.0.1` or internal-only VLAN interfaces, not `0.0.0.0` (all interfaces). Verify with `ss -tulpn`.\n\n**Operational Note:** In telecom environments, always verify if a service is \"exposed\" via a carrier-grade NAT (CGNAT) or a transparent proxy. If your service is behind a load balancer, the exposure is not the backend server, but the load balancer's listener configuration. Audit the listener's TLS termination settings and cipher suites to prevent protocol-level exposure.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-24T05:28:29.005191Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-24T05:28:29.005221Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "phishing-incident-triage-and-investigation-procedures",
+        "title": "Phishing Incident Triage and Investigation Procedures",
+        "content": "### Phishing Incident Triage and Investigation Procedures\n\nThis procedure outlines the technical workflow for validating and neutralizing phishing attempts within a B2B telecom/networking environment.\n\n#### 1. Initial Triage and Artifact Extraction\nUpon receipt of a suspicious email, extract the underlying MIME structure. Do not open attachments or click links.\n*   **Header Analysis:** Inspect `Authentication-Results` for SPF, DKIM, and DMARC alignment. Check `X-Originating-IP` and `Received` headers to identify the true ingress point.\n*   **Artifact Extraction:** Use `mpack` or `ripmime` to extract attachments.\n    *   `ripmime -i email.eml -d ./output_dir`\n*   **URL Extraction:** Use `grep` or `ripgrep` to pull URLs from the raw EML:\n    *   `rg -o 'https?://[a-zA-Z0-9./?=_-]+' email.eml | sort -u`\n\n#### 2. Technical Validation\n*   **Domain/IP Reputation:** Query threat intelligence APIs (VirusTotal, AbuseIPDB, Cisco Talos).\n    *   `curl -s -H \"x-apikey: <key>\" \"https://www.virustotal.com/api/v3/urls/$(echo -n <url> | base64)\"`\n*   **Sandbox Analysis:** Submit suspicious binaries or URLs to an isolated sandbox (e.g., Cuckoo, Joe Sandbox). Focus on network callbacks (C2) and process injection patterns.\n*   **DNS/WHOIS:** Check domain age and registrar.\n    *   `whois <domain> | grep -E \"Creation Date|Registrar\"`\n    *   *Note:* Domains < 30 days old are high-risk indicators.\n\n#### 3. Internal Impact Assessment\nDetermine the scope of exposure within the environment.\n*   **Mail Gateway Search:** Query the SEG (Proofpoint, Mimecast, or O365 Defender) to identify all recipients of the specific message ID.\n    *   *O365 PowerShell:* `Get-MessageTrace -MessageId <ID> | Select-Object RecipientAddress, Status`\n*   **Log Correlation:** Search SIEM/Log aggregator (Splunk/ELK) for outbound traffic to the identified malicious IP/Domain.\n    *   *Splunk:* `index=proxy dest_host=\"<malicious_domain>\" | stats count by src_ip, user`\n*   **Endpoint Review:** If a user clicked, pull EDR telemetry (CrowdStrike, SentinelOne) for the host. Look for spawned processes (e.g., `powershell.exe` executing encoded commands, `wscript.exe` launching from `AppData`).\n\n#### 4. Remediation and Containment\n*   **Mail Purge:** Remove the message from all user mailboxes to prevent further clicks.\n    *   *O365:* `New-ComplianceSearch -Name \"PhishPurge\" -ExchangeLocation All -ContentMatchQuery \"MessageID:<ID>\"` followed by `New-ComplianceSearchAction -SearchName \"PhishPurge\" -Purge -PurgeType HardDelete`\n*   **Network Blocking:** Implement immediate blocks at the perimeter firewall/DNS filter (e.g., Cisco Umbrella, Pi-hole).\n    *   *Cisco ASA/Firepower:* `object network OBJ_PHISH_DOMAIN; fqdn <domain>; access-list OUTBOUND_ACL deny ip any object OBJ_PHISH_DOMAIN`\n*   **Credential Reset:** If the user provided credentials, force an immediate password reset and revoke active O365/SAML sessions.\n    *   *Azure AD:* `Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>`\n\n#### 5. Documentation\nLog the incident in the ticketing system with the following mandatory fields:\n1.  **IOCs:** List of malicious URLs, IPs, and file hashes (SHA-256).\n2.  **Scope:** Number of users targeted/clicked.\n3.  **Action Taken:** Purge status, block status, and user remediation steps.\n4.  **Classification:** Confirmed Phish, Spam, or False Positive.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-24T05:28:44.220297Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-24T05:28:44.220330Z",
         "addedBy": "discover"
       }
     ],
@@ -556,6 +592,86 @@
       {
         "command": "Search-Mailbox -Identity \"user@example.com\" -SearchQuery 'Subject:\"Urgent Invoice\"' -DeleteContent",
         "description": "Exchange Online PowerShell command to purge a specific email from a user mailbox.",
+        "platform": "windows"
+      },
+      {
+        "command": "masscan -p1-65535 192.0.2.0/24 --rate 10000",
+        "description": "Rapid scan of public range for open ports",
+        "platform": "linux"
+      },
+      {
+        "command": "nmap -sV -sC -Pn -p <port> <target_ip>",
+        "description": "Service enumeration on identified targets",
+        "platform": "linux"
+      },
+      {
+        "command": "show ip nat translations | include <public_ip>",
+        "description": "Verify NAT translations on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "show access-lists | include permit",
+        "description": "Verify access lists on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "aws ec2 describe-security-groups --filters Name=ip-permission.cidr,Values=0.0.0.0/0",
+        "description": "Identify AWS Security Groups allowing 0.0.0.0/0 on sensitive ports",
+        "platform": "both"
+      },
+      {
+        "command": "ss -tulpn",
+        "description": "Verify service binding on interfaces",
+        "platform": "linux"
+      },
+      {
+        "command": "ripmime -i email.eml -d ./output_dir",
+        "description": "Extract attachments from an email file.",
+        "platform": "linux"
+      },
+      {
+        "command": "rg -o 'https?://[a-zA-Z0-9./?=_-]+' email.eml | sort -u",
+        "description": "Extract URLs from an email file using ripgrep.",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -s -H \"x-apikey: <key>\" \"https://www.virustotal.com/api/v3/urls/$(echo -n <url> | base64)\"",
+        "description": "Query VirusTotal API for URL reputation.",
+        "platform": "linux"
+      },
+      {
+        "command": "whois <domain> | grep -E \"Creation Date|Registrar\"",
+        "description": "Check domain registration details.",
+        "platform": "linux"
+      },
+      {
+        "command": "Get-MessageTrace -MessageId <ID> | Select-Object RecipientAddress, Status",
+        "description": "Search O365 message trace for recipients.",
+        "platform": "windows"
+      },
+      {
+        "command": "index=proxy dest_host=\"<malicious_domain>\" | stats count by src_ip, user",
+        "description": "Splunk query to correlate outbound traffic to a malicious domain.",
+        "platform": "both"
+      },
+      {
+        "command": "New-ComplianceSearch -Name \"PhishPurge\" -ExchangeLocation All -ContentMatchQuery \"MessageID:<ID>\"",
+        "description": "Create a compliance search for email purging in O365.",
+        "platform": "windows"
+      },
+      {
+        "command": "New-ComplianceSearchAction -SearchName \"PhishPurge\" -Purge -PurgeType HardDelete",
+        "description": "Execute hard delete purge for O365 compliance search.",
+        "platform": "windows"
+      },
+      {
+        "command": "object network OBJ_PHISH_DOMAIN; fqdn <domain>; access-list OUTBOUND_ACL deny ip any object OBJ_PHISH_DOMAIN",
+        "description": "Cisco ASA/Firepower configuration to block a domain.",
+        "platform": "both"
+      },
+      {
+        "command": "Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>",
+        "description": "Revoke active Azure AD/O365 sessions for a user.",
         "platform": "windows"
       }
     ]

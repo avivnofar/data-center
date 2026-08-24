@@ -17,7 +17,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:15.346877Z",
-  "updatedAt": "2026-08-10T06:06:36.262592Z",
+  "updatedAt": "2026-08-19T14:55:04.212902Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -48,7 +48,8 @@
         "sources": [
           "https://www.rfc-editor.org/rfc/rfc4301.html",
           "https://www.wireguard.com/quickstart/"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "ipsec-and-ike",
@@ -64,7 +65,8 @@
         "sources": [
           "https://www.rfc-editor.org/rfc/rfc4301.html",
           "https://www.rfc-editor.org/rfc/rfc5996.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "wireguard",
@@ -79,7 +81,8 @@
         "sources": [
           "https://www.wireguard.com/quickstart/",
           "https://www.wireguard.com/papers/wireguard.pdf"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "openvpn",
@@ -95,7 +98,8 @@
         "sources": [
           "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/",
           "https://openvpn.net/community-resources/openvpn-2-6-manpage/"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "ssl-tls-vpns",
@@ -111,7 +115,8 @@
         "sources": [
           "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-devices",
           "https://www.cisco.com/c/en/us/support/security/anyconnect-secure-mobility-client/series.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "split-tunneling-and-routing",
@@ -126,7 +131,8 @@
         "sources": [
           "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-devices",
           "https://www.rfc-editor.org/rfc/rfc4301.html"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "forticlient-checkpoint-remote-vpn",
@@ -144,7 +150,8 @@
         "sources": [
           "https://docs.fortinet.com/document/forticlient/",
           "https://sc1.checkpoint.com/documents/latest/endpoint_security_client/"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "vpn-troubleshooting",
@@ -160,12 +167,13 @@
         "sources": [
           "https://www.wireguard.com/quickstart/",
           "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/"
-        ]
+        ],
+        "durability": "stable"
       },
       {
         "id": "openvpn-versioning-and-release-lifecycle",
         "title": "OpenVPN Versioning and Release Lifecycle",
-        "content": "OpenVPN Community Edition follows a structured release lifecycle designed to balance feature innovation with long-term stability. Understanding these branches is critical for maintaining secure, compliant network infrastructure.\n\n### Versioning and Support Tiers\nOpenVPN categorizes releases into specific support levels:\n\n*   **Full Stable Support:** The current primary release branch (e.g., 2.7.x). Receives full security patches and bug fixes. This tier remains supported for a minimum of 6 months after the subsequent major release.\n*   **Old Stable Support:** The previous major branch (e.g., 2.6.x). Receives security and critical bug fixes only. Support typically lasts for a minimum of 12 months after the transition to \"Old Stable\" status.\n*   **Unsupported/EOL:** Branches that have reached their End-of-Life (e.g., 2.5.x and older). These versions receive no further updates and should be decommissioned immediately to mitigate security risks.\n\n### Current Release Status (As of July 2026)\n| Branch | Status | Notes |\n| :--- | :--- | :--- |\n| **2.7.x** | Current Stable | Recommended for all new deployments. |\n| **2.6.x** | Old Stable | Security/Critical fixes only; EOL scheduled for August 2028. |\n| **2.5.x** | EOL | No longer supported. |\n\n### Operational Commands\nTo verify the version and build details of your current OpenVPN installation, use the following command:\n\n```bash\nopenvpn --version\n```\n\n**Interpreting Output:**\nThe output provides the version number, supported cryptographic libraries (e.g., OpenSSL, mbedTLS), and enabled features (e.g., DCO support). If the version is outdated, prioritize upgrading via your distribution’s package manager:\n\n*   **Debian/Ubuntu:** `sudo apt update && sudo apt install --only-upgrade openvpn`\n*   **General Maintenance:** Always consult the [OpenVPN Community Wiki](https://community.openvpn.net/) for specific migration notes, as major version upgrades may deprecate legacy configuration options (e.g., older ciphers or protocol flags).\n\n### Best Practices\n1.  **Avoid EOL Versions:** Never deploy versions marked as \"unsupported.\" They lack protection against modern vulnerabilities.\n2.  **Monitor Deprecations:** Before upgrading, review the [Deprecated Options](https://community.openvpn.net/openvpn/wiki/DeprecatedOptions) wiki page. OpenVPN periodically removes insecure ciphers and flags; failure to update configurations can result in service failure upon upgrade.\n3.  **Kernel Compatibility:** For Linux environments, verify if your kernel supports Data Channel Offload (DCO). OpenVPN 2.7+ integrates natively with newer kernels, providing significant performance gains over user-space processing.",
+        "content": "> **Point-in-time reference — accurate as of 2026-07-17.** This section describes a fast-moving subject (versions, releases, or current landscape) and may be outdated by the time you read it — verify specifics against a current source before relying on them.\n\nOpenVPN Community Edition follows a structured release lifecycle designed to balance feature innovation with long-term stability. Understanding these branches is critical for maintaining secure, compliant network infrastructure.\n\n### Versioning and Support Tiers\nOpenVPN categorizes releases into specific support levels:\n\n*   **Full Stable Support:** The current primary release branch (e.g., 2.7.x). Receives full security patches and bug fixes. This tier remains supported for a minimum of 6 months after the subsequent major release.\n*   **Old Stable Support:** The previous major branch (e.g., 2.6.x). Receives security and critical bug fixes only. Support typically lasts for a minimum of 12 months after the transition to \"Old Stable\" status.\n*   **Unsupported/EOL:** Branches that have reached their End-of-Life (e.g., 2.5.x and older). These versions receive no further updates and should be decommissioned immediately to mitigate security risks.\n\n### Current Release Status (As of July 2026)\n| Branch | Status | Notes |\n| :--- | :--- | :--- |\n| **2.7.x** | Current Stable | Recommended for all new deployments. |\n| **2.6.x** | Old Stable | Security/Critical fixes only; EOL scheduled for August 2028. |\n| **2.5.x** | EOL | No longer supported. |\n\n### Operational Commands\nTo verify the version and build details of your current OpenVPN installation, use the following command:\n\n```bash\nopenvpn --version\n```\n\n**Interpreting Output:**\nThe output provides the version number, supported cryptographic libraries (e.g., OpenSSL, mbedTLS), and enabled features (e.g., DCO support). If the version is outdated, prioritize upgrading via your distribution’s package manager:\n\n*   **Debian/Ubuntu:** `sudo apt update && sudo apt install --only-upgrade openvpn`\n*   **General Maintenance:** Always consult the [OpenVPN Community Wiki](https://community.openvpn.net/) for specific migration notes, as major version upgrades may deprecate legacy configuration options (e.g., older ciphers or protocol flags).\n\n### Best Practices\n1.  **Avoid EOL Versions:** Never deploy versions marked as \"unsupported.\" They lack protection against modern vulnerabilities.\n2.  **Monitor Deprecations:** Before upgrading, review the [Deprecated Options](https://community.openvpn.net/openvpn/wiki/DeprecatedOptions) wiki page. OpenVPN periodically removes insecure ciphers and flags; failure to update configurations can result in service failure upon upgrade.\n3.  **Kernel Compatibility:** For Linux environments, verify if your kernel supports Data Channel Offload (DCO). OpenVPN 2.7+ integrates natively with newer kernels, providing significant performance gains over user-space processing.",
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-17T16:18:53.780787Z",
@@ -200,12 +208,13 @@
           }
         ],
         "dateAdded": "2026-07-17T16:18:53.780803Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "fast-moving"
       },
       {
         "id": "wireguard-versioning-and-release-history",
         "title": "WireGuard Versioning and Release History",
-        "content": "WireGuard utilizes a unique versioning scheme that prioritizes stability and protocol consistency over traditional semantic versioning. Since its integration into the Linux kernel in March 2020 (version 5.6), the project has maintained a high bar for stability, with the protocol itself remaining intentionally minimalist and resistant to \"cipher agility\" to prevent downgrade attacks.\n\n### Versioning Scheme\nWireGuard releases typically follow a `1.0.YYYYMMDD` format for the `wireguard-tools` userspace utilities. This date-based versioning reflects the snapshot-based development model where the focus is on continuous security and performance improvements rather than breaking API changes.\n\n*   **Stable Releases:** The core protocol is stable and widely considered production-ready.\n*   **Kernel Integration:** On Linux, WireGuard is a first-class citizen of the kernel. Updates are often tied to kernel releases rather than standalone package versions.\n*   **Userspace Implementations:** Implementations like `wireguard-go` or the Windows client may have independent versioning (e.g., `1.1`). Note that while the protocol remains consistent, specific platform clients may receive updates at different cadences.\n\n### Verifying Versions\nTo ensure you are running a supported version, use the following commands based on your environment:\n\n**Linux (Command Line)**\nTo check the version of the installed `wireguard-tools`:\n```bash\nwg --version\n```\n*Output example:* `wireguard-tools v1.0.20260223`\n\n**Checking Status and Configuration**\nBecause WireGuard is \"silent-by-default,\" it does not maintain a traditional \"connected\" state. Use `wg show` to verify the active configuration and the timestamp of the latest handshake, which serves as the primary indicator of a functional tunnel:\n```bash\n# View status for all interfaces\nsudo wg show\n\n# View status for a specific interface\nsudo wg show wg0\n```\n\n### Release History Context\n*   **Pre-2020:** WireGuard was explicitly labeled as \"experimental\" and \"not yet complete\". Users were warned against relying on it for production environments.\n*   **2020–Present:** Following the 1.0 stable release and Linux kernel integration, the project shifted to a maintenance-heavy phase. While some users have noted slower update cadences for specific GUI clients (e.g., Windows), the core kernel-space implementation remains actively maintained and is considered the industry standard for secure, high-performance VPN tunneling.\n\nWhen troubleshooting, always confirm the kernel module version if using Linux, as the userspace `wg` tool version may differ from the underlying kernel module's capabilities.",
+        "content": "> **Point-in-time reference — accurate as of 2026-07-17.** This section describes a fast-moving subject (versions, releases, or current landscape) and may be outdated by the time you read it — verify specifics against a current source before relying on them.\n\nWireGuard utilizes a unique versioning scheme that prioritizes stability and protocol consistency over traditional semantic versioning. Since its integration into the Linux kernel in March 2020 (version 5.6), the project has maintained a high bar for stability, with the protocol itself remaining intentionally minimalist and resistant to \"cipher agility\" to prevent downgrade attacks.\n\n### Versioning Scheme\nWireGuard releases typically follow a `1.0.YYYYMMDD` format for the `wireguard-tools` userspace utilities. This date-based versioning reflects the snapshot-based development model where the focus is on continuous security and performance improvements rather than breaking API changes.\n\n*   **Stable Releases:** The core protocol is stable and widely considered production-ready.\n*   **Kernel Integration:** On Linux, WireGuard is a first-class citizen of the kernel. Updates are often tied to kernel releases rather than standalone package versions.\n*   **Userspace Implementations:** Implementations like `wireguard-go` or the Windows client may have independent versioning (e.g., `1.1`). Note that while the protocol remains consistent, specific platform clients may receive updates at different cadences.\n\n### Verifying Versions\nTo ensure you are running a supported version, use the following commands based on your environment:\n\n**Linux (Command Line)**\nTo check the version of the installed `wireguard-tools`:\n```bash\nwg --version\n```\n*Output example:* `wireguard-tools v1.0.20260223`\n\n**Checking Status and Configuration**\nBecause WireGuard is \"silent-by-default,\" it does not maintain a traditional \"connected\" state. Use `wg show` to verify the active configuration and the timestamp of the latest handshake, which serves as the primary indicator of a functional tunnel:\n```bash\n# View status for all interfaces\nsudo wg show\n\n# View status for a specific interface\nsudo wg show wg0\n```\n\n### Release History Context\n*   **Pre-2020:** WireGuard was explicitly labeled as \"experimental\" and \"not yet complete\". Users were warned against relying on it for production environments.\n*   **2020–Present:** Following the 1.0 stable release and Linux kernel integration, the project shifted to a maintenance-heavy phase. While some users have noted slower update cadences for specific GUI clients (e.g., Windows), the core kernel-space implementation remains actively maintained and is considered the industry standard for secure, high-performance VPN tunneling.\n\nWhen troubleshooting, always confirm the kernel module version if using Linux, as the userspace `wg` tool version may differ from the underlying kernel module's capabilities.",
         "subsections": [],
         "tags": [],
         "lastUpdated": "2026-07-17T16:19:04.331195Z",
@@ -256,7 +265,8 @@
           }
         ],
         "dateAdded": "2026-07-17T16:19:04.331209Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "fast-moving"
       },
       {
         "id": "vpn-capacity-planning-and-performance-analysis",
@@ -267,7 +277,8 @@
         "lastUpdated": "2026-08-10T06:06:26.075412Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:06:26.075425Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       },
       {
         "id": "site-to-site-vpn-troubleshooting-framework",
@@ -278,7 +289,8 @@
         "lastUpdated": "2026-08-10T06:06:36.262549Z",
         "sources": [],
         "dateAdded": "2026-08-10T06:06:36.262561Z",
-        "addedBy": "discover"
+        "addedBy": "discover",
+        "durability": "stable"
       }
     ],
     "glossary": [
