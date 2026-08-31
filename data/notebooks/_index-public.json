@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-08-24T05:29:43.772237Z",
+  "updatedAt": "2026-08-31T11:13:25.504609Z",
   "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
   "dataCenter": {
     "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
@@ -131,13 +131,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
       "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
-      "sectionCount": 14,
-      "commandCount": 49,
+      "sectionCount": 16,
+      "commandCount": 67,
       "issueCount": 10,
       "glossaryCount": 15,
-      "updatedAt": "2026-08-24T05:28:44.220375Z",
+      "updatedAt": "2026-08-31T11:12:35.849827Z",
       "durabilitySummary": {
-        "stable": 13,
+        "stable": 15,
         "fastMoving": 1,
         "unclassified": 0
       }
@@ -185,13 +185,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
       "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
-      "sectionCount": 17,
-      "commandCount": 101,
+      "sectionCount": 19,
+      "commandCount": 133,
       "issueCount": 10,
       "glossaryCount": 12,
-      "updatedAt": "2026-08-24T05:29:12.054758Z",
+      "updatedAt": "2026-08-31T11:13:19.990133Z",
       "durabilitySummary": {
-        "stable": 17,
+        "stable": 19,
         "fastMoving": 0,
         "unclassified": 0
       }

@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-08-24T05:29:12.054758Z",
+  "updatedAt": "2026-08-31T11:13:19.990133Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -263,6 +263,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-08-24T05:29:12.054715Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "troubleshooting-and-terminating-runaway-processes",
+        "title": "Troubleshooting and Terminating Runaway Processes",
+        "content": "### Troubleshooting and Terminating Runaway Processes\n\nWhen a process consumes excessive CPU, memory, or I/O, use the following tiered approach to isolate and terminate the offending task.\n\n#### 1. Identification\nBefore termination, identify the process state and resource consumption.\n\n*   **`top` / `htop`**: Use `top` (press `P` to sort by CPU, `M` for memory) or `htop` for an interactive view.\n*   **`ps`**: For non-interactive scripting or logs:\n    `ps aux --sort=-%cpu | head -n 10`\n*   **`pidstat`**: Useful for monitoring I/O-bound processes:\n    `pidstat -d 1` (reports I/O statistics per process).\n\n#### 2. Graceful Termination\nAlways attempt a graceful shutdown to allow the process to flush buffers and close file handles.\n\n*   **`SIGTERM` (Signal 15)**: The default `kill` command.\n    `kill <PID>`\n*   **`pkill` / `killall`**: Terminate by process name.\n    `pkill -15 <process_name>`\n\n#### 3. Forced Termination\nIf a process is in an uninterruptible sleep state (`D` state) or ignores `SIGTERM`, escalate to `SIGKILL`.\n\n*   **`SIGKILL` (Signal 9)**: Immediate termination by the kernel.\n    `kill -9 <PID>`\n*   **`xkill`**: If the process is a GUI application, running `xkill` turns the cursor into a crosshair; clicking the window sends a `SIGKILL` to the associated PID.\n\n#### 4. Handling Zombie Processes\nA process in `Z` (zombie) state has completed execution but remains in the process table because its parent has not read its exit status. You cannot kill a zombie; you must kill the **parent process**.\n\n1.  Identify the parent PID (PPID):\n    `ps -o ppid= -p <PID>`\n2.  Kill the parent to force the zombie to be re-parented to `init` (PID 1), which will reap it:\n    `kill -9 <PPID>`\n\n#### 5. Troubleshooting Uninterruptible Sleep (`D` State)\nProcesses in `D` state are waiting for I/O (often NFS or disk hardware). They cannot be killed by `SIGKILL`.\n*   **Check I/O Wait**: Use `iostat -x 1` to identify hung disks or network mounts.\n*   **Resolution**: If the I/O subsystem is unresponsive, a reboot is often the only way to clear the process.\n\n#### 6. Resource Limits (Prevention)\nTo prevent future runaway processes from exhausting system resources, configure `ulimit` or systemd service limits.\n\n*   **Temporary (Shell session)**:\n    `ulimit -u 100` (max user processes)\n    `ulimit -v 1048576` (max virtual memory in KB)\n*   **Persistent (systemd unit file)**:\n    Add to the `[Service]` block:\n    ```ini\n    MemoryMax=512M\n    CPUQuota=20%\n    TasksMax=50\n    ```\n    Apply changes: `systemctl daemon-reload && systemctl restart <service_name>`\n\n#### 7. Kernel OOM Killer\nIf the system is unresponsive due to memory exhaustion, the kernel's Out-Of-Memory (OOM) killer will trigger. Monitor logs to see which process was targeted:\n`grep -i \"killed process\" /var/log/messages` or `dmesg | grep -i oom`",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:12:58.383198Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-31T11:12:58.383223Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "employee-onboarding-and-access-provisioning",
+        "title": "Employee Onboarding and Access Provisioning",
+        "content": "### User Creation and Group Management\nStandardize user creation using `useradd` with the `-m` (create home directory) and `-s` (shell) flags. Avoid interactive `adduser` for automation scripts.\n\n```bash\n# Syntax: useradd -m -s /bin/bash -G <groups> <username>\nsudo useradd -m -s /bin/bash -G sudo,docker jdoe\n```\n\nTo modify existing accounts or add users to secondary groups without overwriting current memberships, use `usermod -aG`:\n```bash\nsudo usermod -aG developers jdoe\n```\n\n### SSH Key Provisioning\nManual key management is prone to error. Use `authorized_keys` with strict permissions. Ensure the `.ssh` directory is `700` and the key file is `600`.\n\n```bash\nsudo -u jdoe mkdir -p /home/jdoe/.ssh\nsudo -u jdoe chmod 700 /home/jdoe/.ssh\n# Append public key\necho \"ssh-rsa AAAAB3Nza... user@host\" | sudo -u jdoe tee -a /home/jdoe/.ssh/authorized_keys\nsudo -u jdoe chmod 600 /home/jdoe/.ssh/authorized_keys\n```\n\n### Sudoers Configuration\nGranting administrative access should be done via files in `/etc/sudoers.d/` rather than editing `/etc/sudoers` directly. This prevents syntax errors from locking out root access.\n\nCreate a file named `/etc/sudoers.d/jdoe`:\n```text\n# Allow jdoe to run all commands without password (use with caution)\njdoe ALL=(ALL) NOPASSWD: ALL\n```\nValidate the syntax before saving:\n```bash\nsudo visudo -cf /etc/sudoers.d/jdoe\n```\n\n### Centralized Authentication (SSSD)\nFor environments with LDAP/Active Directory, configure SSSD to handle provisioning dynamically. Ensure `/etc/sssd/sssd.conf` defines the domain and access provider.\n\n```ini\n[domain/example.com]\nid_provider = ldap\nauth_provider = ldap\nldap_uri = ldap://ldap.example.com/\nldap_search_base = dc=example,dc=com\ncache_credentials = True\nenumerate = False\n```\nRestart the service to apply: `sudo systemctl restart sssd`.\n\n### Access Revocation and Cleanup\nWhen offboarding, prioritize immediate lockout over deletion to preserve audit trails.\n\n1. **Lock the account:**\n   ```bash\n   sudo passwd -l jdoe\n   ```\n2. **Expire the password:**\n   ```bash\n   sudo chage -E 0 jdoe\n   ```\n3. **Terminate active sessions:**\n   ```bash\n   sudo pkill -u jdoe\n   ```\n4. **Archive home directory (Optional):**\n   ```bash\n   sudo tar -cvzf /backups/jdoe_home_$(date +%F).tar.gz /home/jdoe\n   sudo userdel -r jdoe\n   ```\n\n### Auditing\nVerify effective permissions and group membership using `id` and `getent`:\n```bash\nid jdoe\ngetent group sudo\n```\nCheck for unauthorized sudo access:\n```bash\nsudo grep -r \"ALL=(ALL)\" /etc/sudoers*\n```\n\n### Security Best Practices\n* **Password Aging:** Enforce policies in `/etc/login.defs` (e.g., `PASS_MAX_DAYS 90`).\n* **Shell Restriction:** For service accounts, set shell to `/usr/sbin/nologin` to prevent interactive login.\n* **Logging:** Ensure `pam_unix` and `sudo` logs are forwarded to a centralized syslog/SIEM via `/etc/rsyslog.conf`.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:13:19.990057Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-31T11:13:19.990089Z",
         "addedBy": "discover"
       }
     ],
@@ -979,6 +1003,166 @@
       {
         "command": "restorecon -Rv /var/log/myapp/",
         "description": "Restore security context",
+        "platform": "linux"
+      },
+      {
+        "command": "top",
+        "description": "Interactive process viewer sorted by CPU or memory",
+        "platform": "linux"
+      },
+      {
+        "command": "htop",
+        "description": "Interactive process viewer",
+        "platform": "linux"
+      },
+      {
+        "command": "ps aux --sort=-%cpu | head -n 10",
+        "description": "List top 10 CPU consuming processes",
+        "platform": "linux"
+      },
+      {
+        "command": "pidstat -d 1",
+        "description": "Report I/O statistics per process",
+        "platform": "linux"
+      },
+      {
+        "command": "kill <PID>",
+        "description": "Send SIGTERM to a process",
+        "platform": "linux"
+      },
+      {
+        "command": "pkill -15 <process_name>",
+        "description": "Terminate process by name using SIGTERM",
+        "platform": "linux"
+      },
+      {
+        "command": "kill -9 <PID>",
+        "description": "Force kill a process using SIGKILL",
+        "platform": "linux"
+      },
+      {
+        "command": "xkill",
+        "description": "GUI tool to kill a process by clicking its window",
+        "platform": "linux"
+      },
+      {
+        "command": "ps -o ppid= -p <PID>",
+        "description": "Identify the parent PID of a process",
+        "platform": "linux"
+      },
+      {
+        "command": "iostat -x 1",
+        "description": "Monitor I/O statistics",
+        "platform": "linux"
+      },
+      {
+        "command": "ulimit -u 100",
+        "description": "Set max user processes limit for current session",
+        "platform": "linux"
+      },
+      {
+        "command": "ulimit -v 1048576",
+        "description": "Set max virtual memory limit for current session",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl daemon-reload && systemctl restart <service_name>",
+        "description": "Apply systemd service configuration changes",
+        "platform": "linux"
+      },
+      {
+        "command": "grep -i \"killed process\" /var/log/messages",
+        "description": "Search logs for OOM killer events",
+        "platform": "linux"
+      },
+      {
+        "command": "dmesg | grep -i oom",
+        "description": "Check kernel ring buffer for OOM events",
+        "platform": "linux"
+      },
+      {
+        "command": "useradd -m -s /bin/bash -G <groups> <username>",
+        "description": "Syntax for creating a new user with home directory, shell, and groups.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo useradd -m -s /bin/bash -G sudo,docker jdoe",
+        "description": "Example of creating user jdoe with specific groups.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo usermod -aG developers jdoe",
+        "description": "Add user jdoe to the developers group without overwriting existing memberships.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo -u jdoe mkdir -p /home/jdoe/.ssh",
+        "description": "Create .ssh directory for user jdoe.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo -u jdoe chmod 700 /home/jdoe/.ssh",
+        "description": "Set permissions for .ssh directory.",
+        "platform": "linux"
+      },
+      {
+        "command": "echo \"ssh-rsa AAAAB3Nza... user@host\" | sudo -u jdoe tee -a /home/jdoe/.ssh/authorized_keys",
+        "description": "Append public key to authorized_keys.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo -u jdoe chmod 600 /home/jdoe/.ssh/authorized_keys",
+        "description": "Set permissions for authorized_keys file.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo visudo -cf /etc/sudoers.d/jdoe",
+        "description": "Validate sudoers file syntax.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo systemctl restart sssd",
+        "description": "Restart SSSD service.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo passwd -l jdoe",
+        "description": "Lock user account.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo chage -E 0 jdoe",
+        "description": "Expire user password.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo pkill -u jdoe",
+        "description": "Terminate active sessions for user.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo tar -cvzf /backups/jdoe_home_$(date +%F).tar.gz /home/jdoe",
+        "description": "Archive user home directory.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo userdel -r jdoe",
+        "description": "Delete user and home directory.",
+        "platform": "linux"
+      },
+      {
+        "command": "id jdoe",
+        "description": "Verify user identity and group membership.",
+        "platform": "linux"
+      },
+      {
+        "command": "getent group sudo",
+        "description": "Verify group membership.",
+        "platform": "linux"
+      },
+      {
+        "command": "sudo grep -r \"ALL=(ALL)\" /etc/sudoers*",
+        "description": "Search for sudo access configurations.",
         "platform": "linux"
       }
     ]

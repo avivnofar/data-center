@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-08-24T05:28:44.220375Z",
+  "updatedAt": "2026-08-31T11:12:35.849827Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -271,6 +271,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-08-24T05:28:44.220330Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "defining-vulnerabilities-and-security-concepts",
+        "title": "Defining Vulnerabilities and Security Concepts",
+        "content": "### Defining Vulnerabilities and Security Concepts\n\nIn a B2B telecom/networking environment, security is defined by the intersection of protocol integrity, service availability, and data confidentiality. Precision in terminology is required for effective incident response and risk assessment.\n\n#### 1. Vulnerability Taxonomy\nA vulnerability is a technical flaw or configuration weakness that allows an unauthorized actor to bypass security controls.\n*   **CVE (Common Vulnerabilities and Exposures):** Standardized identifiers for publicly known cybersecurity vulnerabilities. Always cross-reference CVEs against your specific firmware/OS build (e.g., `show version` on Cisco IOS or `uname -a` on Linux).\n*   **CVSS (Common Vulnerability Scoring System):** A numerical score (0–10) representing severity. Focus on the **Temporal** and **Environmental** scores rather than the Base score; a high-severity CVE is irrelevant if the vulnerable service is bound to `127.0.0.1` and not reachable via the network.\n*   **Zero-Day:** A vulnerability for which no vendor patch exists. Mitigation relies on compensating controls (e.g., ACLs, WAF rules, or IPS signatures).\n\n#### 2. Core Security Concepts\n*   **Attack Surface:** The sum of all reachable entry points. In networking, this includes open ports, exposed management interfaces (SSH/HTTPS), and unauthenticated protocols (SNMPv1/v2).\n    *   *Audit command:* `nmap -sV -p- <target_ip>` to identify listening services.\n*   **Least Privilege (PoLP):** Access is restricted to the minimum necessary for a function. In B2B environments, this mandates moving from shared administrative credentials to Role-Based Access Control (RBAC).\n    *   *Implementation:* Use TACACS+ or RADIUS for centralized AAA (Authentication, Authorization, and Accounting) rather than local `enable secret` passwords.\n*   **Defense in Depth:** Layered security. If the perimeter firewall is bypassed, internal segmentation (VLANs, VRFs) must prevent lateral movement.\n\n#### 3. Operational Security Controls\n*   **Hardening:** The process of reducing the attack surface.\n    *   *Example (SSH Hardening):* Disable root login and enforce key-based authentication in `/etc/ssh/sshd_config`:\n        ```bash\n        PermitRootLogin no\n        PasswordAuthentication no\n        PubkeyAuthentication yes\n        ```\n*   **Segmentation:** Isolating traffic to contain breaches. Use VRFs (Virtual Routing and Forwarding) to keep management traffic logically separate from customer data planes.\n    *   *Verification:* Use `show ip vrf` or `ip route vrf <name>` to ensure traffic isolation is enforced at the routing table level.\n*   **Encryption at Rest vs. In Transit:**\n    *   **In Transit:** Use TLS 1.3 for management APIs and IPsec (IKEv2) for site-to-site tunnels. Avoid legacy protocols like Telnet or SNMPv2c.\n    *   **At Rest:** Ensure storage arrays or configuration backups are encrypted using AES-256.\n\n#### 4. Incident Indicators\n*   **IoC (Indicator of Compromise):** Forensic evidence of a breach. Examples include unauthorized outbound connections to known malicious IPs, unexpected spikes in bandwidth (exfiltration), or unauthorized changes to configuration files.\n    *   *Monitoring:* Use `netstat -tulpn` or `ss -tulpn` to identify unexpected listening sockets. Monitor logs for repeated `Failed password` attempts via `grep \"Failed password\" /var/log/auth.log`.\n\n#### 5. Risk Assessment Formula\nOperational risk is calculated as:\n**Risk = (Threat × Vulnerability × Impact) / Countermeasures**\nIn a telecom context, prioritize remediation based on **Impact** (e.g., core routing stability) over raw **Threat** frequency. If a vulnerability exists on a critical path device, it requires immediate mitigation regardless of the theoretical exploitability.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:12:12.940863Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-31T11:12:12.940893Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "phishing-email-analysis-and-metadata-extraction",
+        "title": "Phishing Email Analysis and Metadata Extraction",
+        "content": "### Phishing Email Analysis and Metadata Extraction\n\nEffective triage of suspicious emails requires systematic extraction of transport headers and payload artifacts. Prioritize the preservation of the original message format (RFC 822/EML) to maintain integrity of the `Received` chain and cryptographic signatures.\n\n#### 1. Header Analysis and Path Reconstruction\nThe `Received` headers are the primary source for tracing the origin. Read them from bottom to top to reconstruct the SMTP relay path.\n\n*   **Key Headers:**\n    *   `Return-Path`: The envelope sender (often differs from the `From` header).\n    *   `X-Originating-IP` / `X-Remote-IP`: Often injected by webmail providers.\n    *   `Authentication-Results`: Verify the status of SPF, DKIM, and DMARC. A `fail` or `softfail` on these, combined with a mismatch in the `Return-Path` domain, is a high-confidence indicator of spoofing.\n\n**CLI Extraction (using `ripmime` or `munpack`):**\nTo extract attachments and body components from an `.eml` file:\n```bash\n# Extract all attachments to a directory\nripmime -i suspicious_email.eml -d ./extracted_artifacts\n```\n\n#### 2. Artifact Extraction and Detonation\nNever execute attachments. Use static analysis to identify file types and embedded macros.\n\n*   **Identify File Type:**\n    ```bash\n    file -i extracted_file.ext\n    ```\n*   **Extract VBA Macros (Office Docs):**\n    Use `olevba` from the `oletools` suite to identify suspicious AutoOpen/AutoExec functions or obfuscated PowerShell stagers.\n    ```bash\n    olevba --decode suspicious_doc.docm\n    ```\n*   **URL Extraction:**\n    Extract URLs from the raw body for reputation checking.\n    ```bash\n    grep -Eoi 'https?://[a-zA-Z0-9./?=_-]+' suspicious_email.eml | sort -u > urls.txt\n    ```\n\n#### 3. Network-Level Verification\nIn a B2B telecom environment, cross-reference extracted IPs and domains against internal threat intelligence feeds or passive DNS.\n\n*   **DNS/Whois Verification:**\n    Check domain age and registrar. Newly registered domains (NRDs) are high-risk.\n    ```bash\n    whois domain-example.com | grep -E 'Creation Date|Registrar:'\n    ```\n*   **IP Reputation:**\n    Use `dig` or `host` to check for PTR records. A lack of reverse DNS on an IP claiming to be a corporate mail server is a red flag.\n    ```bash\n    dig -x <suspicious_ip> +short\n    ```\n\n#### 4. Operational Workflow\n1.  **Isolate:** Move the EML to a sandboxed analysis VM.\n2.  **Extract:** Use `eml-parser` (Python) or `munpack` to separate body from attachments.\n3.  **Analyze:**\n    *   **Headers:** Check for `X-Mailer` anomalies and SPF/DKIM alignment.\n    *   **Links:** Use `curl -I` to follow redirects without downloading the payload.\n    *   **Attachments:** Hash the file (`sha256sum`) and query against VirusTotal/Hybrid Analysis.\n4.  **Remediate:** If malicious, extract the `Message-ID` and use your mail gateway (e.g., Proofpoint, Mimecast, or Exchange Online Protection) to purge the message from all user mailboxes globally.\n\n**Warning:** When analyzing links, ensure your environment is configured to prevent accidental execution. Use a dedicated proxy or isolated browser instance to prevent session token leakage or IP exposure.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:12:35.849709Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-31T11:12:35.849735Z",
         "addedBy": "discover"
       }
     ],
@@ -673,6 +697,96 @@
         "command": "Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>",
         "description": "Revoke active Azure AD/O365 sessions for a user.",
         "platform": "windows"
+      },
+      {
+        "command": "show version",
+        "description": "Check firmware/OS build on Cisco IOS",
+        "platform": "both"
+      },
+      {
+        "command": "uname -a",
+        "description": "Check OS build on Linux",
+        "platform": "linux"
+      },
+      {
+        "command": "nmap -sV -p- <target_ip>",
+        "description": "Identify listening services on a target",
+        "platform": "both"
+      },
+      {
+        "command": "enable secret",
+        "description": "Set local password for administrative access",
+        "platform": "both"
+      },
+      {
+        "command": "PermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes",
+        "description": "SSH hardening configuration for /etc/ssh/sshd_config",
+        "platform": "linux"
+      },
+      {
+        "command": "show ip vrf",
+        "description": "Verify VRF configuration",
+        "platform": "both"
+      },
+      {
+        "command": "ip route vrf <name>",
+        "description": "Verify routing table isolation",
+        "platform": "both"
+      },
+      {
+        "command": "netstat -tulpn",
+        "description": "Identify unexpected listening sockets",
+        "platform": "linux"
+      },
+      {
+        "command": "ss -tulpn",
+        "description": "Identify unexpected listening sockets",
+        "platform": "linux"
+      },
+      {
+        "command": "grep \"Failed password\" /var/log/auth.log",
+        "description": "Monitor logs for failed password attempts",
+        "platform": "linux"
+      },
+      {
+        "command": "ripmime -i suspicious_email.eml -d ./extracted_artifacts",
+        "description": "Extract all attachments from an .eml file to a directory",
+        "platform": "linux"
+      },
+      {
+        "command": "file -i extracted_file.ext",
+        "description": "Identify the file type of an extracted artifact",
+        "platform": "linux"
+      },
+      {
+        "command": "olevba --decode suspicious_doc.docm",
+        "description": "Extract and decode VBA macros from Office documents",
+        "platform": "linux"
+      },
+      {
+        "command": "grep -Eoi 'https?://[a-zA-Z0-9./?=_-]+' suspicious_email.eml | sort -u > urls.txt",
+        "description": "Extract unique URLs from the raw email body",
+        "platform": "linux"
+      },
+      {
+        "command": "whois domain-example.com | grep -E 'Creation Date|Registrar:'",
+        "description": "Check domain registration details",
+        "platform": "linux"
+      },
+      {
+        "command": "dig -x <suspicious_ip> +short",
+        "description": "Perform a reverse DNS lookup on an IP address",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -I",
+        "description": "Follow URL redirects without downloading the payload",
+        "platform": "linux"
+      },
+      {
+        "command": "sha256sum",
+        "description": "Generate a SHA256 hash of a file",
+        "platform": "linux"
       }
     ]
   },
