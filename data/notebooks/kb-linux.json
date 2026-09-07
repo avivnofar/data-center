@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-08-31T11:13:19.990133Z",
+  "updatedAt": "2026-09-07T09:49:25.297365Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -287,6 +287,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-08-31T11:13:19.990089Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "incident-response-and-diagnostic-scoping",
+        "title": "Incident Response and Diagnostic Scoping",
+        "content": "### Incident Response and Diagnostic Scoping\n\nEffective incident response requires immediate, non-intrusive data collection to establish a baseline before volatile state is lost. Prioritize the collection of process trees, network sockets, and system logs.\n\n#### 1. Volatile Memory and Process Analysis\nIdentify resource-heavy or anomalous processes immediately.\n*   **Process Tree:** `pstree -apn` (displays PIDs and arguments).\n*   **Resource Usage:** `top -b -n 1` or `htop`.\n*   **Open Files/Sockets:** `lsof -i -P -n` (list network connections) or `lsof -p <PID>` (inspect specific process activity).\n*   **Execution Path:** Verify binary integrity by checking the symlink: `ls -l /proc/<PID>/exe`.\n\n#### 2. Network State Scoping\nCapture current connections and listening ports to identify unauthorized C2 (Command & Control) traffic.\n*   **Active Connections:** `ss -tulpn` (TCP/UDP, listening, processes, numeric).\n*   **Connection Tracking:** `conntrack -L` (requires `conntrack-tools`) to view NAT/stateful firewall tables.\n*   **Packet Capture:** Use `tcpdump` for targeted traffic analysis:\n    `tcpdump -i eth0 -nn -s 0 -w capture.pcap port 443`\n\n#### 3. System Integrity and Persistence\nCheck for common persistence mechanisms and unauthorized modifications.\n*   **Cron Jobs:** Inspect `/etc/crontab`, `/etc/cron.*`, and `/var/spool/cron/crontabs/`.\n*   **Systemd Units:** List enabled services: `systemctl list-unit-files --state=enabled`. Check for suspicious service files in `/etc/systemd/system/`.\n*   **SSH Keys:** Audit `~/.ssh/authorized_keys` for unexpected public keys.\n*   **Binary Integrity:** If `debsums` (Debian/Ubuntu) or `rpm -V` (RHEL/CentOS) is available, verify installed package checksums:\n    `rpm -Va | grep '^..5' # Check for MD5 mismatches`\n\n#### 4. Log Aggregation and Analysis\nFocus on authentication attempts and kernel-level events.\n*   **Authentication:** `journalctl -u sshd --since \"1 hour ago\"` or `grep \"Failed password\" /var/log/auth.log`.\n*   **Kernel/Hardware:** `dmesg -T` (human-readable timestamps) to identify segfaults, OOM kills, or hardware errors.\n*   **Auditd:** If configured, query the audit trail:\n    `ausearch -m DAEMON_ACCEPT -ts recent`\n\n#### 5. Diagnostic Scoping Checklist\nWhen an incident is confirmed, execute this sequence to preserve evidence:\n1.  **Capture System State:** `uptime`, `w`, `uname -a`, `lsmod`.\n2.  **Capture Network State:** `ss -anp > network_state.txt`.\n3.  **Capture Process List:** `ps auxwwf > process_list.txt`.\n4.  **Capture Persistence:** `find /etc/systemd/system/ -mtime -7` (find recently modified service files).\n5.  **Preserve Logs:** Copy `/var/log/` contents to a secure, external mount or remote syslog server immediately.\n\n**Warning:** Avoid running complex diagnostic tools (e.g., `nmap`, `strace`) directly on the compromised host if possible, as they alter the environment and may trigger anti-forensic logic within malware. Use statically linked binaries from a trusted external source (e.g., a mounted USB or read-only network share) to prevent reliance on potentially compromised system libraries.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:49:09.544215Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:49:09.544247Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "troubleshooting-script-lock-file-errors",
+        "title": "Troubleshooting Script Lock File Errors",
+        "content": "### Troubleshooting Script Lock File Errors\n\nLock files (typically located in `/var/lock/` or `/tmp/`) prevent race conditions by ensuring only one instance of a script executes at a time. When a script terminates unexpectedly (e.g., `SIGKILL`, power failure), the lock file persists, preventing subsequent executions.\n\n#### 1. Identifying Stale Locks\nIf a script fails with a \"Resource temporarily unavailable\" or \"Lock file exists\" error, first verify if the process is actually running.\n\n**Check for the process:**\n```bash\n# Replace 'script_name' with the process name\npgrep -f script_name\n```\n\n**Inspect the lock file:**\n```bash\nls -l /var/lock/my_script.lock\ncat /var/lock/my_script.lock  # Often contains the PID\n```\n\nIf `pgrep` returns no PID, or the PID in the lock file does not match any active process, the lock is stale.\n\n#### 2. Safe Removal Procedure\nDo not blindly `rm` lock files. Verify the PID ownership first to avoid killing a legitimate process.\n\n```bash\nPID=$(cat /var/lock/my_script.lock)\nif ! kill -0 \"$PID\" 2>/dev/null; then\n    echo \"Stale lock detected. Removing...\"\n    rm -f /var/lock/my_script.lock\nelse\n    echo \"Process $PID is still active.\"\nfi\n```\n\n#### 3. Implementing Robust Locking (flock)\nAvoid manual file creation (`touch`). Use the `flock` utility, which handles file descriptor locking at the kernel level. If the script crashes, the kernel automatically releases the file descriptor, eliminating stale locks.\n\n**Recommended implementation:**\n```bash\n#!/bin/bash\nLOCKFILE=\"/var/lock/my_script.lock\"\n\n# Open file descriptor 200 for the lockfile\nexec 200>\"$LOCKFILE\"\n\n# Attempt to acquire an exclusive lock (non-blocking)\nflock -n 200 || { echo \"Script already running\"; exit 1; }\n\n# Critical section starts here\n# ...\n```\n\n#### 4. Common Failure Modes\n*   **Permissions:** Ensure the user executing the script has write access to the directory containing the lock file. Check `ls -ld /var/lock/`.\n*   **NFS/Network Filesystems:** `flock` may behave inconsistently on older NFS mounts. Use `fcntl` locking or ensure `lockd` is running on the client/server.\n*   **Subshells:** If using `flock` inside a subshell, the lock may be released prematurely. Always wrap the entire execution block in the lock.\n\n#### 5. Debugging Permissions\nIf the script fails despite the lock file being absent, check for directory-level restrictions or immutable attributes:\n\n```bash\n# Check for immutable bit\nlsattr /var/lock/my_script.lock\n\n# Check for directory permissions\nnamei -l /var/lock/my_script.lock\n```\n\n#### 6. Best Practices for Cleanup\nIf you must use manual lock files (e.g., legacy scripts), use a `trap` to ensure cleanup on exit:\n\n```bash\ncleanup() {\n    rm -f \"$LOCKFILE\"\n}\ntrap cleanup EXIT INT TERM\n```\nThis ensures the lock file is removed even if the script receives a termination signal.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:49:25.297287Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:49:25.297317Z",
         "addedBy": "discover"
       }
     ],
@@ -1163,6 +1187,161 @@
       {
         "command": "sudo grep -r \"ALL=(ALL)\" /etc/sudoers*",
         "description": "Search for sudo access configurations.",
+        "platform": "linux"
+      },
+      {
+        "command": "pstree -apn",
+        "description": "Displays process tree with PIDs and arguments",
+        "platform": "linux"
+      },
+      {
+        "command": "top -b -n 1",
+        "description": "Displays resource usage",
+        "platform": "linux"
+      },
+      {
+        "command": "htop",
+        "description": "Displays resource usage",
+        "platform": "linux"
+      },
+      {
+        "command": "lsof -i -P -n",
+        "description": "List network connections",
+        "platform": "linux"
+      },
+      {
+        "command": "lsof -p <PID>",
+        "description": "Inspect specific process activity",
+        "platform": "linux"
+      },
+      {
+        "command": "ls -l /proc/<PID>/exe",
+        "description": "Verify binary integrity by checking the symlink",
+        "platform": "linux"
+      },
+      {
+        "command": "ss -tulpn",
+        "description": "List TCP/UDP, listening, processes, and numeric connections",
+        "platform": "linux"
+      },
+      {
+        "command": "conntrack -L",
+        "description": "View NAT/stateful firewall tables",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -i eth0 -nn -s 0 -w capture.pcap port 443",
+        "description": "Targeted traffic analysis packet capture",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl list-unit-files --state=enabled",
+        "description": "List enabled systemd services",
+        "platform": "linux"
+      },
+      {
+        "command": "rpm -Va | grep '^..5'",
+        "description": "Check for MD5 mismatches in installed packages",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl -u sshd --since \"1 hour ago\"",
+        "description": "Query authentication logs",
+        "platform": "linux"
+      },
+      {
+        "command": "grep \"Failed password\" /var/log/auth.log",
+        "description": "Query authentication logs",
+        "platform": "linux"
+      },
+      {
+        "command": "dmesg -T",
+        "description": "View kernel/hardware logs with human-readable timestamps",
+        "platform": "linux"
+      },
+      {
+        "command": "ausearch -m DAEMON_ACCEPT -ts recent",
+        "description": "Query the audit trail",
+        "platform": "linux"
+      },
+      {
+        "command": "uptime",
+        "description": "Capture system state",
+        "platform": "linux"
+      },
+      {
+        "command": "w",
+        "description": "Capture system state",
+        "platform": "linux"
+      },
+      {
+        "command": "uname -a",
+        "description": "Capture system state",
+        "platform": "linux"
+      },
+      {
+        "command": "lsmod",
+        "description": "Capture system state",
+        "platform": "linux"
+      },
+      {
+        "command": "ss -anp > network_state.txt",
+        "description": "Capture network state",
+        "platform": "linux"
+      },
+      {
+        "command": "ps auxwwf > process_list.txt",
+        "description": "Capture process list",
+        "platform": "linux"
+      },
+      {
+        "command": "find /etc/systemd/system/ -mtime -7",
+        "description": "Find recently modified service files",
+        "platform": "linux"
+      },
+      {
+        "command": "pgrep -f script_name",
+        "description": "Check for the process associated with the script name.",
+        "platform": "linux"
+      },
+      {
+        "command": "ls -l /var/lock/my_script.lock",
+        "description": "Inspect the lock file details.",
+        "platform": "linux"
+      },
+      {
+        "command": "cat /var/lock/my_script.lock",
+        "description": "Read the contents of the lock file, often containing the PID.",
+        "platform": "linux"
+      },
+      {
+        "command": "PID=$(cat /var/lock/my_script.lock); if ! kill -0 \"$PID\" 2>/dev/null; then rm -f /var/lock/my_script.lock; fi",
+        "description": "Safe removal procedure for stale lock files by verifying PID ownership.",
+        "platform": "linux"
+      },
+      {
+        "command": "exec 200>\"$LOCKFILE\"; flock -n 200 || { echo \"Script already running\"; exit 1; }",
+        "description": "Robust locking implementation using flock to handle file descriptor locking at the kernel level.",
+        "platform": "linux"
+      },
+      {
+        "command": "ls -ld /var/lock/",
+        "description": "Check directory permissions for lock file access.",
+        "platform": "linux"
+      },
+      {
+        "command": "lsattr /var/lock/my_script.lock",
+        "description": "Check for immutable file attributes.",
+        "platform": "linux"
+      },
+      {
+        "command": "namei -l /var/lock/my_script.lock",
+        "description": "Check for directory-level restrictions or path permissions.",
+        "platform": "linux"
+      },
+      {
+        "command": "trap cleanup EXIT INT TERM",
+        "description": "Ensure cleanup of manual lock files on script exit or termination signals.",
         "platform": "linux"
       }
     ]

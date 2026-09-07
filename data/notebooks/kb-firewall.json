@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:22.689273Z",
-  "updatedAt": "2026-08-19T14:54:34.499392Z",
+  "updatedAt": "2026-09-07T09:49:41.851611Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -302,6 +302,30 @@
         "dateAdded": "2026-08-17T05:25:32.774454Z",
         "addedBy": "discover",
         "durability": "stable"
+      },
+      {
+        "id": "firewall-rule-request-and-documentation-standards",
+        "title": "Firewall Rule Request and Documentation Standards",
+        "content": "### Firewall Rule Request and Documentation Standards\n\nAll firewall change requests must adhere to the **Least Privilege Principle** and include the following metadata: Source/Destination IP (CIDR), Service/Port (TCP/UDP/ICMP), Protocol, and Business Justification.\n\n#### 1. Documentation Requirements\nEvery rule must be tagged with a unique **Change Management ID (CMID)** in the description field.\n*   **Format:** `[CMID] [Owner] [App/Service Name] [Ticket Link]`\n*   **Example:** `[CM-9921] [NetOps] [Billing-API-Sync] [JIRA-123]`\n*   **Expiration:** If a rule is temporary, a `TTL` or `Expiry Date` must be included in the object metadata.\n\n#### 2. Linux Host-Based (iptables/ufw)\nFor Linux hosts, prioritize `ufw` for simplicity or `iptables-persistent` for granular control. Avoid `0.0.0.0/0` entries.\n\n*   **UFW (Syntax):**\n    ```bash\n    # Allow specific source to destination port\n    ufw allow from 10.50.1.0/24 to any port 443 proto tcp comment \"CM-9921: App-Sync\"\n    ```\n*   **iptables (Syntax):**\n    ```bash\n    iptables -A INPUT -s 10.50.1.0/24 -p tcp --dport 443 -m comment --comment \"CM-9921\" -j ACCEPT\n    ```\n\n#### 3. pfSense (Stateful Packet Inspection)\npfSense utilizes `pf` (Packet Filter). Rules are processed top-down; the first match wins.\n*   **Best Practice:** Use **Aliases** for all IP ranges and port groups to maintain readability.\n*   **Logging:** Enable \"Log packets that are handled by this rule\" only for troubleshooting; disable in production to prevent disk exhaustion.\n*   **Floating Rules:** Reserved for cross-interface traffic (e.g., WAN-to-LAN or VPN-to-LAN).\n\n#### 4. Enterprise NGFW (FortiGate/Check Point/Cisco)\nEnterprise environments utilize **Zone-Based Policy Models**. Rules must be defined by source/destination zones, not just interfaces.\n\n*   **FortiGate (CLI):**\n    ```bash\n    config firewall policy\n        edit 101\n            set name \"Allow-Billing-Sync\"\n            set srcintf \"port1\"\n            set dstintf \"port2\"\n            set srcaddr \"Billing-Server-Net\"\n            set dstaddr \"DB-Cluster-VIP\"\n            set action accept\n            set schedule \"always\"\n            set service \"HTTPS\"\n            set logtraffic all\n        next\n    end\n    ```\n*   **Check Point:** Use **Security Policy Management**. Ensure \"Cleanup Rules\" (Drop All) are at the bottom of every policy package. Use `Object Groups` to prevent rule bloat.\n*   **Cisco (ASA/FTD):** Utilize `Object Groups` for services and networks.\n    ```cisco\n    object-group service APP_PORTS tcp\n     port-object eq 443\n     port-object eq 8443\n    access-list OUTSIDE_IN extended permit tcp object-group SRC_NET object-group DST_NET object-group APP_PORTS\n    ```\n\n#### 5. Audit and Cleanup\n*   **Shadowed Rules:** Periodically run policy analysis tools to identify rules that are never hit (zero-hit count).\n*   **Cleanup:** Rules with zero hits for >90 days must be disabled (not deleted) for 30 days before permanent removal.\n*   **Naming Convention:** All objects must follow `[ZONE]_[TYPE]_[NAME]` (e.g., `DMZ_SRV_BillingApp`). Avoid generic names like `Server1`.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:14:08.310294Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-08-31T11:14:08.310321Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "firewall-rule-implementation-and-service-exposure-workflow",
+        "title": "Firewall Rule Implementation and Service Exposure Workflow",
+        "content": "### Firewall Rule Implementation and Service Exposure Workflow\n\nIn high-availability B2B telecom environments, firewall policy must adhere to the Principle of Least Privilege (PoLP) while maintaining deterministic traffic flow. This workflow standardizes rule implementation across heterogeneous environments.\n\n#### 1. Linux Host-Based Filtering (iptables/nftables/ufw)\nFor granular host-level control, prioritize `nftables` (the successor to `iptables`). When using `ufw`, ensure the default policy is `DENY`.\n\n*   **UFW Syntax:**\n    ```bash\n    # Explicitly allow service, restrict by source subnet\n    ufw allow from 10.50.1.0/24 to any port 443 proto tcp comment 'Allow API access from App-Tier'\n    ```\n*   **iptables Best Practice:** Use the `raw` table for connection tracking bypass (e.g., high-throughput VoIP streams) and ensure `ESTABLISHED,RELATED` is the first rule in the `INPUT` chain to minimize CPU overhead.\n\n#### 2. pfSense (BSD-based Packet Filtering)\npfSense utilizes `pf` (Packet Filter). When exposing services, avoid \"Floating Rules\" unless managing multi-WAN failover.\n\n*   **Implementation:** Always bind rules to specific interfaces (e.g., `VLAN10_DMZ`).\n*   **Port Forwarding:** Use the \"NAT -> Port Forward\" tab, which automatically generates the corresponding `rdr` rule. Ensure \"Filter Rule Association\" is set to \"Pass\" to automatically create the necessary `pass in quick` rule on the WAN interface.\n*   **Anti-Lockout:** Never disable the default anti-lockout rule on the LAN interface without an explicit management-subnet override.\n\n#### 3. Enterprise NGFW (Zone-Based Policy)\nIn FortiGate, Check Point, or Cisco Firepower environments, policy is defined by **Zones** rather than interfaces.\n\n*   **Zone-Based Model:**\n    1.  **Define Objects:** Create FQDN or IP-range objects. Avoid using raw IPs in rules; use Address Groups.\n    2.  **Service Objects:** Define custom service ports (e.g., TCP/8443) rather than using generic \"HTTPS\" objects if the application requires non-standard port mapping.\n    3.  **Policy Ordering:** Rules are processed top-down. Place high-frequency, low-latency rules (e.g., internal database queries) at the top.\n    4.  **Logging:** Enable `log-traffic` only for `deny` rules and specific audit-heavy `accept` rules to prevent disk I/O saturation on the management plane.\n\n#### 4. Service Exposure Workflow (Standard Operating Procedure)\nTo mitigate misconfiguration in production, follow this sequence:\n\n1.  **Pre-Flight:** Perform a `tcpdump` or `snoop` on the destination host to verify the service is listening on the expected interface/IP.\n    *   *Command:* `tcpdump -ni any port <port> -v`\n2.  **Policy Staging:**\n    *   **Source:** Define specific CIDR or Object Group. Avoid `any`.\n    *   **Destination:** Use the specific VIP (Virtual IP) or internal host IP.\n    *   **Service:** Explicitly define protocol (TCP/UDP/SCTP).\n3.  **Validation:**\n    *   **Verification:** Use `nmap -Pn -p <port> <target_ip>` from an external zone to confirm reachability.\n    *   **Audit:** Run a policy hit-count check after 24 hours to identify redundant rules.\n4.  **Documentation:** Append the ticket ID or Change Request (CR) number to the rule comment field.\n\n**Warning:** In telecom environments, ensure that `Stateful Inspection` is enabled for all protocols. For SIP/H.323 traffic, disable Application Layer Gateways (ALG/SIP-Helper) if the endpoint performs its own NAT traversal, as ALGs often corrupt packet headers, causing one-way audio or registration failure.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:49:41.851513Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:49:41.851547Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -626,6 +650,41 @@
       {
         "command": "config system zone\n    edit \"DMZ_ZONE\"\n        set interface \"port2\" \"port3\"\n    next\nend",
         "description": "Define Zones (logical groupings of interfaces)",
+        "platform": "both"
+      },
+      {
+        "command": "ufw allow from 10.50.1.0/24 to any port 443 proto tcp comment \"CM-9921: App-Sync\"",
+        "description": "Allow specific source to destination port using UFW",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -A INPUT -s 10.50.1.0/24 -p tcp --dport 443 -m comment --comment \"CM-9921\" -j ACCEPT",
+        "description": "Allow specific source to destination port using iptables",
+        "platform": "linux"
+      },
+      {
+        "command": "config firewall policy\n    edit 101\n        set name \"Allow-Billing-Sync\"\n        set srcintf \"port1\"\n        set dstintf \"port2\"\n        set srcaddr \"Billing-Server-Net\"\n        set dstaddr \"DB-Cluster-VIP\"\n        set action accept\n        set schedule \"always\"\n        set service \"HTTPS\"\n        set logtraffic all\n    next\nend",
+        "description": "FortiGate firewall policy configuration",
+        "platform": "both"
+      },
+      {
+        "command": "object-group service APP_PORTS tcp\n port-object eq 443\n port-object eq 8443\naccess-list OUTSIDE_IN extended permit tcp object-group SRC_NET object-group DST_NET object-group APP_PORTS",
+        "description": "Cisco ASA/FTD object group and access list configuration",
+        "platform": "both"
+      },
+      {
+        "command": "ufw allow from 10.50.1.0/24 to any port 443 proto tcp comment 'Allow API access from App-Tier'",
+        "description": "Explicitly allow service, restrict by source subnet",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -ni any port <port> -v",
+        "description": "Verify the service is listening on the expected interface/IP",
+        "platform": "linux"
+      },
+      {
+        "command": "nmap -Pn -p <port> <target_ip>",
+        "description": "Confirm reachability from an external zone",
         "platform": "both"
       }
     ]

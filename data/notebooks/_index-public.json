@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-08-31T11:13:25.504609Z",
+  "updatedAt": "2026-09-07T09:49:46.937745Z",
   "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
   "dataCenter": {
     "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
@@ -105,14 +105,14 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cloud-devops.json",
       "summary": "This notebook provides a foundational overview of modern infrastructure and automation, covering essential cloud concepts, Docker containerization, and robust CI/CD workflows powered by GitHub Actions. It further explores best practices for environment management, system monitoring, and streamlined deployment patterns for platforms like Vercel and Render to ensure scalable and reliable application delivery.",
-      "sectionCount": 12,
-      "commandCount": 60,
+      "sectionCount": 13,
+      "commandCount": 66,
       "issueCount": 12,
       "glossaryCount": 14,
-      "updatedAt": "2026-08-24T05:29:41.769860Z",
+      "updatedAt": "2026-08-31T11:13:42.541373Z",
       "durabilitySummary": {
         "stable": 8,
-        "fastMoving": 4,
+        "fastMoving": 5,
         "unclassified": 0
       }
     },
@@ -131,13 +131,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
       "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
-      "sectionCount": 16,
-      "commandCount": 67,
+      "sectionCount": 18,
+      "commandCount": 77,
       "issueCount": 10,
       "glossaryCount": 15,
-      "updatedAt": "2026-08-31T11:12:35.849827Z",
+      "updatedAt": "2026-09-07T09:48:51.179498Z",
       "durabilitySummary": {
-        "stable": 15,
+        "stable": 17,
         "fastMoving": 1,
         "unclassified": 0
       }
@@ -158,13 +158,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-firewall.json",
       "summary": "Practical firewall reference covering core concepts, iptables/nftables, ufw, pfSense, ACL design, zone-based firewalls, IDS/IPS basics, and a real-world troubleshooting workflow for diagnosing blocked or leaking traffic.",
-      "sectionCount": 13,
-      "commandCount": 38,
+      "sectionCount": 15,
+      "commandCount": 45,
       "issueCount": 9,
       "glossaryCount": 12,
-      "updatedAt": "2026-08-19T14:54:34.499392Z",
+      "updatedAt": "2026-09-07T09:49:41.851611Z",
       "durabilitySummary": {
-        "stable": 12,
+        "stable": 14,
         "fastMoving": 1,
         "unclassified": 0
       }
@@ -185,13 +185,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
       "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
-      "sectionCount": 19,
-      "commandCount": 133,
+      "sectionCount": 21,
+      "commandCount": 164,
       "issueCount": 10,
       "glossaryCount": 12,
-      "updatedAt": "2026-08-31T11:13:19.990133Z",
+      "updatedAt": "2026-09-07T09:49:25.297365Z",
       "durabilitySummary": {
-        "stable": 19,
+        "stable": 21,
         "fastMoving": 0,
         "unclassified": 0
       }

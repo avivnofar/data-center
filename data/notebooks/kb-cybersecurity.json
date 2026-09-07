@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-08-31T11:12:35.849827Z",
+  "updatedAt": "2026-09-07T09:48:51.179498Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -295,6 +295,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-08-31T11:12:35.849735Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "differentiating-phishing-email-sources-and-domains",
+        "title": "Differentiating Phishing Email Sources and Domains",
+        "content": "### Differentiating Phishing Email Sources and Domains\n\nIn a B2B telecom/networking environment, distinguishing between spoofed headers and legitimate third-party service abuse requires analyzing the SMTP envelope versus the message body. Rely on the following technical hierarchy to validate origin.\n\n#### 1. Header Analysis: Envelope vs. Header\nThe `Return-Path` (or `Envelope-From`) is the primary indicator of the true source. Attackers often manipulate the `From:` header (display name) while the `Return-Path` points to a domain they control.\n\n*   **Command:** Use `grep` or `sed` to extract headers from raw `.eml` files:\n    `grep -Ei '^(Return-Path|From|Received|Authentication-Results):' email.eml`\n*   **Verification:** If `Return-Path` domain does not match the `From` domain, flag as suspicious. Check if the `Return-Path` domain has a valid SPF record.\n\n#### 2. Authentication Protocol Validation\nDo not rely on a single protocol. A \"Pass\" in one does not guarantee legitimacy.\n\n*   **SPF (Sender Policy Framework):** Check the `Received-SPF` header. If the IP address in the `Received` header is not in the `include` list of the `Return-Path` domain’s TXT record, the email is spoofed.\n    *   *Lookup:* `dig TXT <domain> +short | grep v=spf1`\n*   **DKIM (DomainKeys Identified Mail):** Verify the `d=` tag in the `DKIM-Signature` header matches the domain in the `From` address. If the signature fails validation, the body or headers were modified in transit.\n*   **DMARC (Domain-based Message Authentication, Reporting, and Conformance):** Look for `dmarc=pass` in the `Authentication-Results` header. If `p=reject` or `p=quarantine` is set, the domain owner has explicitly requested blocking for non-compliant mail.\n\n#### 3. Infrastructure Fingerprinting\nIn B2B, attackers often use compromised legitimate infrastructure (e.g., AWS SES, SendGrid, or compromised O365 tenants) to bypass reputation filters.\n\n*   **Analyze `Received` Headers:** Trace the path from bottom to top. The bottom-most `Received` header is the entry point into the mail system.\n*   **IP Reputation:** Check the originating IP against RBLs (Real-time Blackhole Lists).\n    *   *Command:* `curl -s \"https://api.abuseipdb.com/api/v2/check?ipAddress=<IP>&maxAgeInDays=30\" -H \"Key: <API_KEY>\"`\n*   **PTR Records:** Ensure the originating IP has a valid reverse DNS (PTR) record that aligns with the sending domain.\n    *   *Command:* `dig -x <IP> +short`\n\n#### 4. Domain Squatting and Homoglyphs\nAttackers frequently use Look-alike domains (e.g., `company-support.com` vs `company.com`).\n\n*   **Entropy Analysis:** Calculate the Levenshtein distance between the sender domain and your known partner domains.\n*   **WHOIS Metadata:** Check domain age. New domains (< 30 days) are high-risk indicators.\n    *   *Command:* `whois <domain> | grep -E 'Creation Date|Registrar'`\n\n#### 5. Operational Checklist for Triage\n1.  **Extract:** Pull the `Return-Path`, `From`, and `X-Originating-IP`.\n2.  **Validate:** Run `dig TXT <domain>` to confirm SPF/DMARC policies.\n3.  **Correlate:** Compare the `X-Mailer` or `User-Agent` headers against known patterns for the purported sender.\n4.  **Isolate:** If the domain is < 30 days old or fails DMARC, move to sandbox analysis or block at the edge gateway (e.g., Proofpoint, Mimecast, or O365 Exchange Transport Rules).",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:48:35.382073Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:48:35.382106Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "vulnerability-classification-and-impact-assessment",
+        "title": "Vulnerability Classification and Impact Assessment",
+        "content": "### Vulnerability Classification and Impact Assessment\n\nIn a B2B telecom/networking environment, vulnerability management must prioritize service availability and data integrity. Use the following framework to categorize findings based on operational risk rather than theoretical CVSS scores.\n\n#### 1. Classification Framework\n*   **Critical (Immediate Remediation):** Remote Code Execution (RCE), unauthenticated access to management planes (SSH/HTTPS/SNMP), or exposure of cleartext credentials in configuration files.\n*   **High (Scheduled Remediation):** Privilege escalation, cross-site scripting (XSS) in administrative portals, or bypass of security controls (ACLs/Firewalls) that do not grant full system access.\n*   **Medium (Operational Risk):** Information disclosure (e.g., software version banners, internal IP leakage) or denial-of-service (DoS) vectors requiring high-bandwidth or specific conditions.\n*   **Low (Hardening):** Best-practice deviations, such as weak cipher suites or lack of HTTP security headers.\n\n#### 2. Impact Assessment Metrics\nAssess impact by evaluating the **Blast Radius** within the network architecture:\n*   **Control Plane:** Vulnerabilities affecting routing protocols (BGP/OSPF), SDN controllers, or AAA servers (RADIUS/TACACS+). These are always \"Critical.\"\n*   **Data Plane:** Vulnerabilities affecting packet forwarding or customer-facing traffic. Prioritize based on SLA impact.\n*   **Management Plane:** Vulnerabilities in OOB (Out-of-Band) management or jump hosts.\n\n#### 3. Practical Verification & Tooling\nDo not rely solely on scanner output. Validate findings using targeted CLI commands to confirm exposure:\n\n**A. Service Exposure (Nmap/Netcat)**\nVerify if a service is actually reachable or if a firewall is dropping packets:\n```bash\n# Check for open management ports on network gear\nnmap -p 22,23,80,443,161,8080 --open <target_ip_range>\n\n# Verify banner grabbing for version identification\nnc -v <target_ip> 22\n```\n\n**B. Configuration Hardening (Cisco/Juniper Syntax)**\nIf a vulnerability involves insecure management protocols, verify the running configuration:\n```ios\n# Cisco IOS: Verify SSH is enforced and Telnet is disabled\nshow run | include transport input\n# Expected output: transport input ssh\n```\n\n**C. Cipher Suite Auditing**\nUse `openssl` to identify weak TLS configurations on load balancers or web-based management interfaces:\n```bash\n# Test for support of weak ciphers (e.g., 3DES, RC4)\nopenssl s_client -connect <target_ip>:443 -cipher '3DES:RC4:MD5'\n```\n*If the connection succeeds, the service is vulnerable to downgrade attacks.*\n\n#### 4. Operational Prioritization Matrix\n| Risk Level | SLA for Patching | Mitigation Strategy |\n| :--- | :--- | :--- |\n| **Critical** | < 24 Hours | Emergency change window; isolate VLAN/ACL. |\n| **High** | < 7 Days | Standard change window; implement WAF/IPS rule. |\n| **Medium** | < 30 Days | Include in next maintenance cycle. |\n| **Low** | Best Effort | Document in risk register; remediate during hardware refresh. |\n\n**Note:** In telecom environments, always verify if a patch requires a device reboot. If a reboot is required, prioritize based on redundancy (e.g., patch the standby node first, verify state synchronization, then failover).",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:48:51.179418Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:48:51.179451Z",
         "addedBy": "discover"
       }
     ],
@@ -786,6 +810,56 @@
       {
         "command": "sha256sum",
         "description": "Generate a SHA256 hash of a file",
+        "platform": "linux"
+      },
+      {
+        "command": "grep -Ei '^(Return-Path|From|Received|Authentication-Results):' email.eml",
+        "description": "Extract headers from raw .eml files",
+        "platform": "linux"
+      },
+      {
+        "command": "dig TXT <domain> +short | grep v=spf1",
+        "description": "Lookup SPF records for a domain",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -s \"https://api.abuseipdb.com/api/v2/check?ipAddress=<IP>&maxAgeInDays=30\" -H \"Key: <API_KEY>\"",
+        "description": "Check IP reputation against AbuseIPDB",
+        "platform": "linux"
+      },
+      {
+        "command": "dig -x <IP> +short",
+        "description": "Perform reverse DNS lookup for an IP address",
+        "platform": "linux"
+      },
+      {
+        "command": "whois <domain> | grep -E 'Creation Date|Registrar'",
+        "description": "Check domain registration metadata",
+        "platform": "linux"
+      },
+      {
+        "command": "dig TXT <domain>",
+        "description": "Confirm SPF/DMARC policies for a domain",
+        "platform": "linux"
+      },
+      {
+        "command": "nmap -p 22,23,80,443,161,8080 --open <target_ip_range>",
+        "description": "Check for open management ports on network gear",
+        "platform": "linux"
+      },
+      {
+        "command": "nc -v <target_ip> 22",
+        "description": "Verify banner grabbing for version identification",
+        "platform": "linux"
+      },
+      {
+        "command": "show run | include transport input",
+        "description": "Cisco IOS: Verify SSH is enforced and Telnet is disabled",
+        "platform": "both"
+      },
+      {
+        "command": "openssl s_client -connect <target_ip>:443 -cipher '3DES:RC4:MD5'",
+        "description": "Test for support of weak ciphers",
         "platform": "linux"
       }
     ]

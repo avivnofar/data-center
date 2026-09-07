@@ -18,7 +18,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:22.590915Z",
-  "updatedAt": "2026-08-24T05:29:41.769860Z",
+  "updatedAt": "2026-08-31T11:13:42.541373Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -165,6 +165,18 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-08-24T05:29:41.769828Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "automating-container-deployments-with-github-actions",
+        "title": "Automating Container Deployments with GitHub Actions",
+        "content": "> **Point-in-time reference — accurate as of 2026-08-31.** This section describes a fast-moving subject (versions, releases, or current landscape) and may be outdated by the time you read it — verify specifics against a current source before relying on them.\n\nTo automate container deployments using GitHub Actions, you must establish a secure OIDC (OpenID Connect) trust relationship with your cloud provider and define a workflow that handles image building, registry authentication, and deployment orchestration.\n\n### 1. Authentication Strategy\nAvoid long-lived service account keys. Use OIDC to request short-lived tokens. For AWS, configure the `aws-actions/configure-aws-credentials` action:\n\n```yaml\npermissions:\n  id-token: write\n  contents: read\n\nsteps:\n  - name: Configure AWS Credentials\n    uses: aws-actions/configure-aws-credentials@v4\n    with:\n      role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole\n      aws-region: us-east-1\n```\n\n### 2. Image Lifecycle Management\nUse `docker/build-push-action` to leverage GitHub’s internal cache. This minimizes build times by utilizing the `gha` (GitHub Actions) cache backend.\n\n```yaml\n- name: Build and Push\n  uses: docker/build-push-action@v5\n  with:\n    context: .\n    push: true\n    tags: ${{ secrets.REGISTRY_URL }}/app:${{ github.sha }}\n    cache-from: type=gha\n    cache-to: type=gha,mode=max\n```\n\n### 3. Deployment Patterns\nThe deployment step depends on your target environment.\n\n#### Kubernetes (kubectl/helm)\nFor K8s, use the `azure/setup-kubectl` or `bitnami/build-tool` actions. Ensure your `kubeconfig` is injected via a secret or OIDC-based context switch.\n\n```yaml\n- name: Deploy to K8s\n  run: |\n    kubectl set image deployment/app-deployment app=${{ secrets.REGISTRY_URL }}/app:${{ github.sha }}\n    kubectl rollout status deployment/app-deployment\n```\n\n#### Amazon ECS\nFor ECS, use the `aws-actions/amazon-ecs-deploy-task-definition` action. This requires a task definition JSON file in your repository.\n\n```yaml\n- name: Deploy to ECS\n  uses: aws-actions/amazon-ecs-deploy-task-definition@v1\n  with:\n    task-definition: task-def.json\n    service: my-service\n    cluster: my-cluster\n    wait-for-service-stability: true\n```\n\n### 4. Critical Configuration Best Practices\n*   **Concurrency Control:** Use the `concurrency` key at the workflow level to prevent race conditions during simultaneous deployments to the same environment.\n    ```yaml\n    concurrency:\n      group: ${{ github.workflow }}-${{ github.ref }}\n      cancel-in-progress: true\n    ```\n*   **Environment Protection:** Utilize GitHub Environments to enforce manual approval gates for production deployments.\n    ```yaml\n    environment:\n      name: production\n      url: https://app.example.com\n    ```\n*   **Image Tagging:** Never use `latest`. Always tag images with the commit SHA (`${{ github.sha }}`) or semantic versioning to ensure immutability and facilitate rollbacks.\n*   **Secret Management:** Use GitHub Secrets for sensitive registry credentials, but prefer OIDC for cloud provider access to eliminate the risk of credential leakage.\n*   **Artifact Integrity:** Use `docker/metadata-action` to generate consistent labels and tags, ensuring your registry metadata matches the source code state.\n\n### 5. Troubleshooting\n*   **Runner Logs:** If builds fail, inspect the `docker buildx` output. Use `debug: true` in the action configuration to expose verbose logs.\n*   **Registry Auth:** If you encounter `401 Unauthorized`, verify the `docker/login-action` is executed before the build step and that the registry token has `push` permissions.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-08-31T11:13:42.541298Z",
+        "sources": [],
+        "durability": "fast-moving",
+        "dateAdded": "2026-08-31T11:13:42.541333Z",
         "addedBy": "discover"
       }
     ],
@@ -636,6 +648,36 @@
         "command": "curl http://alertmanager:9093/api/v2/alerts?active=false&silenced=false",
         "description": "Query Prometheus Alertmanager for alert history",
         "platform": "linux"
+      },
+      {
+        "command": "permissions:\n  id-token: write\n  contents: read\n\nsteps:\n  - name: Configure AWS Credentials\n    uses: aws-actions/configure-aws-credentials@v4\n    with:\n      role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole\n      aws-region: us-east-1",
+        "description": "Configure AWS OIDC credentials in GitHub Actions",
+        "platform": "both"
+      },
+      {
+        "command": "- name: Build and Push\n  uses: docker/build-push-action@v5\n  with:\n    context: .\n    push: true\n    tags: ${{ secrets.REGISTRY_URL }}/app:${{ github.sha }}\n    cache-from: type=gha\n    cache-to: type=gha,mode=max",
+        "description": "Build and push Docker image using GitHub Actions cache",
+        "platform": "both"
+      },
+      {
+        "command": "kubectl set image deployment/app-deployment app=${{ secrets.REGISTRY_URL }}/app:${{ github.sha }}\nkubectl rollout status deployment/app-deployment",
+        "description": "Deploy image to Kubernetes and check rollout status",
+        "platform": "both"
+      },
+      {
+        "command": "- name: Deploy to ECS\n  uses: aws-actions/amazon-ecs-deploy-task-definition@v1\n  with:\n    task-definition: task-def.json\n    service: my-service\n    cluster: my-cluster\n    wait-for-service-stability: true",
+        "description": "Deploy task definition to Amazon ECS",
+        "platform": "both"
+      },
+      {
+        "command": "concurrency:\n  group: ${{ github.workflow }}-${{ github.ref }}\n  cancel-in-progress: true",
+        "description": "Workflow concurrency control configuration",
+        "platform": "both"
+      },
+      {
+        "command": "environment:\n  name: production\n  url: https://app.example.com",
+        "description": "GitHub environment configuration",
+        "platform": "both"
       }
     ]
   },
