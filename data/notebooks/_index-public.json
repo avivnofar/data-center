@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-09-07T09:49:46.937745Z",
+  "updatedAt": "2026-09-14T10:11:45.769939Z",
   "description": "Public index of all pinned Notebook-X knowledge notebooks. Read by Data Center and other projects.",
   "dataCenter": {
     "howToUse": "Fetch individual notebook JSON files via githubRawUrl. Parse knowledgeBase.sections for content.",
@@ -131,13 +131,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-cybersecurity.json",
       "summary": "Practical cybersecurity reference covering core security principles, the current threat landscape, authentication/MFA, encryption, network and endpoint security, incident response, and hardening checklists — built for daily IT/security decision-making rather than certification trivia.",
-      "sectionCount": 18,
-      "commandCount": 77,
+      "sectionCount": 20,
+      "commandCount": 90,
       "issueCount": 10,
       "glossaryCount": 15,
-      "updatedAt": "2026-09-07T09:48:51.179498Z",
+      "updatedAt": "2026-09-14T10:10:49.330949Z",
       "durabilitySummary": {
-        "stable": 17,
+        "stable": 19,
         "fastMoving": 1,
         "unclassified": 0
       }
@@ -158,13 +158,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-firewall.json",
       "summary": "Practical firewall reference covering core concepts, iptables/nftables, ufw, pfSense, ACL design, zone-based firewalls, IDS/IPS basics, and a real-world troubleshooting workflow for diagnosing blocked or leaking traffic.",
-      "sectionCount": 15,
-      "commandCount": 45,
+      "sectionCount": 16,
+      "commandCount": 60,
       "issueCount": 9,
       "glossaryCount": 12,
-      "updatedAt": "2026-09-07T09:49:41.851611Z",
+      "updatedAt": "2026-09-07T09:50:03.060238Z",
       "durabilitySummary": {
-        "stable": 14,
+        "stable": 15,
         "fastMoving": 1,
         "unclassified": 0
       }
@@ -185,13 +185,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-linux.json",
       "summary": "Practical Linux system administration reference covering file systems, permissions, process management, networking, systemd, package management, log analysis, SSH, cron, and performance monitoring — built for daily IT troubleshooting.",
-      "sectionCount": 21,
-      "commandCount": 164,
+      "sectionCount": 23,
+      "commandCount": 184,
       "issueCount": 10,
       "glossaryCount": 12,
-      "updatedAt": "2026-09-07T09:49:25.297365Z",
+      "updatedAt": "2026-09-14T10:11:17.296565Z",
       "durabilitySummary": {
-        "stable": 21,
+        "stable": 23,
         "fastMoving": 0,
         "unclassified": 0
       }
@@ -212,13 +212,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-mirtapbx.json",
       "summary": "The MirtaPBX Reference notebook serves as a comprehensive technical guide covering the system's core architecture, including essential configurations for extensions, trunks, dialplans, IVR menus, and ring groups. It further provides advanced troubleshooting resources via the Asterisk CLI, solutions for common operational issues, and documentation for seamless integration with 1COM services.",
-      "sectionCount": 8,
-      "commandCount": 79,
+      "sectionCount": 9,
+      "commandCount": 84,
       "issueCount": 9,
       "glossaryCount": 15,
-      "updatedAt": "2026-08-19T14:54:42.085251Z",
+      "updatedAt": "2026-09-14T10:11:40.464558Z",
       "durabilitySummary": {
-        "stable": 8,
+        "stable": 9,
         "fastMoving": 0,
         "unclassified": 0
       }
@@ -239,13 +239,13 @@
       "dataQuality": "complete",
       "githubRawUrl": "https://raw.githubusercontent.com/avivnofar/Notebook-X/main/notebooks/kb-networking.json",
       "summary": "Authoritative networking reference covering OSI/TCP-IP layers, IP addressing, subnetting, routing, switching, DNS, DHCP, and packet-analysis workflows for incident response and day-to-day administration.",
-      "sectionCount": 8,
-      "commandCount": 18,
+      "sectionCount": 9,
+      "commandCount": 30,
       "issueCount": 5,
       "glossaryCount": 10,
-      "updatedAt": "2026-08-19T14:54:49.291103Z",
+      "updatedAt": "2026-09-14T10:11:29.215406Z",
       "durabilitySummary": {
-        "stable": 8,
+        "stable": 9,
         "fastMoving": 0,
         "unclassified": 0
       }

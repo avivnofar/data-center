@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:11.571240Z",
-  "updatedAt": "2026-08-19T14:54:42.085251Z",
+  "updatedAt": "2026-09-14T10:11:40.464558Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -108,6 +108,18 @@
         "lastUpdated": "2026-07-10T07:17:59.947Z",
         "sources": [],
         "durability": "stable"
+      },
+      {
+        "id": "troubleshooting-sip-trunk-registration-failures",
+        "title": "Troubleshooting SIP Trunk Registration Failures",
+        "content": "### Troubleshooting SIP Trunk Registration Failures\n\nRegistration failures typically stem from credential mismatches, network-level blocking, or malformed SIP headers. Follow this systematic approach to isolate the failure point.\n\n#### 1. Verify SIP Signaling Flow\nUse `sngrep` or `tcpdump` to capture traffic on the signaling interface. This is the definitive method to determine if the failure is local or remote.\n\n**Capture command:**\n```bash\ntcpdump -ni any port 5060 or 5061 -vv -w trunk_debug.pcap\n```\n\nAnalyze the capture for the following:\n*   **401 Unauthorized / 407 Proxy Authentication Required:** The PBX received a challenge but failed to respond with the correct `Authorization` header. Verify `username` and `secret` in your trunk configuration.\n*   **403 Forbidden:** The ITSP has rejected the credentials or the source IP is not whitelisted. Check your ITSP portal for IP-based authentication settings.\n*   **408 Request Timeout:** The PBX is not receiving a response. This indicates a firewall issue or an incorrect ITSP proxy address.\n*   **494 Security Agreement Required:** Common in IMS/VoLTE environments; indicates a missing `Require: sec-agree` header.\n\n#### 2. Common Configuration Pitfalls\n*   **Outbound Proxy vs. Registrar:** Ensure the `outbound_proxy` is set if the ITSP requires traffic to be routed through a specific SBC (Session Border Controller), even if the `registrar` is a different FQDN.\n*   **Transport Mismatch:** Ensure the `transport` protocol (UDP/TCP/TLS) matches the ITSP requirements. If using TLS, verify the CA certificate chain is installed on the PBX.\n*   **User-Agent/Contact Headers:** Some providers reject registrations if the `User-Agent` string is generic. Use the provider-specific string if documented.\n\n#### 3. Asterisk/FreePBX Specific Diagnostics\nIf using PJSIP, utilize the Asterisk CLI to inspect the endpoint state:\n\n**Check registration status:**\n```bash\npjsip show registrations\n```\n\n**Debug specific endpoint:**\n```bash\npjsip set logger on\npjsip set logger host <ITSP_IP_ADDRESS>\n```\n*Note: The logger output will reveal if the PBX is sending the `REGISTER` request and if the ITSP is responding with a specific error code.*\n\n#### 4. Network and Firewall Layer\nIf the capture shows no outgoing packets, verify the following:\n*   **NAT Traversal:** If the PBX is behind a NAT, ensure `external_media_address` and `external_signaling_address` are set to your public IP.\n*   **Stateful Firewall:** Ensure the firewall is not dropping SIP packets due to \"SIP ALG\" (Application Layer Gateway). **Disable SIP ALG** on all edge routers/firewalls, as it frequently corrupts SIP headers, causing registration to fail or audio to drop.\n*   **DNS Resolution:** If using an FQDN for the registrar, ensure the PBX can resolve the SRV records.\n    *   Test: `dig SRV _sip._udp.provider.com`\n\n#### 5. Common Error Codes Summary\n| Code | Meaning | Action |\n| :--- | :--- | :--- |\n| **401/407** | Auth Failure | Re-enter password; check for hidden spaces. |\n| **403** | Forbidden | Check IP Whitelist on ITSP portal. |\n| **408** | Timeout | Check firewall/ACLs; verify proxy IP. |\n| **422** | Interval Too Brief | Increase `registration_expiry` (default 3600s). |\n| **488** | Not Acceptable | Codec mismatch; verify `disallow=all` and `allow=ulaw,alaw`. |",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:11:40.464491Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:11:40.464524Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -658,6 +670,31 @@
       {
         "command": "rtp set debug on",
         "description": "Trace media path",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -ni any port 5060 or 5061 -vv -w trunk_debug.pcap",
+        "description": "Capture SIP signaling traffic on ports 5060 or 5061.",
+        "platform": "linux"
+      },
+      {
+        "command": "pjsip show registrations",
+        "description": "Check PJSIP registration status in Asterisk CLI.",
+        "platform": "both"
+      },
+      {
+        "command": "pjsip set logger on",
+        "description": "Enable PJSIP logging in Asterisk CLI.",
+        "platform": "both"
+      },
+      {
+        "command": "pjsip set logger host <ITSP_IP_ADDRESS>",
+        "description": "Enable PJSIP logging for a specific host.",
+        "platform": "both"
+      },
+      {
+        "command": "dig SRV _sip._udp.provider.com",
+        "description": "Test DNS SRV record resolution.",
         "platform": "linux"
       }
     ]

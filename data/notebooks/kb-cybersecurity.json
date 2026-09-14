@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-09-07T09:48:51.179498Z",
+  "updatedAt": "2026-09-14T10:10:49.330949Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -319,6 +319,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-07T09:48:51.179451Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "phishing-incident-scope-and-reporting-assessment",
+        "title": "Phishing Incident Scope and Reporting Assessment",
+        "content": "### Phishing Incident Scope and Reporting Assessment\n\nTo minimize blast radius in a B2B telecom environment, incident assessment must prioritize data exfiltration vectors and lateral movement potential. Follow this operational workflow to categorize and contain phishing events.\n\n#### 1. Initial Scope Determination\nUpon receiving a phishing report, execute the following triage steps to determine the extent of the compromise:\n\n*   **Email Header Analysis:** Extract the `Return-Path`, `X-Originating-IP`, and `Authentication-Results` (SPF/DKIM/DMARC status). Use `dig` or `nslookup` to verify the sender’s domain reputation and MX records.\n    *   *Command:* `dig +short TXT <domain>` (Verify SPF records).\n*   **URL/Attachment Detonation:** Never interact with links or files on production assets. Use a sandboxed environment or CLI tools to inspect headers.\n    *   *Command:* `curl -I -L --max-time 10 <URL>` (Check for redirects/final landing page).\n    *   *Command:* `sha256sum <file>` (Check hash against VirusTotal API).\n*   **Internal Log Correlation:** Query your SIEM/Log aggregator (e.g., Splunk, ELK) for the identified IOCs (IPs, domains, file hashes) across the environment.\n    *   *Query (Splunk):* `index=email_logs OR index=proxy_logs <IOC> | stats count by src_ip, user, dest_host`\n\n#### 2. Impact Assessment Matrix\nCategorize the incident based on the following criteria to determine the escalation path:\n\n| Severity | Criteria | Action |\n| :--- | :--- | :--- |\n| **Low** | Single user, no click, no credential entry. | Purge email, block sender/domain. |\n| **Medium** | Credential entry, MFA bypassed, or file executed. | Reset credentials, revoke O365/SAML sessions. |\n| **High** | Lateral movement detected, C2 beaconing, or data egress. | Isolate host, initiate IR playbook, legal/compliance notification. |\n\n#### 3. Containment and Remediation\nIf the incident is confirmed, execute containment immediately:\n\n*   **Email Purge:** Use PowerShell (Exchange Online) to remove the malicious message from all mailboxes globally.\n    *   *Command:* `New-ComplianceSearch -Name \"PhishPurge\" -ExchangeLocation All -ContentMatchQuery 'subject:\"<Subject>\"'`\n    *   *Command:* `New-ComplianceSearchAction -SearchName \"PhishPurge\" -Purge -PurgeType HardDelete`\n*   **Session Revocation:** If credentials were compromised, force a global sign-out.\n    *   *Azure AD/Entra:* `Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>`\n*   **Network Blocking:** Update perimeter firewall or DNS sinkhole (e.g., Cisco Umbrella, Pi-hole) to block the C2 domain.\n    *   *Syntax (Cisco ASA/Firepower):* `object network PHISH_DOMAIN_BLOCK` -> `fqdn <malicious-domain.com>`\n\n#### 4. Reporting Requirements\nA technical incident report must include:\n1.  **IOCs:** List of malicious IPs, URLs, and file hashes.\n2.  **Targeting:** List of affected users and their privilege levels.\n3.  **Persistence:** Confirmation of any created mailbox rules, forwarding addresses, or unauthorized OAuth applications.\n    *   *Check for forwarding:* `Get-Mailbox -Identity <User> | Select-Object ForwardingAddress, ForwardingSmtpAddress`\n4.  **Timeline:** UTC timestamps for delivery, first click, and containment.\n\nEnsure all findings are logged in the centralized ticketing system (e.g., Jira/ServiceNow) with the `Security-Incident` tag for audit trail compliance.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:10:36.917091Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:10:36.917116Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "vulnerability-disclosure-policy-framework",
+        "title": "Vulnerability Disclosure Policy Framework",
+        "content": "### Vulnerability Disclosure Policy (VDP) Framework\n\nA robust VDP for B2B telecom/networking environments must balance rapid remediation with the operational stability of carrier-grade infrastructure. This framework establishes the technical parameters for intake, verification, and disclosure.\n\n#### 1. Intake and Scoping\nDefine the \"Authorized Testing Perimeter\" to prevent accidental disruption of production traffic. Use a `security.txt` file hosted at `/.well-known/security.txt` on all public-facing edge routers, load balancers, and management portals.\n\n**Required `security.txt` syntax:**\n```text\nContact: mailto:security-ops@example.com\nEncryption: https://example.com/pgp-key.asc\nPolicy: https://example.com/vdp-policy.html\nPreferred-Languages: en\nHiring: https://example.com/careers\n```\n\n#### 2. Verification and Reproducibility\nSubmissions must include a Proof of Concept (PoC) that demonstrates impact without compromising data integrity. For networking infrastructure, prioritize findings that bypass AAA (Authentication, Authorization, and Accounting) or impact control-plane stability.\n\n**Standardized PoC Requirements:**\n*   **Environment:** Specify the firmware/OS version (e.g., `show version` output).\n*   **Payload:** Provide sanitized request/response pairs.\n*   **Impact:** Map findings to the CVSS 3.1 vector string (e.g., `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H`).\n\n#### 3. Operational Triage Workflow\nUpon receipt, move findings through a standardized pipeline to avoid \"alert fatigue\" and ensure compliance with SLAs.\n\n1.  **Ingestion:** Automated parsing of incoming reports into a secure ticketing system (e.g., Jira/ServiceNow).\n2.  **Validation:** Verify against the current baseline configuration.\n    *   *Command check:* `diff <(running-config) <(golden-config)`\n3.  **Remediation:** Apply patches or configuration hardening.\n    *   *Example (ACL Hardening):*\n        ```bash\n        # Restrict management plane access to known IP ranges\n        ip access-list standard MGMT_ACCESS\n         permit 192.168.10.0 0.0.0.255\n         deny any\n        line vty 0 4\n         access-class MGMT_ACCESS in\n        ```\n4.  **Verification:** Re-run the PoC in a staging environment that mirrors the production topology.\n\n#### 4. Disclosure and Communication\nMaintain a strict \"Need-to-Know\" protocol for active vulnerabilities. Do not disclose details until a patch is deployed across the fleet.\n\n*   **Internal Notification:** Use encrypted channels (e.g., Signal, PGP-signed email) for vulnerability details.\n*   **External Disclosure:** If the vulnerability affects third-party hardware (e.g., Cisco, Juniper, Arista), coordinate with the vendor’s PSIRT (Product Security Incident Response Team) before public release.\n*   **CVE Request:** If the vulnerability is unique to your proprietary software, utilize your organization’s CNA (CVE Numbering Authority) status to issue a CVE.\n\n#### 5. Safe Harbor Clause\nTo encourage ethical reporting, include a \"Safe Harbor\" statement in your policy:\n> \"We will not pursue legal action against researchers who act in good faith, adhere to this policy, and do not exfiltrate, modify, or disrupt production data or services.\"\n\n#### 6. Metrics for Success\nTrack the following KPIs to measure the efficacy of the VDP:\n*   **MTTR (Mean Time to Remediate):** Time from report validation to patch deployment.\n*   **False Positive Rate:** Percentage of reports that do not meet the \"Actionable\" threshold.\n*   **Vulnerability Aging:** Number of days a vulnerability remains unpatched post-validation.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:10:49.330875Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:10:49.330903Z",
         "addedBy": "discover"
       }
     ],
@@ -861,6 +885,71 @@
         "command": "openssl s_client -connect <target_ip>:443 -cipher '3DES:RC4:MD5'",
         "description": "Test for support of weak ciphers",
         "platform": "linux"
+      },
+      {
+        "command": "dig +short TXT <domain>",
+        "description": "Verify SPF records",
+        "platform": "linux"
+      },
+      {
+        "command": "curl -I -L --max-time 10 <URL>",
+        "description": "Check for redirects/final landing page",
+        "platform": "linux"
+      },
+      {
+        "command": "sha256sum <file>",
+        "description": "Check hash against VirusTotal API",
+        "platform": "linux"
+      },
+      {
+        "command": "index=email_logs OR index=proxy_logs <IOC> | stats count by src_ip, user, dest_host",
+        "description": "Splunk query to correlate IOCs",
+        "platform": "both"
+      },
+      {
+        "command": "New-ComplianceSearch -Name \"PhishPurge\" -ExchangeLocation All -ContentMatchQuery 'subject:\"<Subject>\"'",
+        "description": "Create compliance search for email purge",
+        "platform": "windows"
+      },
+      {
+        "command": "New-ComplianceSearchAction -SearchName \"PhishPurge\" -Purge -PurgeType HardDelete",
+        "description": "Execute hard delete for email purge",
+        "platform": "windows"
+      },
+      {
+        "command": "Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>",
+        "description": "Force global sign-out for compromised user",
+        "platform": "windows"
+      },
+      {
+        "command": "object network PHISH_DOMAIN_BLOCK -> fqdn <malicious-domain.com>",
+        "description": "Cisco ASA/Firepower syntax to block domain",
+        "platform": "both"
+      },
+      {
+        "command": "Get-Mailbox -Identity <User> | Select-Object ForwardingAddress, ForwardingSmtpAddress",
+        "description": "Check for mailbox forwarding rules",
+        "platform": "windows"
+      },
+      {
+        "command": "security.txt",
+        "description": "Standardized file format for vulnerability disclosure contact information hosted at /.well-known/security.txt",
+        "platform": "both"
+      },
+      {
+        "command": "show version",
+        "description": "Command to retrieve firmware/OS version information for PoC documentation",
+        "platform": "both"
+      },
+      {
+        "command": "diff <(running-config) <(golden-config)",
+        "description": "Command to compare current device configuration against a known-good baseline",
+        "platform": "linux"
+      },
+      {
+        "command": "ip access-list standard MGMT_ACCESS\n permit 192.168.10.0 0.0.0.255\n deny any\nline vty 0 4\n access-class MGMT_ACCESS in",
+        "description": "Example configuration snippet for hardening management plane access via ACLs",
+        "platform": "both"
       }
     ]
   },

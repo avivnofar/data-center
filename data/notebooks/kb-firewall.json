@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:22.689273Z",
-  "updatedAt": "2026-09-07T09:49:41.851611Z",
+  "updatedAt": "2026-09-07T09:50:03.060238Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -325,6 +325,18 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-07T09:49:41.851547Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "firewall-assessment-and-change-methodology",
+        "title": "Firewall Assessment and Change Methodology",
+        "content": "### Firewall Assessment and Change Methodology\n\nEffective firewall management in high-availability telecom environments requires a standardized lifecycle: **Discovery, Impact Analysis, Implementation, and Verification.**\n\n#### 1. Assessment & Discovery\nBefore modification, map the traffic flow using the 5-tuple (Src IP, Dst IP, Src Port, Dst Port, Protocol). \n*   **Linux (iptables/nftables):** Use `iptables -nvL --line-numbers` to identify hit counts on existing rules. For live traffic analysis, use `tcpdump -ni <interface> host <IP> and port <port>`.\n*   **Enterprise NGFW (FortiGate/Check Point):** Utilize flow-based logging. On FortiGate, use `diag debug flow filter` to trace packets:\n    ```bash\n    diag debug flow filter daddr <target_ip>\n    diag debug flow show console enable\n    diag debug enable\n    ```\n*   **pfSense:** Leverage `pftop` or the Packet Capture utility under *Diagnostics > Packet Capture* to verify state table entries.\n\n#### 2. Change Methodology\nAdhere to the Principle of Least Privilege. Avoid \"any/any\" rules; define specific objects or subnets.\n\n*   **Linux (UFW/iptables):**\n    *   **UFW:** `ufw allow in on eth0 to any port 443 proto tcp comment \"Web-Service\"`\n    *   **iptables:** Always insert at the top of the chain if specific, or append if general. Use `iptables -I INPUT 1 -s 10.0.0.5 -p tcp --dport 22 -j ACCEPT`.\n*   **pfSense (XML/GUI):** Changes should be applied via the GUI, but verify via `pfctl -sr` to see the generated ruleset. Ensure \"Floating Rules\" are used only for cross-interface traffic.\n*   **Zone-Based Models (FortiGate/Cisco FTD):**\n    *   **FortiGate:** Policies are interface/zone-based. Always define address objects and service groups.\n        ```bash\n        config firewall policy\n            edit 10\n                set srcintf \"internal\"\n                set dstintf \"wan1\"\n                set srcaddr \"Server_Subnet\"\n                set dstaddr \"Remote_API\"\n                set action accept\n                set schedule \"always\"\n                set service \"HTTPS\"\n        ```\n    *   **Check Point:** Use the Management API (`mgmt_cli`) for bulk changes to ensure policy consistency across clusters.\n\n#### 3. Validation & Verification\nPost-change validation is mandatory to prevent outages.\n\n1.  **Connectivity Test:** Use `nc -zv <target_ip> <port>` or `curl -v` to confirm the path is open.\n2.  **Log Verification:**\n    *   **Linux:** `tail -f /var/log/syslog | grep <IP>` (if logging is enabled in iptables).\n    *   **NGFW:** Check the \"Forward Traffic\" logs in the GUI/CLI to ensure the traffic is hitting the specific policy ID created.\n3.  **State Table Check:**\n    *   **pfSense:** `pfctl -ss | grep <IP>` to verify the state is being created.\n    *   **Linux:** `conntrack -L | grep <IP>` to confirm the connection tracking entry exists.\n\n#### 4. Rollback Strategy\nAlways maintain a \"last known good\" configuration.\n*   **Linux:** `iptables-save > /etc/iptables/rules.v4.bak` before changes.\n*   **pfSense:** Use *Diagnostics > Backup & Restore* or utilize the \"Config History\" tab to revert to the previous XML state.\n*   **NGFW:** Use `execute revision backup` (FortiGate) or \"Database Revision\" (Check Point) to ensure a single-command revert is possible. \n\n**Warning:** In B2B telecom environments, verify MTU/MSS clamping on VPN/Tunnel interfaces if traffic is dropped despite correct policy configuration. Use `iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu`.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-07T09:50:03.060176Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-07T09:50:03.060203Z",
         "addedBy": "discover"
       }
     ],
@@ -686,6 +698,81 @@
         "command": "nmap -Pn -p <port> <target_ip>",
         "description": "Confirm reachability from an external zone",
         "platform": "both"
+      },
+      {
+        "command": "iptables -nvL --line-numbers",
+        "description": "Identify hit counts on existing rules",
+        "platform": "linux"
+      },
+      {
+        "command": "tcpdump -ni <interface> host <IP> and port <port>",
+        "description": "Live traffic analysis",
+        "platform": "linux"
+      },
+      {
+        "command": "diag debug flow filter daddr <target_ip>\ndiag debug flow show console enable\ndiag debug enable",
+        "description": "Trace packets on FortiGate",
+        "platform": "linux"
+      },
+      {
+        "command": "ufw allow in on eth0 to any port 443 proto tcp comment \"Web-Service\"",
+        "description": "Allow traffic via UFW",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -I INPUT 1 -s 10.0.0.5 -p tcp --dport 22 -j ACCEPT",
+        "description": "Insert rule at the top of the chain",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -sr",
+        "description": "View generated ruleset",
+        "platform": "linux"
+      },
+      {
+        "command": "config firewall policy\n    edit 10\n        set srcintf \"internal\"\n        set dstintf \"wan1\"\n        set srcaddr \"Server_Subnet\"\n        set dstaddr \"Remote_API\"\n        set action accept\n        set schedule \"always\"\n        set service \"HTTPS\"",
+        "description": "FortiGate firewall policy configuration",
+        "platform": "linux"
+      },
+      {
+        "command": "nc -zv <target_ip> <port>",
+        "description": "Connectivity test",
+        "platform": "both"
+      },
+      {
+        "command": "curl -v",
+        "description": "Connectivity test",
+        "platform": "both"
+      },
+      {
+        "command": "tail -f /var/log/syslog | grep <IP>",
+        "description": "Log verification",
+        "platform": "linux"
+      },
+      {
+        "command": "pfctl -ss | grep <IP>",
+        "description": "Verify state table entry",
+        "platform": "linux"
+      },
+      {
+        "command": "conntrack -L | grep <IP>",
+        "description": "Confirm connection tracking entry",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables-save > /etc/iptables/rules.v4.bak",
+        "description": "Backup iptables configuration",
+        "platform": "linux"
+      },
+      {
+        "command": "execute revision backup",
+        "description": "FortiGate configuration backup",
+        "platform": "linux"
+      },
+      {
+        "command": "iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
+        "description": "MTU/MSS clamping",
+        "platform": "linux"
       }
     ]
   },

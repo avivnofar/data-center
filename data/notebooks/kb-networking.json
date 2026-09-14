@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:06.791442Z",
-  "updatedAt": "2026-08-19T14:54:49.291103Z",
+  "updatedAt": "2026-09-14T10:11:29.215406Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -162,6 +162,18 @@
         "dateAdded": "2026-08-10T06:05:54.334427Z",
         "addedBy": "discover",
         "durability": "stable"
+      },
+      {
+        "id": "troubleshooting-dns-resolution-and-connectivity-issues",
+        "title": "Troubleshooting DNS Resolution and Connectivity Issues",
+        "content": "### Troubleshooting DNS Resolution and Connectivity Issues\n\nWhen diagnosing name resolution failures, isolate the issue by verifying the resolution path: **Application → Local Resolver → Recursive Resolver → Authoritative Nameserver.**\n\n#### 1. Verification of Local Resolution\nBefore checking upstream, confirm the local OS resolver configuration.\n\n*   **Linux:** Inspect `/etc/nsswitch.conf` to ensure `hosts: files dns` is set. Verify `/etc/resolv.conf` for correct `nameserver` entries.\n*   **Windows:** Use `ipconfig /all` to verify the assigned DNS servers.\n\nUse `dig` (Linux/macOS) or `nslookup` (Windows/Linux) to bypass the local cache and query specific servers:\n\n```bash\n# Query a specific server for an A record\ndig @8.8.8.8 example.com A +short\n\n# Trace the delegation path to identify where resolution breaks\ndig +trace example.com\n```\n\n#### 2. Identifying Cache Poisoning and TTL Issues\nIf resolution is inconsistent, check for stale cache entries.\n*   **Flush Local Cache:**\n    *   **Linux (systemd-resolved):** `resolvectl flush-caches`\n    *   **Windows:** `ipconfig /flushdns`\n*   **TTL Validation:** Use `dig +noall +answer` to check the Time-To-Live (TTL). If the TTL is near zero, the record is likely being refreshed frequently or is misconfigured on the authoritative side.\n\n#### 3. Connectivity and Path Analysis\nIf DNS queries time out, determine if the issue is UDP/TCP port 53 blockage or a routing failure.\n\n*   **Port Connectivity:** DNS defaults to UDP/53, but falls back to TCP/53 for zone transfers or large responses (e.g., DNSSEC). Test both:\n    ```bash\n    # Test UDP\n    nc -zvu 8.8.8.8 53\n    # Test TCP\n    nc -zv 8.8.8.8 53\n    ```\n*   **Path MTU Issues:** Large DNSSEC responses can exceed standard MTU (1500 bytes), leading to packet drops. Test with `dig +bufsize=4096` or `dig +edns0`. If the query succeeds with a smaller buffer but fails with a larger one, investigate path MTU discovery or firewall fragmentation rules.\n\n#### 4. Common Failure Modes\n| Symptom | Likely Cause | Diagnostic Step |\n| :--- | :--- | :--- |\n| `SERVFAIL` | Upstream resolver cannot reach authoritative server. | `dig +trace` to identify the failing zone. |\n| `NXDOMAIN` | Domain does not exist or typo. | Verify record existence via authoritative server. |\n| `REFUSED` | ACLs on the DNS server block the client IP. | Check `named.conf` (BIND) or `allow-query` settings. |\n| Intermittent timeouts | Load balancer or Anycast routing instability. | `mtr -u -P 53 <DNS_IP>` to check for packet loss. |\n\n#### 5. Advanced Debugging with `tcpdump`\nWhen logs are insufficient, capture the raw traffic to inspect the DNS header flags (e.g., RA, RD, TC):\n\n```bash\n# Capture DNS traffic on port 53\ntcpdump -ni any port 53 -vv\n```\nLook for the **TC (Truncated)** bit. If set, the server is forcing the client to switch to TCP. If the client does not support TCP fallback, resolution will fail silently. Ensure firewalls permit TCP/53 traffic if DNSSEC or large TXT records are in use.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:11:29.215348Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:11:29.215377Z",
+        "addedBy": "discover"
       }
     ],
     "glossary": [
@@ -377,6 +389,66 @@
         "command": "show interfaces <int> switchport",
         "description": "Displays administrative and operational trunking status",
         "platform": "both"
+      },
+      {
+        "command": "ipconfig /all",
+        "description": "Verify assigned DNS servers",
+        "platform": "windows"
+      },
+      {
+        "command": "dig @8.8.8.8 example.com A +short",
+        "description": "Query a specific server for an A record",
+        "platform": "both"
+      },
+      {
+        "command": "dig +trace example.com",
+        "description": "Trace the delegation path to identify where resolution breaks",
+        "platform": "both"
+      },
+      {
+        "command": "resolvectl flush-caches",
+        "description": "Flush local cache on Linux systemd-resolved",
+        "platform": "linux"
+      },
+      {
+        "command": "ipconfig /flushdns",
+        "description": "Flush local cache on Windows",
+        "platform": "windows"
+      },
+      {
+        "command": "dig +noall +answer",
+        "description": "Check the Time-To-Live (TTL)",
+        "platform": "both"
+      },
+      {
+        "command": "nc -zvu 8.8.8.8 53",
+        "description": "Test UDP port 53 connectivity",
+        "platform": "both"
+      },
+      {
+        "command": "nc -zv 8.8.8.8 53",
+        "description": "Test TCP port 53 connectivity",
+        "platform": "both"
+      },
+      {
+        "command": "dig +bufsize=4096",
+        "description": "Test DNS query with specific buffer size",
+        "platform": "both"
+      },
+      {
+        "command": "dig +edns0",
+        "description": "Test DNS query with EDNS0",
+        "platform": "both"
+      },
+      {
+        "command": "mtr -u -P 53 <DNS_IP>",
+        "description": "Check for packet loss on port 53",
+        "platform": "both"
+      },
+      {
+        "command": "tcpdump -ni any port 53 -vv",
+        "description": "Capture DNS traffic on port 53",
+        "platform": "linux"
       }
     ]
   },

@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-09-07T09:49:25.297365Z",
+  "updatedAt": "2026-09-14T10:11:17.296565Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -311,6 +311,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-07T09:49:25.297317Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "troubleshooting-user-group-membership-and-provisioning",
+        "title": "Troubleshooting User Group Membership and Provisioning",
+        "content": "### Troubleshooting User Group Membership and Provisioning\n\nWhen troubleshooting identity management, verify the source of truth (local files vs. NSS/PAM modules) before investigating synchronization delays or permission mismatches.\n\n#### 1. Verification of Group Membership\nThe `id` command provides the most accurate view of the current process's effective and real group IDs.\n\n*   **Check current user:** `id -a`\n*   **Check specific user:** `id <username>`\n*   **Check group database:** `getent group <groupname>`\n\nIf `id` shows a group that `getent` does not, the user has a cached session or a stale group entry in `/etc/group`. If `getent` shows the group but `id` does not, the user’s session must be refreshed (e.g., `newgrp <group>` or re-login) to update the supplementary group list.\n\n#### 2. NSS and PAM Configuration\nIf users are managed via LDAP, SSSD, or Winbind, verify the Name Service Switch (NSS) configuration.\n\n*   **Check NSS sources:** Inspect `/etc/nsswitch.conf`. Ensure the `group:` line includes the necessary modules:\n    `group: files sssd` (or `ldap`, `winbind`)\n*   **Test lookup:** Use `getent group` to force a query against all configured NSS databases. If the group is missing here, the issue lies in the SSSD/LDAP configuration, not the local OS.\n\n#### 3. SSSD Cache and Synchronization\nSSSD often caches group memberships to reduce latency. If group membership changes are not reflecting, clear the cache.\n\n*   **Clear SSSD cache:**\n    ```bash\n    sss_cache -G  # Clear group cache\n    sss_cache -u <username> # Clear specific user cache\n    systemctl restart sssd\n    ```\n*   **Debug SSSD:** Increase log verbosity in `/etc/sssd/sssd.conf` by setting `debug_level = 6` under the `[domain/...]` section, then monitor `/var/log/sssd/sssd_<domain>.log`.\n\n#### 4. Provisioning and File Permissions\nWhen a user is added to a group, they do not gain access to existing files until the group is active in their session. Furthermore, new files created by the user may not inherit the group ID (GID) if the parent directory lacks the setgid bit.\n\n*   **Setgid on directory:** Ensures all files created within the directory inherit the directory's GID.\n    ```bash\n    chmod g+s /path/to/directory\n    ```\n*   **Verify ACLs:** If standard Unix permissions are insufficient, check for Access Control Lists (ACLs) which override standard mode bits.\n    ```bash\n    getfacl /path/to/file\n    setfacl -m g:<groupname>:rwx /path/to/file\n    ```\n\n#### 5. Common Pitfalls\n*   **Primary vs. Supplementary Groups:** A user can only have one primary group (defined in `/etc/passwd`). All other memberships must be supplementary. If a service requires a specific primary group, modify it via `usermod -g <group> <user>`.\n*   **Shell Limits:** If using `nscd` (Name Service Cache Daemon), it may cache negative results. Clear it with `nscd -i group`.\n*   **UID/GID Collisions:** Ensure that UIDs and GIDs are unique across the environment. Use `getent passwd | cut -d: -f3 | sort -n | uniq -d` to identify duplicate UIDs that may cause ownership ambiguity.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:11:04.294683Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:11:04.294705Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "diagnosing-and-mitigating-excessive-log-growth",
+        "title": "Diagnosing and Mitigating Excessive Log Growth",
+        "content": "### Diagnosing and Mitigating Excessive Log Growth\n\nExcessive log growth typically stems from runaway processes, debug-level verbosity, or misconfigured rotation policies. Use the following workflow to identify sources and enforce constraints.\n\n#### 1. Identifying Disk Pressure\nIdentify the largest log files in `/var/log` or custom application directories:\n```bash\n# Find files larger than 100MB in /var/log\nfind /var/log -type f -size +100M -exec ls -lh {} + | awk '{ print $9 \": \" $5 }'\n\n# Identify processes holding open file descriptors to deleted files (often causing \"ghost\" disk usage)\nlsof +L1\n```\n\n#### 2. Analyzing Log Volume\nIf a specific service is flooding the system, use `journalctl` to isolate the source:\n```bash\n# Check current disk usage of the journal\njournalctl --disk-usage\n\n# Identify the top 20 services by log volume\njournalctl --no-pager | awk '{print $5}' | sort | uniq -c | sort -nr | head -n 20\n```\n\n#### 3. Immediate Mitigation\n**Truncate, don't delete:** Deleting an active log file often fails to free disk space because the process maintains an open file descriptor. Truncate the file instead:\n```bash\n# Truncate to zero bytes without restarting the process\ntruncate -s 0 /var/log/app.log\n```\n\n**Adjust Journald Constraints:** If `systemd-journald` is consuming excessive space, enforce limits in `/etc/systemd/journald.conf`:\n```ini\n[Journal]\nSystemMaxUse=500M\nMaxRetentionSec=1month\nForwardToSyslog=no\n```\nApply changes: `systemctl restart systemd-journald`.\n\n#### 4. Configuring Logrotate\nEnsure `/etc/logrotate.conf` or individual files in `/etc/logrotate.d/` are configured to prevent unbounded growth. A robust configuration should include `size`, `rotate`, and `compress`:\n\n```text\n/var/log/app/*.log {\n    size 100M\n    rotate 5\n    compress\n    missingok\n    notifempty\n    copytruncate\n}\n```\n*   **`copytruncate`**: Essential for applications that do not support SIGHUP for log rotation; it copies the file and then truncates the original, preventing the need to restart the service.\n*   **`size 100M`**: Forces rotation when the file exceeds 100MB, regardless of the time interval.\n\n#### 5. Preventing Future Floods\n*   **Rate Limiting:** If using `rsyslog`, implement rate limiting in `/etc/rsyslog.conf`:\n    ```text\n    $SystemLogRateLimitInterval 10\n    $SystemLogRateLimitBurst 200\n    ```\n*   **Log Level Adjustment:** Audit application configuration files (e.g., `logback.xml`, `log4j2.xml`, or `nginx.conf`). Ensure production environments are set to `WARN` or `ERROR` rather than `DEBUG` or `TRACE`.\n*   **Monitoring:** Implement a cron job or monitoring alert (Prometheus/Zabbix) to trigger when `/var/log` partition usage exceeds 80%:\n    ```bash\n    df -h /var/log | awk 'NR==2 {print $5}' | sed 's/%//'\n    ```\n\nIf logs are generated by a specific containerized application, verify that the Docker/Podman logging driver is configured to use `json-file` with size constraints in `daemon.json`:\n```json\n{\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"10m\",\n    \"max-file\": \"3\"\n  }\n}\n```",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-14T10:11:17.296502Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-14T10:11:17.296526Z",
         "addedBy": "discover"
       }
     ],
@@ -1342,6 +1366,106 @@
       {
         "command": "trap cleanup EXIT INT TERM",
         "description": "Ensure cleanup of manual lock files on script exit or termination signals.",
+        "platform": "linux"
+      },
+      {
+        "command": "id -a",
+        "description": "Check current user group IDs",
+        "platform": "linux"
+      },
+      {
+        "command": "id <username>",
+        "description": "Check specific user group IDs",
+        "platform": "linux"
+      },
+      {
+        "command": "getent group <groupname>",
+        "description": "Check group database",
+        "platform": "linux"
+      },
+      {
+        "command": "newgrp <group>",
+        "description": "Refresh user session group list",
+        "platform": "linux"
+      },
+      {
+        "command": "sss_cache -G",
+        "description": "Clear SSSD group cache",
+        "platform": "linux"
+      },
+      {
+        "command": "sss_cache -u <username>",
+        "description": "Clear specific user SSSD cache",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl restart sssd",
+        "description": "Restart SSSD service",
+        "platform": "linux"
+      },
+      {
+        "command": "chmod g+s /path/to/directory",
+        "description": "Set setgid bit on directory",
+        "platform": "linux"
+      },
+      {
+        "command": "getfacl /path/to/file",
+        "description": "Verify file ACLs",
+        "platform": "linux"
+      },
+      {
+        "command": "setfacl -m g:<groupname>:rwx /path/to/file",
+        "description": "Set file ACL",
+        "platform": "linux"
+      },
+      {
+        "command": "usermod -g <group> <user>",
+        "description": "Modify user primary group",
+        "platform": "linux"
+      },
+      {
+        "command": "nscd -i group",
+        "description": "Clear nscd group cache",
+        "platform": "linux"
+      },
+      {
+        "command": "getent passwd | cut -d: -f3 | sort -n | uniq -d",
+        "description": "Identify duplicate UIDs",
+        "platform": "linux"
+      },
+      {
+        "command": "find /var/log -type f -size +100M -exec ls -lh {} + | awk '{ print $9 \": \" $5 }'",
+        "description": "Find files larger than 100MB in /var/log",
+        "platform": "linux"
+      },
+      {
+        "command": "lsof +L1",
+        "description": "Identify processes holding open file descriptors to deleted files",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl --disk-usage",
+        "description": "Check current disk usage of the journal",
+        "platform": "linux"
+      },
+      {
+        "command": "journalctl --no-pager | awk '{print $5}' | sort | uniq -c | sort -nr | head -n 20",
+        "description": "Identify the top 20 services by log volume",
+        "platform": "linux"
+      },
+      {
+        "command": "truncate -s 0 /var/log/app.log",
+        "description": "Truncate a log file to zero bytes without restarting the process",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl restart systemd-journald",
+        "description": "Apply changes to journald configuration",
+        "platform": "linux"
+      },
+      {
+        "command": "df -h /var/log | awk 'NR==2 {print $5}' | sed 's/%//'",
+        "description": "Check percentage usage of /var/log partition",
         "platform": "linux"
       }
     ]
