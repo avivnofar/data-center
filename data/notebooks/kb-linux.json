@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-09-14T10:11:17.296565Z",
+  "updatedAt": "2026-09-21T10:17:03.391367Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -335,6 +335,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-14T10:11:17.296526Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "implementing-lock-file-retry-mechanisms",
+        "title": "Implementing Lock File Retry Mechanisms",
+        "content": "### Implementing Lock File Retry Mechanisms\n\nIn Linux environments, race conditions during concurrent script execution are typically mitigated using `flock`. When a resource is locked, subsequent processes must either fail immediately or implement a retry loop to wait for the lock to release.\n\n#### The `flock` Retry Pattern\nThe `flock` utility provides a native mechanism for waiting on a file descriptor. Use the `-w` (timeout) flag to define the maximum duration (in seconds) a process should wait before exiting with a failure status (exit code 1).\n\n**Syntax:**\n```bash\nflock -w <seconds> <lockfile> <command>\n```\n\n**Example: Non-blocking vs. Blocking with Timeout**\n```bash\n# Fail immediately if locked\nflock /var/run/my_app.lock -c \"/usr/bin/process_data\"\n\n# Wait up to 30 seconds for the lock\nflock -w 30 /var/run/my_app.lock -c \"/usr/bin/process_data\"\n```\n\n#### Implementing Custom Retry Logic\nFor complex workflows requiring exponential backoff or specific logging, use a shell-based loop. This approach provides granular control over retry intervals, which is necessary when `flock`'s default polling is insufficient.\n\n**Implementation Example:**\n```bash\nLOCKFILE=\"/tmp/app.lock\"\nMAX_RETRIES=5\nRETRY_DELAY=2\n\ncount=0\nwhile ! exec 9>\"$LOCKFILE\"; do\n    if [ \"$count\" -ge \"$MAX_RETRIES\" ]; then\n        echo \"Error: Could not acquire lock after $MAX_RETRIES attempts.\" >&2\n        exit 1\n    fi\n    sleep \"$RETRY_DELAY\"\n    ((count++))\ndone\n\n# Acquire exclusive lock (fd 9)\nflock -x 9\n\n# Critical Section\necho \"Processing...\"\n# ...\n\n# Release lock\nflock -u 9\n```\n\n#### Best Practices for Lock Files\n1.  **Use `/run` or `/var/run`:** Store lock files in volatile directories. If the system reboots, these files are cleared, preventing \"stale lock\" scenarios.\n2.  **Use File Descriptors:** When using `flock` inside scripts, bind the lock to a file descriptor (e.g., `9>`) rather than the file path directly. This ensures the lock is held for the duration of the script execution and is automatically released when the script terminates or the file descriptor closes.\n3.  **Atomic Operations:** Always use `flock` on the lock file itself. Avoid checking for the existence of a file (`if [ -f lock ]`) as a locking mechanism; this is non-atomic and prone to race conditions.\n4.  **Stale Lock Cleanup:** If a process crashes while holding a lock, the file may persist. Ensure your application logic handles stale locks by checking the PID inside the lock file (if implemented) or by using `flock`'s inherent ability to release locks when the process terminates.\n\n#### Troubleshooting\n*   **NFS Limitations:** `flock` may behave inconsistently on older NFS mounts. Ensure the NFS server supports `lockd` or use `fcntl` locking if the environment requires cross-node synchronization.\n*   **Exit Codes:** Always verify the exit status of the `flock` command. A return code of `1` indicates the timeout was reached or the lock could not be acquired. Use `if ! flock -w 10 ...; then exit 1; fi` to handle failures gracefully.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-21T10:16:45.105692Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-21T10:16:45.105716Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "linux-kernel-debugging-and-resource-tracing",
+        "title": "Linux Kernel Debugging and Resource Tracing",
+        "content": "### Linux Kernel Debugging and Resource Tracing\n\nEffective kernel troubleshooting requires a layered approach, moving from high-level observability to low-level introspection.\n\n#### 1. Dynamic Tracing with ftrace\n`ftrace` is the built-in kernel tracer. Use it to profile function calls and latency without recompiling.\n\n*   **Enable function graph tracing:**\n    ```bash\n    cd /sys/kernel/debug/tracing\n    echo function_graph > current_tracer\n    echo 1 > options/funcgraph-proc\n    echo 1 > tracing_on\n    cat trace | head -n 20\n    ```\n*   **Trace specific functions:**\n    ```bash\n    echo '*_alloc*' > set_ftrace_filter\n    echo function > current_tracer\n    ```\n\n#### 2. Event Monitoring with perf\n`perf` provides hardware and software performance counters. It is essential for identifying CPU bottlenecks and cache misses.\n\n*   **Record system-wide activity:**\n    ```bash\n    perf record -a -g -- sleep 10\n    perf report\n    ```\n*   **Trace syscalls:**\n    ```bash\n    perf stat -e syscalls:sys_enter_openat ls /tmp\n    ```\n\n#### 3. eBPF and BCC Tools\nThe BPF Compiler Collection (BCC) provides high-level scripts for deep resource tracing. Ensure `kernel-devel` and `bcc-tools` are installed.\n\n*   **Identify disk I/O latency:** `biolatency`\n*   **Trace blocked processes:** `offcputime -p <pid>`\n*   **Monitor file system latency:** `ext4dist` (or `xfsdist`)\n*   **Example (Trace process execution):**\n    ```bash\n    /usr/share/bcc/tools/execsnoop\n    ```\n\n#### 4. Kernel Panic and Crash Analysis\nWhen the kernel crashes, analyze the `vmcore` using `kdump` and `crash`.\n\n*   **Configuration:** Ensure `crashkernel=auto` is set in GRUB.\n*   **Analyze a dump:**\n    ```bash\n    crash /usr/lib/debug/lib/modules/$(uname -r)/vmlinux /var/crash/<timestamp>/vmcore\n    ```\n*   **Useful `crash` commands:**\n    *   `bt <pid>`: Backtrace of a specific process.\n    *   `log`: Display the kernel ring buffer (dmesg) at the time of crash.\n    *   `ps`: List active tasks.\n    *   `struct <struct_name> <address>`: Inspect kernel data structures.\n\n#### 5. Kernel Ring Buffer and Debugging Flags\n*   **Real-time log monitoring:**\n    ```bash\n    dmesg -w\n    ```\n*   **Dynamic Debugging:** Enable verbose output for specific kernel modules without rebooting.\n    ```bash\n    # Enable debug for a specific file\n    echo \"file drivers/net/ethernet/intel/ixgbe/ixgbe_main.c +p\" > /sys/kernel/debug/dynamic_debug/control\n    ```\n\n#### 6. Memory Leak Detection\nUse `kmemleak` to track memory allocations.\n1.  **Enable in kernel:** `CONFIG_DEBUG_KMEMLEAK=y`\n2.  **Mount debugfs:** `mount -t debugfs nodev /sys/kernel/debug`\n3.  **Scan:**\n    ```bash\n    echo scan > /sys/kernel/debug/kmemleak\n    cat /sys/kernel/debug/kmemleak\n    ```\n\n#### Best Practices\n*   **Avoid Production Overhead:** Always use `perf` or `ftrace` with specific filters to minimize performance impact.\n*   **Symbol Availability:** Ensure `kernel-debuginfo` packages match the running kernel version exactly; otherwise, `crash` and `perf` will fail to resolve symbols.\n*   **Context:** Always correlate kernel traces with user-space metrics (e.g., `iostat`, `vmstat`, `top`) to confirm if the bottleneck is kernel-bound or application-bound.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-21T10:17:03.391299Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-21T10:17:03.391325Z",
         "addedBy": "discover"
       }
     ],
@@ -1466,6 +1490,106 @@
       {
         "command": "df -h /var/log | awk 'NR==2 {print $5}' | sed 's/%//'",
         "description": "Check percentage usage of /var/log partition",
+        "platform": "linux"
+      },
+      {
+        "command": "flock -w <seconds> <lockfile> <command>",
+        "description": "Syntax for using flock with a timeout.",
+        "platform": "linux"
+      },
+      {
+        "command": "flock /var/run/my_app.lock -c \"/usr/bin/process_data\"",
+        "description": "Fail immediately if the lock file is held by another process.",
+        "platform": "linux"
+      },
+      {
+        "command": "flock -w 30 /var/run/my_app.lock -c \"/usr/bin/process_data\"",
+        "description": "Wait up to 30 seconds for the lock to be released.",
+        "platform": "linux"
+      },
+      {
+        "command": "exec 9>\"$LOCKFILE\"",
+        "description": "Open a file descriptor for locking purposes.",
+        "platform": "linux"
+      },
+      {
+        "command": "flock -x 9",
+        "description": "Acquire an exclusive lock on file descriptor 9.",
+        "platform": "linux"
+      },
+      {
+        "command": "flock -u 9",
+        "description": "Release the lock on file descriptor 9.",
+        "platform": "linux"
+      },
+      {
+        "command": "cd /sys/kernel/debug/tracing && echo function_graph > current_tracer && echo 1 > options/funcgraph-proc && echo 1 > tracing_on && cat trace | head -n 20",
+        "description": "Enable function graph tracing",
+        "platform": "linux"
+      },
+      {
+        "command": "echo '*_alloc*' > set_ftrace_filter && echo function > current_tracer",
+        "description": "Trace specific functions",
+        "platform": "linux"
+      },
+      {
+        "command": "perf record -a -g -- sleep 10 && perf report",
+        "description": "Record system-wide activity",
+        "platform": "linux"
+      },
+      {
+        "command": "perf stat -e syscalls:sys_enter_openat ls /tmp",
+        "description": "Trace syscalls",
+        "platform": "linux"
+      },
+      {
+        "command": "/usr/share/bcc/tools/execsnoop",
+        "description": "Trace process execution",
+        "platform": "linux"
+      },
+      {
+        "command": "crash /usr/lib/debug/lib/modules/$(uname -r)/vmlinux /var/crash/<timestamp>/vmcore",
+        "description": "Analyze a kernel dump",
+        "platform": "linux"
+      },
+      {
+        "command": "bt <pid>",
+        "description": "Backtrace of a specific process in crash",
+        "platform": "linux"
+      },
+      {
+        "command": "log",
+        "description": "Display the kernel ring buffer in crash",
+        "platform": "linux"
+      },
+      {
+        "command": "ps",
+        "description": "List active tasks in crash",
+        "platform": "linux"
+      },
+      {
+        "command": "struct <struct_name> <address>",
+        "description": "Inspect kernel data structures in crash",
+        "platform": "linux"
+      },
+      {
+        "command": "dmesg -w",
+        "description": "Real-time log monitoring",
+        "platform": "linux"
+      },
+      {
+        "command": "echo \"file drivers/net/ethernet/intel/ixgbe/ixgbe_main.c +p\" > /sys/kernel/debug/dynamic_debug/control",
+        "description": "Enable debug for a specific file",
+        "platform": "linux"
+      },
+      {
+        "command": "mount -t debugfs nodev /sys/kernel/debug",
+        "description": "Mount debugfs",
+        "platform": "linux"
+      },
+      {
+        "command": "echo scan > /sys/kernel/debug/kmemleak && cat /sys/kernel/debug/kmemleak",
+        "description": "Scan for memory leaks",
         "platform": "linux"
       }
     ]

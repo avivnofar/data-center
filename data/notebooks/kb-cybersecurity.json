@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-09-14T10:10:49.330949Z",
+  "updatedAt": "2026-09-21T10:16:32.364575Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -343,6 +343,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-14T10:10:49.330903Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "phishing-incident-correlation-and-impact-analysis",
+        "title": "Phishing Incident Correlation and Impact Analysis",
+        "content": "### Phishing Incident Correlation and Impact Analysis\n\nIn a B2B telecom/networking environment, phishing is rarely an isolated event; it is the primary vector for credential harvesting and lateral movement. Effective correlation requires mapping telemetry across the email gateway, endpoint, and identity provider (IdP).\n\n#### 1. Correlation Workflow\nWhen a suspicious email is reported, correlate the IoCs (Sender IP, URL, Attachment Hash) against your SIEM/XDR logs using the following priority sequence:\n\n*   **Email Gateway (MTA):** Identify the blast radius.\n    *   *Query:* Search for the specific `Message-ID` or `Subject` line to identify all recipients.\n    *   *Action:* Purge the message from all mailboxes via API (e.g., O365 `Search-Mailbox` or `New-ComplianceSearch`).\n*   **Proxy/DNS Logs:** Check for outbound traffic to the phishing domain.\n    *   *Syntax (Zeek/Corelight):* `grep -E \"phish-domain.com\" conn.log`\n    *   *Syntax (Bind/DNS):* `grep \"phish-domain.com\" /var/log/named/query.log`\n*   **Endpoint (EDR):** Inspect for process execution triggered by the phishing payload.\n    *   *Query (CrowdStrike/SentinelOne):* Look for `cmd.exe` or `powershell.exe` spawned by `outlook.exe` or `winword.exe`.\n    *   *Example:* `ParentProcessName: \"outlook.exe\" AND (ProcessName: \"powershell.exe\" OR ProcessName: \"cmd.exe\")`\n\n#### 2. Impact Assessment\nOnce a compromise is confirmed, quantify the impact by analyzing the user’s session and permissions:\n\n*   **Identity Audit:** Check the IdP (Azure AD/Okta) for successful logins from unusual IPs immediately following the click.\n    *   *Focus:* Look for \"Impossible Travel\" or logins from non-corporate ASN ranges.\n    *   *Command (Azure CLI):* `az ad signin list --filter \"userPrincipalName eq 'user@company.com'\"`\n*   **Privilege Escalation:** Verify if the compromised account has access to critical infrastructure (e.g., RMM tools, cloud consoles, or network management systems).\n*   **Data Exfiltration:** Review egress traffic logs for anomalous spikes in volume from the affected host. Use `nfdump` or `flow-tools` to analyze NetFlow data:\n    *   *Command:* `nfdump -r nfcapd.20231027 -s srcip -s dstip -n 20`\n\n#### 3. Operational Containment\nIf a credential compromise is suspected, execute the following \"Kill Chain\" sequence immediately:\n\n1.  **Revoke Sessions:** Force a global sign-out for the user.\n    *   *Azure AD:* `Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>`\n2.  **Isolate Endpoint:** Use EDR to network-isolate the host to prevent C2 communication.\n3.  **Credential Reset:** Force a password reset and rotate MFA tokens/hardware keys.\n4.  **Conditional Access:** If the attack originated from a specific geographic region or ASN, apply a temporary block policy at the IdP level.\n\n#### 4. Post-Incident Hardening\n*   **SPF/DKIM/DMARC:** Ensure `p=reject` is enforced on your domain to prevent spoofing.\n*   **MFA Enforcement:** Transition from SMS-based MFA to FIDO2/WebAuthn to mitigate adversary-in-the-middle (AiTM) phishing kits.\n*   **URL Rewriting:** Ensure your secure email gateway (SEG) is configured to rewrite URLs and perform time-of-click analysis, as static blocklists are insufficient against fast-flux phishing infrastructure.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-21T10:16:14.797435Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-21T10:16:14.797466Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "ssh-key-management-and-encryption-best-practices",
+        "title": "SSH Key Management and Encryption Best Practices",
+        "content": "### SSH Key Management and Encryption Best Practices\n\nIn high-stakes B2B telecom environments, SSH is the primary vector for infrastructure access. Security hinges on key lifecycle management, cryptographic agility, and strict access boundaries.\n\n#### 1. Cryptographic Standards\nAvoid legacy algorithms. Enforce Ed25519 for all new keys due to its performance and resistance to side-channel attacks. If RSA is required for legacy compatibility, use a minimum of 4096 bits.\n\n*   **Generate key:** `ssh-keygen -t ed25519 -a 100 -C \"user@company.com\"`\n    *   `-a 100` increases the KDF (Key Derivation Function) rounds, significantly hardening the passphrase against brute-force attacks.\n\n#### 2. Server-Side Hardening (`/etc/ssh/sshd_config`)\nDisable insecure defaults to minimize the attack surface. Apply these directives to all network appliances and jump hosts:\n\n```ssh\n# Disable password authentication; enforce keys\nPasswordAuthentication no\nPubkeyAuthentication yes\n\n# Restrict ciphers to modern, authenticated encryption (AEAD)\nCiphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com\n\n# Disable legacy host key algorithms\nHostKeyAlgorithms ssh-ed25519-cert-v01@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256\n\n# Enforce strict ownership\nPermitRootLogin no\nMaxAuthTries 3\nClientAliveInterval 300\nClientAliveCountMax 0\n```\n\n#### 3. Key Lifecycle and Distribution\n*   **No Shared Keys:** Never share private keys across users or service accounts. Each identity must have a unique key pair.\n*   **Automated Rotation:** Use configuration management (Ansible/Salt) to push public keys to `~/.ssh/authorized_keys`. Use the `command=` restriction in `authorized_keys` to limit service account keys to specific scripts:\n    *   `command=\"/usr/local/bin/backup_script.sh\",no-port-forwarding,no-x11-forwarding ssh-ed25519 AAAAC3...`\n*   **Revocation:** Maintain a `krl` (Key Revocation List) file. If a key is compromised, add it to the KRL and reference it in `sshd_config` via `RevokedKeys /etc/ssh/revoked_keys`.\n\n#### 4. Agent Forwarding and Jump Hosts\n*   **Disable Agent Forwarding:** Never use `ssh -A`. It allows a compromised remote server to hijack your local agent. Use `ProxyJump` instead.\n*   **ProxyJump Configuration:** Define jump hosts in your local `~/.ssh/config` to maintain clean, audited access paths:\n    ```ssh\n    Host internal-node\n        HostName 10.0.5.20\n        ProxyJump jump-host-01\n        User admin\n    ```\n\n#### 5. Monitoring and Auditing\n*   **Log Verification:** Ensure `LogLevel VERBOSE` is set in `sshd_config`. This logs the fingerprint of the key used for every successful authentication.\n*   **SIEM Integration:** Forward `/var/log/auth.log` (or `journalctl -u ssh`) to your SIEM. Alert on:\n    *   `Failed password` (indicates brute-force attempts).\n    *   `Accepted publickey` for unexpected users or unusual source IPs.\n    *   `Connection closed by authenticating user` (potential reconnaissance).\n\n#### 6. Hardware Security\nFor privileged access (root/admin), mandate the use of FIDO2/U2F security keys. These keys cannot be exported, ensuring the private key never touches the disk.\n*   **Generate FIDO2 key:** `ssh-keygen -t ed25519-sk -O resident -O verify-required`\n    *   `resident` stores the key handle on the hardware.\n    *   `verify-required` mandates a physical touch/PIN for every use.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-21T10:16:32.364500Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-21T10:16:32.364529Z",
         "addedBy": "discover"
       }
     ],
@@ -949,6 +973,126 @@
       {
         "command": "ip access-list standard MGMT_ACCESS\n permit 192.168.10.0 0.0.0.255\n deny any\nline vty 0 4\n access-class MGMT_ACCESS in",
         "description": "Example configuration snippet for hardening management plane access via ACLs",
+        "platform": "both"
+      },
+      {
+        "command": "Search-Mailbox",
+        "description": "Purge suspicious email from mailboxes via O365 API",
+        "platform": "both"
+      },
+      {
+        "command": "New-ComplianceSearch",
+        "description": "Purge suspicious email from mailboxes via O365 API",
+        "platform": "both"
+      },
+      {
+        "command": "grep -E \"phish-domain.com\" conn.log",
+        "description": "Search Zeek/Corelight logs for phishing domain traffic",
+        "platform": "linux"
+      },
+      {
+        "command": "grep \"phish-domain.com\" /var/log/named/query.log",
+        "description": "Search Bind/DNS logs for phishing domain traffic",
+        "platform": "linux"
+      },
+      {
+        "command": "ParentProcessName: \"outlook.exe\" AND (ProcessName: \"powershell.exe\" OR ProcessName: \"cmd.exe\")",
+        "description": "EDR query to identify suspicious process execution from email clients",
+        "platform": "both"
+      },
+      {
+        "command": "az ad signin list --filter \"userPrincipalName eq 'user@company.com'\"",
+        "description": "Azure CLI command to list sign-in logs for a specific user",
+        "platform": "both"
+      },
+      {
+        "command": "nfdump -r nfcapd.20231027 -s srcip -s dstip -n 20",
+        "description": "Analyze NetFlow data for anomalous traffic volume",
+        "platform": "linux"
+      },
+      {
+        "command": "Revoke-AzureADUserAllRefreshToken -ObjectId <UserObjectID>",
+        "description": "Force a global sign-out for a user in Azure AD",
+        "platform": "both"
+      },
+      {
+        "command": "ssh-keygen -t ed25519 -a 100 -C \"user@company.com\"",
+        "description": "Generate an Ed25519 SSH key with increased KDF rounds for hardening.",
+        "platform": "both"
+      },
+      {
+        "command": "PasswordAuthentication no",
+        "description": "Disable password authentication in sshd_config.",
+        "platform": "both"
+      },
+      {
+        "command": "PubkeyAuthentication yes",
+        "description": "Enable public key authentication in sshd_config.",
+        "platform": "both"
+      },
+      {
+        "command": "Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com",
+        "description": "Restrict ciphers to modern AEAD algorithms.",
+        "platform": "both"
+      },
+      {
+        "command": "HostKeyAlgorithms ssh-ed25519-cert-v01@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256",
+        "description": "Disable legacy host key algorithms.",
+        "platform": "both"
+      },
+      {
+        "command": "PermitRootLogin no",
+        "description": "Disable root login in sshd_config.",
+        "platform": "both"
+      },
+      {
+        "command": "MaxAuthTries 3",
+        "description": "Limit authentication attempts.",
+        "platform": "both"
+      },
+      {
+        "command": "ClientAliveInterval 300",
+        "description": "Set client alive interval.",
+        "platform": "both"
+      },
+      {
+        "command": "ClientAliveCountMax 0",
+        "description": "Set client alive count max.",
+        "platform": "both"
+      },
+      {
+        "command": "command=\"/usr/local/bin/backup_script.sh\",no-port-forwarding,no-x11-forwarding ssh-ed25519 AAAAC3...",
+        "description": "Restrict service account keys to specific scripts in authorized_keys.",
+        "platform": "both"
+      },
+      {
+        "command": "RevokedKeys /etc/ssh/revoked_keys",
+        "description": "Reference a Key Revocation List in sshd_config.",
+        "platform": "both"
+      },
+      {
+        "command": "ssh -A",
+        "description": "Agent forwarding (not recommended).",
+        "platform": "both"
+      },
+      {
+        "command": "Host internal-node\n    HostName 10.0.5.20\n    ProxyJump jump-host-01\n    User admin",
+        "description": "ProxyJump configuration in ~/.ssh/config.",
+        "platform": "both"
+      },
+      {
+        "command": "LogLevel VERBOSE",
+        "description": "Set log level to verbose in sshd_config.",
+        "platform": "both"
+      },
+      {
+        "command": "journalctl -u ssh",
+        "description": "View SSH logs on systemd-based systems.",
+        "platform": "linux"
+      },
+      {
+        "command": "ssh-keygen -t ed25519-sk -O resident -O verify-required",
+        "description": "Generate a FIDO2/U2F hardware-backed SSH key.",
         "platform": "both"
       }
     ]
