@@ -15,7 +15,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:12:20.270950Z",
-  "updatedAt": "2026-09-21T10:16:32.364575Z",
+  "updatedAt": "2026-09-28T11:27:21.524632Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -367,6 +367,18 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-21T10:16:32.364529Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "ssh-hardening-for-containerized-environments",
+        "title": "SSH Hardening for Containerized Environments",
+        "content": "### SSH Hardening for Containerized Environments\n\nIn containerized environments (e.g., Kubernetes nodes, sidecar containers), SSH should be treated as a legacy management interface. If SSH is required, it must be isolated from the container runtime network and hardened against lateral movement.\n\n#### 1. Daemon Configuration (`/etc/ssh/sshd_config`)\nApply the following directives to minimize the attack surface. Use `sshd -t` to validate syntax before restarting the service.\n\n```ssh\n# Disable password authentication; enforce Ed25519 keys\nPasswordAuthentication no\nPubkeyAuthentication yes\nAuthenticationMethods publickey\n\n# Restrict ciphers and MACs to modern standards\nKexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256\nCiphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com\nMACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com\n\n# Hardening directives\nPermitRootLogin no\nMaxAuthTries 3\nClientAliveInterval 300\nClientAliveCountMax 0\nAllowTcpForwarding no\nX11Forwarding no\nPermitTunnel no\n```\n\n#### 2. Key Management and Lifecycle\nAvoid static SSH keys baked into container images.\n*   **Ephemeral Access:** Use an SSH Certificate Authority (CA) (e.g., HashiCorp Vault SSH Secrets Engine). This eliminates the need for `authorized_keys` management and enforces short-lived access (TTL < 1 hour).\n*   **Host Key Rotation:** If using persistent nodes, rotate host keys during image builds. Do not include host keys in the base image; generate them on first boot via `cloud-init` or a `systemd` unit.\n\n#### 3. Network-Level Isolation\nSSH access to containers should never be exposed to the public internet or the pod network.\n*   **Jump Hosts:** Force all SSH traffic through a hardened Bastion/Jump host.\n*   **Network Policies:** Use Kubernetes NetworkPolicies to restrict SSH (port 22) access to specific management CIDRs only.\n    ```yaml\n    kind: NetworkPolicy\n    spec:\n      ingress:\n      - from:\n        - ipBlock:\n            cidr: 10.50.0.0/24 # Management Subnet\n        ports:\n        - protocol: TCP\n          port: 22\n    ```\n\n#### 4. Monitoring and Auditing\nStandardize logs to a centralized SIEM (e.g., ELK, Splunk).\n*   **Log Forwarding:** Ensure `sshd` logs to `stdout/stderr` in containerized environments so the container runtime (CRI-O/containerd) can capture them.\n*   **Auditd:** Implement `auditd` rules to monitor sensitive file access related to SSH:\n    ```bash\n    -w /etc/ssh/sshd_config -p wa -k ssh_config_change\n    -w /etc/ssh/keys/ -p wa -k ssh_keys_change\n    ```\n\n#### 5. Operational Best Practices\n*   **Disable SSH entirely:** If possible, replace SSH with `kubectl exec` or `oc rsh`. These utilize the Kubernetes API server’s RBAC and audit logging, providing superior visibility compared to native SSH.\n*   **Fail2Ban:** In environments where SSH is exposed to internal networks, deploy `fail2ban` to mitigate brute-force attempts, ensuring the jail is configured to read from the container log stream.\n*   **Binary Integrity:** Use `fapolicyd` or similar tools to ensure that only authorized SSH binaries are executed within the container filesystem.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-28T11:27:21.524536Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-28T11:27:21.524575Z",
         "addedBy": "discover"
       }
     ],
@@ -1094,6 +1106,21 @@
         "command": "ssh-keygen -t ed25519-sk -O resident -O verify-required",
         "description": "Generate a FIDO2/U2F hardware-backed SSH key.",
         "platform": "both"
+      },
+      {
+        "command": "sshd -t",
+        "description": "Validate sshd configuration syntax",
+        "platform": "linux"
+      },
+      {
+        "command": "kind: NetworkPolicy\nspec:\n  ingress:\n  - from:\n    - ipBlock:\n        cidr: 10.50.0.0/24\n    ports:\n    - protocol: TCP\n      port: 22",
+        "description": "Kubernetes NetworkPolicy to restrict SSH access to specific CIDRs",
+        "platform": "linux"
+      },
+      {
+        "command": "-w /etc/ssh/sshd_config -p wa -k ssh_config_change\n-w /etc/ssh/keys/ -p wa -k ssh_keys_change",
+        "description": "Auditd rules to monitor SSH configuration and key changes",
+        "platform": "linux"
       }
     ]
   },

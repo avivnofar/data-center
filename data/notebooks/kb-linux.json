@@ -16,7 +16,7 @@
   "description": "",
   "language": "en",
   "createdAt": "2026-06-30T16:11:36.179327Z",
-  "updatedAt": "2026-09-21T10:17:03.391367Z",
+  "updatedAt": "2026-09-28T11:28:00.120804Z",
   "generatedBy": "system",
   "pinned": true,
   "relatedNotebooks": [],
@@ -359,6 +359,30 @@
         "sources": [],
         "durability": "stable",
         "dateAdded": "2026-09-21T10:17:03.391325Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "designing-and-automating-backup-scripts",
+        "title": "Designing and Automating Backup Scripts",
+        "content": "### Designing and Automating Backup Scripts\n\nEffective backup automation requires a modular approach, prioritizing atomicity, error handling, and secure transport.\n\n#### 1. Script Structure and Best Practices\nScripts must be idempotent and fail-fast. Use `set -euo pipefail` at the start of every script to ensure the shell exits on command failure, undefined variables, or pipeline errors.\n\n*   **Atomic Operations:** Use `rsync` with the `--link-dest` flag for incremental backups or `tar` with `--listed-incremental` for file-level snapshots.\n*   **Logging:** Redirect all output to a timestamped log file.\n    ```bash\n    exec > >(tee -a /var/log/backup.log) 2>&1\n    ```\n*   **Exit Codes:** Always verify the exit status of critical operations.\n    ```bash\n    rsync -avz /source/ /dest/ || { echo \"Backup failed\"; exit 1; }\n    ```\n\n#### 2. Data Integrity and Transport\nFor remote backups, utilize `ssh` with key-based authentication. Avoid hardcoding credentials; use `ssh-agent` or restricted SSH keys.\n\n*   **Compression:** Pipe data through `zstd` or `pigz` for multi-threaded compression to minimize I/O wait times.\n    ```bash\n    tar -cf - /data | zstd -T0 > backup_$(date +%F).tar.zst\n    ```\n*   **Encryption:** Use `gpg` for symmetric encryption at rest.\n    ```bash\n    gpg --batch --passphrase-file /etc/backup_pass.key -c backup.tar.zst\n    ```\n\n#### 3. Automation via Systemd Timers\nAvoid `cron` for complex tasks; `systemd` timers provide superior logging, dependency management, and execution tracking.\n\n**Service Unit (`/etc/systemd/system/backup.service`):**\n```ini\n[Unit]\nDescription=Daily Backup Service\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/backup_script.sh\n```\n\n**Timer Unit (`/etc/systemd/system/backup.timer`):**\n```ini\n[Unit]\nDescription=Run backup daily\n\n[Timer]\nOnCalendar=daily\nPersistent=true\nRandomizedDelaySec=300\n\n[Install]\nWantedBy=timers.target\n```\nEnable with `systemctl enable --now backup.timer`.\n\n#### 4. Retention Policies\nAutomate cleanup to prevent disk exhaustion. Use `find` to purge backups older than *N* days.\n\n```bash\n# Delete files older than 30 days\nfind /backups/ -name \"*.zst\" -type f -mtime +30 -delete\n```\n\n#### 5. Verification\nA backup is not a backup until it is restored. Implement a periodic \"dry-run\" restoration test.\n*   **Checksums:** Generate a manifest during backup.\n    ```bash\n    find /source -type f -exec sha256sum {} + > manifest.sha256\n    ```\n*   **Validation:** Run `sha256sum -c manifest.sha256` post-transfer to ensure data integrity.\n\n#### Critical Security Considerations\n*   **Least Privilege:** Run backup scripts as a dedicated user with read-only access to source directories.\n*   **Immutable Backups:** If using network storage (NFS/S3), configure object locking or WORM (Write Once, Read Many) policies to protect against ransomware.\n*   **Environment Variables:** Never store passwords in scripts. Use `pass`, `vault`, or protected environment files with `chmod 600`.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-28T11:27:38.937802Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-28T11:27:38.937830Z",
+        "addedBy": "discover"
+      },
+      {
+        "id": "troubleshooting-shared-resource-access-issues",
+        "title": "Troubleshooting Shared Resource Access Issues",
+        "content": "### Troubleshooting Shared Resource Access Issues\n\nWhen diagnosing access failures for shared resources (NFS, SMB/CIFS, or local IPC), isolate the failure point by verifying the transport layer, authentication state, and kernel-level locks.\n\n#### 1. Network and Transport Layer Verification\nBefore investigating application-level permissions, ensure the mount point is reachable and the protocol is negotiating correctly.\n\n*   **NFS Connectivity:** Use `rpcinfo` to verify the server is exporting the required services.\n    ```bash\n    rpcinfo -p <server_ip>\n    showmount -e <server_ip>\n    ```\n*   **TCP/UDP Port Check:** Use `ss` to verify the client is attempting to connect to the correct port (e.g., 2049 for NFSv4, 445 for SMB).\n    ```bash\n    ss -tulpn | grep -E '2049|445'\n    ```\n\n#### 2. Mount and Kernel State\nIf the mount appears \"stale\" or unresponsive, check the kernel message buffer for I/O errors or RPC timeouts.\n\n*   **Inspect Mount Options:** Verify the mount flags. `soft` mounts may time out silently; `hard` mounts will hang the process until the server responds.\n    ```bash\n    mount | grep -E 'nfs|cifs'\n    ```\n*   **Kernel Logs:** Check `dmesg` for \"Stale file handle\" or \"Connection reset by peer\" errors.\n    ```bash\n    dmesg | grep -iE 'nfs|cifs|smb' | tail -n 20\n    ```\n*   **Forcing Unmount:** If a resource is busy and cannot be unmounted, use `lsof` to identify the blocking process, then force unmount if necessary:\n    ```bash\n    lsof +f -- /mnt/shared_resource\n    umount -f /mnt/shared_resource\n    ```\n\n#### 3. Authentication and Identity Mapping\nAccess denied errors often stem from UID/GID mismatches or expired Kerberos tickets.\n\n*   **NFSv4 ID Mapping:** If UIDs are mapping to `nobody`, verify `idmapd` is running and the domain matches in `/etc/idmapd.conf`.\n    ```bash\n    systemctl status nfs-idmapd\n    ```\n*   **SMB/CIFS Credentials:** If using `cifs-utils`, verify the credentials file permissions (must be `600`) and the mount syntax.\n    ```bash\n    # Test mount manually to isolate credential issues\n    mount -t cifs //server/share /mnt/point -o username=user,domain=domain,vers=3.0\n    ```\n\n#### 4. File Locking and Concurrency\nIf multiple clients access the same file, `fcntl` or `flock` contention may occur.\n\n*   **Identify Locks:** Use `lslocks` to view current system locks.\n    ```bash\n    lslocks | grep /mnt/shared_resource\n    ```\n*   **NFS Lockd:** If locks are not releasing, restart the `rpc-statd` and `lockd` services on both client and server.\n    ```bash\n    systemctl restart rpc-statd\n    ```\n\n#### 5. Debugging with `strace`\nIf the issue is application-specific, trace the system calls to identify the exact point of failure (e.g., `EACCES` vs `ENOENT`).\n\n```bash\nstrace -e trace=open,openat,access,stat -f <command> 2>&1 | grep -i \"denied\"\n```\n\n**Common Configuration Pitfalls:**\n*   **SELinux:** If permissions are correct but access is denied, check the audit log: `ausearch -m avc -ts recent`. Toggle `setenforce 0` temporarily to confirm if SELinux is the root cause.\n*   **NFS Export Options:** Ensure `no_root_squash` is set if root-level access is required for administrative tasks on the share.",
+        "subsections": [],
+        "tags": [],
+        "lastUpdated": "2026-09-28T11:28:00.120729Z",
+        "sources": [],
+        "durability": "stable",
+        "dateAdded": "2026-09-28T11:28:00.120753Z",
         "addedBy": "discover"
       }
     ],
@@ -1590,6 +1614,121 @@
       {
         "command": "echo scan > /sys/kernel/debug/kmemleak && cat /sys/kernel/debug/kmemleak",
         "description": "Scan for memory leaks",
+        "platform": "linux"
+      },
+      {
+        "command": "set -euo pipefail",
+        "description": "Ensures the shell exits on command failure, undefined variables, or pipeline errors.",
+        "platform": "linux"
+      },
+      {
+        "command": "exec > >(tee -a /var/log/backup.log) 2>&1",
+        "description": "Redirects all output to a timestamped log file.",
+        "platform": "linux"
+      },
+      {
+        "command": "rsync -avz /source/ /dest/ || { echo \"Backup failed\"; exit 1; }",
+        "description": "Verifies the exit status of a critical rsync operation.",
+        "platform": "linux"
+      },
+      {
+        "command": "tar -cf - /data | zstd -T0 > backup_$(date +%F).tar.zst",
+        "description": "Pipes data through zstd for multi-threaded compression.",
+        "platform": "linux"
+      },
+      {
+        "command": "gpg --batch --passphrase-file /etc/backup_pass.key -c backup.tar.zst",
+        "description": "Performs symmetric encryption at rest using GPG.",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl enable --now backup.timer",
+        "description": "Enables and starts a systemd timer.",
+        "platform": "linux"
+      },
+      {
+        "command": "find /backups/ -name \"*.zst\" -type f -mtime +30 -delete",
+        "description": "Purges backup files older than 30 days.",
+        "platform": "linux"
+      },
+      {
+        "command": "find /source -type f -exec sha256sum {} + > manifest.sha256",
+        "description": "Generates a checksum manifest for backup verification.",
+        "platform": "linux"
+      },
+      {
+        "command": "sha256sum -c manifest.sha256",
+        "description": "Validates data integrity post-transfer.",
+        "platform": "linux"
+      },
+      {
+        "command": "rpcinfo -p <server_ip>",
+        "description": "Verify NFS server is exporting required services",
+        "platform": "linux"
+      },
+      {
+        "command": "showmount -e <server_ip>",
+        "description": "List exported NFS shares",
+        "platform": "linux"
+      },
+      {
+        "command": "ss -tulpn | grep -E '2049|445'",
+        "description": "Verify client connection attempts to NFS or SMB ports",
+        "platform": "linux"
+      },
+      {
+        "command": "mount | grep -E 'nfs|cifs'",
+        "description": "Inspect current mount options",
+        "platform": "linux"
+      },
+      {
+        "command": "dmesg | grep -iE 'nfs|cifs|smb' | tail -n 20",
+        "description": "Check kernel logs for I/O errors or timeouts",
+        "platform": "linux"
+      },
+      {
+        "command": "lsof +f -- /mnt/shared_resource",
+        "description": "Identify processes blocking a mount point",
+        "platform": "linux"
+      },
+      {
+        "command": "umount -f /mnt/shared_resource",
+        "description": "Force unmount a busy resource",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl status nfs-idmapd",
+        "description": "Verify status of NFS ID mapping service",
+        "platform": "linux"
+      },
+      {
+        "command": "mount -t cifs //server/share /mnt/point -o username=user,domain=domain,vers=3.0",
+        "description": "Test SMB/CIFS mount manually",
+        "platform": "linux"
+      },
+      {
+        "command": "lslocks | grep /mnt/shared_resource",
+        "description": "View current system file locks",
+        "platform": "linux"
+      },
+      {
+        "command": "systemctl restart rpc-statd",
+        "description": "Restart NFS lockd service",
+        "platform": "linux"
+      },
+      {
+        "command": "strace -e trace=open,openat,access,stat -f <command> 2>&1 | grep -i \"denied\"",
+        "description": "Trace system calls to identify access failures",
+        "platform": "linux"
+      },
+      {
+        "command": "ausearch -m avc -ts recent",
+        "description": "Check SELinux audit logs for access denials",
+        "platform": "linux"
+      },
+      {
+        "command": "setenforce 0",
+        "description": "Temporarily disable SELinux enforcement",
         "platform": "linux"
       }
     ]
